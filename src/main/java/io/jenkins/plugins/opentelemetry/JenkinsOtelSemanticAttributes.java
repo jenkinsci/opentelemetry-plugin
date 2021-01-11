@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * @see io.opentelemetry.api.trace.attributes.SemanticAttributes
  */
-public class OpenTelemetryAttributes {
+public class JenkinsOtelSemanticAttributes {
 
     public static final AttributeKey<String> CI_PIPELINE_ID = AttributeKey.stringKey("ci.pipeline.id");
     public static final AttributeKey<String> CI_PIPELINE_NAME = AttributeKey.stringKey("ci.pipeline.name");

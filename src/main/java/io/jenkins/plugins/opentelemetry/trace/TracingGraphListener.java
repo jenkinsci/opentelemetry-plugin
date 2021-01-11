@@ -1,9 +1,10 @@
-package io.jenkins.plugins.opentelemetry;
+package io.jenkins.plugins.opentelemetry.trace;
 
 import static com.google.common.base.Verify.*;
 
 import com.google.common.base.Strings;
 import hudson.Extension;
+import io.jenkins.plugins.opentelemetry.trace.context.OtelContextAwareAbstractGraphListener;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
@@ -24,8 +25,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension
-public class OpenTelemetryGraphListener extends OpenTelemetryContextAwareGraphListener implements GraphListener.Synchronous {
-    private final static Logger LOGGER = Logger.getLogger(OpenTelemetryGraphListener.class.getName());
+public class TracingGraphListener extends OtelContextAwareAbstractGraphListener implements GraphListener.Synchronous {
+    private final static Logger LOGGER = Logger.getLogger(TracingGraphListener.class.getName());
 
     @Override
     public void _onNewHead(FlowNode node) {

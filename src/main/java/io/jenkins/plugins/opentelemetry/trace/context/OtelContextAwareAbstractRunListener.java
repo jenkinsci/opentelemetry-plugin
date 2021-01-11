@@ -1,14 +1,17 @@
-package io.jenkins.plugins.opentelemetry;
+package io.jenkins.plugins.opentelemetry.trace.context;
 
 import static com.google.common.base.Verify.*;
 
+import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Launcher;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
+import io.jenkins.plugins.opentelemetry.OtelTracerService;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 
 import javax.annotation.CheckForNull;
@@ -17,19 +20,19 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-public abstract class OpenTelemetryContextAwareRunListener<R extends Run> extends RunListener<Run> {
+public abstract class OtelContextAwareAbstractRunListener<R extends Run> extends RunListener<Run> {
 
-    private final static Logger LOGGER = Logger.getLogger(OpenTelemetryContextAwareRunListener.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(OtelContextAwareAbstractRunListener.class.getName());
 
-    private OpenTelemetryTracerService openTelemetryTracerService;
+    private OtelTracerService otelTracerService;
     private Tracer tracer;
     private OpenTelemetry openTelemetry;
 
     @Inject
-    public final void setOpenTelemetryTracerService(OpenTelemetryTracerService openTelemetryTracerService) {
-        this.openTelemetryTracerService = openTelemetryTracerService;
-        this.openTelemetryTracerService = openTelemetryTracerService;
-        this.openTelemetry = openTelemetryTracerService.getOpenTelemetry();
+    public final void setOpenTelemetryTracerService(OtelTracerService otelTracerService) {
+        this.otelTracerService = otelTracerService;
+        this.otelTracerService = otelTracerService;
+        this.openTelemetry = otelTracerService.getOpenTelemetry();
         this.tracer = this.openTelemetry.getTracer("jenkins");
     }
 
@@ -107,18 +110,20 @@ public abstract class OpenTelemetryContextAwareRunListener<R extends Run> extend
      * @return {@code null} if no {@link Span} has been created for the given {@link Run}
      */
     @CheckForNull
+    @MustBeClosed
     protected Scope setupContext(@Nonnull Run run) {
-        Span span = this.openTelemetryTracerService.getSpan(run);
+        Span span = this.otelTracerService.getSpan(run);
         if (span == null) {
             return null;
         } else {
             Scope scope = span.makeCurrent();
+            Context.current().with(RunContextKey.KEY, run);
             return scope;
         }
     }
 
-    public OpenTelemetryTracerService getOpenTelemetryTracerService() {
-        return openTelemetryTracerService;
+    public OtelTracerService getOpenTelemetryTracerService() {
+        return otelTracerService;
     }
 
     public Tracer getTracer() {

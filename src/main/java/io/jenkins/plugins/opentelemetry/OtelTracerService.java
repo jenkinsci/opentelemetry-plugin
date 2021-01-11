@@ -9,7 +9,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Run;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -36,9 +35,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension
-public class OpenTelemetryTracerService {
+public class OtelTracerService {
 
-    private static Logger LOGGER = Logger.getLogger(OpenTelemetryTracerService.class.getName());
+    private static Logger LOGGER = Logger.getLogger(OtelTracerService.class.getName());
 
     private final Multimap<RunIdentifier, Span> spansByRun = ArrayListMultimap.create();
 
@@ -48,7 +47,7 @@ public class OpenTelemetryTracerService {
 
     private transient Tracer tracer;
 
-    public OpenTelemetryTracerService() {
+    public OtelTracerService() {
         initialize();
     }
 
@@ -58,10 +57,11 @@ public class OpenTelemetryTracerService {
     }
 
     public void initialize() {
-        Resource resource =  Resource.getDefault().merge(Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "jenkins")));
+        Resource resource = Resource.getDefault().merge(Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "jenkins")));
 
         SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder().setResource(resource).build();
 
+        // TODO support configurability
         OtlpGrpcSpanExporter otlpGrpcSpanExporter = OtlpGrpcSpanExporter.builder().setEndpoint("localhost:4317").setUseTls(false).build();
         LoggingSpanExporter loggingSpanExporter = new LoggingSpanExporter();
         SpanProcessor spanProcessor = SpanProcessor.composite(
@@ -88,7 +88,7 @@ public class OpenTelemetryTracerService {
     @CheckForNull
     public Span getSpan(@NonNull Run run) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        LOGGER.log(Level.INFO, "Run {0}, get span. Stack: {1}", new Object[]{run, this.spanIdentifiersByRun.asMap().get(runIdentifier)});
+        LOGGER.log(Level.FINER, () -> "getSpan(" + run.getFullDisplayName() + ") - stack: " + this.spanIdentifiersByRun.asMap().get(runIdentifier));
         Collection<Span> runSpans = this.spansByRun.get(runIdentifier);
         return runSpans == null ? null : Iterables.getLast(runSpans, null);
     }
@@ -98,13 +98,13 @@ public class OpenTelemetryTracerService {
         SpanIdentifier spanIdentifier = SpanIdentifier.fromSpanData(((ReadableSpan) span).toSpanData());
         boolean spanRemoved = this.spansByRun.remove(runIdentifier, span);
         boolean spanIdentifierRemoved = this.spanIdentifiersByRun.remove(runIdentifier, spanIdentifier);
-        LOGGER.log(Level.INFO, "Run " + run + ", remove span " + span + ", new stack: " + spanIdentifiersByRun.asMap().get(run));
+        LOGGER.log(Level.FINER, () -> "removeSpan(" + run.getFullDisplayName() + ") - stack: " + this.spanIdentifiersByRun.asMap().get(runIdentifier));
         if (spanRemoved && spanIdentifierRemoved) {
             return true;
         } else if (!spanIdentifierRemoved && !spanRemoved) {
             return false;
         } else {
-            LOGGER.log(Level.INFO, "Problem removing span " + span + " on run " + run + ": spanIdentifierRemoved: " + spanIdentifierRemoved + ", spanRemoved: " + spanRemoved);
+            LOGGER.log(Level.INFO, () -> "removeSpan(" + run.getFullDisplayName() + ") - Problem removing span : " + span + ": spanIdentifierRemoved: " + spanIdentifierRemoved + ", spanRemoved: " + spanRemoved + ", stack: " + this.spanIdentifiersByRun.asMap().get(runIdentifier));
             return true;
         }
     }
@@ -117,7 +117,7 @@ public class OpenTelemetryTracerService {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         Collection<SpanIdentifier> remainingSpanIdentifiers = this.spanIdentifiersByRun.removeAll(runIdentifier);
         Collection<Span> remainingSpans = this.spansByRun.removeAll(runIdentifier);
-        LOGGER.log(Level.INFO, "Run " + run + ", purge spans, new stack: " + spanIdentifiersByRun.asMap().get(run));
+        LOGGER.log(Level.FINER, () -> "purgeRun(" + run.getFullDisplayName() + "), stack: " + spanIdentifiersByRun.asMap().get(run));
 
         // TODO shall we {@code Span#end()} all these spans?
         return remainingSpanIdentifiers.size();
@@ -126,7 +126,6 @@ public class OpenTelemetryTracerService {
     public void dumpContext(@Nonnull Run run, String message, @Nonnull PrintStream out) {
         ReadableSpan span = (ReadableSpan) getSpan(run);
         SpanData spanData = span.toSpanData();
-        out.println("OPENTELEMETRY: " + message + " - traceId: " + spanData.getTraceId() + ", spanId: " + spanData.getSpanId() + ", name: " + spanData.getName());
     }
 
 
@@ -136,7 +135,7 @@ public class OpenTelemetryTracerService {
         this.spansByRun.put(runIdentifier, span);
         this.spanIdentifiersByRun.put(runIdentifier, spanIdentifier);
 
-        LOGGER.log(Level.INFO, "Run " + run + ", put span " + span + ", new stack: " + spanIdentifiersByRun.asMap().get(run));
+        LOGGER.log(Level.FINER, () -> "putSpan(" + run.getFullDisplayName() + "," +  span + ") - new stack: " + spanIdentifiersByRun.asMap().get(run));
 
     }
 
