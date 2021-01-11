@@ -1,5 +1,6 @@
 package io.jenkins.plugins;
 
+import io.jenkins.plugins.opentelemetry.JenkinsOtelPlugin;
 import io.jenkins.plugins.opentelemetry.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.trace.OtelTraceService;
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -17,6 +18,7 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -25,8 +27,6 @@ import java.util.logging.Logger;
 public class OpenTelemetryTest {
 
     private Logger logger = Logger.getLogger(OpenTelemetryTest.class.getName());
-
-    OtelTraceService otelTraceService = new OtelTraceService();
 
     @Test
     public void test() throws Exception {

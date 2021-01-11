@@ -7,33 +7,23 @@ import com.google.common.collect.Multimap;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.JenkinsOtelPlugin;
 import io.jenkins.plugins.opentelemetry.trace.context.RunContextKey;
-import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.exporter.logging.LoggingSpanExporter;
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.sdk.resources.ResourceAttributes;
 import io.opentelemetry.sdk.trace.ReadableSpan;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
-import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.annotation.PreDestroy;
 import javax.annotation.concurrent.Immutable;
+import javax.inject.Inject;
 import java.io.PrintStream;
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collection;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -45,47 +35,7 @@ public class OtelTraceService {
 
     private final Multimap<RunIdentifier, Span> spansByRun = ArrayListMultimap.create();
 
-    private transient OpenTelemetrySdk openTelemetry;
-
-    private transient Tracer tracer;
-
-    public OtelTraceService() {
-        initialize();
-    }
-
-    protected Object readResolve() {
-        initialize();
-        return this;
-    }
-
-    public void initialize() {
-        Resource resource = Resource.getDefault().merge(Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "jenkins")));
-
-        SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder().setResource(resource).build();
-
-        // TODO support configurability
-        OtlpGrpcSpanExporter otlpGrpcSpanExporter = OtlpGrpcSpanExporter.builder().setEndpoint("localhost:4317").setUseTls(false).build();
-        LoggingSpanExporter loggingSpanExporter = new LoggingSpanExporter();
-        SpanProcessor spanProcessor = SpanProcessor.composite(
-                /*SimpleSpanProcessor.builder(loggingSpanExporter).build(),*/
-                SimpleSpanProcessor.builder(otlpGrpcSpanExporter).build());
-
-        sdkTracerProvider.addSpanProcessor(spanProcessor);
-
-        this.openTelemetry = OpenTelemetrySdk.builder()
-                .setTracerProvider(sdkTracerProvider)
-                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
-                .build();
-        GlobalOpenTelemetry.set(openTelemetry);
-
-        this.tracer = openTelemetry.getTracer("jenkins");
-        LOGGER.log(Level.INFO, "OpenTelemetry initialized");
-    }
-
-    @PreDestroy
-    public void preDestroy() {
-        openTelemetry.getTracerManagement().shutdown();
-    }
+    private Tracer tracer;
 
     @CheckForNull
     public Span getSpan(@Nonnull Run run) {
@@ -138,6 +88,11 @@ public class OtelTraceService {
 
     }
 
+    @Inject
+    public void setJenkinsOtelPlugin(@Nonnull JenkinsOtelPlugin jenkinsOtelPlugin) {
+        this.tracer = jenkinsOtelPlugin.getTracer();
+    }
+
     /**
      * @param run
      * @return {@code null} if no {@link Span} has been created for the given {@link Run}
@@ -153,10 +108,6 @@ public class OtelTraceService {
             Context.current().with(RunContextKey.KEY, run);
             return scope;
         }
-    }
-
-    public OpenTelemetrySdk getOpenTelemetry() {
-        return openTelemetry;
     }
 
     public Tracer getTracer() {
