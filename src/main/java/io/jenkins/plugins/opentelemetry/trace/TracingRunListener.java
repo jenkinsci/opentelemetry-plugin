@@ -23,7 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension
-public class TracingRunListener extends OtelContextAwareAbstractRunListener<Run> {
+public class TracingRunListener extends OtelContextAwareAbstractRunListener {
 
     protected static final Logger LOGGER = Logger.getLogger(TracingRunListener.class.getName());
 

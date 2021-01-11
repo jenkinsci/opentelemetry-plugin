@@ -20,7 +20,7 @@ import java.util.logging.Logger;
  * {@link RunListener} that setups the OpenTelemetry {@link io.opentelemetry.context.Context}
  * with the current {@link Span}.
  */
-public abstract class OtelContextAwareAbstractRunListener<R extends Run> extends RunListener<Run> {
+public abstract class OtelContextAwareAbstractRunListener extends RunListener<Run> {
 
     private final static Logger LOGGER = Logger.getLogger(OtelContextAwareAbstractRunListener.class.getName());
 
