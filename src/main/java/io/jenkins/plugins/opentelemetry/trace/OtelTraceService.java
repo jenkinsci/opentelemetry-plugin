@@ -1,18 +1,20 @@
-package io.jenkins.plugins.opentelemetry;
+package io.jenkins.plugins.opentelemetry.trace;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.trace.context.RunContextKey;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.exporter.logging.LoggingSpanExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
@@ -25,6 +27,7 @@ import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.PreDestroy;
 import javax.annotation.concurrent.Immutable;
@@ -33,21 +36,20 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Extension
-public class OtelTracerService {
+public class OtelTraceService {
 
-    private static Logger LOGGER = Logger.getLogger(OtelTracerService.class.getName());
+    private static Logger LOGGER = Logger.getLogger(OtelTraceService.class.getName());
 
     private final Multimap<RunIdentifier, Span> spansByRun = ArrayListMultimap.create();
-
-    private final Multimap<RunIdentifier, SpanIdentifier> spanIdentifiersByRun = ArrayListMultimap.create();
 
     private transient OpenTelemetrySdk openTelemetry;
 
     private transient Tracer tracer;
 
-    public OtelTracerService() {
+    public OtelTraceService() {
         initialize();
     }
 
@@ -65,7 +67,7 @@ public class OtelTracerService {
         OtlpGrpcSpanExporter otlpGrpcSpanExporter = OtlpGrpcSpanExporter.builder().setEndpoint("localhost:4317").setUseTls(false).build();
         LoggingSpanExporter loggingSpanExporter = new LoggingSpanExporter();
         SpanProcessor spanProcessor = SpanProcessor.composite(
-                SimpleSpanProcessor.builder(loggingSpanExporter).build(),
+                /*SimpleSpanProcessor.builder(loggingSpanExporter).build(),*/
                 SimpleSpanProcessor.builder(otlpGrpcSpanExporter).build());
 
         sdkTracerProvider.addSpanProcessor(spanProcessor);
@@ -86,25 +88,25 @@ public class OtelTracerService {
     }
 
     @CheckForNull
-    public Span getSpan(@NonNull Run run) {
+    public Span getSpan(@Nonnull Run run) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        LOGGER.log(Level.FINER, () -> "getSpan(" + run.getFullDisplayName() + ") - stack: " + this.spanIdentifiersByRun.asMap().get(runIdentifier));
+        LOGGER.log(Level.FINER, () -> "getSpan(" + run.getFullDisplayName() + ") - stack: " + getStackOfSpans(run));
         Collection<Span> runSpans = this.spansByRun.get(runIdentifier);
         return runSpans == null ? null : Iterables.getLast(runSpans, null);
     }
 
+    protected String getStackOfSpans(@Nonnull Run run) {
+        return this.spansByRun.asMap().get(run).stream().map(s -> ((ReadableSpan) s).getName()).collect(Collectors.joining(","));
+    }
+
     public boolean removeSpan(@Nonnull Run run, @Nonnull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        SpanIdentifier spanIdentifier = SpanIdentifier.fromSpanData(((ReadableSpan) span).toSpanData());
         boolean spanRemoved = this.spansByRun.remove(runIdentifier, span);
-        boolean spanIdentifierRemoved = this.spanIdentifiersByRun.remove(runIdentifier, spanIdentifier);
-        LOGGER.log(Level.FINER, () -> "removeSpan(" + run.getFullDisplayName() + ") - stack: " + this.spanIdentifiersByRun.asMap().get(runIdentifier));
-        if (spanRemoved && spanIdentifierRemoved) {
+        LOGGER.log(Level.FINER, () -> "removeSpan(" + run.getFullDisplayName() + ") - stack: " + getStackOfSpans(run));
+        if (spanRemoved) {
             return true;
-        } else if (!spanIdentifierRemoved && !spanRemoved) {
-            return false;
         } else {
-            LOGGER.log(Level.INFO, () -> "removeSpan(" + run.getFullDisplayName() + ") - Problem removing span : " + span + ": spanIdentifierRemoved: " + spanIdentifierRemoved + ", spanRemoved: " + spanRemoved + ", stack: " + this.spanIdentifiersByRun.asMap().get(runIdentifier));
+            LOGGER.log(Level.INFO, () -> "removeSpan(" + run.getFullDisplayName() + ") - Failure to remove span : " + span + " -  stack: " + getStackOfSpans(run));
             return true;
         }
     }
@@ -115,12 +117,11 @@ public class OtelTracerService {
      */
     public int purgeRun(@Nonnull Run run) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        Collection<SpanIdentifier> remainingSpanIdentifiers = this.spanIdentifiersByRun.removeAll(runIdentifier);
         Collection<Span> remainingSpans = this.spansByRun.removeAll(runIdentifier);
-        LOGGER.log(Level.FINER, () -> "purgeRun(" + run.getFullDisplayName() + "), stack: " + spanIdentifiersByRun.asMap().get(run));
+        LOGGER.log(Level.FINER, () -> "purgeRun(" + run.getFullDisplayName() + "), stack: " + getStackOfSpans(run));
 
         // TODO shall we {@code Span#end()} all these spans?
-        return remainingSpanIdentifiers.size();
+        return remainingSpans.size();
     }
 
     public void dumpContext(@Nonnull Run run, String message, @Nonnull PrintStream out) {
@@ -129,14 +130,29 @@ public class OtelTracerService {
     }
 
 
-    public void putSpan(@NonNull Run run, @NonNull Span span) {
+    public void putSpan(@Nonnull Run run, @Nonnull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        SpanIdentifier spanIdentifier = SpanIdentifier.fromSpanData(((ReadableSpan) span).toSpanData());
         this.spansByRun.put(runIdentifier, span);
-        this.spanIdentifiersByRun.put(runIdentifier, spanIdentifier);
 
-        LOGGER.log(Level.FINER, () -> "putSpan(" + run.getFullDisplayName() + "," +  span + ") - new stack: " + spanIdentifiersByRun.asMap().get(run));
+        LOGGER.log(Level.FINER, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") - new stack: " + getStackOfSpans(run));
 
+    }
+
+    /**
+     * @param run
+     * @return {@code null} if no {@link Span} has been created for the given {@link Run}
+     */
+    @CheckForNull
+    @MustBeClosed
+    public Scope setupContext(@Nonnull Run run) {
+        Span span = getSpan(run);
+        if (span == null) {
+            return null;
+        } else {
+            Scope scope = span.makeCurrent();
+            Context.current().with(RunContextKey.KEY, run);
+            return scope;
+        }
     }
 
     public OpenTelemetrySdk getOpenTelemetry() {
@@ -152,11 +168,11 @@ public class OtelTracerService {
         final String jobName;
         final int runNumber;
 
-        static RunIdentifier fromRun(@NonNull Run run) {
+        static RunIdentifier fromRun(@Nonnull Run run) {
             return new RunIdentifier(run.getParent().getFullName(), run.getNumber());
         }
 
-        public RunIdentifier(@NonNull String jobName, @NonNull int runNumber) {
+        public RunIdentifier(@Nonnull String jobName, @Nonnull int runNumber) {
             this.jobName = jobName;
             this.runNumber = runNumber;
         }
@@ -196,74 +212,4 @@ public class OtelTracerService {
         }
     }
 
-    @Immutable
-    public static class SpanIdentifier implements Comparable<SpanIdentifier> {
-        final String traceId;
-        final String spanId;
-        final String parentSpanId;
-        final String name;
-        final long startEpochNanos;
-
-        public static SpanIdentifier fromSpanData(@Nonnull SpanData spanData) {
-            return new SpanIdentifier(spanData.getTraceId(), spanData.getSpanId(), spanData.getParentSpanId(),
-                    spanData.getName(), spanData.getStartEpochNanos());
-        }
-
-        public SpanIdentifier(@Nonnull String traceId, @Nonnull String spanId, @Nonnull String parentSpanId, @Nonnull String name, @Nonnull long startEpochNanos) {
-            this.traceId = traceId;
-            this.spanId = spanId;
-            this.parentSpanId = parentSpanId;
-            this.name = name;
-            this.startEpochNanos = startEpochNanos;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            SpanIdentifier that = (SpanIdentifier) o;
-            return spanId.equals(that.spanId);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(spanId);
-        }
-
-        @Override
-        public String toString() {
-            return "SpanIdentifier{" +
-                    "traceId='" + traceId + '\'' +
-                    ", spanId='" + spanId + '\'' +
-                    ", parentSpanId='" + parentSpanId + '\'' +
-                    ", name='" + name + '\'' +
-                    ", startEpochNanos=" + startEpochNanos +
-                    '}';
-        }
-
-        @Override
-        public int compareTo(SpanIdentifier o) {
-            return Long.compare(this.startEpochNanos, o.startEpochNanos);
-        }
-
-        public String getTraceId() {
-            return traceId;
-        }
-
-        public String getSpanId() {
-            return spanId;
-        }
-
-        public String getParentSpanId() {
-            return parentSpanId;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public long getStartEpochNanos() {
-            return startEpochNanos;
-        }
-    }
 }

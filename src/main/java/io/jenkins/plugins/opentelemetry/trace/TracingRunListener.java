@@ -11,6 +11,7 @@ import io.jenkins.plugins.opentelemetry.trace.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.trace.context.OtelContextAwareAbstractRunListener;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 
@@ -29,8 +30,8 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener<Run>
     @Override
     public void _onInitialize(Run run) {
         LOGGER.log(Level.INFO, "onInitialize");
-        if (this.getOpenTelemetryTracerService().getSpan(run) != null) {
-            LOGGER.log(Level.WARNING, "Unexpected existing span: " + this.getOpenTelemetryTracerService().getSpan(run));
+        if (this.getTraceService().getSpan(run) != null) {
+            LOGGER.log(Level.WARNING, "Unexpected existing span: " + this.getTraceService().getSpan(run));
         }
 
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(run.getParent().getFullName())
@@ -67,12 +68,12 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener<Run>
 
         // START ROOT SPAN
         Span rootSpan = rootSpanBuilder.startSpan();
-        this.getOpenTelemetryTracerService().putSpan(run, rootSpan);
+        this.getTraceService().putSpan(run, rootSpan);
         rootSpan.makeCurrent();
 
         // START initialize span
         Span startSpan = getTracer().spanBuilder("start").setParent(Context.current().with(rootSpan)).startSpan();
-        this.getOpenTelemetryTracerService().putSpan(run, startSpan);
+        this.getTraceService().putSpan(run, startSpan);
         startSpan.makeCurrent();
     }
 
@@ -81,9 +82,9 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener<Run>
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span runSpan = getTracer().spanBuilder("run").setParent(Context.current()).startSpan();
             runSpan.makeCurrent();
-            this.getOpenTelemetryTracerService().putSpan(run, runSpan);
+            this.getTraceService().putSpan(run, runSpan);
 
-            this.getOpenTelemetryTracerService().dumpContext(run, "onStarted", listener.getLogger());
+            this.getTraceService().dumpContext(run, "onStarted", listener.getLogger());
         }
 
     }
@@ -93,9 +94,9 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener<Run>
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span finalizeSpan = getTracer().spanBuilder("finalise").setParent(Context.current()).startSpan();
             finalizeSpan.makeCurrent();
-            this.getOpenTelemetryTracerService().putSpan(run, finalizeSpan);
+            this.getTraceService().putSpan(run, finalizeSpan);
 
-            this.getOpenTelemetryTracerService().dumpContext(run, "onCompleted", listener.getLogger());
+            this.getTraceService().dumpContext(run, "onCompleted", listener.getLogger());
         }
     }
 
@@ -105,9 +106,9 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener<Run>
         Span pipelinePhaseSpan = Span.current();
         verifyNotNull(pipelinePhaseSpan, "No pipelinePhaseSpan found in context");
         pipelinePhaseSpan.end();
-        boolean removed = this.getOpenTelemetryTracerService().removeSpan(run, pipelinePhaseSpan);
+        boolean removed = this.getTraceService().removeSpan(run, pipelinePhaseSpan);
         verify(removed, "Failure to remove pipeline phase span %s from %s", pipelinePhaseSpan, run);
-        Span newCurrentSpan = this.getOpenTelemetryTracerService().getSpan(run);
+        Span newCurrentSpan = this.getTraceService().getSpan(run);
         verifyNotNull(newCurrentSpan, "Failure to find pipeline root span for %s" , run);
         Scope newScope = newCurrentSpan.makeCurrent();
         Context.current().with(RunContextKey.KEY, run);
@@ -120,9 +121,13 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener<Run>
             Span parentSpan = Span.current();
             parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DURATION_MILLIS, run.getDuration());
             Result runResult = run.getResult();
-            if (runResult != null) {
+            if (runResult == null) {
+                parentSpan.setStatus(StatusCode.UNSET);
+            } else {
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMPLETED, runResult.completeBuild);
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, runResult.toString());
+                StatusCode statusCode = Result.SUCCESS.equals(runResult) ? StatusCode.OK : StatusCode.ERROR;
+                parentSpan.setStatus(statusCode);
             }
             // NODE
             if (run instanceof AbstractBuild) {
@@ -133,11 +138,11 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener<Run>
                 }
             }
             parentSpan.end();
-            boolean removed = this.getOpenTelemetryTracerService().removeSpan(run, parentSpan);
+            boolean removed = this.getTraceService().removeSpan(run, parentSpan);
             verify(removed, "Failure to remove span %s from %s", parentSpan, run);
 
-            int zombies = this.getOpenTelemetryTracerService().purgeRun(run);
-            verify(zombies == 0, "Found %s remaining/non-ended spans on %s", run);
+            int zombies = this.getTraceService().purgeRun(run);
+            verify(zombies == 0, "Found %s remaining/non-ended spans on %s", zombies, run);
         }
     }
 

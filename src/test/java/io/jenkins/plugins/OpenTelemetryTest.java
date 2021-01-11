@@ -1,7 +1,7 @@
 package io.jenkins.plugins;
 
 import io.jenkins.plugins.opentelemetry.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.OtelTracerService;
+import io.jenkins.plugins.opentelemetry.trace.OtelTraceService;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -26,7 +26,7 @@ public class OpenTelemetryTest {
 
     private Logger logger = Logger.getLogger(OpenTelemetryTest.class.getName());
 
-    OtelTracerService otelTracerService = new OtelTracerService();
+    OtelTraceService otelTraceService = new OtelTraceService();
 
     @Test
     public void test() throws Exception {
@@ -50,8 +50,6 @@ public class OpenTelemetryTest {
         Span rootSpan = rootSpanBuilder.startSpan();
         System.out.println("Root span object: " + rootSpan.getClass() + ", " + rootSpan);
         SpanData rootSpanData = ((ReadableSpan) rootSpan).toSpanData();
-        OtelTracerService.SpanIdentifier rootSpanIdentifier = OtelTracerService.SpanIdentifier.fromSpanData(rootSpanData);
-        System.out.println("Root span identifier: " + rootSpanIdentifier);
 
         try (Scope scope = rootSpan.makeCurrent()) {
             Thread.sleep(1_000);
