@@ -22,5 +22,7 @@ work/
 
 #
 .otel/
+*.log
+
 
 
