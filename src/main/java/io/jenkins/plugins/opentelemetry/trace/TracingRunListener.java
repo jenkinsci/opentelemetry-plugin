@@ -72,7 +72,7 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
         rootSpan.makeCurrent();
 
         // START initialize span
-        Span startSpan = getTracer().spanBuilder("start").setParent(Context.current().with(rootSpan)).startSpan();
+        Span startSpan = getTracer().spanBuilder("Phase: Start").setParent(Context.current().with(rootSpan)).startSpan();
         this.getTraceService().putSpan(run, startSpan);
         startSpan.makeCurrent();
     }
@@ -80,11 +80,9 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
     @Override
     public void _onStarted(Run run, TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
-            Span runSpan = getTracer().spanBuilder("run").setParent(Context.current()).startSpan();
+            Span runSpan = getTracer().spanBuilder("Phase: Run").setParent(Context.current()).startSpan();
             runSpan.makeCurrent();
             this.getTraceService().putSpan(run, runSpan);
-
-            this.getTraceService().dumpContext(run, "onStarted", listener.getLogger());
         }
 
     }
@@ -92,11 +90,9 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
     @Override
     public void _onCompleted(Run run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
-            Span finalizeSpan = getTracer().spanBuilder("finalise").setParent(Context.current()).startSpan();
+            Span finalizeSpan = getTracer().spanBuilder("Phase: Finalise").setParent(Context.current()).startSpan();
             finalizeSpan.makeCurrent();
             this.getTraceService().putSpan(run, finalizeSpan);
-
-            this.getTraceService().dumpContext(run, "onCompleted", listener.getLogger());
         }
     }
 

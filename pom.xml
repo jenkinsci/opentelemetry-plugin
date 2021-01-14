@@ -18,6 +18,7 @@
         <jenkins.version>2.235.1</jenkins.version>
         <java.level>8</java.level>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
+        <opentelemetry.version>0.14.1</opentelemetry.version>
     </properties>
     <name>Jenkins OpenTelemetry Plugin</name>
     <description>Publish Jenkins Metrics to an OpenTelemetry endpoint</description>
@@ -35,14 +36,14 @@
             <dependency>
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-bom</artifactId>
-                <version>0.13.1</version>
+                <version>${opentelemetry.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-bom</artifactId>
-                <version>1.33.1</version>
+                <version>1.35.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -59,11 +60,20 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-semconv</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-trace</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp-metrics</artifactId>
+            <version>${opentelemetry.version}-alpha</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
@@ -78,15 +88,18 @@
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-logging</artifactId>
         </dependency>
+        <!--
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api-common</artifactId>
         </dependency>
+        -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-metrics</artifactId>
-            <version>0.13.1-alpha</version>
+            <version>${opentelemetry.version}-alpha</version>
         </dependency>
+
 
         <dependency> <!-- see maskClasses config -->
             <groupId>com.google.guava</groupId>
@@ -116,6 +129,10 @@
             <artifactId>workflow-durable-task-step</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>pipeline-stage-step</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jenkinsci.plugins</groupId>
             <artifactId>pipeline-model-definition</artifactId>
             <exclusions>
@@ -138,12 +155,45 @@
             </exclusions>
         </dependency>
 
-
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>git</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>github-autostatus</artifactId>
+            <version>3.6.2</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.code.gson</groupId>
+                    <artifactId>gson</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.squareup.okhttp</groupId>
+                    <artifactId>okhttp</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpcore</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm-commons</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        -->
         <dependency>
             <groupId>io.jenkins</groupId>
             <artifactId>configuration-as-code</artifactId>
@@ -173,6 +223,17 @@
                     <artifactId>jackson-datatype-json-org</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <!-- For JUnit test results UI compatibility -->
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>

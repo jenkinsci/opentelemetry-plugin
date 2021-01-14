@@ -74,18 +74,11 @@ public class OtelTraceService {
         return remainingSpans.size();
     }
 
-    public void dumpContext(@Nonnull Run run, String message, @Nonnull PrintStream out) {
-        ReadableSpan span = (ReadableSpan) getSpan(run);
-        SpanData spanData = span.toSpanData();
-    }
-
-
     public void putSpan(@Nonnull Run run, @Nonnull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         this.spansByRun.put(runIdentifier, span);
 
         LOGGER.log(Level.FINER, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") - new stack: " + getStackOfSpans(run));
-
     }
 
     @Inject
