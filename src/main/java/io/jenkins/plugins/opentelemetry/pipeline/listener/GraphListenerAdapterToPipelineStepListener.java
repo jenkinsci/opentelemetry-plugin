@@ -37,7 +37,7 @@ public class GraphListenerAdapterToPipelineStepListener implements GraphListener
             StepAtomNode stepAtomNode = (StepAtomNode) previousNode;
             fireOnAfterAtomicStep(stepAtomNode, run);
         } else {
-            log(() -> "ignore previous node " + previousNode);
+            log(Level.FINE, () -> "ignore previous node " + previousNode);
         }
 
         if (node instanceof FlowStartNode) {
@@ -125,7 +125,7 @@ public class GraphListenerAdapterToPipelineStepListener implements GraphListener
     }
 
     protected void log(@Nonnull Supplier<String> message) {
-        log(Level.INFO, message);
+        log(Level.FINE, message);
     }
     protected void log(@Nonnull Level level, @Nonnull Supplier<String> message) {
         LOGGER.log(level, message);

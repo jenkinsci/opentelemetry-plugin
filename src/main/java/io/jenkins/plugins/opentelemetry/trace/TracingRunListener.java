@@ -7,6 +7,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.*;
 import io.jenkins.plugins.opentelemetry.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.trace.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.trace.context.OtelContextAwareAbstractRunListener;
 import io.opentelemetry.api.trace.Span;
@@ -70,9 +71,13 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
         Span rootSpan = rootSpanBuilder.startSpan();
         this.getTraceService().putSpan(run, rootSpan);
         rootSpan.makeCurrent();
+        LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - begin root " + OtelUtils.toDebugString(rootSpan));
+
 
         // START initialize span
         Span startSpan = getTracer().spanBuilder("Phase: Start").setParent(Context.current().with(rootSpan)).startSpan();
+        LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - begin " + OtelUtils.toDebugString(startSpan));
+
         this.getTraceService().putSpan(run, startSpan);
         startSpan.makeCurrent();
     }
@@ -81,6 +86,7 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
     public void _onStarted(Run run, TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span runSpan = getTracer().spanBuilder("Phase: Run").setParent(Context.current()).startSpan();
+            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - begin " + OtelUtils.toDebugString(runSpan));
             runSpan.makeCurrent();
             this.getTraceService().putSpan(run, runSpan);
         }
@@ -91,6 +97,7 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
     public void _onCompleted(Run run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span finalizeSpan = getTracer().spanBuilder("Phase: Finalise").setParent(Context.current()).startSpan();
+            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - begin " + OtelUtils.toDebugString(finalizeSpan));
             finalizeSpan.makeCurrent();
             this.getTraceService().putSpan(run, finalizeSpan);
         }
@@ -102,6 +109,8 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
         Span pipelinePhaseSpan = Span.current();
         verifyNotNull(pipelinePhaseSpan, "No pipelinePhaseSpan found in context");
         pipelinePhaseSpan.end();
+        LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - end " + OtelUtils.toDebugString(pipelinePhaseSpan));
+
         boolean removed = this.getTraceService().removeSpan(run, pipelinePhaseSpan);
         verify(removed, "Failure to remove pipeline phase span %s from %s", pipelinePhaseSpan, run);
         Span newCurrentSpan = this.getTraceService().getSpan(run);
@@ -134,6 +143,8 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
                 }
             }
             parentSpan.end();
+            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - end " + OtelUtils.toDebugString(parentSpan));
+
             boolean removed = this.getTraceService().removeSpan(run, parentSpan);
             verify(removed, "Failure to remove span %s from %s", parentSpan, run);
 
