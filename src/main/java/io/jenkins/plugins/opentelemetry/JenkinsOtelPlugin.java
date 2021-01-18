@@ -1,5 +1,6 @@
 package io.jenkins.plugins.opentelemetry;
 
+import com.google.common.annotations.VisibleForTesting;
 import hudson.Extension;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -15,10 +16,12 @@ import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.IntervalMetricReader;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceAttributes;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PreDestroy;
@@ -30,13 +33,17 @@ import java.util.logging.Logger;
 public class JenkinsOtelPlugin {
     private static Logger LOGGER = Logger.getLogger(JenkinsOtelPlugin.class.getName());
 
-    private transient OpenTelemetrySdk openTelemetry;
+    @VisibleForTesting
+    protected transient OpenTelemetrySdk openTelemetry;
 
-    private transient Tracer tracer;
+    @VisibleForTesting
+    protected transient Tracer tracer;
 
-    private transient Meter meter;
+    @VisibleForTesting
+    protected transient Meter meter;
 
-    private transient IntervalMetricReader intervalMetricReader;
+    @VisibleForTesting
+    protected transient IntervalMetricReader intervalMetricReader;
 
     public JenkinsOtelPlugin() {
         initialize();
@@ -48,9 +55,6 @@ public class JenkinsOtelPlugin {
     }
 
     public void initialize() {
-        Resource resource = Resource.getDefault().merge(Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "jenkins")));
-
-
         // TODO support configurability
         String endpoint = "localhost:4317";
         boolean useTls = false;
@@ -64,17 +68,23 @@ public class JenkinsOtelPlugin {
         }
         ManagedChannel grpcChannel = managedChannelBuilder.build();
 
+        SpanExporter spanExporter = OtlpGrpcSpanExporter.builder().setChannel(grpcChannel).build();
+        MetricExporter metricExporter = OtlpGrpcMetricExporter.builder().setChannel(grpcChannel).build();
+        initialize(spanExporter, metricExporter);
+    }
+
+    @VisibleForTesting
+    protected void initialize(SpanExporter spanExporter, MetricExporter metricExporter) {
         // TRACES
-        OtlpGrpcSpanExporter otlpGrpcSpanExporter = OtlpGrpcSpanExporter.builder().setChannel(grpcChannel).build();
-        SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder().setResource(resource).addSpanProcessor(SimpleSpanProcessor.create(otlpGrpcSpanExporter)).build();
+        Resource resource = Resource.getDefault().merge(Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, "jenkins")));
+        SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder().setResource(resource).addSpanProcessor(SimpleSpanProcessor.create(spanExporter)).build();
 
         // METRICS
         // See https://github.com/open-telemetry/opentelemetry-java/blob/v0.14.1/examples/otlp/src/main/java/io/opentelemetry/example/otlp/OtlpExporterExample.java
-        OtlpGrpcMetricExporter otlpGrpcMetricExporter = OtlpGrpcMetricExporter.builder().setChannel(grpcChannel).build();
         SdkMeterProvider sdkMeterProvider = SdkMeterProvider.builder().setResource(resource).buildAndRegisterGlobal();
         this.intervalMetricReader =
                 IntervalMetricReader.builder()
-                        .setMetricExporter(otlpGrpcMetricExporter)
+                        .setMetricExporter(metricExporter)
                         .setMetricProducers(Collections.singleton(sdkMeterProvider))
                         .setExportIntervalMillis(500)
                         .build();

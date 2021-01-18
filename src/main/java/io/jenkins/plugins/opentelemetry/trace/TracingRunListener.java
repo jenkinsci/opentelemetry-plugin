@@ -30,9 +30,9 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
 
     @Override
     public void _onInitialize(Run run) {
-        LOGGER.log(Level.INFO, "onInitialize");
+        LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - onInitialize");
         if (this.getTraceService().getSpan(run) != null) {
-            LOGGER.log(Level.WARNING, "Unexpected existing span: " + this.getTraceService().getSpan(run));
+            LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + " - Unexpected existing span: " + this.getTraceService().getSpan(run));
         }
 
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(run.getParent().getFullName())
@@ -90,7 +90,6 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
             runSpan.makeCurrent();
             this.getTraceService().putSpan(run, runSpan);
         }
-
     }
 
     @Override
@@ -111,8 +110,7 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
         pipelinePhaseSpan.end();
         LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - end " + OtelUtils.toDebugString(pipelinePhaseSpan));
 
-        boolean removed = this.getTraceService().removeSpan(run, pipelinePhaseSpan);
-        verify(removed, "Failure to remove pipeline phase span %s from %s", pipelinePhaseSpan, run);
+        this.getTraceService().removeJobPhaseSpan(run, pipelinePhaseSpan);
         Span newCurrentSpan = this.getTraceService().getSpan(run);
         verifyNotNull(newCurrentSpan, "Failure to find pipeline root span for %s" , run);
         Scope newScope = newCurrentSpan.makeCurrent();
@@ -145,11 +143,9 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
             parentSpan.end();
             LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - end " + OtelUtils.toDebugString(parentSpan));
 
-            boolean removed = this.getTraceService().removeSpan(run, parentSpan);
-            verify(removed, "Failure to remove span %s from %s", parentSpan, run);
+            this.getTraceService().removeJobPhaseSpan(run, parentSpan);
 
-            int zombies = this.getTraceService().purgeRun(run);
-            verify(zombies == 0, "Found %s remaining/non-ended spans on %s", zombies, run);
+           this.getTraceService().purgeRun(run);
         }
     }
 

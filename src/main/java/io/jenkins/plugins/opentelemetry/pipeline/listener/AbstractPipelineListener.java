@@ -8,29 +8,39 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
 
-public class AbstractPipelineListener implements PipelineStepListener{
+public class AbstractPipelineListener implements PipelineListener {
     @Override
     public void onStartPipeline(@Nonnull FlowNode node, @Nonnull WorkflowRun run) {
 
     }
 
     @Override
-    public void onBeforeStartStageStep(@Nonnull StepStartNode stepStartNode, @Nonnull String stageName, @Nonnull WorkflowRun run) {
+    public void onStartStageStep(@Nonnull StepStartNode stepStartNode, @Nonnull String stageName, @Nonnull WorkflowRun run) {
 
     }
 
     @Override
-    public void onAfterEndStageStep(@Nonnull StepEndNode stageStepEndNode, @Nonnull String stageName, @Nonnull WorkflowRun run) {
+    public void onEndStageStep(@Nonnull StepEndNode stageStepEndNode, @Nonnull String stageName, @Nonnull WorkflowRun run) {
 
     }
 
     @Override
-    public void onBeforeAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {
+    public void onAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {
 
     }
 
     @Override
     public void onAfterAtomicStep(@Nonnull StepAtomNode stepAtomNode, @Nonnull WorkflowRun run) {
+
+    }
+
+    @Override
+    public void onStartParallelStepBranch(@Nonnull StepStartNode stepStartNode, @Nonnull String branchName, @Nonnull WorkflowRun run) {
+
+    }
+
+    @Override
+    public void onEndParallelStepBranch(@Nonnull StepEndNode stepStepNode, @Nonnull String branchName, @Nonnull WorkflowRun run) {
 
     }
 

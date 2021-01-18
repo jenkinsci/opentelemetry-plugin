@@ -1,14 +1,19 @@
 package io.jenkins.plugins.opentelemetry.pipeline;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import hudson.model.Action;
 import hudson.model.Queue;
 import hudson.model.Result;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.pipeline.StageStatus;
 import org.jenkinsci.plugins.pipeline.SyntheticStage;
 import org.jenkinsci.plugins.workflow.actions.*;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.cps.steps.ParallelStep;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graph.StepNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.StageStep;
@@ -19,15 +24,22 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 
 public class PipelineNodeUtil {
+    private final static Logger LOGGER = Logger.getLogger(PipelineNodeUtil.class.getName());
+
     /**
      * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
      */
-    public static boolean isStage(FlowNode node) {
+    public static boolean isStartStage(FlowNode node) {
         // logic below coming {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil#isStage(FlowNode)} from don't work for us
         // return node != null && (node.getAction(StageAction.class) != null && !isSyntheticStage(node))
         //        || (node.getAction(LabelAction.class) != null && node.getAction(ThreadNameAction.class) == null));
@@ -46,7 +58,6 @@ public class PipelineNodeUtil {
         if (node.getAction(LabelAction.class) == null) {
             return false;
         }
-        // TODO what about ThreadNameAction.class ?
 
         return true;
     }
@@ -125,13 +136,59 @@ public class PipelineNodeUtil {
     }
 
     /**
-     * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
+     * inspired by of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
      */
-    public static boolean isParallelBranch(@Nullable FlowNode node) {
-        return node != null && node.getAction(LabelAction.class) != null &&
-                node.getAction(ThreadNameAction.class) != null;
+    public static boolean isStartParallelBranch(@Nullable FlowNode node) {
+        if (node == null) {
+            return false;
+        }
+        if (!(node instanceof StepStartNode)) {
+            return false;
+        }
+        StepStartNode stepStartNode = (StepStartNode) node;
+        if (!(stepStartNode.getDescriptor() instanceof ParallelStep.DescriptorImpl)) {
+            return false;
+        }
+
+        ThreadNameAction threadNameAction = node.getPersistentAction(ThreadNameAction.class);
+        if (threadNameAction == null) {
+            return false;
+        }
+        return true;
     }
 
+    /**
+     * inspired by of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
+     */
+    public static boolean isStartParallelBlock(@Nullable FlowNode node) {
+        if (node == null) {
+            return false;
+        }
+        if (!(node instanceof StepStartNode)) {
+            return false;
+        }
+        StepStartNode stepStartNode = (StepStartNode) node;
+        if (!(stepStartNode.getDescriptor() instanceof ParallelStep.DescriptorImpl)) {
+            return false;
+        }
+
+        ThreadNameAction threadNameAction = node.getPersistentAction(ThreadNameAction.class);
+        if (threadNameAction == null) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isEndParallelBlock(@Nullable FlowNode node) {
+        if (node == null) {
+            return false;
+        }
+        if (!(node instanceof StepEndNode)) {
+            return false;
+        }
+        StepEndNode stepEndNode = (StepEndNode) node;
+        return isStartParallelBlock(stepEndNode.getStartNode());
+    }
     /**
      * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
      */
@@ -144,37 +201,17 @@ public class PipelineNodeUtil {
     }
 
     /**
-     * Copy of {@code org.jenkinsci.plugins.githubautostatus.GithubBuildStatusGraphListener#resultForStage}
-     *
-     * @param startNode
-     * @param endNode
-     * @return
-     */
-    @Nonnull
-    public static Result resultForStage(FlowNode startNode, FlowNode endNode) {
-        Result errorResult = Result.SUCCESS;
-        DepthFirstScanner scanner = new DepthFirstScanner();
-        if (scanner.setup(endNode, Collections.singletonList(startNode))) {
-            WarningAction warningAction = StreamSupport.stream(scanner.spliterator(), false)
-                    .map(node -> node.getPersistentAction(WarningAction.class))
-                    .filter(Objects::nonNull)
-                    .max(Comparator.comparing(warning -> warning.getResult().ordinal))
-                    .orElse(null);
-            if (warningAction != null) {
-                errorResult = warningAction.getResult();
-            }
-        }
-        return errorResult;
-    }
-
-    /**
      * Returns the node that has been previously executed
      *
      * @return the {@link FlowNode} that has previously executed or {@code null}
      */
     @CheckForNull
     public static FlowNode getPreviousNode(@Nonnull FlowNode node) {
-        return Iterables.getFirst(node.getParents(), null);
+        List<FlowNode> parents = node.getParents();
+        if (parents.size() > 1) {
+            System.out.println(PipelineNodeUtil.getDetailedDebugString(node));
+        }
+        return Iterables.getFirst(parents, null);
     }
 
 
@@ -193,5 +230,39 @@ public class PipelineNodeUtil {
             return (WorkflowRun) executable;
         }
         return null;
+    }
+
+    @Nonnull
+    public static String getDebugString(@Nullable FlowNode flowNode) {
+        if (flowNode == null){
+            return "#null#";
+        }
+        String value = "Node[" + flowNode.getDisplayFunctionName() + ", " + flowNode.getClass().getSimpleName();
+        if (flowNode instanceof StepNode) {
+            StepNode node = (StepNode) flowNode;
+            value+= "descriptor: " + node.getDescriptor().getClass().getName();
+        }
+        value += "actions: [" + flowNode.getActions().stream().map(action -> action.getClass().getSimpleName()).collect(Collectors.joining(",")) + "]";
+        value += ", id: " + flowNode.getId() + "]";
+        return value;
+    }
+    @Nonnull
+    public static String getDetailedDebugString(@Nullable FlowNode flowNode) {
+        if (flowNode == null){
+            return "#null#";
+        }
+        String value = "Node[" + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + ", class: " + flowNode.getClass().getSimpleName() + ",";
+        if (flowNode instanceof StepNode) {
+            StepNode node = (StepNode) flowNode;
+            value += "descriptor: " + StringUtils.substringAfterLast(node.getDescriptor().getClass().getName(), ".")  + ",";
+        }
+        if (flowNode instanceof StepEndNode) {
+            StepEndNode o = (StepEndNode) flowNode;
+            value += "startNode: [id:" + o.getStartNode().getId()  + "],";
+
+        }
+        value += ", actions: [" + flowNode.getActions().stream().map(action -> action.getClass().getSimpleName()).collect(Collectors.joining(",")) + "]";
+        value += "]";
+        return value;
     }
 }

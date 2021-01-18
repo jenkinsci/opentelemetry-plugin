@@ -18,10 +18,11 @@ public class OtelUtils {
                 ReadableSpan readableSpan = (ReadableSpan) span;
                 SpanData spanData = readableSpan.toSpanData();
                 return "span(" +
+                        "name: " + readableSpan.getName() + ", "+
                         "spanId: " + spanData.getSpanId() + ", " +
-                        "traceId: " + spanData.getTraceId() + ", " +
                         "parentSpanId: " + spanData.getParentSpanId() + ", " +
-                        "name: " + readableSpan.getName();
+                        "traceId: " + spanData.getTraceId() + ", " +
+                         ")";
             } else {
                 return span.toString();
             }
