@@ -15,6 +15,92 @@ TODO Describe what your plugin does here
 TODO Tell users how to configure your plugin here, include screenshots, pipeline examples and 
 configuration-as-code examples.
 
+## Screenshots
+
+Sample of traces collected by Elastic APM for various pipelines
+
+### Declarative Pipeline
+
+![declarative-pipeline](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/declarative-pipeline.png)
+
+```groovy
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                // Get some code from a GitHub repository
+                git 'https://github.com/jglick/simple-maven-project-with-tests.git'
+
+                // Run Maven on a Unix agent.
+                sh "mvn -Dmaven.test.failure.ignore=true clean package"
+                // sleep(100)
+
+            }
+
+            post {
+                // If Maven was able to run the tests, even if some of the test
+                // failed, record the test results and archive the jar file.
+                success {
+                    echo "success"
+                    // junit '**/target/surefire-reports/TEST-*.xml'
+                    // archiveArtifacts 'target/*.jar'
+                }
+            }
+        }
+    }
+}
+
+```
+### Scripted Pipeline with Error
+
+![scripted-pipeline-with-error](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-error.png)
+
+```
+node {
+    stage('Prepare') {
+        echo("Prepare")
+    }
+    stage('Build') {
+        git 'https://github.com/jglick/simple-maven-project-with-tests.git'
+        sh "mvn -Dmaven.test.failure.ignore=true clean package"
+    }
+    stage('Post Build') {
+        error 'Fail'
+    }
+}
+```
+
+### Scripted Pipeline with Parallel Step
+
+![scripted-pipeline-with-parallel-step](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-parallel-step.png)
+
+```
+node {
+    stage('Prepare') {
+        echo("Prepare")
+    }
+    stage('Build') {
+        git 'https://github.com/jglick/simple-maven-project-with-tests.git'
+        sh "mvn -Dmaven.test.failure.ignore=true clean package"
+    }
+    stage('Parallel Post Build') {
+        parallel parallBranch1: {
+            echo("this is the post build parallel branch 1")
+        } ,parallBranch2: {
+            echo("this is the post build parallel branch 2")
+            echo("this is the post build parallel branch 2")
+        }
+    }
+}
+```
+
+### Freestyle Job
+
+![freestyle-job](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
+
+
 ## Issues
 
 TODO Decide where you're going to host your issues, the default is Jenkins JIRA, but you can also enable GitHub issues,
