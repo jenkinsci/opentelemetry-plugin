@@ -181,7 +181,7 @@ public class OtelTraceService {
 
 
     @Immutable
-    public static class RunSpans {
+    public static class RunSpans  implements Serializable {
         final Map<String, PipelineSpanContext> pipelineStepSpansByFlowNodeId = new HashMap<>();
         final List<Span> runPhasesSpans = new ArrayList<>();
 
@@ -194,8 +194,8 @@ public class OtelTraceService {
         }
     }
 
-    public static class PipelineSpanContext {
-        final Span span;
+    public static class PipelineSpanContext implements Serializable {
+        final transient Span span;
         final String flowNodeId;
         final List<String> parentFlowNodeIds;
 
@@ -219,6 +219,9 @@ public class OtelTraceService {
             return parentFlowNodeIds;
         }
 
+        /**
+         * FIXME handle cases where the data structure has been deserialized and {@link Span} is null.
+         */
         @Nonnull
         public Span getSpan() {
             return span;

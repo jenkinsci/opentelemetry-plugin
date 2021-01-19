@@ -1,6 +1,5 @@
 package io.jenkins.plugins.opentelemetry;
 
-import hudson.ExtensionList;
 import hudson.model.Result;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
@@ -17,7 +16,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -66,14 +64,18 @@ public class JenkinsOtelPluginIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        CompletableResultCode completableResultCode = this.jenkinsOtelPlugin.getOpenTelemetry().getTracerManagement().forceFlush();
-        completableResultCode.join(1, TimeUnit.SECONDS);
-        List<SpanData> finishedSpanItems = this.inMemorySpanExporter.getFinishedSpanItems();
+        List<SpanData> finishedSpanItems = flush();
         System.out.println(finishedSpanItems.size());
         List<String> spansAsString = finishedSpanItems.stream().map(spanData -> spanData.getStartEpochNanos() + " - " + spanData.getName() + ", id: " + spanData.getSpanId() + ", parentId: " + spanData.getParentSpanId()).collect(Collectors.toList());
         Collections.sort(spansAsString);
 
         System.out.println(spansAsString.stream().collect(Collectors.joining(", \n")));
+    }
+
+    protected List<SpanData> flush() {
+        CompletableResultCode completableResultCode = this.jenkinsOtelPlugin.getOpenTelemetry().getTracerManagement().forceFlush();
+        completableResultCode.join(1, TimeUnit.SECONDS);
+        return this.inMemorySpanExporter.getFinishedSpanItems();
     }
 
     @Test
@@ -93,9 +95,7 @@ public class JenkinsOtelPluginIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        CompletableResultCode completableResultCode = this.jenkinsOtelPlugin.getOpenTelemetry().getTracerManagement().forceFlush();
-        completableResultCode.join(1, TimeUnit.SECONDS);
-        List<SpanData> finishedSpanItems = this.inMemorySpanExporter.getFinishedSpanItems();
+        List<SpanData> finishedSpanItems = flush();
         System.out.println(finishedSpanItems.size());
         List<String> spansAsString = finishedSpanItems.stream().map(spanData -> spanData.getStartEpochNanos() + " - " + spanData.getName() + ", id: " + spanData.getSpanId() + ", parentId: " + spanData.getParentSpanId()).collect(Collectors.toList());
         Collections.sort(spansAsString);
@@ -117,9 +117,7 @@ public class JenkinsOtelPluginIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
-        CompletableResultCode completableResultCode = this.jenkinsOtelPlugin.getOpenTelemetry().getTracerManagement().forceFlush();
-        completableResultCode.join(1, TimeUnit.SECONDS);
-        List<SpanData> finishedSpanItems = this.inMemorySpanExporter.getFinishedSpanItems();
+        List<SpanData> finishedSpanItems = flush();
         System.out.println(finishedSpanItems.size());
         List<String> spansAsString = finishedSpanItems.stream().map(spanData -> spanData.getStartEpochNanos() + " - " + spanData.getName() + ", id: " + spanData.getSpanId() + ", parentId: " + spanData.getParentSpanId()).collect(Collectors.toList());
         Collections.sort(spansAsString);
@@ -144,9 +142,7 @@ public class JenkinsOtelPluginIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        CompletableResultCode completableResultCode = this.jenkinsOtelPlugin.getOpenTelemetry().getTracerManagement().forceFlush();
-        completableResultCode.join(1, TimeUnit.SECONDS);
-        List<SpanData> finishedSpanItems = this.inMemorySpanExporter.getFinishedSpanItems();
+        List<SpanData> finishedSpanItems = flush();
         System.out.println(finishedSpanItems.size());
         List<String> spansAsString = finishedSpanItems.stream().map(spanData -> spanData.getStartEpochNanos() + " - " + spanData.getName() + ", id: " + spanData.getSpanId() + ", parentId: " + spanData.getParentSpanId()).collect(Collectors.toList());
         Collections.sort(spansAsString);
