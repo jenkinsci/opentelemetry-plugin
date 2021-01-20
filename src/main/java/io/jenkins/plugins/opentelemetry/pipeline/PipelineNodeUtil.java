@@ -16,6 +16,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graph.StepNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.support.steps.StageStep;
 
 import javax.annotation.CheckForNull;
@@ -189,6 +190,7 @@ public class PipelineNodeUtil {
         StepEndNode stepEndNode = (StepEndNode) node;
         return isStartParallelBlock(stepEndNode.getStartNode());
     }
+
     /**
      * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
      */
@@ -234,31 +236,35 @@ public class PipelineNodeUtil {
 
     @Nonnull
     public static String getDebugString(@Nullable FlowNode flowNode) {
-        if (flowNode == null){
+        if (flowNode == null) {
             return "#null#";
         }
         String value = "Node[" + flowNode.getDisplayFunctionName() + ", " + flowNode.getClass().getSimpleName();
         if (flowNode instanceof StepNode) {
             StepNode node = (StepNode) flowNode;
-            value+= "descriptor: " + node.getDescriptor().getClass().getName();
+            StepDescriptor descriptor = node.getDescriptor();
+            value += "descriptor: " + (descriptor == null ? "#null#" : descriptor.getClass().getName());
         }
         value += "actions: [" + flowNode.getActions().stream().map(action -> action.getClass().getSimpleName()).collect(Collectors.joining(",")) + "]";
         value += ", id: " + flowNode.getId() + "]";
         return value;
     }
+
     @Nonnull
     public static String getDetailedDebugString(@Nullable FlowNode flowNode) {
-        if (flowNode == null){
+        if (flowNode == null) {
             return "#null#";
         }
         String value = "Node[" + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + ", class: " + flowNode.getClass().getSimpleName() + ",";
         if (flowNode instanceof StepNode) {
             StepNode node = (StepNode) flowNode;
-            value += "descriptor: " + StringUtils.substringAfterLast(node.getDescriptor().getClass().getName(), ".")  + ",";
+            StepDescriptor descriptor = node.getDescriptor();
+            String descriptorClass = descriptor == null ? "#null#" : StringUtils.substringAfterLast(descriptor.getClass().getName(), ".");
+            value += "descriptor: " + descriptorClass + ",";
         }
         if (flowNode instanceof StepEndNode) {
             StepEndNode o = (StepEndNode) flowNode;
-            value += "startNode: [id:" + o.getStartNode().getId()  + "],";
+            value += "startNode: [id:" + o.getStartNode().getId() + "],";
 
         }
         value += ", actions: [" + flowNode.getActions().stream().map(action -> action.getClass().getSimpleName()).collect(Collectors.joining(",")) + "]";

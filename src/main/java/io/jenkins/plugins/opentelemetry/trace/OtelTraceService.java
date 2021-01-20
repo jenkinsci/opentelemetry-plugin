@@ -65,7 +65,7 @@ public class OtelTraceService {
         return Iterables.getLast(runSpans.runPhasesSpans, null);
     }
 
-    @CheckForNull
+    @Nonnull
     public Span getSpan(@Nonnull Run run, FlowNode flowNode) {
         List<String> parentFlowNodeIds = flowNode.getParents().stream().map(FlowNode::getId).collect(Collectors.toList());
         List<String> flowNodesToEvaluate = new ArrayList<>(parentFlowNodeIds.size() + 1);
@@ -181,7 +181,7 @@ public class OtelTraceService {
 
 
     @Immutable
-    public static class RunSpans  implements Serializable {
+    public static class RunSpans {
         final Map<String, PipelineSpanContext> pipelineStepSpansByFlowNodeId = new HashMap<>();
         final List<Span> runPhasesSpans = new ArrayList<>();
 
@@ -194,7 +194,7 @@ public class OtelTraceService {
         }
     }
 
-    public static class PipelineSpanContext implements Serializable {
+    public static class PipelineSpanContext {
         final transient Span span;
         final String flowNodeId;
         final List<String> parentFlowNodeIds;
@@ -238,7 +238,7 @@ public class OtelTraceService {
     }
 
     @Immutable
-    public static class RunIdentifier implements Serializable, Comparable<RunIdentifier> {
+    public static class RunIdentifier implements Comparable<RunIdentifier> {
         final String jobName;
         final int runNumber;
 

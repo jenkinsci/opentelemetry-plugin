@@ -105,14 +105,12 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
     @MustBeClosed
     @Nonnull
     protected Scope endPipelinePhaseSpan(@Nonnull Run run) {
-        Span pipelinePhaseSpan = Span.current();
-        verifyNotNull(pipelinePhaseSpan, "No pipelinePhaseSpan found in context");
+        Span pipelinePhaseSpan = verifyNotNull(Span.current(), "No pipelinePhaseSpan found in context");
         pipelinePhaseSpan.end();
         LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - end " + OtelUtils.toDebugString(pipelinePhaseSpan));
 
         this.getTraceService().removeJobPhaseSpan(run, pipelinePhaseSpan);
-        Span newCurrentSpan = this.getTraceService().getSpan(run);
-        verifyNotNull(newCurrentSpan, "Failure to find pipeline root span for %s" , run);
+        Span newCurrentSpan = verifyNotNull(this.getTraceService().getSpan(run), "Failure to find pipeline root span for %s" , run);
         Scope newScope = newCurrentSpan.makeCurrent();
         Context.current().with(RunContextKey.KEY, run);
         return newScope;

@@ -1,5 +1,7 @@
 package io.jenkins.plugins.opentelemetry.trace;
 
+import static com.google.common.base.Verify.*;
+
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.Run;
@@ -26,7 +28,6 @@ import javax.inject.Inject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.google.common.base.Verify.verifyNotNull;
 
 @Extension
 public class TracingPipelineListener extends AbstractPipelineListener implements PipelineListener {
@@ -121,15 +122,12 @@ public class TracingPipelineListener extends AbstractPipelineListener implements
     @CheckForNull
     @MustBeClosed
     protected Scope setupContext(WorkflowRun run, @Nonnull FlowNode node) {
-        verifyNotNull(run, "%s No run found for node %s", run, node);
+        run = verifyNotNull(run, "%s No run found for node %s", run, node);
         Span span = this.otelTraceService.getSpan(run, node);
-        if (span == null) {
-            return null;
-        } else {
-            Scope scope = span.makeCurrent();
-            Context.current().with(RunContextKey.KEY, run).with(FlowNodeContextKey.KEY, node);
-            return scope;
-        }
+
+        Scope scope = span.makeCurrent();
+        Context.current().with(RunContextKey.KEY, run).with(FlowNodeContextKey.KEY, node);
+        return scope;
     }
 
     @Inject

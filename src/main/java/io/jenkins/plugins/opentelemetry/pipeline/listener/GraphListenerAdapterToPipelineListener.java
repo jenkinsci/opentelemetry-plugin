@@ -1,5 +1,6 @@
 package io.jenkins.plugins.opentelemetry.pipeline.listener;
 
+import static com.google.common.base.Verify.*;
 import com.google.common.collect.Iterables;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.pipeline.PipelineNodeUtil;
@@ -16,7 +17,6 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
 import javax.annotation.Nonnull;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -45,8 +45,8 @@ public class GraphListenerAdapterToPipelineListener implements GraphListener, Gr
             } else if (isBeforeEndParallelBranch(previousNode)) {
                 StepEndNode endParallelBranchNode = (StepEndNode) previousNode;
                 StepStartNode beginParallelBranch = endParallelBranchNode.getStartNode();
-                fireOnAfterEndParallelStepBranch(endParallelBranchNode, beginParallelBranch.getPersistentAction(ThreadNameAction.class).getThreadName(), run);
-                // log(Level.INFO, () -> "Parallel branch '" + branchName + "' - end node " + PipelineNodeUtil.getDetailedDebugString(endParallelBranchNode) + " - start node " + PipelineNodeUtil.getDetailedDebugString(beginParallelBranch));
+                ThreadNameAction persistentAction = verifyNotNull(beginParallelBranch.getPersistentAction(ThreadNameAction.class), "Null ThreadNameAction on %s", beginParallelBranch);
+                fireOnAfterEndParallelStepBranch(endParallelBranchNode, persistentAction.getThreadName(), run);
             } else {
                 log(Level.INFO, () -> "Ignore previous node " + PipelineNodeUtil.getDetailedDebugString(previousNode));
             }
@@ -62,8 +62,8 @@ public class GraphListenerAdapterToPipelineListener implements GraphListener, Gr
             String stageName = PipelineNodeUtil.getDisplayName(node);
             fireOnBeforeStartStageStep((StepStartNode) node, stageName, run);
         } else if (PipelineNodeUtil.isStartParallelBranch(node)) {
-            String branchName = node.getPersistentAction(ThreadNameAction.class).getThreadName();
-            fireOnBeforeStartParallelStepBranch((StepStartNode) node, branchName, run);
+            ThreadNameAction persistentAction = verifyNotNull(node.getPersistentAction(ThreadNameAction.class), "Null ThreadNameAction on %s", node);
+            fireOnBeforeStartParallelStepBranch((StepStartNode) node, persistentAction.getThreadName(), run);
         } else if (PipelineNodeUtil.isStartParallelBlock(node)) {
             // begin parallel block
         } else if (PipelineNodeUtil.isEndParallelBlock(node)) {
