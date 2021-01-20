@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.12</version>
+        <version>4.15</version>
         <relativePath/>
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -29,7 +29,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.235.x</artifactId>
-                <version>16</version>
+                <version>21</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -221,6 +221,11 @@
                 <exclusion>
                     <groupId>com.fasterxml.jackson.datatype</groupId>
                     <artifactId>jackson-datatype-json-org</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- conflicts with pipeline-model-definition -->
+                    <groupId>joda-time</groupId>
+                    <artifactId>joda-time</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
