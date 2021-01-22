@@ -1,4 +1,4 @@
-package io.jenkins.plugins.opentelemetry.trace;
+package io.jenkins.plugins.opentelemetry.job;
 
 import static com.google.common.base.Verify.*;
 
@@ -6,10 +6,12 @@ import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.*;
-import io.jenkins.plugins.opentelemetry.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
+import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
-import io.jenkins.plugins.opentelemetry.trace.context.RunContextKey;
-import io.jenkins.plugins.opentelemetry.trace.context.OtelContextAwareAbstractRunListener;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
@@ -17,6 +19,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 
 import javax.annotation.Nonnull;
+import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -24,9 +27,38 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension
-public class TracingRunListener extends OtelContextAwareAbstractRunListener {
+public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
-    protected static final Logger LOGGER = Logger.getLogger(TracingRunListener.class.getName());
+    protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
+
+    private LongCounter runLaunchedCounter;
+    private LongCounter runStartedCounter;
+    private LongCounter runCompletedCounter;
+    private LongCounter runAbortedCounter;
+
+    @PostConstruct
+    public void postConstruct(){
+        runLaunchedCounter =
+                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
+                        .setDescription("Job launched")
+                        .setUnit("1")
+                        .build();
+        runStartedCounter =
+                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED)
+                        .setDescription("Job started")
+                        .setUnit("1")
+                        .build();
+        runAbortedCounter =
+                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
+                        .setDescription("Job aborted")
+                        .setUnit("1")
+                        .build();
+        runCompletedCounter =
+                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED)
+                        .setDescription("Job completed")
+                        .setUnit("1")
+                        .build();
+    }
 
     @Override
     public void _onInitialize(Run run) {
@@ -36,7 +68,6 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
         }
 
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(run.getParent().getFullName())
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, "jenkins")
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber());
@@ -80,6 +111,8 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
 
         this.getTraceService().putSpan(run, startSpan);
         startSpan.makeCurrent();
+
+        this.runLaunchedCounter.add(1);
     }
 
     @Override
@@ -89,6 +122,7 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
             LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - begin " + OtelUtils.toDebugString(runSpan));
             runSpan.makeCurrent();
             this.getTraceService().putSpan(run, runSpan);
+            this.runStartedCounter.add(1);
         }
     }
 
@@ -144,6 +178,14 @@ public class TracingRunListener extends OtelContextAwareAbstractRunListener {
             this.getTraceService().removeJobPhaseSpan(run, parentSpan);
 
            this.getTraceService().purgeRun(run);
+
+           LOGGER.log(Level.INFO, ()-> "Increment completion counters");
+            this.runCompletedCounter.add(1);
+            Result result = verifyNotNull(run.getResult(), "%s", run);
+
+            if (!result.isCompleteBuild()) {
+                this.runAbortedCounter.add(1);
+            }
         }
     }
 

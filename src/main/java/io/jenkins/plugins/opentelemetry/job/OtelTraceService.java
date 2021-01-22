@@ -1,4 +1,4 @@
-package io.jenkins.plugins.opentelemetry.trace;
+package io.jenkins.plugins.opentelemetry.job;
 
 import static com.google.common.base.Verify.*;
 
@@ -9,7 +9,7 @@ import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOtelPlugin;
-import io.jenkins.plugins.opentelemetry.trace.context.RunContextKey;
+import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
@@ -23,7 +23,6 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

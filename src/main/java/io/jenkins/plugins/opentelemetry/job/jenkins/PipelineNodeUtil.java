@@ -1,10 +1,8 @@
-package io.jenkins.plugins.opentelemetry.pipeline;
+package io.jenkins.plugins.opentelemetry.job.jenkins;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import hudson.model.Action;
 import hudson.model.Queue;
-import hudson.model.Result;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.pipeline.StageStatus;
 import org.jenkinsci.plugins.pipeline.SyntheticStage;
@@ -14,24 +12,19 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.cps.steps.ParallelStep;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graph.StepNode;
-import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 import org.jenkinsci.plugins.workflow.support.steps.StageStep;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 
 public class PipelineNodeUtil {
@@ -155,6 +148,22 @@ public class PipelineNodeUtil {
         if (threadNameAction == null) {
             return false;
         }
+        return true;
+    }
+
+    public static boolean isStartNode(@Nullable FlowNode node) {
+        if (node == null) {
+            return false;
+        }
+        if (!(node instanceof StepStartNode)) {
+            return false;
+        }
+        StepStartNode stepStartNode = (StepStartNode) node;
+        if (!(stepStartNode.getDescriptor() instanceof ExecutorStep.DescriptorImpl)) {
+            return false;
+        }
+
+        LOGGER.log(Level.FINER, ()-> "isStartNode():" + getDetailedDebugString(node));
         return true;
     }
 

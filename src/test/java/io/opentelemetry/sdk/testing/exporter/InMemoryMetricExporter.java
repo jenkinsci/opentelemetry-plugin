@@ -4,11 +4,26 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 
-import java.util.Collection;
+import javax.annotation.Nonnull;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class InMemoryMetricExporter implements MetricExporter {
+
+    private final Logger logger = Logger.getLogger(InMemoryMetricExporter.class.getName());
+
+    private final List<MetricData> metrics = new ArrayList<>();
+    private boolean isStopped = false;
+
     @Override
-    public CompletableResultCode export(Collection<MetricData> metrics) {
+    public synchronized CompletableResultCode  export(Collection<MetricData> metrics) {
+        logger.log(Level.INFO, () -> "Export " + metrics.stream().map(metric -> metric.getName()).collect(Collectors.joining(", ")));
+        if (isStopped) {
+            return CompletableResultCode.ofFailure();
+        }
+        this.metrics.addAll(metrics);
         return CompletableResultCode.ofSuccess();
     }
 
@@ -18,8 +33,29 @@ public class InMemoryMetricExporter implements MetricExporter {
     }
 
     @Override
-    public CompletableResultCode shutdown() {
+    public synchronized CompletableResultCode shutdown() {
+        this.metrics.clear();
+        this.isStopped = true;
         return CompletableResultCode.ofSuccess();
+    }
+
+    @Nonnull
+    public synchronized List<MetricData> getExportedMetricItems(){
+        return Collections.unmodifiableList(new ArrayList<>(metrics));
+    }
+
+    @Nonnull
+    public synchronized Map<String, MetricData> getLastExportedMetricByMetricName(){
+        Map<String, MetricData> result = new HashMap<>();
+        for(MetricData metricData: this.metrics) {
+            result.put(metricData.getName(), metricData);
+        }
+        return result;
+    }
+
+    public synchronized void reset(){
+        this.isStopped = false;
+        this.metrics.clear();
     }
 
     private InMemoryMetricExporter() {

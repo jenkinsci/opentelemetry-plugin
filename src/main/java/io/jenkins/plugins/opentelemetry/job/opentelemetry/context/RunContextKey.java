@@ -1,4 +1,4 @@
-package io.jenkins.plugins.opentelemetry.trace.context;
+package io.jenkins.plugins.opentelemetry.job.opentelemetry.context;
 
 import hudson.model.Run;
 import io.opentelemetry.context.ContextKey;

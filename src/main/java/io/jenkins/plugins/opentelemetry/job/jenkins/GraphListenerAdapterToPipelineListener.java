@@ -1,9 +1,8 @@
-package io.jenkins.plugins.opentelemetry.pipeline.listener;
+package io.jenkins.plugins.opentelemetry.job.jenkins;
 
 import static com.google.common.base.Verify.*;
 import com.google.common.collect.Iterables;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.pipeline.PipelineNodeUtil;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
@@ -68,8 +67,13 @@ public class GraphListenerAdapterToPipelineListener implements GraphListener, Gr
             // begin parallel block
         } else if (PipelineNodeUtil.isEndParallelBlock(node)) {
             // ignore
+        } else if (PipelineNodeUtil.isStartNode(node)) {
+            StepStartNode stepStartNode = (StepStartNode) node;
+            // we don't know how to surface the requested labels.
+            // ignore
+            LOGGER.log(Level.INFO, "begin node{} block " + PipelineNodeUtil.getDetailedDebugString(stepStartNode) );
         } else {
-            logNodeDetails(node, run);
+            logFlowNodeDetails(node, run);
         }
     }
 
@@ -95,7 +99,7 @@ public class GraphListenerAdapterToPipelineListener implements GraphListener, Gr
         }
     }
 
-    private void logNodeDetails(@Nonnull FlowNode node, @Nonnull WorkflowRun run) {
+    private void logFlowNodeDetails(@Nonnull FlowNode node, @Nonnull WorkflowRun run) {
         log(Level.INFO, () ->
         {
             String message = run.getFullDisplayName() + " - " +

@@ -1,15 +1,19 @@
-package io.jenkins.plugins.opentelemetry.trace;
+package io.jenkins.plugins.opentelemetry.job;
 
 import static com.google.common.base.Verify.*;
 
 import com.google.errorprone.annotations.MustBeClosed;
+import hudson.EnvVars;
 import hudson.Extension;
+import hudson.Platform;
 import hudson.model.Run;
+import hudson.model.TaskListener;
+import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.FlowNodeContextKey;
+import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
-import io.jenkins.plugins.opentelemetry.pipeline.listener.AbstractPipelineListener;
-import io.jenkins.plugins.opentelemetry.pipeline.listener.PipelineListener;
-import io.jenkins.plugins.opentelemetry.trace.context.FlowNodeContextKey;
-import io.jenkins.plugins.opentelemetry.trace.context.RunContextKey;
+import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
+import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
@@ -19,19 +23,21 @@ import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import java.io.IOException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
 @Extension
-public class TracingPipelineListener extends AbstractPipelineListener implements PipelineListener {
-    private final static Logger LOGGER = Logger.getLogger(TracingPipelineListener.class.getName());
+public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener {
+    private final static Logger LOGGER = Logger.getLogger(MonitoringPipelineListener.class.getName());
 
     private OtelTraceService otelTraceService;
     private Tracer tracer;
@@ -61,9 +67,25 @@ public class TracingPipelineListener extends AbstractPipelineListener implements
         try (Scope ignored = setupContext(run, node)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, node);
 
+            try {
+                // FIXME
+                TaskListener listener = node.getExecution().getOwner().getListener();
+                EnvVars envVars = run.getEnvironment(listener);
+                LOGGER.log(Level.INFO, () -> node.getDisplayFunctionName() + " - envVars: " + envVars);
+
+                Platform platform = envVars.getPlatform();
+                LOGGER.log(Level.INFO, () -> node.getDisplayFunctionName() + " - platform: " + platform);
+            } catch (IOException|InterruptedException e) {
+                e.printStackTrace();
+            }
+            String principal = Objects.toString(node.getExecution().getAuthentication(), "#null#");
+            LOGGER.log(Level.INFO, () -> node.getDisplayFunctionName() +  " - principal: " + principal);
+
+
             Span atomicStepSpan = getTracer().spanBuilder(node.getDisplayFunctionName())
                     .setParent(Context.current())
-                    .setAttribute("jenkins.pipeline.step.type", node.getDisplayFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, node.getDisplayFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
                     .startSpan();
             LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
 

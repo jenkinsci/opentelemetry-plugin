@@ -1,7 +1,6 @@
-package io.jenkins.plugins;
+package io.jenkins.plugins.opentelemetry;
 
-import io.jenkins.plugins.opentelemetry.JenkinsOtelPlugin;
-import io.jenkins.plugins.opentelemetry.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -29,14 +28,13 @@ public class OpenTelemetryTest {
 
         Tracer tracer = jenkinsOtelPlugin.getTracer();
         Meter meter = jenkinsOtelPlugin.getMeter();
-        OpenTelemetrySdk openTelemetry = jenkinsOtelPlugin.getOpenTelemetry();
+        OpenTelemetrySdk openTelemetry = jenkinsOtelPlugin.getOpenTelemetrySdk();
 
         LongCounter myMetric = meter.longCounterBuilder("my-metric").build();
         myMetric.add(1);
         System.out.println("myMetric");
 
         SpanBuilder rootSpanBuilder = tracer.spanBuilder("ci.pipeline.run")
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, "jenkins")
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, "my-pipeline")
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, "my pipeline")
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, 12l);

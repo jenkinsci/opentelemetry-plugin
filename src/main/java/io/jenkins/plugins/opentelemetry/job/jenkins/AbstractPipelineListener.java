@@ -1,4 +1,4 @@
-package io.jenkins.plugins.opentelemetry.pipeline.listener;
+package io.jenkins.plugins.opentelemetry.job.jenkins;
 
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
