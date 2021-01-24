@@ -3,19 +3,25 @@ package io.jenkins.plugins.opentelemetry.job.jenkins;
 import static com.google.common.base.Verify.*;
 import com.google.common.collect.Iterables;
 import hudson.Extension;
+import hudson.model.Computer;
+import hudson.model.Run;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
+import org.jenkinsci.plugins.workflow.flow.StepListener;
 import org.jenkinsci.plugins.workflow.graph.FlowEndNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graph.FlowStartNode;
 import org.jenkinsci.plugins.workflow.graph.StepNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -26,7 +32,7 @@ import java.util.stream.Collectors;
  * Adapter to simplify the implementation of pipeline {@link org.jenkinsci.plugins.workflow.steps.Step} listeners.
  */
 @Extension
-public class GraphListenerAdapterToPipelineListener implements GraphListener, GraphListener.Synchronous {
+public class GraphListenerAdapterToPipelineListener implements StepListener, GraphListener, GraphListener.Synchronous {
     private final static Logger LOGGER = Logger.getLogger(GraphListenerAdapterToPipelineListener.class.getName());
 
     @Override
@@ -74,6 +80,21 @@ public class GraphListenerAdapterToPipelineListener implements GraphListener, Gr
             LOGGER.log(Level.INFO, "begin node{} block " + PipelineNodeUtil.getDetailedDebugString(stepStartNode) );
         } else {
             logFlowNodeDetails(node, run);
+        }
+    }
+
+    @Override
+    public void notifyOfNewStep(@Nonnull Step step, @Nonnull StepContext context) {
+        try {
+            Run run = context.get(Run.class);
+            FlowNode flowNode = context.get(FlowNode.class);
+            Computer computer = context.get(Computer.class);
+            String computerHostname = computer == null ? "#null#" : computer.getHostName();
+            String computerActions = computer == null ? "#null#" :  computer.getAllActions().stream().map(action -> action.getClass().getSimpleName()).collect(Collectors.joining(", "));
+            String computerName= computer == null ? "#null#" : computer.getName() + "/" + computer.getDisplayName();
+            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - notifyOfNewStep('" + step.getDescriptor().getFunctionName()  + "', "+ context + ") " + flowNode.getDisplayFunctionName() + " - computer[name: " + computerName + ", hostname: " + computerHostname + "," + computerActions + "]");
+        } catch (IOException | InterruptedException | RuntimeException e) {
+            e.printStackTrace();
         }
     }
 

@@ -19,7 +19,7 @@ public class InMemoryMetricExporter implements MetricExporter {
 
     @Override
     public synchronized CompletableResultCode  export(Collection<MetricData> metrics) {
-        logger.log(Level.INFO, () -> "Export " + metrics.stream().map(metric -> metric.getName()).collect(Collectors.joining(", ")));
+        logger.log(Level.FINER, () -> "Export " + metrics.stream().map(metric -> metric.getName()).collect(Collectors.joining(", ")));
         if (isStopped) {
             return CompletableResultCode.ofFailure();
         }

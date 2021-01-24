@@ -3,11 +3,9 @@ package io.jenkins.plugins.opentelemetry.job;
 import static com.google.common.base.Verify.*;
 
 import com.google.errorprone.annotations.MustBeClosed;
-import hudson.EnvVars;
 import hudson.Extension;
-import hudson.Platform;
+import hudson.model.Computer;
 import hudson.model.Run;
-import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.FlowNodeContextKey;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -23,9 +21,12 @@ import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
-import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
+import org.jenkinsci.plugins.workflow.flow.StepListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -67,19 +68,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         try (Scope ignored = setupContext(run, node)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, node);
 
-            try {
-                // FIXME
-                TaskListener listener = node.getExecution().getOwner().getListener();
-                EnvVars envVars = run.getEnvironment(listener);
-                LOGGER.log(Level.INFO, () -> node.getDisplayFunctionName() + " - envVars: " + envVars);
-
-                Platform platform = envVars.getPlatform();
-                LOGGER.log(Level.INFO, () -> node.getDisplayFunctionName() + " - platform: " + platform);
-            } catch (IOException|InterruptedException e) {
-                e.printStackTrace();
-            }
             String principal = Objects.toString(node.getExecution().getAuthentication(), "#null#");
-            LOGGER.log(Level.INFO, () -> node.getDisplayFunctionName() +  " - principal: " + principal);
+            LOGGER.log(Level.INFO, () -> node.getDisplayFunctionName() + " - principal: " + principal);
 
 
             Span atomicStepSpan = getTracer().spanBuilder(node.getDisplayFunctionName())
