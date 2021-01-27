@@ -1,6 +1,5 @@
 package io.jenkins.plugins.opentelemetry;
 
-import com.google.common.collect.Iterables;
 import hudson.ExtensionList;
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
@@ -30,9 +29,9 @@ import static com.google.common.base.Verify.verify;
 
 public class JenkinsOtelPluginIntegrationTest {
     static {
-        JenkinsOtelPlugin.TESTING_INMEMORY_MODE = true;
-        JenkinsOtelPlugin.TESTING_SPAN_EXPORTER = InMemorySpanExporter.create();
-        JenkinsOtelPlugin.TESTING_METRICS_EXPORTER = InMemoryMetricExporter.create();
+        OpenTelemetrySdkProvider.TESTING_INMEMORY_MODE = true;
+        OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER = InMemorySpanExporter.create();
+        OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER = InMemoryMetricExporter.create();
     }
 
     private final static Logger LOGGER = Logger.getLogger(JenkinsOtelPluginIntegrationTest.class.getName());
@@ -45,7 +44,7 @@ public class JenkinsOtelPluginIntegrationTest {
     @ClassRule
     public static JenkinsRule jenkinsRule = new JenkinsRule();
 
-    static JenkinsOtelPlugin jenkinsOtelPlugin;
+    static OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
 
     @BeforeClass
@@ -55,11 +54,14 @@ public class JenkinsOtelPluginIntegrationTest {
         jenkinsRule.waitUntilNoActivity();
         System.out.println("Jenkins started");
 
-        ExtensionList<JenkinsOtelPlugin> jenkinsOpenTelemetryPlugins = jenkinsRule.getInstance().getExtensionList(JenkinsOtelPlugin.class);
-        verify(jenkinsOpenTelemetryPlugins.size() == 1, "Number of jenkinsOpenTelemetryPlugins: %s", jenkinsOpenTelemetryPlugins.size());
-        jenkinsOtelPlugin = jenkinsOpenTelemetryPlugins.get(0);
+        ExtensionList<OpenTelemetrySdkProvider> openTelemetrySdkProviders = jenkinsRule.getInstance().getExtensionList(OpenTelemetrySdkProvider.class);
+        verify(openTelemetrySdkProviders.size() == 1, "Number of openTelemetrySdkProviders: %s", openTelemetrySdkProviders.size());
+        openTelemetrySdkProvider = openTelemetrySdkProviders.get(0);
 
-        jenkinsOtelPlugin.tracer = jenkinsOtelPlugin.openTelemetry.getTracer("jenkins");
+        // verify(openTelemetrySdkProvider.openTelemetry == null, "OpenTelemetrySdkProvider has already been configured");
+        openTelemetrySdkProvider.initializeForTesting();
+
+        // openTelemetrySdkProvider.tracer.setDelegate(openTelemetrySdkProvider.openTelemetry.getTracer("jenkins"));
     }
 
     @Before
@@ -69,8 +71,8 @@ public class JenkinsOtelPluginIntegrationTest {
     @After
     public void after() throws Exception {
         jenkinsRule.waitUntilNoActivity();
-        ((InMemorySpanExporter) JenkinsOtelPlugin.TESTING_SPAN_EXPORTER).reset();
-        ((InMemoryMetricExporter) JenkinsOtelPlugin.TESTING_METRICS_EXPORTER).reset();
+        ((InMemorySpanExporter) OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER).reset();
+        ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).reset();
     }
 
     @Test
@@ -96,7 +98,7 @@ public class JenkinsOtelPluginIntegrationTest {
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
-        Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) JenkinsOtelPlugin.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
+        Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
         dumpMetrics(exportedMetrics);
         MetricData runCompletedCounterData = exportedMetrics.get(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED);
         // TODO TEST METRICS WITH PROPER RESET BETWEEN TESTS
@@ -133,9 +135,9 @@ public class JenkinsOtelPluginIntegrationTest {
     }
 
     protected List<SpanData> flush() {
-        CompletableResultCode completableResultCode = this.jenkinsOtelPlugin.getOpenTelemetrySdk().getTracerManagement().forceFlush();
+        CompletableResultCode completableResultCode = this.openTelemetrySdkProvider.getOpenTelemetrySdk().getTracerManagement().forceFlush();
         completableResultCode.join(1, TimeUnit.SECONDS);
-        return ((InMemorySpanExporter) JenkinsOtelPlugin.TESTING_SPAN_EXPORTER).getFinishedSpanItems();
+        return ((InMemorySpanExporter) OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER).getFinishedSpanItems();
     }
 
     @Test

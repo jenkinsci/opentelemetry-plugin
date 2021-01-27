@@ -3,11 +3,10 @@ package io.jenkins.plugins.opentelemetry.queue;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
-import io.jenkins.plugins.opentelemetry.JenkinsOtelPlugin;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Labels;
 import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.LongSumObserver;
 import io.opentelemetry.api.metrics.Meter;
 
 import javax.annotation.Nonnull;
@@ -102,7 +101,7 @@ public class MonitoringQueueListener extends QueueListener {
      * Jenkins doesn't support {@link com.google.inject.Provides} so we manually wire dependencies :-(
      */
     @Inject
-    public void setMeter(@Nonnull JenkinsOtelPlugin jenkinsOtelPlugin) {
-        this.meter = jenkinsOtelPlugin.getMeter();
+    public void setMeter(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+        this.meter = openTelemetrySdkProvider.getMeter();
     }
 }

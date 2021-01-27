@@ -38,7 +38,7 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
     @Override
     public final void onNewHead(FlowNode node) {
         WorkflowRun run = PipelineNodeUtil.getWorkflowRun(node);
-        log(Level.INFO, () -> run.getFullDisplayName() + " - Process " + PipelineNodeUtil.getDetailedDebugString(node));
+        log(Level.INFO, () -> run.getFullDisplayName() + " - onNewHead - Process " + PipelineNodeUtil.getDetailedDebugString(node));
         for (FlowNode previousNode : node.getParents()) {
             log(Level.INFO, () -> run.getFullDisplayName() + " - Process previous node " + PipelineNodeUtil.getDetailedDebugString(previousNode) + " of node " + PipelineNodeUtil.getDetailedDebugString(node));
             if (previousNode instanceof StepAtomNode) {
@@ -92,7 +92,7 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             String computerHostname = computer == null ? "#null#" : computer.getHostName();
             String computerActions = computer == null ? "#null#" :  computer.getAllActions().stream().map(action -> action.getClass().getSimpleName()).collect(Collectors.joining(", "));
             String computerName= computer == null ? "#null#" : computer.getName() + "/" + computer.getDisplayName();
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - notifyOfNewStep('" + step.getDescriptor().getFunctionName()  + "', "+ context + ") " + flowNode.getDisplayFunctionName() + " - computer[name: " + computerName + ", hostname: " + computerHostname + "," + computerActions + "]");
+            log(Level.INFO, () -> run.getFullDisplayName() + " - notifyOfNewStep - Process " + PipelineNodeUtil.getDetailedDebugString(flowNode) + " - computer[name: " + computerName + ", hostname: " + computerHostname + "," + computerActions + "]");
         } catch (IOException | InterruptedException | RuntimeException e) {
             e.printStackTrace();
         }

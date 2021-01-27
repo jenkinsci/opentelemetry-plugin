@@ -8,7 +8,7 @@ import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.JenkinsOtelPlugin;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -153,8 +153,8 @@ public class OtelTraceService {
     }
 
     @Inject
-    public void setJenkinsOtelPlugin(@Nonnull JenkinsOtelPlugin jenkinsOtelPlugin) {
-        this.tracer = jenkinsOtelPlugin.getTracer();
+    public void setJenkinsOtelPlugin(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+        this.tracer = openTelemetrySdkProvider.getTracer();
     }
 
     /**

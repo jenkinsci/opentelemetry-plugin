@@ -6,7 +6,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Launcher;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
-import io.jenkins.plugins.opentelemetry.JenkinsOtelPlugin;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -31,10 +31,10 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     private Meter meter;
 
     @Inject
-    public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService, @Nonnull JenkinsOtelPlugin jenkinsOtelPlugin) {
+    public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService, @Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.otelTraceService = otelTraceService;
         this.tracer = this.otelTraceService.getTracer();
-        this.meter = jenkinsOtelPlugin.getMeter();
+        this.meter = openTelemetrySdkProvider.getMeter();
     }
 
     @Override

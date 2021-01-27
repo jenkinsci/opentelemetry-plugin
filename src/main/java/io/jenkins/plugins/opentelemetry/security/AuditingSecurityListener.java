@@ -2,7 +2,7 @@ package io.jenkins.plugins.opentelemetry.security;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.JenkinsOtelPlugin;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import jenkins.security.SecurityListener;
@@ -71,8 +71,8 @@ public class AuditingSecurityListener extends SecurityListener  {
     }
 
     @Inject
-    public void setJenkinsOtelPlugin(@Nonnull JenkinsOtelPlugin jenkinsOtelPlugin) {
-        this.meter = jenkinsOtelPlugin.getMeter();
+    public void setJenkinsOtelPlugin(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+        this.meter = openTelemetrySdkProvider.getMeter();
         initialise();
     }
 }
