@@ -1,6 +1,9 @@
 package io.jenkins.plugins.opentelemetry.semconv;
 
+import hudson.model.Computer;
 import io.opentelemetry.api.common.AttributeKey;
+import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
 import java.util.List;
 
@@ -22,11 +25,34 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String>        CI_PIPELINE_RUN_RESULT = AttributeKey.stringKey("ci.pipeline.run.result");
     public static final AttributeKey<String>        CI_PIPELINE_RUN_USER = AttributeKey.stringKey("ci.pipeline.run.user");
 
+    /**
+     * @see Jenkins#getRootUrl()
+     */
     public static final AttributeKey<String>        JENKINS_URL = AttributeKey.stringKey("jenkins.url");
+    /**
+     * @see StepDescriptor#getFunctionName()
+     */
     public static final AttributeKey<String>        JENKINS_STEP_TYPE = AttributeKey.stringKey("jenkins.pipeline.step.type");
+    /**
+     * @see Computer#getName()
+     */
+    public static final AttributeKey<String>        JENKINS_COMPUTER_NAME = AttributeKey.stringKey("jenkins.computer.name");
+
+
 
     /**
      * @see io.opentelemetry.sdk.resources.ResourceAttributes#SERVICE_NAME
      */
     public static final String SERVICE_NAME_JENKINS = "jenkins";
+
+    /**
+     * As {@link Jenkins.MasterComputer#getName()} return "", choose another name
+     * @see Jenkins.MasterComputer#getName()
+     */
+    public static final String JENKINS_COMPUTER_NAME_MASTER = "#master#";
+
+    public static String JENKINS_JOB_SPAN_PHASE_START_NAME = "Phase: Start";
+    public static final String JENKINS_JOB_SPAN_PHASE_RUN_NAME = "Phase: Run";
+    public static final String JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME = "Phase: Finalise";
+
 }

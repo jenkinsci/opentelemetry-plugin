@@ -101,6 +101,7 @@ public class JenkinsOtelPluginIntegrationTest {
         Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
         dumpMetrics(exportedMetrics);
         MetricData runCompletedCounterData = exportedMetrics.get(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED);
+        MatcherAssert.assertThat(runCompletedCounterData, CoreMatchers.notNullValue());
         // TODO TEST METRICS WITH PROPER RESET BETWEEN TESTS
         MatcherAssert.assertThat(runCompletedCounterData.getType(), CoreMatchers.is(MetricDataType.LONG_SUM));
         Collection<LongPoint> metricPoints = runCompletedCounterData.getLongSumData().getPoints();

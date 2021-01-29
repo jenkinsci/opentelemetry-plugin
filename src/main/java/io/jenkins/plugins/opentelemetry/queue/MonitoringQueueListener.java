@@ -17,7 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * Monitor the Jenkins Build queue
  */
 @Extension
 public class MonitoringQueueListener extends QueueListener {
@@ -49,12 +49,12 @@ public class MonitoringQueueListener extends QueueListener {
                 .setDescription("Number of buildable items in queue")
                 .setUnit("1")
                 .build();
-        leftItemCounter = meter.longCounterBuilder("jenkins.queue.left")
-                .setDescription("total count of left items")
+        leftItemCounter = meter.longCounterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_LEFT)
+                .setDescription("Total count of left items")
                 .setUnit("1")
                 .build();
-        timeInQueueInMillisCounter = meter.longCounterBuilder("jenkins.queue.time_in_millis")
-                .setDescription("total time spent in queue by items")
+        timeInQueueInMillisCounter = meter.longCounterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_TIME_SPENT_MILLIS)
+                .setDescription("Total time spent in queue by items")
                 .setUnit("ms")
                 .build();
     }

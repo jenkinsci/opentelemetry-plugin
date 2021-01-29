@@ -78,7 +78,7 @@ public class OpenTelemetrySdkProvider {
 
     public void initializeForTesting() {
         preDestroy();
-        initializeOpenTelemetrySdk(TESTING_METRICS_EXPORTER, TESTING_SPAN_EXPORTER);
+        initializeOpenTelemetrySdk(TESTING_METRICS_EXPORTER, TESTING_SPAN_EXPORTER, 500);
         LOGGER.log(Level.INFO, "OpenTelemetry initialized for TESTING");
     }
 
@@ -122,19 +122,19 @@ public class OpenTelemetrySdkProvider {
         MetricExporter metricExporter = OtlpGrpcMetricExporter.builder().setChannel(grpcChannel).build();
         SpanExporter spanExporter = OtlpGrpcSpanExporter.builder().setChannel(grpcChannel).build();
 
-        initializeOpenTelemetrySdk(metricExporter, spanExporter);
+        initializeOpenTelemetrySdk(metricExporter, spanExporter, 30_000);
 
         LOGGER.log(Level.INFO, () -> "OpenTelemetry initialized with GRPC endpoint " + endpoint + ", tls: " + useTls + ", authenticationHeader: " + Objects.toString(authenticationTokenHeaderName, ""));
     }
 
-    protected void initializeOpenTelemetrySdk(MetricExporter metricExporter, SpanExporter spanExporter) {
+    protected void initializeOpenTelemetrySdk(MetricExporter metricExporter, SpanExporter spanExporter, int exportIntervalMillis) {
         // METRICS
         // See https://github.com/open-telemetry/opentelemetry-java/blob/v0.14.1/examples/otlp/src/main/java/io/opentelemetry/example/otlp/OtlpExporterExample.java
         this.intervalMetricReader =
                 IntervalMetricReader.builder()
                         .setMetricExporter(metricExporter)
                         .setMetricProducers(Collections.singleton(sdkMeterProvider))
-                        .setExportIntervalMillis(500)
+                        .setExportIntervalMillis(exportIntervalMillis)
                         .build();
 
         // TRACES

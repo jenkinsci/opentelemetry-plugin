@@ -10,7 +10,9 @@ import hudson.Extension;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
@@ -80,6 +82,22 @@ public class OtelTraceService {
 
         RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromRun(run);
         RunSpans runSpans = this.spansByRun.get(runIdentifier);
+        if (runSpans == null) {
+            LOGGER.log(Level.INFO, ()->"No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
+            RunSpans newRunSpans = new RunSpans();
+            SpanBuilder rootSpanBuilder = getTracer().spanBuilder(run.getParent().getFullName() + "_recovered-after-restart" )
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber());
+
+            Span rootSpan = rootSpanBuilder.startSpan();
+            newRunSpans.runPhasesSpans.add(rootSpan);
+            this.spansByRun.put(runIdentifier, newRunSpans);
+
+            Span runSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME + "_recovered-after-restart").setParent(Context.current().with(rootSpan)).startSpan();
+
+            return runSpan;
+        }
         LOGGER.log(Level.FINER, () -> "getSpan(" + run.getFullDisplayName() + ", " + flowNode + ") -  " + runSpans);
 
         for (String flowNodeId : flowNodesToEvaluate) {

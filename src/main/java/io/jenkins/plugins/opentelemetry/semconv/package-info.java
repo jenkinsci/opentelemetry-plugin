@@ -1,5 +1,6 @@
 /**
- * Semantic conventions: OpenTelemetry {@link io.opentelemetry.api.common.Attributes} and metrics name
+ * Semantic conventions: OpenTelemetry {@link io.opentelemetry.api.common.Attributes} and metrics names.
+ *
  * @see io.opentelemetry.semconv.trace.attributes.SemanticAttributes
  */
 @ParametersAreNonnullByDefault

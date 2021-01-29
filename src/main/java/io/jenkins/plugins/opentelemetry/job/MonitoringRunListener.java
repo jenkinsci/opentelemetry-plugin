@@ -12,6 +12,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongValueObserver;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
@@ -23,6 +24,7 @@ import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,13 +33,21 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
+    private AtomicInteger activeRun;
+    private LongValueObserver activeRunObserver;
     private LongCounter runLaunchedCounter;
     private LongCounter runStartedCounter;
     private LongCounter runCompletedCounter;
     private LongCounter runAbortedCounter;
 
     @PostConstruct
-    public void postConstruct(){
+    public void postConstruct() {
+        activeRun = new AtomicInteger();
+        activeRunObserver = getMeter().longValueObserverBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
+                .setDescription("Gauge of active jobs")
+                .setUnit("1")
+                .setUpdater(longResult -> this.activeRun.get())
+                .build();
         runLaunchedCounter =
                 getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
                         .setDescription("Job launched")
@@ -62,10 +72,11 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
     @Override
     public void _onInitialize(Run run) {
-        LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - onInitialize");
+        LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - onInitialize");
         if (this.getTraceService().getSpan(run) != null) {
             LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + " - Unexpected existing span: " + this.getTraceService().getSpan(run));
         }
+        activeRun.incrementAndGet();
 
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(run.getParent().getFullName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
@@ -102,12 +113,12 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         Span rootSpan = rootSpanBuilder.startSpan();
         this.getTraceService().putSpan(run, rootSpan);
         rootSpan.makeCurrent();
-        LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - begin root " + OtelUtils.toDebugString(rootSpan));
+        LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - begin root " + OtelUtils.toDebugString(rootSpan));
 
 
         // START initialize span
-        Span startSpan = getTracer().spanBuilder("Phase: Start").setParent(Context.current().with(rootSpan)).startSpan();
-        LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - begin " + OtelUtils.toDebugString(startSpan));
+        Span startSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_START_NAME).setParent(Context.current().with(rootSpan)).startSpan();
+        LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(startSpan));
 
         this.getTraceService().putSpan(run, startSpan);
         startSpan.makeCurrent();
@@ -118,8 +129,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     @Override
     public void _onStarted(Run run, TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
-            Span runSpan = getTracer().spanBuilder("Phase: Run").setParent(Context.current()).startSpan();
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - begin " + OtelUtils.toDebugString(runSpan));
+            Span runSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME).setParent(Context.current()).startSpan();
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
             runSpan.makeCurrent();
             this.getTraceService().putSpan(run, runSpan);
             this.runStartedCounter.add(1);
@@ -129,8 +140,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     @Override
     public void _onCompleted(Run run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
-            Span finalizeSpan = getTracer().spanBuilder("Phase: Finalise").setParent(Context.current()).startSpan();
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - begin " + OtelUtils.toDebugString(finalizeSpan));
+            Span finalizeSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME).setParent(Context.current()).startSpan();
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(finalizeSpan));
             finalizeSpan.makeCurrent();
             this.getTraceService().putSpan(run, finalizeSpan);
         }
@@ -141,10 +152,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     protected Scope endPipelinePhaseSpan(@Nonnull Run run) {
         Span pipelinePhaseSpan = verifyNotNull(Span.current(), "No pipelinePhaseSpan found in context");
         pipelinePhaseSpan.end();
-        LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - end " + OtelUtils.toDebugString(pipelinePhaseSpan));
+        LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - end " + OtelUtils.toDebugString(pipelinePhaseSpan));
 
         this.getTraceService().removeJobPhaseSpan(run, pipelinePhaseSpan);
-        Span newCurrentSpan = verifyNotNull(this.getTraceService().getSpan(run), "Failure to find pipeline root span for %s" , run);
+        Span newCurrentSpan = verifyNotNull(this.getTraceService().getSpan(run), "Failure to find pipeline root span for %s", run);
         Scope newScope = newCurrentSpan.makeCurrent();
         Context.current().with(RunContextKey.KEY, run);
         return newScope;
@@ -152,7 +163,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
     @Override
     public void _onFinalized(Run run) {
-        try(Scope parentScope = endPipelinePhaseSpan(run)) {
+
+        try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span parentSpan = Span.current();
             parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DURATION_MILLIS, run.getDuration());
             Result runResult = run.getResult();
@@ -173,19 +185,21 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 }
             }
             parentSpan.end();
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() +  " - end " + OtelUtils.toDebugString(parentSpan));
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - end " + OtelUtils.toDebugString(parentSpan));
 
             this.getTraceService().removeJobPhaseSpan(run, parentSpan);
 
-           this.getTraceService().purgeRun(run);
+            this.getTraceService().purgeRun(run);
 
-           LOGGER.log(Level.INFO, ()-> "Increment completion counters");
+            LOGGER.log(Level.FINE, () -> "Increment completion counters");
             this.runCompletedCounter.add(1);
             Result result = verifyNotNull(run.getResult(), "%s", run);
 
             if (!result.isCompleteBuild()) {
                 this.runAbortedCounter.add(1);
             }
+        } finally {
+            activeRun.decrementAndGet();
         }
     }
 

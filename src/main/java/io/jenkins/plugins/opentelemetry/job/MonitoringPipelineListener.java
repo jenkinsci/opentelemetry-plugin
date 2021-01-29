@@ -6,17 +6,20 @@ import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.FlowNodeContextKey;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.resources.ResourceAttributes;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
@@ -31,13 +34,14 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
 @Extension
-public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener {
+public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener, StepListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringPipelineListener.class.getName());
 
     private OtelTraceService otelTraceService;
@@ -52,7 +56,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setParent(Context.current())
                     .setAttribute("jenkins.pipeline.step.type", stepStartNode.getDisplayFunctionName())
                     .startSpan();
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
             getTracerService().putSpan(run, stageSpan, stepStartNode);
         }
@@ -63,6 +67,11 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         endCurrentSpan(node, run);
     }
 
+    /**
+     * TODO for steps like SCM access, we should add RPC attributes https://github.com/open-telemetry/opentelemetry-specification/blob/v0.7.0/specification/trace/semantic_conventions/rpc.md
+     * @param node
+     * @param run
+     */
     @Override
     public void onAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {
         try (Scope ignored = setupContext(run, node)) {
@@ -77,7 +86,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, node.getDisplayFunctionName())
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
                     .startSpan();
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
             getTracerService().putSpan(run, atomicStepSpan, node);
         }
@@ -97,7 +106,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setParent(Context.current())
                     .setAttribute("jenkins.pipeline.step.type", stepStartNode.getDisplayFunctionName())
                     .startSpan();
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - > " + stepStartNode.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + stepStartNode.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
             getTracerService().putSpan(run, atomicStepSpan, stepStartNode);
         }
@@ -122,9 +131,42 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 span.setStatus(StatusCode.ERROR, throwable.getMessage());
             }
             span.end();
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - < " + node.getDisplayFunctionName() + " - end " + OtelUtils.toDebugString(span));
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - < " + node.getDisplayFunctionName() + " - end " + OtelUtils.toDebugString(span));
 
             getTracerService().removePipelineStepSpan(run, node, span);
+        }
+    }
+
+    @Override
+    public void notifyOfNewStep(@Nonnull Step step, @Nonnull StepContext context) {
+        try {
+            WorkflowRun run = context.get(WorkflowRun.class);
+            FlowNode node = context.get(FlowNode.class);
+            Computer computer = context.get(Computer.class);
+            if (computer == null || node == null || run == null) {
+                LOGGER.log(Level.FINER, () -> "No run, flowNode or computer, skip. Run:" + run + ", flowNode: " + node + ", computer:" + computer);
+                return;
+            }
+            if (computer.getAction(OpenTelemetryAttributesAction.class) == null) {
+                LOGGER.log(Level.WARNING, "Unexpected missing " + OpenTelemetryAttributesAction.class + " on " + computer);
+                String hostName = computer.getHostName();
+                OpenTelemetryAttributesAction openTelemetryAttributesAction = new OpenTelemetryAttributesAction();
+                openTelemetryAttributesAction.getAttributes().put(ResourceAttributes.HOST_HOSTNAME, hostName);
+                computer.addAction(openTelemetryAttributesAction);
+            }
+            OpenTelemetryAttributesAction openTelemetryAttributesAction = computer.getAction(OpenTelemetryAttributesAction.class);
+
+            try (Scope ignored = setupContext(run, node)) {
+                Span currentSpan = Span.current();
+                LOGGER.log(Level.FINE, () -> "Add resource attributes to span " + OtelUtils.toDebugString(currentSpan) + " - " + openTelemetryAttributesAction);
+                for (Map.Entry<AttributeKey<?>, Object> entry : openTelemetryAttributesAction.getAttributes().entrySet()) {
+                    AttributeKey<?> attributeKey = entry.getKey();
+                    Object value = verifyNotNull(entry.getValue());
+                    currentSpan.setAttribute((AttributeKey<? super Object>) attributeKey, value);
+                }
+            }
+        } catch (IOException | InterruptedException | RuntimeException e) {
+            LOGGER.log(Level.WARNING,"Exception processing " + step + " - " + context, e);
         }
     }
 
