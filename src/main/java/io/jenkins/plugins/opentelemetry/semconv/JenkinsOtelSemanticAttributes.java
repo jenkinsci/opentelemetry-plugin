@@ -23,6 +23,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_PARAMETER_NAME = AttributeKey.stringArrayKey("ci.pipeline.parameter.name");
     public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_PARAMETER_VALUE = AttributeKey.stringArrayKey("ci.pipeline.parameter.value");
     public static final AttributeKey<String>        CI_PIPELINE_RUN_RESULT = AttributeKey.stringKey("ci.pipeline.run.result");
+    public static final AttributeKey<String>        CI_PIPELINE_RUN_URL = AttributeKey.stringKey("ci.pipeline.run.url");
     public static final AttributeKey<String>        CI_PIPELINE_RUN_USER = AttributeKey.stringKey("ci.pipeline.run.user");
 
     /**

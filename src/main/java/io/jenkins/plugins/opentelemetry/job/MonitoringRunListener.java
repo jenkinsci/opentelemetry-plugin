@@ -81,6 +81,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(run.getParent().getFullName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, run.getUrl())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber());
 
         // PARAMETERS
