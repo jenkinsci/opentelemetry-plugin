@@ -20,6 +20,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.resources.ResourceAttributes;
+import org.apache.commons.compress.utils.Sets;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
@@ -29,13 +30,17 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,6 +51,13 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
     private OtelTraceService otelTraceService;
     private Tracer tracer;
+    private Set<String> ignoredSteps;
+
+    @PostConstruct
+    public void postConstruct() {
+        // TODO make this list configurable
+        this.ignoredSteps = Sets.newHashSet("dir", "echo", "isUnix", "pwd");
+    }
 
     @Override
     public void onStartStageStep(@Nonnull StepStartNode stepStartNode, @Nonnull String stageName, @Nonnull WorkflowRun run) {
@@ -69,11 +81,13 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
     /**
      * TODO for steps like SCM access, we should add RPC attributes https://github.com/open-telemetry/opentelemetry-specification/blob/v0.7.0/specification/trace/semantic_conventions/rpc.md
-     * @param node
-     * @param run
      */
     @Override
     public void onAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {
+        if (isIgnoredStep(node.getDescriptor())){
+            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - don't create span for step '" + node.getDisplayFunctionName() + "'");
+            return;
+        }
         try (Scope ignored = setupContext(run, node)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, node);
 
@@ -94,7 +108,17 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
     @Override
     public void onAfterAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {
+        if (isIgnoredStep(node.getDescriptor())){
+            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - don't end span for step '" + node.getDisplayFunctionName() + "'");
+            return;
+        }
         endCurrentSpan(node, run);
+    }
+
+    private boolean isIgnoredStep(@Nonnull StepDescriptor stepDescriptor) {
+        boolean ignoreStep = this.ignoredSteps.contains(stepDescriptor.getFunctionName());
+        LOGGER.log(Level.FINER, ()-> "isIgnoreStep(" + stepDescriptor + "): " + ignoreStep);
+        return ignoreStep;
     }
 
     @Override

@@ -82,10 +82,10 @@ public class JenkinsOtelPluginIntegrationTest {
 
         String pipelineScript = "node() {\n" +
                 "    stage('ze-stage1') {\n" +
-                "       echo 'ze-echo' \n" +
+                "       sh 'echo ze-echo' \n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
-                "       sh 'echo ze-echo-via-sh' \n" +
+                "       sh 'echo ze-echo-2' \n" +
                 "    }\n" +
                 "}";
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
@@ -106,6 +106,26 @@ public class JenkinsOtelPluginIntegrationTest {
         MatcherAssert.assertThat(runCompletedCounterData.getType(), CoreMatchers.is(MetricDataType.LONG_SUM));
         Collection<LongPoint> metricPoints = runCompletedCounterData.getLongSumData().getPoints();
         //MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.is(1L));
+    }
+
+    @Test
+    public void testPipelineWithSkippedSteps() throws Exception {
+        String pipelineScript = "node() {\n" +
+                "    stage('ze-stage1') {\n" +
+                "       sh 'echo ze-echo' \n" +
+                "       echo 'ze-echo-step' \n" +
+                "    }\n" +
+                "    stage('ze-stage2') {\n" +
+                "       sh 'echo ze-echo-2' \n" +
+                "    }\n" +
+                "}";
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        List<SpanData> finishedSpanItems = flush();
+        dumpSpans(finishedSpanItems);
+        MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(8));
     }
 
     private void dumpMetrics(Map<String, MetricData> exportedMetrics) {
@@ -146,12 +166,12 @@ public class JenkinsOtelPluginIntegrationTest {
         String pipelineScript = "node() {\n" +
                 "    stage('ze-stage1') {\n" +
                 "       withEnv(['MY_VARIABLE=MY_VALUE']) {\n" +
-                "          echo 'ze-echo' \n" +
+                "          sh 'echo ze-echo' \n" +
                 "       }\n" +
-                "       echo 'ze-echo' \n" +
+                "       sh 'echo ze-echo' \n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
-                "       echo 'ze-echo2' \n" +
+                "       sh 'echo ze-echo2' \n" +
                 "    }\n" +
                 "}";
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
@@ -167,10 +187,10 @@ public class JenkinsOtelPluginIntegrationTest {
     public void testPipelineWithError() throws Exception {
         String pipelineScript = "node() {\n" +
                 "    stage('ze-stage1') {\n" +
-                "       echo 'ze-echo' \n" +
+                "       sh 'echo ze-echo' \n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
-                "       echo 'ze-echo2' \n" +
+                "       sh 'echo ze-echo2' \n" +
                 "       error 'ze-pipeline-error' \n" +
                 "    }\n" +
                 "}";
@@ -188,11 +208,11 @@ public class JenkinsOtelPluginIntegrationTest {
         String pipelineScript = "node {\n" +
                 "    stage('ze-parallel-stage') {\n" +
                 "        parallel parallelBranch1: {\n" +
-                "            echo('this is the parallel-branch-1')\n" +
+                "            sh 'echo this-is-the-parallel-branch-1'\n" +
                 "        } ,parallelBranch2: {\n" +
-                "            echo('this is the parallel-branch-2')\n" +
+                "            sh 'echo this-is-the-parallel-branch-2'\n" +
                 "        } ,parallelBranch3: {\n" +
-                "            echo('this is the parallel-branch-3')\n" +
+                "            sh 'echo this-is-the-parallel-branch-3'\n" +
                 "        }\n" +
                 "    }\n" +
                 "}";
