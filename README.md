@@ -10,6 +10,42 @@
 
 TODO Describe what your plugin does here
 
+## Features
+
+### Distributed traces of the job executions
+
+Enables
+
+ * Understand where time is spent, including time spent waiting to schedule the job (build queue)
+   * Long span "Phase : Start" --> job waiting to be allocated a build agent
+ * Detect increasing time spent in steps like 
+   * Invocations of external systems (git checkout...)
+
+Leverage
+
+* Automated anomaly detection on spans and traces detecting drifts on duration of steps 
+
+ * host details of the build agent on which steps are executed
+
+### Ideas
+
+* Collect labels of build agents
+* Expose traceparent to shell calls
+* Detect outages caused by upgrades. Report on the version of the plugin of each plugin being used as a step
+
+### Metrics on Jenkins health indicators
+
+ci.pipeline.run.active 
+ci.pipeline.run.launched 
+ci.pipeline.run.started 
+ci.pipeline.run.completed 
+ci.pipeline.run.aborted 
+jenkins.queue.waiting 
+jenkins.queue.blocked 
+jenkins.queue.buildable 
+jenkins.queue.left 
+jenkins.queue.time_spent_millis 
+
 ## Getting started
 
 TODO Tell users how to configure your plugin here, include screenshots, pipeline examples and 

@@ -181,9 +181,9 @@
             </exclusions>
         </dependency>
         <dependency>
+            <!-- TODO make dependency optional -->
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>git</artifactId>
-            <scope>test</scope>
         </dependency>
         <!--
         <dependency>

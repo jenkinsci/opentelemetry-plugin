@@ -1,20 +1,20 @@
 package io.jenkins.plugins.opentelemetry.job;
 
-import static com.google.common.base.Verify.*;
-
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.model.Computer;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
-import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.FlowNodeContextKey;
-import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
+import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.FlowNodeContextKey;
+import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
@@ -37,12 +37,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static com.google.common.base.Verify.verifyNotNull;
 
 
 @Extension
@@ -91,15 +92,27 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         try (Scope ignored = setupContext(run, node)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, node);
 
-            String principal = Objects.toString(node.getExecution().getAuthentication(), "#null#");
+            String principal = Objects.toString(node.getExecution().getAuthentication().getPrincipal(), "#null#");
             LOGGER.log(Level.INFO, () -> node.getDisplayFunctionName() + " - principal: " + principal);
 
 
-            Span atomicStepSpan = getTracer().spanBuilder(node.getDisplayFunctionName())
+            SpanBuilder spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName())
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, node.getDisplayFunctionName())
-                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
-                    .startSpan();
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal);
+
+            for (StepHandler stepHandler : ExtensionList.lookup(StepHandler.class)) {
+                if (stepHandler.canHandle(node)) {
+                    try {
+                        stepHandler.handle(node, spanBuilder);
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, run.getFullDisplayName() + " failure to handle step " + node + " with handler " + stepHandler, e);
+                    }
+                    break;
+                }
+            }
+
+            Span atomicStepSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
             getTracerService().putSpan(run, atomicStepSpan, node);
@@ -172,7 +185,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 return;
             }
             if (computer.getAction(OpenTelemetryAttributesAction.class) == null) {
-                LOGGER.log(Level.WARNING, "Unexpected missing " + OpenTelemetryAttributesAction.class + " on " + computer);
+                LOGGER.log(Level.WARNING, "Unexpected missing " + OpenTelemetryAttributesAction.class + " on " + computer + " fallback");
                 String hostName = computer.getHostName();
                 OpenTelemetryAttributesAction openTelemetryAttributesAction = new OpenTelemetryAttributesAction();
                 openTelemetryAttributesAction.getAttributes().put(ResourceAttributes.HOST_HOSTNAME, hostName);
