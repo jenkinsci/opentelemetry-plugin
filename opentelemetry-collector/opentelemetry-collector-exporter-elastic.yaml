@@ -17,7 +17,6 @@ receivers:
 
 processors:
   batch: null
-  queued_retry: null
 
 exporters:
   elastic:
