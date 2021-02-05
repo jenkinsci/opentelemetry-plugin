@@ -8,7 +8,7 @@
 
 ## Introduction
 
-TODO Describe what your plugin does here
+Collect Jenkins monitoring data through OpenTelemetry.
 
 ## Features
 
@@ -48,12 +48,11 @@ jenkins.queue.time_spent_millis
 
 ## Getting started
 
-TODO Tell users how to configure your plugin here, include screenshots, pipeline examples and 
-configuration-as-code examples.
+Configure the OpenTelemetry endpoint. Only GRPC OTLP is supported for the moment.
 
 ## Screenshots
 
-Sample of traces collected by Elastic APM for various pipelines
+Sample of traces collected by Elastic APM for various flavors of pipelines
 
 ### Declarative Pipeline
 
@@ -126,13 +125,6 @@ node {
 
 ![freestyle-job](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
 
-
-## Issues
-
-TODO Decide where you're going to host your issues, the default is Jenkins JIRA, but you can also enable GitHub issues,
-If you use GitHub issues there's no need for this section; else add the following line:
-
-Report issues and enhancements in the [Jenkins issue tracker](https://issues.jenkins-ci.org/).
 
 ## Contributing
 
