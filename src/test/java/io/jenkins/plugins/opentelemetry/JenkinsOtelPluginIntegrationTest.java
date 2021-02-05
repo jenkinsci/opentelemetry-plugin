@@ -4,7 +4,7 @@ import hudson.ExtensionList;
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.sdk.common.CompletableResultCode;
-import io.opentelemetry.sdk.metrics.data.LongPoint;
+import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
@@ -104,7 +104,7 @@ public class JenkinsOtelPluginIntegrationTest {
         MatcherAssert.assertThat(runCompletedCounterData, CoreMatchers.notNullValue());
         // TODO TEST METRICS WITH PROPER RESET BETWEEN TESTS
         MatcherAssert.assertThat(runCompletedCounterData.getType(), CoreMatchers.is(MetricDataType.LONG_SUM));
-        Collection<LongPoint> metricPoints = runCompletedCounterData.getLongSumData().getPoints();
+        Collection<LongPointData> metricPoints = runCompletedCounterData.getLongSumData().getPoints();
         //MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.is(1L));
     }
 
