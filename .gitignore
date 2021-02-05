@@ -1,4 +1,4 @@
-# MAVEN
+# Maven
 target/
 pom.xml.tag
 pom.xml.releaseBackup
@@ -12,15 +12,37 @@ buildNumber.properties
 .mvn/wrapper/maven-wrapper.jar
 
 
-# JENKINS
+# Jenkins
 work/
 
-# INTELLIJ
+# Intellij
 .idea/
 *.iml
 
+# Eclipse
+.classpath
+.project
+.settings
+bin/
 
-#
+# NetBeans
+/.nb-gradle
+/.nb-gradle-properties
+
+# VS Code
+.vscode
+
+# OS X
+.DS_Store
+
+# Emacs
+*~
+\#*\#
+
+# Vim
+.swp
+
+# Project specific ignores
 .otel/
 *.log
 
