@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+#
+# Copyright The Original Author or Authors
+# SPDX-License-Identifier: Apache-2.0
+#
+
 export OPEN_TELEMETRY_COLLECTOR_VERSION=0.19.0
 export OPEN_TELEMETRY_COLLECTOR_PLATFORM="darwin_amd64"
 

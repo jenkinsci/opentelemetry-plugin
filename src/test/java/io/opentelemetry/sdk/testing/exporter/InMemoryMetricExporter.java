@@ -1,3 +1,8 @@
+/*
+ * Copyright The Original Author or Authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package io.opentelemetry.sdk.testing.exporter;
 
 import io.opentelemetry.sdk.common.CompletableResultCode;
