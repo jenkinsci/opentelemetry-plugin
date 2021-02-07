@@ -33,40 +33,91 @@ public class ScmStepHandler implements StepHandler {
     }
 
     @Override
-    public void handle(@Nonnull FlowNode node, @Nonnull SpanBuilder spanBuilder)  throws Exception {
+    public void handle(@Nonnull FlowNode node, @Nonnull SpanBuilder spanBuilder) throws Exception {
 
         handle(ArgumentsAction.getFilteredArguments(node), spanBuilder);
     }
 
     protected void handle(@Nonnull Map<String, Object> arguments, @Nonnull SpanBuilder spanBuilder) throws Exception {
-        // see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/rpc.md#attributes
 
         String gitUrlAsString = checkNotNull(arguments.get("url")).toString();
-        if (gitUrlAsString.startsWith("http")) {
+        if (gitUrlAsString.startsWith("http://") || gitUrlAsString.startsWith("https://")) {
             URL gitUrl = new URL(gitUrlAsString);
-            String githubOrgAndRepository = gitUrl.getPath().substring(1); //remove beginning '/'
-            if (githubOrgAndRepository.endsWith(".git")){
-                githubOrgAndRepository = githubOrgAndRepository.substring(0, githubOrgAndRepository.length() - ".git".length());
-            }
-
+            String gitRepositoryPath = normalizeGitRepositoryPath(gitUrl.getPath());
             spanBuilder
                     .setAttribute(SemanticAttributes.RPC_SYSTEM, gitUrl.getProtocol())
                     .setAttribute(SemanticAttributes.RPC_SERVICE, "git")
                     .setAttribute(SemanticAttributes.RPC_METHOD, "checkout")
                     .setAttribute(SemanticAttributes.NET_PEER_NAME, gitUrl.getHost())
-                    .setAttribute(SemanticAttributes.PEER_SERVICE, "github")
-                    .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP.getValue())
-                    .setAttribute(SemanticAttributes.HTTP_URL, gitUrl.toString())
-                    .setAttribute(SemanticAttributes.HTTP_METHOD, "POST") // TODO verify value, this attribute is required to trace HTTP calls
-                    .setAttribute(JenkinsOtelSemanticAttributes.GIT_REPOSITORY, githubOrgAndRepository)
+                    .setAttribute(SemanticAttributes.PEER_SERVICE, "git")
+                    .setAttribute(SemanticAttributes.HTTP_URL, sanitizeUrl(gitUrl))
+                    .setAttribute(SemanticAttributes.HTTP_METHOD, "POST")
+                    .setAttribute(JenkinsOtelSemanticAttributes.GIT_REPOSITORY, gitRepositoryPath)
             ;
-            if (gitUrl.getPort() == -1) {
+        } else if (gitUrlAsString.startsWith("file://")) { // e.g. file:///srv/git/project.git
+            // TODO
+        } else if (gitUrlAsString.startsWith("ssh://")) { // e.g. ssh://git@example.com/open-telemetry/opentelemetry-java.git
+            // see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/rpc.md#attributes
 
-            } else {
-                spanBuilder = spanBuilder.setAttribute(SemanticAttributes.NET_PEER_PORT, Long.valueOf(gitUrl.getPort()));
+            String usernameAtHost = gitUrlAsString.substring("ssh://".length(), gitUrlAsString.indexOf('/', "ssh://".length()));
+            String host = usernameAtHost.contains("@") ? usernameAtHost.substring(usernameAtHost.indexOf('@') + 1) : usernameAtHost;
+            if (host.contains(":")) {
+                host = host.substring(0, host.indexOf(':'));
             }
-        } else {
-            // TODO handle SSH
+            String gitRepositoryPath = normalizeGitRepositoryPath(gitUrlAsString.substring(gitUrlAsString.indexOf('/', ("ssh://".length() + usernameAtHost.length())) + 1));
+
+            spanBuilder
+                    .setAttribute(SemanticAttributes.RPC_SYSTEM, "ssh")
+                    .setAttribute(SemanticAttributes.RPC_SERVICE, "git")
+                    .setAttribute(SemanticAttributes.RPC_METHOD, "checkout")
+                    .setAttribute(SemanticAttributes.NET_PEER_NAME, host)
+                    .setAttribute(SemanticAttributes.PEER_SERVICE, "git")
+                    .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP.getValue())
+                    .setAttribute(JenkinsOtelSemanticAttributes.GIT_REPOSITORY, gitRepositoryPath)
+            ;
+        } else if (gitUrlAsString.contains(":")) { // e.g. git@github.com:open-telemetry/opentelemetry-java.git
+            // see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/rpc.md#attributes
+
+            String usernameAtHost = gitUrlAsString.substring(0, gitUrlAsString.indexOf(':'));
+            String host = usernameAtHost.contains("@") ? usernameAtHost.substring(usernameAtHost.indexOf('@') + 1) : usernameAtHost;
+            String gitRepositoryPath = normalizeGitRepositoryPath(gitUrlAsString.substring(gitUrlAsString.indexOf(':') + 1));
+
+            spanBuilder
+                    .setAttribute(SemanticAttributes.RPC_SYSTEM, "ssh")
+                    .setAttribute(SemanticAttributes.RPC_SERVICE, "git")
+                    .setAttribute(SemanticAttributes.RPC_METHOD, "checkout")
+                    .setAttribute(SemanticAttributes.NET_PEER_NAME, host)
+                    .setAttribute(SemanticAttributes.PEER_SERVICE, "git")
+                    .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP.getValue())
+                    .setAttribute(JenkinsOtelSemanticAttributes.GIT_REPOSITORY, gitRepositoryPath)
+                    ;
         }
+    }
+
+    private String normalizeGitRepositoryPath(String gitRepositoryPath) {
+        String githubOrgAndRepository = gitRepositoryPath.startsWith("/") ? gitRepositoryPath.substring(1) : gitRepositoryPath; //remove beginning '/'
+        if (githubOrgAndRepository.endsWith(".git")) {
+            githubOrgAndRepository = githubOrgAndRepository.substring(0, githubOrgAndRepository.length() - ".git".length());
+        }
+        return githubOrgAndRepository;
+    }
+
+    /**
+     * Remove the `username` and the `password` params of the URL.
+     * <p/>
+     * Example: "https://my_username:my_password@github.com/open-telemetry/opentelemetry-java.git" is sanitized as
+     * "https://github.com/open-telemetry/opentelemetry-java.git"
+     *
+     * @param url to sanitize
+     * @return sanitized url
+     */
+    @Nonnull
+    protected String sanitizeUrl(@Nonnull URL url) {
+        String normalizedUrl = url.getProtocol() + "://" + url.getHost();
+        if (url.getPort() != -1) {
+            normalizedUrl += ":" + url.getPort();
+        }
+        normalizedUrl += url.getPath();
+        return normalizedUrl;
     }
 }
