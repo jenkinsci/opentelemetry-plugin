@@ -10,6 +10,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.testing.exporter.SpanBuilderMock;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import org.eclipse.jgit.transport.URIish;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Test;
@@ -17,7 +18,7 @@ import org.junit.Test;
 import java.net.URL;
 import java.util.Map;
 
-public class ScmStepHandlerTest {
+public class GitStepHandlerTest {
 
     @Test
     public void testHttpsGithubUrl() throws Exception {
@@ -111,9 +112,39 @@ public class ScmStepHandlerTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
 
+    @Test
+    public void testFileGitUrl() throws Exception {
+        // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_local_protocol
+        SpanBuilderMock spanBuilder = testGithubUrl("file:///srv/git/project.git");
+        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+
+        MatcherAssert.assertThat(attributes.get(SemanticAttributes.HTTP_URL), Matchers.is(Matchers.nullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("srv/git/project"));
+    }
+
+    @Test
+    public void testFileGitUrlWithoutSchemeLinux() throws Exception {
+        // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_local_protocol
+        SpanBuilderMock spanBuilder = testGithubUrl("/srv/git/project.git");
+        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+
+        MatcherAssert.assertThat(attributes.get(SemanticAttributes.HTTP_URL), Matchers.is(Matchers.nullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("srv/git/project"));
+    }
+
+    @Test
+    public void testFileGitUrlWithoutSchemeWindows() throws Exception {
+        // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_local_protocol
+        SpanBuilderMock spanBuilder = testGithubUrl("c:\\srv/git/project.git");
+        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+
+        MatcherAssert.assertThat(attributes.get(SemanticAttributes.HTTP_URL), Matchers.is(Matchers.nullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("c:\\srv/git/project"));
+    }
+
     private SpanBuilderMock testGithubUrl(String githubUrl) throws Exception {
         SpanBuilderMock spanBuilder = new SpanBuilderMock("git");
-        ScmStepHandler handler = new ScmStepHandler();
+        GitStepHandler handler = new GitStepHandler();
         Map<String, Object> arguments = Maps.newHashMap();
         arguments.put("url", githubUrl);
 
@@ -132,13 +163,13 @@ public class ScmStepHandlerTest {
     }
 
     private void testSanitizeUrl(String input, String expected) throws Exception {
-        ScmStepHandler handler = new ScmStepHandler();
-        String actual = handler.sanitizeUrl(new URL(input));
+        GitStepHandler handler = new GitStepHandler();
+        String actual = handler.sanitizeUrl(new URIish(input));
         MatcherAssert.assertThat(actual, Matchers.is(expected));
     }
 
     @Test
-    public void testFileUrl() throws Exception {
+    public void testSanitizeFileUrl() throws Exception {
         testSanitizeUrl("file:///srv/git/project.git", "file:///srv/git/project.git");
     }
 }
