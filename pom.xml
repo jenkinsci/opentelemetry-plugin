@@ -10,7 +10,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.15</version>
+        <version>4.16</version>
         <relativePath/>
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -133,6 +133,12 @@
         <dependency> <!-- see maskClasses config -->
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+            <!--
+            Don't bump beyond 20.0 as 21.0 removes com.google.common.util.concurrent.MoreExecutors#sameThreadExecutor()
+            that is used by
+            org.jenkinsci.plugins.workflow.support.concurrent.Futures.addCallback(com.google.common.util.concurrent.ListenableFuture<V>, com.google.common.util.concurrent.FutureCallback<? super V>)
+            See https://github.com/google/guava/wiki/Release21
+            -->
             <version>20.0</version>
         </dependency>
         <dependency>
