@@ -35,7 +35,9 @@ public class MonitoringComputerListener extends ComputerListener {
     @PostConstruct
     public void postConstruct() {
         Computer masterComputer = Jenkins.get().getComputer("");
-        if (masterComputer.getAction(OpenTelemetryAttributesAction.class) != null) {
+        if (masterComputer == null) {
+            LOGGER.log(Level.INFO, () -> "IllegalState Master computer not found");
+        } else if (masterComputer.getAction(OpenTelemetryAttributesAction.class) != null) {
             // nothing to do.
             // why are we invoked a second time? plugin reload?
             LOGGER.log(Level.FINE, () -> "Resources for master computer " + masterComputer + " have already been defined: " + masterComputer.getAction(OpenTelemetryAttributesAction.class));

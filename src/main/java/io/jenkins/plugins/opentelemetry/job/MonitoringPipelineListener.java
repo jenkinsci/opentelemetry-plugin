@@ -39,6 +39,7 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
@@ -85,9 +86,6 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         endCurrentSpan(node, run);
     }
 
-    /**
-     * TODO for steps like SCM access, we should add RPC attributes https://github.com/open-telemetry/opentelemetry-specification/blob/v0.7.0/specification/trace/semantic_conventions/rpc.md
-     */
     @Override
     public void onAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {
         if (isIgnoredStep(node.getDescriptor())){
@@ -133,7 +131,10 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         endCurrentSpan(node, run);
     }
 
-    private boolean isIgnoredStep(@Nonnull StepDescriptor stepDescriptor) {
+    private boolean isIgnoredStep(@Nullable StepDescriptor stepDescriptor) {
+        if (stepDescriptor == null) {
+            return true;
+        }
         boolean ignoreStep = this.ignoredSteps.contains(stepDescriptor.getFunctionName());
         LOGGER.log(Level.FINER, ()-> "isIgnoreStep(" + stepDescriptor + "): " + ignoreStep);
         return ignoreStep;
