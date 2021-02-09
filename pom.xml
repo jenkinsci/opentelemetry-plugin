@@ -34,7 +34,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.235.x</artifactId>
-                <version>21</version>
+                <version>23</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -187,44 +187,10 @@
             </exclusions>
         </dependency>
         <dependency>
-            <!-- TODO make dependency optional -->
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>git</artifactId>
+            <optional>true</optional>
         </dependency>
-        <!--
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>github-autostatus</artifactId>
-            <version>3.6.2</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.gson</groupId>
-                    <artifactId>gson</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.squareup.okhttp</groupId>
-                    <artifactId>okhttp</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpcore</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.ow2.asm</groupId>
-                    <artifactId>asm-commons</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.ow2.asm</groupId>
-                    <artifactId>asm</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jacoco</groupId>
-                    <artifactId>jacoco-maven-plugin</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        -->
         <dependency>
             <groupId>io.jenkins</groupId>
             <artifactId>configuration-as-code</artifactId>
