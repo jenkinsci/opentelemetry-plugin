@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static com.google.common.base.Preconditions.*;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -33,7 +32,6 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import jenkins.model.Jenkins;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -45,6 +43,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static io.grpc.Metadata.ASCII_STRING_MARSHALLER;
 
 @Extension
@@ -83,6 +82,7 @@ public class OpenTelemetrySdkProvider {
 
     public void initializeForTesting() {
         preDestroy();
+        GlobalOpenTelemetry.resetForTest();
         initializeOpenTelemetrySdk(TESTING_METRICS_EXPORTER, TESTING_SPAN_EXPORTER, 500);
         LOGGER.log(Level.INFO, "OpenTelemetry initialized for TESTING");
     }
