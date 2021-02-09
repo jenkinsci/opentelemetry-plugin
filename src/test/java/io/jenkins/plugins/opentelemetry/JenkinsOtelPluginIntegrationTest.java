@@ -161,7 +161,7 @@ public class JenkinsOtelPluginIntegrationTest {
     }
 
     protected List<SpanData> flush() {
-        CompletableResultCode completableResultCode = this.openTelemetrySdkProvider.getOpenTelemetrySdk().getTracerManagement().forceFlush();
+        CompletableResultCode completableResultCode = this.openTelemetrySdkProvider.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
         completableResultCode.join(1, TimeUnit.SECONDS);
         return ((InMemorySpanExporter) OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER).getFinishedSpanItems();
     }

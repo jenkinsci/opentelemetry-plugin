@@ -16,7 +16,7 @@ import hudson.slaves.OfflineCause;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.sdk.resources.ResourceAttributes;
+import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
@@ -86,7 +86,6 @@ public class MonitoringComputerListener extends ComputerListener {
                 // we have a problem, we want another network interface
             }
             attributes.put(ResourceAttributes.HOST_NAME.getKey(), localHost.getHostName());
-            attributes.put(ResourceAttributes.HOST_HOSTNAME.getKey(), localHost.getCanonicalHostName());
             attributes.put("host.ip", localHost.getHostAddress());
             return attributes;
         }

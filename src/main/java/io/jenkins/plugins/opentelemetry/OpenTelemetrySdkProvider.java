@@ -183,7 +183,7 @@ public class OpenTelemetrySdkProvider {
     @PreDestroy
     public void preDestroy() {
         if (this.openTelemetry != null) {
-            this.openTelemetry.getTracerManagement().shutdown();
+            this.openTelemetry.getSdkTracerProvider().shutdown();
         }
         if (this.intervalMetricReader != null) {
             this.intervalMetricReader.shutdown();

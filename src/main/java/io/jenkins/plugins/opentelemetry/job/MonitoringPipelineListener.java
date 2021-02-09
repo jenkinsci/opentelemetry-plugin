@@ -24,7 +24,7 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.sdk.resources.ResourceAttributes;
+import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.compress.utils.Sets;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
@@ -194,7 +194,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 LOGGER.log(Level.WARNING, "Unexpected missing " + OpenTelemetryAttributesAction.class + " on " + computer + " fallback");
                 String hostName = computer.getHostName();
                 OpenTelemetryAttributesAction openTelemetryAttributesAction = new OpenTelemetryAttributesAction();
-                openTelemetryAttributesAction.getAttributes().put(ResourceAttributes.HOST_HOSTNAME, hostName);
+                openTelemetryAttributesAction.getAttributes().put(ResourceAttributes.HOST_NAME, hostName);
                 computer.addAction(openTelemetryAttributesAction);
             }
             OpenTelemetryAttributesAction openTelemetryAttributesAction = computer.getAction(OpenTelemetryAttributesAction.class);

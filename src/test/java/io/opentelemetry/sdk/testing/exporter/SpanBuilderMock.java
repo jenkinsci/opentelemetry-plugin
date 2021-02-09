@@ -7,10 +7,7 @@ package io.opentelemetry.sdk.testing.exporter;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanBuilder;
-import io.opentelemetry.api.trace.SpanContext;
-import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.*;
 import io.opentelemetry.context.Context;
 
 import javax.annotation.Nonnull;
@@ -89,8 +86,8 @@ public class SpanBuilderMock implements SpanBuilder {
     }
 
     @Override
-    public SpanBuilder setSpanKind(Span.Kind spanKind) {
-        delegate.setSpanKind(spanKind);
+    public SpanBuilder setSpanKind(SpanKind spanKind) {
+        this.delegate.setSpanKind(spanKind);
         return this;
     }
 

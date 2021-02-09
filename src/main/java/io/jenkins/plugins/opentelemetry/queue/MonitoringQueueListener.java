@@ -10,9 +10,9 @@ import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.opentelemetry.api.common.Labels;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.metrics.common.Labels;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;

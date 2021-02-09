@@ -56,7 +56,7 @@ public class OpenTelemetryTest {
             Thread.sleep(1_000);
 
             System.out.println("OPEN TELEMETRY FORCE FLUSH");
-            CompletableResultCode completableResultCode = openTelemetry.getTracerManagement().forceFlush();
+            CompletableResultCode completableResultCode = openTelemetry.getSdkTracerProvider().forceFlush();
 
             completableResultCode.join(5, TimeUnit.SECONDS);
         } finally {
@@ -64,7 +64,7 @@ public class OpenTelemetryTest {
         }
 
 
-        openTelemetry.getTracerManagement().shutdown();
+        openTelemetry.getSdkTracerProvider().shutdown();
     }
 
     @After

@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.opentelemetry.resource;
 
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.sdk.resources.ResourceAttributes;
+import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import io.opentelemetry.sdk.resources.ResourceProvider;
 import jenkins.model.Jenkins;
 
