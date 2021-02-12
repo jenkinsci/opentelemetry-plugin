@@ -11,6 +11,9 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
+import groovy.lang.Writable;
+import groovy.text.GStringTemplateEngine;
+import groovy.text.Template;
 import hudson.Extension;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
@@ -24,10 +27,13 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import javax.annotation.Nullable;
+import javax.annotation.CheckForNull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.Collections;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,6 +46,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private boolean useTls;
     private String authenticationTokenName;
     private String authenticationTokenValueId;
+    private String traceVisualisationBaseUrl;
+    private String traceVisualisationUrlTemplate;
+    private transient Template traceVisualisationUrlGTemplate;
 
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
@@ -128,6 +137,48 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.authenticationTokenValueId = authenticationTokenValueId;
     }
 
+    public String getTraceVisualisationBaseUrl() {
+        return traceVisualisationBaseUrl;
+    }
+
+    @DataBoundSetter
+    public void setTraceVisualisationBaseUrl(String traceVisualisationBaseUrl) {
+        this.traceVisualisationBaseUrl = traceVisualisationBaseUrl;
+    }
+
+    public String getTraceVisualisationUrlTemplate() {
+        return traceVisualisationUrlTemplate;
+    }
+
+    /**
+     * @return {@code null} if no {@link #traceVisualisationUrlTemplate} has been defined or if the   {@link #traceVisualisationUrlTemplate} has a syntax error
+     */
+    @CheckForNull
+    public Template getTraceVisualisationUrlGTemplate() {
+        if(this.traceVisualisationUrlTemplate == null || this.traceVisualisationUrlTemplate.isEmpty()) {
+            return null;
+        }
+        if (this.traceVisualisationUrlGTemplate == null) {
+
+            GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
+            try {
+                this.traceVisualisationUrlGTemplate = gStringTemplateEngine.createTemplate(this.traceVisualisationUrlTemplate);
+            } catch (IOException | ClassNotFoundException e) {
+                LOGGER.log(Level.WARNING, "Invalid Trace Visualisation URL Template '" + this.traceVisualisationUrlTemplate + "'", e);
+                this.traceVisualisationUrlGTemplate = ERROR_TEMPLATE;
+            }
+        }
+        return traceVisualisationUrlGTemplate == ERROR_TEMPLATE ? null : traceVisualisationUrlGTemplate;
+    }
+
+    @DataBoundSetter
+    public void setTraceVisualisationUrlTemplate(String traceVisualisationUrlTemplate) {
+        if (!Objects.equal(this.traceVisualisationUrlTemplate, traceVisualisationUrlTemplate)) {
+            this.traceVisualisationUrlTemplate = traceVisualisationUrlTemplate;
+            this.traceVisualisationUrlGTemplate = null;
+        }
+    }
+
     @Inject
     public void setOpenTelemetrySdkProvider(OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
@@ -147,4 +198,23 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                         CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StringCredentials.class)))
                 .includeCurrentValue(authenticationTokenValueId);
     }
+
+
+    public final static Template ERROR_TEMPLATE = new Template() {
+        @Override
+        public Writable make() {
+            return out -> {
+                out.write("#ERROR#");
+                return out;
+            };
+        }
+
+        @Override
+        public Writable make(Map binding) {
+            return out -> {
+                out.write("#ERROR#");
+                return out;
+            };
+        }
+    };
 }

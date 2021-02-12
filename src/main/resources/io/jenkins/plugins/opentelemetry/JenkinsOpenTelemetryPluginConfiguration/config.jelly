@@ -1,7 +1,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
     <f:section title="OpenTelemetry">
-            <f:entry title="GRPC Endpoint" field="endpoint" description="e.g. 'localhost:4317'">
+            <f:entry title="GRPC Endpoint" field="endpoint" description="e.g. 'otel.example.com:4317'">
                 <f:textbox />
             </f:entry>
             <f:entry title="Use TLS" field="useTls">
@@ -12,6 +12,12 @@
             </f:entry>
             <f:entry title="GRPC Authentication Token" field="authenticationTokenValueId">
                 <c:select/>
+            </f:entry>
+            <f:entry title="Trace Visualisation Base URL" field="traceVisualisationBaseUrl" description="e.g. 'https://kibana.example.com:5601'">
+                <f:textbox />
+            </f:entry>
+            <f:entry title="Trace Visualisation URL Template" field="traceVisualisationUrlTemplate">
+                <f:textbox />
             </f:entry>
     </f:section>
 </j:jelly>

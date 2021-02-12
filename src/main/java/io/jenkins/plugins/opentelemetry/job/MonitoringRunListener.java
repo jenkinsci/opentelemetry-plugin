@@ -83,7 +83,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         }
         activeRun.incrementAndGet();
 
-        SpanBuilder rootSpanBuilder = getTracer().spanBuilder(run.getParent().getFullName())
+        String rootSpanName = run.getParent().getFullName();
+        SpanBuilder rootSpanBuilder = getTracer().spanBuilder(rootSpanName)
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, run.getUrl())
@@ -117,6 +118,11 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
         // START ROOT SPAN
         Span rootSpan = rootSpanBuilder.startSpan();
+        String traceId = rootSpan.getSpanContext().getTraceId();
+        String spanId = rootSpan.getSpanContext().getSpanId();
+        MonitoringAction monitoringAction = new MonitoringAction(rootSpanName,traceId, spanId);
+        run.addAction(monitoringAction);
+
         this.getTraceService().putSpan(run, rootSpan);
         rootSpan.makeCurrent();
         LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - begin root " + OtelUtils.toDebugString(rootSpan));
