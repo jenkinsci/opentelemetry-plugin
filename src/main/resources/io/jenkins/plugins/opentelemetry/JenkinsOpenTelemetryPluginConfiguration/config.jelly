@@ -13,11 +13,14 @@
             <f:entry title="GRPC Authentication Token" field="authenticationTokenValueId">
                 <c:select/>
             </f:entry>
-            <f:entry title="Trace Visualisation Base URL" field="traceVisualisationBaseUrl" description="e.g. 'https://kibana.example.com:5601'">
-                <f:textbox />
-            </f:entry>
-            <f:entry title="Trace Visualisation URL Template" field="traceVisualisationUrlTemplate">
-                <f:textbox />
+            <f:entry title="Visualisation">
+                <j:invokeStatic var="backendDescriptors" className="io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend" method="allDescriptors"/>
+                <f:hetero-list
+                    name="observabilityBackends"
+                    hasHeader="true"
+                    descriptors="${backendDescriptors}"
+                    items="${descriptor.observabilityBackends}"
+                    addCaption="${%Add Visualisation Backend}"/>
             </f:entry>
     </f:section>
 </j:jelly>

@@ -18,6 +18,7 @@ import hudson.Extension;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
+import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -28,11 +29,14 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,9 +50,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private boolean useTls;
     private String authenticationTokenName;
     private String authenticationTokenValueId;
-    private String traceVisualisationBaseUrl;
-    private String traceVisualisationUrlTemplate;
-    private transient Template traceVisualisationUrlGTemplate;
+
+    private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
 
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
@@ -101,6 +104,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
     }
 
+    @CheckForNull
     public String getEndpoint() {
         return endpoint;
     }
@@ -119,6 +123,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.useTls = useTls;
     }
 
+    @CheckForNull
     public String getAuthenticationTokenName() {
         return authenticationTokenName;
     }
@@ -128,6 +133,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.authenticationTokenName = authenticationTokenName;
     }
 
+    @CheckForNull
     public String getAuthenticationTokenValueId() {
         return authenticationTokenValueId;
     }
@@ -137,46 +143,17 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.authenticationTokenValueId = authenticationTokenValueId;
     }
 
-    public String getTraceVisualisationBaseUrl() {
-        return traceVisualisationBaseUrl;
-    }
-
     @DataBoundSetter
-    public void setTraceVisualisationBaseUrl(String traceVisualisationBaseUrl) {
-        this.traceVisualisationBaseUrl = traceVisualisationBaseUrl;
+    public void setObservabilityBackends(List<ObservabilityBackend> observabilityBackends) {
+        this.observabilityBackends = observabilityBackends;
     }
 
-    public String getTraceVisualisationUrlTemplate() {
-        return traceVisualisationUrlTemplate;
-    }
-
-    /**
-     * @return {@code null} if no {@link #traceVisualisationUrlTemplate} has been defined or if the   {@link #traceVisualisationUrlTemplate} has a syntax error
-     */
-    @CheckForNull
-    public Template getTraceVisualisationUrlGTemplate() {
-        if(this.traceVisualisationUrlTemplate == null || this.traceVisualisationUrlTemplate.isEmpty()) {
-            return null;
+    @Nonnull
+    public List<ObservabilityBackend> getObservabilityBackends() {
+        if (observabilityBackends == null) {
+            observabilityBackends = new ArrayList<>();
         }
-        if (this.traceVisualisationUrlGTemplate == null) {
-
-            GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
-            try {
-                this.traceVisualisationUrlGTemplate = gStringTemplateEngine.createTemplate(this.traceVisualisationUrlTemplate);
-            } catch (IOException | ClassNotFoundException e) {
-                LOGGER.log(Level.WARNING, "Invalid Trace Visualisation URL Template '" + this.traceVisualisationUrlTemplate + "'", e);
-                this.traceVisualisationUrlGTemplate = ERROR_TEMPLATE;
-            }
-        }
-        return traceVisualisationUrlGTemplate == ERROR_TEMPLATE ? null : traceVisualisationUrlGTemplate;
-    }
-
-    @DataBoundSetter
-    public void setTraceVisualisationUrlTemplate(String traceVisualisationUrlTemplate) {
-        if (!Objects.equal(this.traceVisualisationUrlTemplate, traceVisualisationUrlTemplate)) {
-            this.traceVisualisationUrlTemplate = traceVisualisationUrlTemplate;
-            this.traceVisualisationUrlGTemplate = null;
-        }
+        return observabilityBackends;
     }
 
     @Inject
@@ -199,22 +176,4 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                 .includeCurrentValue(authenticationTokenValueId);
     }
 
-
-    public final static Template ERROR_TEMPLATE = new Template() {
-        @Override
-        public Writable make() {
-            return out -> {
-                out.write("#ERROR#");
-                return out;
-            };
-        }
-
-        @Override
-        public Writable make(Map binding) {
-            return out -> {
-                out.write("#ERROR#");
-                return out;
-            };
-        }
-    };
 }

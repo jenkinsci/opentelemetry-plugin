@@ -5,24 +5,18 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import groovy.text.GStringTemplateEngine;
-import groovy.text.Template;
 import hudson.ExtensionList;
 import hudson.model.Action;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 
 import javax.annotation.CheckForNull;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Level;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class MonitoringAction implements Action, RunAction2 {
@@ -76,31 +70,31 @@ public class MonitoringAction implements Action, RunAction2 {
     }
 
     @CheckForNull
-    public String getLinkUrl() {
-        Template template = this.pluginConfiguration.getTraceVisualisationUrlGTemplate();
+    public List<ObservabilityBackendLink> getLinks() {
+        List<ObservabilityBackend> observabilityBackends = this.pluginConfiguration.getObservabilityBackends();
 
-        if (template == null) {
-            return Jenkins.get().getRootUrl() + "/configure";
-        } else {
-            Map<String, Object> binding = new HashMap<>();
-            binding.put("baseUrl", this.pluginConfiguration.getTraceVisualisationBaseUrl());
-            binding.put("serviceName", JenkinsOtelSemanticAttributes.SERVICE_NAME_JENKINS);
-            binding.put("rootSpanName", this.rootSpanName);
-            binding.put("traceId", this.traceId);
-            binding.put("spanId", this.spanId);
-            binding.put("startTime", Instant.ofEpochMilli(run.getStartTimeInMillis()));
-            return template.make(binding).toString();
+        if (observabilityBackends.isEmpty()) {
+            return Collections.singletonList(new ObservabilityBackendLink(
+                    "Please define an OpenTelemetry Visualisation URL of pipelines in Jenkins configuration",
+                    Jenkins.get().getRootUrl() + "/configure",
+                    null)); // FIXME add Jenkins headshot icon url
         }
-    }
+        Map<String, Object> binding = new HashMap<>();
+        binding.put("serviceName", JenkinsOtelSemanticAttributes.SERVICE_NAME_JENKINS);
+        binding.put("rootSpanName", this.rootSpanName);
+        binding.put("traceId", this.traceId);
+        binding.put("spanId", this.spanId);
+        binding.put("startTime", Instant.ofEpochMilli(run.getStartTimeInMillis()));
 
-    public String getLinkCaption() {
-        Template template = this.pluginConfiguration.getTraceVisualisationUrlGTemplate();
+        List<ObservabilityBackendLink> links = new ArrayList<>();
+        for (ObservabilityBackend observabilityBackend : observabilityBackends) {
+            links.add(new ObservabilityBackendLink(
+                    "View pipeline with " + observabilityBackend.getDescriptor().getDisplayName(),
+                    observabilityBackend.getTraceVisualisationUrl(binding),
+                    observabilityBackend.getIconPath()));
 
-        if (template == null) {
-            return "Please define an OpenTelemetry Visualisation URL of pipelines in Jenkins configuration";
-        } else {
-            return "View pipeline execution (traceId: " + traceId + ")";
         }
+        return links;
     }
 
     @Override
@@ -110,5 +104,38 @@ public class MonitoringAction implements Action, RunAction2 {
                 ", spanId='" + spanId + '\'' +
                 ", run='" + run + '\'' +
                 '}';
+    }
+
+    public static class ObservabilityBackendLink {
+        final String label;
+        final String url;
+        final String iconUrl;
+
+        public ObservabilityBackendLink(String label, String url, String iconUrl) {
+            this.label = label;
+            this.url = url;
+            this.iconUrl = iconUrl;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public String getIconUrl() {
+            return iconUrl;
+        }
+
+        @Override
+        public String toString() {
+            return "ObservabilityBackendLink{" +
+                    "label='" + label + '\'' +
+                    ", url='" + url + '\'' +
+                    ", iconUrl='" + iconUrl + '\'' +
+                    '}';
+        }
     }
 }
