@@ -1,0 +1,10 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+        <f:entry title="Trace visualisation URL template" field="traceVisualisationUrlTemplate" description="e.g. 'https://my-observability.example.com:5601/traces/\$\{traceId}'">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="Metrics visualisation URL template" field="metricsVisualisationUrlTemplate">
+            <f:textbox />
+        </f:entry>
+</j:jelly>

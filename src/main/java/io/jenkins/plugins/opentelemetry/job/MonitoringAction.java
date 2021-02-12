@@ -77,7 +77,7 @@ public class MonitoringAction implements Action, RunAction2 {
             return Collections.singletonList(new ObservabilityBackendLink(
                     "Please define an OpenTelemetry Visualisation URL of pipelines in Jenkins configuration",
                     Jenkins.get().getRootUrl() + "/configure",
-                    null)); // FIXME add Jenkins headshot icon url
+                    "/images/48x48/gear2.png"));
         }
         Map<String, Object> binding = new HashMap<>();
         binding.put("serviceName", JenkinsOtelSemanticAttributes.SERVICE_NAME_JENKINS);
