@@ -1,0 +1,12 @@
+unclassified:
+  openTelemetry:
+    endpoint: "otel-collector-contrib:4317"
+    observabilityBackends:
+      - elasticBackend:
+          kibanaBaseUrl: "http://localhost:5601"
+      - jaegerBackend:
+          jaegerBaseUrl: "http://localhost:16686"
+      - customObservabilityBackend:
+          metricsVisualisationUrlTemplate: "foo"
+          traceVisualisationUrlTemplate: "http://example.com"
+    useTls: false
