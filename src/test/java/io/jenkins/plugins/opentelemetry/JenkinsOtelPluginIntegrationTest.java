@@ -5,8 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.Result;
+import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
@@ -100,6 +102,11 @@ public class JenkinsOtelPluginIntegrationTest {
         List<SpanData> finishedSpanItems = flush();
         dumpSpans(finishedSpanItems);
         MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(8));
+
+        TaskListener listener = jenkinsRule.createTaskListener();
+        EnvVars environment = build.getEnvironment(listener);
+        MatcherAssert.assertThat(environment.get("OT_SPAN_ID"), CoreMatchers.notNullValue());
+        MatcherAssert.assertThat(environment.get("OT_TRACE_ID"), CoreMatchers.notNullValue());
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
