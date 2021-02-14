@@ -14,7 +14,6 @@ import hudson.model.Run;
 import javax.annotation.Nonnull;
 
 @Extension
-
 public class OtelEnvironmentContributor extends EnvironmentContributor {
 
     public static final String OTEL_SPAN_ID = "OTEL_SPAN_ID";
@@ -24,8 +23,8 @@ public class OtelEnvironmentContributor extends EnvironmentContributor {
     public void buildEnvironmentFor(@Nonnull Run run, @Nonnull EnvVars envs, @Nonnull TaskListener listener) {
         MonitoringAction action = run.getAction(MonitoringAction.class);
         if (action == null) {
-			return;
-		}
+		    return;
+        }
 
         envs.put(OTEL_SPAN_ID, action.getSpanId());
         envs.put(OTEL_TRACE_ID, action.getTraceId());
