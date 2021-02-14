@@ -33,6 +33,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verify;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_SPAN_ID;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_TRACE_ID;
 
 public class JenkinsOtelPluginIntegrationTest {
     static {
@@ -105,8 +107,8 @@ public class JenkinsOtelPluginIntegrationTest {
 
         TaskListener listener = jenkinsRule.createTaskListener();
         EnvVars environment = build.getEnvironment(listener);
-        MatcherAssert.assertThat(environment.get("OT_SPAN_ID"), CoreMatchers.notNullValue());
-        MatcherAssert.assertThat(environment.get("OT_TRACE_ID"), CoreMatchers.notNullValue());
+        MatcherAssert.assertThat(environment.get(OTEL_SPAN_ID), CoreMatchers.notNullValue());
+        MatcherAssert.assertThat(environment.get(OTEL_TRACE_ID), CoreMatchers.notNullValue());
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);

@@ -15,7 +15,11 @@ import javax.annotation.Nonnull;
 
 @Extension
 
-public class OpenTelemetryEnvironmentContributor extends EnvironmentContributor {
+public class OtelEnvironmentContributor extends EnvironmentContributor {
+
+    public static final String OTEL_SPAN_ID = "OTEL_SPAN_ID";
+    public static final String OTEL_TRACE_ID = "OTEL_TRACE_ID";
+
     @Override
     public void buildEnvironmentFor(@Nonnull Run run, @Nonnull EnvVars envs, @Nonnull TaskListener listener) {
         MonitoringAction action = run.getAction(MonitoringAction.class);
@@ -23,7 +27,7 @@ public class OpenTelemetryEnvironmentContributor extends EnvironmentContributor 
 			return;
 		}
 
-        envs.put("OT_SPAN_ID", action.getSpanId());
-        envs.put("OT_TRACE_ID", action.getTraceId());
+        envs.put(OTEL_SPAN_ID, action.getSpanId());
+        envs.put(OTEL_TRACE_ID, action.getTraceId());
     }
 }
