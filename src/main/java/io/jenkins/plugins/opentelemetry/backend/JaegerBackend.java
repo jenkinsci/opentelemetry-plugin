@@ -71,11 +71,10 @@ public class JaegerBackend extends ObservabilityBackend {
     }
 
     @Extension
-    public static class DescriptorImpl extends Descriptor<ObservabilityBackend> {
+    public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {
             return "Jaeger";
         }
     }
-
 }
