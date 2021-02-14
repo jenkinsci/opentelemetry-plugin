@@ -7,11 +7,13 @@ package io.jenkins.plugins.opentelemetry.job;
 
 import hudson.EnvVars;
 import hudson.Extension;
+import hudson.model.ParameterValue;
 import hudson.model.TaskListener;
 import hudson.model.EnvironmentContributor;
 import hudson.model.Run;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 
 @Extension
 public class OtelEnvironmentContributor extends EnvironmentContributor {
@@ -28,5 +30,12 @@ public class OtelEnvironmentContributor extends EnvironmentContributor {
 
         envs.put(OTEL_SPAN_ID, action.getSpanId());
         envs.put(OTEL_TRACE_ID, action.getTraceId());
+
+        for (MonitoringAction.ObservabilityBackendLink link : action.getLinks()) {
+            // Default backend link got an empty environment variable.
+            if (link.getEnvVar() != null) {
+                envs.put(link.getEnvVar(), link.getUrl());
+            }
+        }
     }
 }

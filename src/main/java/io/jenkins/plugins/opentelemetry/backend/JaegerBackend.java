@@ -19,7 +19,8 @@ import java.util.Map;
 @Symbol("jaeger")
 public class JaegerBackend extends ObservabilityBackend {
 
-    private String jaegerBaseUrl;
+    public static final String OTEL_JAEGER_URL = "OTEL_JAEGER_URL";
+	private String jaegerBaseUrl;
 
     @DataBoundConstructor
     public JaegerBackend(){
@@ -52,6 +53,12 @@ public class JaegerBackend extends ObservabilityBackend {
     @Override
     public String getIconPath() {
         return "/plugin/opentelemetry/images/48x48/jaeger.png";
+    }
+
+    @CheckForNull
+    @Override
+    public String getEnvVariable() {
+        return OTEL_JAEGER_URL;
     }
 
     @CheckForNull

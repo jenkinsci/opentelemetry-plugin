@@ -19,6 +19,7 @@ import java.util.Objects;
 @Symbol("customObservabilityBackend")
 public class CustomObservabilityBackend extends ObservabilityBackend {
 
+    public static final String OTEL_CUSTOM_URL = "OTEL_CUSTOM_URL";
     private String traceVisualisationUrlTemplate;
     private String metricsVisualisationUrlTemplate;
 
@@ -58,6 +59,12 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     @Override
     public String getIconPath() {
         return "/images/24x24/monitor.png";
+    }
+
+    @CheckForNull
+    @Override
+    public String getEnvVariable() {
+        return OTEL_CUSTOM_URL;
     }
 
     @Override

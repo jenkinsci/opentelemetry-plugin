@@ -77,7 +77,8 @@ public class MonitoringAction implements Action, RunAction2 {
             return Collections.singletonList(new ObservabilityBackendLink(
                     "Please define an OpenTelemetry Visualisation URL of pipelines in Jenkins configuration",
                     Jenkins.get().getRootUrl() + "/configure",
-                    "/images/48x48/gear2.png"));
+                    "/images/48x48/gear2.png",
+                    null));
         }
         Map<String, Object> binding = new HashMap<>();
         binding.put("serviceName", JenkinsOtelSemanticAttributes.SERVICE_NAME_JENKINS);
@@ -91,7 +92,8 @@ public class MonitoringAction implements Action, RunAction2 {
             links.add(new ObservabilityBackendLink(
                     "View pipeline with " + observabilityBackend.getDescriptor().getDisplayName(),
                     observabilityBackend.getTraceVisualisationUrl(binding),
-                    observabilityBackend.getIconPath()));
+                    observabilityBackend.getIconPath(),
+                    observabilityBackend.getEnvVariable()));
 
         }
         return links;
@@ -110,11 +112,13 @@ public class MonitoringAction implements Action, RunAction2 {
         final String label;
         final String url;
         final String iconUrl;
+		final String envVar;
 
-        public ObservabilityBackendLink(String label, String url, String iconUrl) {
+        public ObservabilityBackendLink(String label, String url, String iconUrl, String envVar) {
             this.label = label;
             this.url = url;
             this.iconUrl = iconUrl;
+            this.envVar = envVar;
         }
 
         public String getLabel() {
@@ -129,12 +133,17 @@ public class MonitoringAction implements Action, RunAction2 {
             return iconUrl;
         }
 
+        public String getEnvVar() {
+            return envVar;
+        }
+
         @Override
         public String toString() {
             return "ObservabilityBackendLink{" +
                     "label='" + label + '\'' +
                     ", url='" + url + '\'' +
                     ", iconUrl='" + iconUrl + '\'' +
+                    ", envVar='" + envVar + '\'' +
                     '}';
         }
     }

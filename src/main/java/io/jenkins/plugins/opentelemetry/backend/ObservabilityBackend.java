@@ -35,6 +35,9 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     @CheckForNull
     public abstract String getIconPath();
 
+    @CheckForNull
+    public abstract String getEnvVariable();
+
     @Override
     public abstract boolean equals(Object obj);
 

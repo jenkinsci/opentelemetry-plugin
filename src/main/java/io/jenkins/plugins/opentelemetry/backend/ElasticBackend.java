@@ -19,6 +19,7 @@ import java.util.Map;
 @Symbol("elastic")
 public class ElasticBackend extends ObservabilityBackend {
 
+    public static final String OTEL_ELASTIC_URL = "OTEL_ELASTIC_URL";
     private String kibanaBaseUrl;
 
     @DataBoundConstructor
@@ -59,6 +60,12 @@ public class ElasticBackend extends ObservabilityBackend {
     @Override
     public String getIconPath() {
         return "/plugin/opentelemetry/images/48x48/elastic.png";
+    }
+
+    @CheckForNull
+    @Override
+    public String getEnvVariable() {
+        return OTEL_ELASTIC_URL;
     }
 
     @CheckForNull
