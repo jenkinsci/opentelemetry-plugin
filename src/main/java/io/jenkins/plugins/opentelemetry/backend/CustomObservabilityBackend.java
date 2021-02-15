@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.Objects;
 
 @Extension
-@Symbol("customObservabilityBackend")
 public class CustomObservabilityBackend extends ObservabilityBackend {
 
     public static final String OTEL_CUSTOM_URL = "OTEL_CUSTOM_URL";
@@ -89,6 +88,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     }
 
     @Extension
+    @Symbol("customObservabilityBackend")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {

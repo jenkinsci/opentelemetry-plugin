@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Extension
-@Symbol("jaeger")
 public class JaegerBackend extends ObservabilityBackend {
 
     public static final String OTEL_JAEGER_URL = "OTEL_JAEGER_URL";
@@ -78,6 +77,7 @@ public class JaegerBackend extends ObservabilityBackend {
     }
 
     @Extension
+    @Symbol("jaeger")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {

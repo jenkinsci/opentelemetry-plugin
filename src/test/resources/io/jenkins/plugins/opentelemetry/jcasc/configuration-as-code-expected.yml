@@ -1,10 +1,10 @@
 endpoint: "otel-collector-contrib:4317"
 observabilityBackends:
-- elasticBackend:
+- elastic:
     kibanaBaseUrl: "http://localhost:5601"
-- jaegerBackend:
+- jaeger:
     jaegerBaseUrl: "http://localhost:16686"
-- custom:
+- customObservabilityBackend:
     metricsVisualisationUrlTemplate: "foo"
     traceVisualisationUrlTemplate: "http://example.com"
 useTls: false

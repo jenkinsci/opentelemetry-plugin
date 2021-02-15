@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Extension
-@Symbol("elastic")
 public class ElasticBackend extends ObservabilityBackend {
 
     public static final String OTEL_ELASTIC_URL = "OTEL_ELASTIC_URL";
@@ -85,6 +84,7 @@ public class ElasticBackend extends ObservabilityBackend {
     }
 
     @Extension
+    @Symbol("elastic")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {
