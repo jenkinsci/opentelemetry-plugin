@@ -21,6 +21,7 @@ import org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -53,9 +54,9 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
             LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + "buildEnvironmentFor() NO span found for context " + stepContext);
             return;
         }
+        String spanId = span.getSpanContext().getSpanId();
+        String traceId = span.getSpanContext().getTraceId();
         try (Scope ignored = span.makeCurrent()) {
-            String spanId = span.getSpanContext().getSpanId();
-            String traceId = span.getSpanContext().getTraceId();
             envs.put(TRACE_ID, traceId);
             envs.put(SPAN_ID, spanId);
             TextMapPropagator.Setter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
@@ -66,6 +67,11 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
         if (action == null) {
             // unexpected
         } else {
+            if (!Objects.equals(action.getTraceId(), traceId) || ! Objects.equals(action.getSpanId(), spanId)) {
+                // mismatch
+                // FIXME better generation of URLs
+                return;
+            }
             for (MonitoringAction.ObservabilityBackendLink link : action.getLinks()) {
                 // Default backend link got an empty environment variable.
                 if (link.getEnvironmentVariableName() != null) {

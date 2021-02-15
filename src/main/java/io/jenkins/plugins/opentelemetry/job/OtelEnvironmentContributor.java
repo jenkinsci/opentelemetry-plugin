@@ -55,6 +55,7 @@ public class OtelEnvironmentContributor extends EnvironmentContributor {
             W3CTraceContextPropagator.getInstance().inject(Context.current(), envs, setter);
         }
 
+        // FIXME MonitoringAction may be positioned on a wrong spanId (in case of parallel steps). We need another mechanism if we want to output the visualisation URLs
         MonitoringAction action = run.getAction(MonitoringAction.class);
         if (action == null) {
             // unexpected
