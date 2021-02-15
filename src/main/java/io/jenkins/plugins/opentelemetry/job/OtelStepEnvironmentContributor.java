@@ -7,43 +7,50 @@ package io.jenkins.plugins.opentelemetry.job;
 
 import hudson.EnvVars;
 import hudson.Extension;
-import hudson.model.TaskListener;
-import hudson.model.EnvironmentContributor;
 import hudson.model.Run;
-import io.opentelemetry.api.OpenTelemetry;
+import hudson.model.TaskListener;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension
-public class OtelEnvironmentContributor extends EnvironmentContributor {
-    private final static Logger LOGGER = Logger.getLogger(OtelEnvironmentContributor.class.getName());
+public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
 
-    private OtelTraceService otelTraceService;
+    private final static Logger LOGGER = Logger.getLogger(OtelStepEnvironmentContributor.class.getName());
 
     public static final String SPAN_ID = "SPAN_ID";
     public static final String TRACE_ID = "TRACE_ID";
 
+    private OtelTraceService otelTraceService;
+
     @Override
-    public void buildEnvironmentFor(@Nonnull Run run, @Nonnull EnvVars envs, @Nonnull TaskListener listener) {
-        if (run instanceof WorkflowRun) {
-            // skip, will be handle by OtelStepEnvironmentContributor
-            LOGGER.log(Level.FINER, () -> run.getFullDisplayName() + "buildEnvironmentFor(envs: " + envs + ") : skip, will be handled by OtelStepEnvironmentContributor");
-            return;
+    public void buildEnvironmentFor(@Nonnull StepContext stepContext, @Nonnull EnvVars envs, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+        super.buildEnvironmentFor(stepContext, envs, listener);
+        Run run = stepContext.get(Run.class);
+        FlowNode flowNode = stepContext.get(FlowNode.class);
+
+        Span span;
+        if (flowNode == null) {
+            LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + "buildEnvironmentFor() NO flowNode found for context " + stepContext);
+            span = otelTraceService.getSpan(run);
+        } else {
+            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + "buildEnvironmentFor(flowNode: " + flowNode.getDisplayFunctionName() + ") ");
+            span = otelTraceService.getSpan(run, flowNode);
         }
-        Span span = otelTraceService.getSpan(run);
+
         if (span == null) {
-            LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + "buildEnvironmentFor() NO span found");
+            LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + "buildEnvironmentFor() NO span found for context " + stepContext);
             return;
         }
         try (Scope ignored = span.makeCurrent()) {
@@ -66,9 +73,7 @@ public class OtelEnvironmentContributor extends EnvironmentContributor {
                 }
             }
         }
-
     }
-
 
     @Inject
     public void setOtelTraceService(OtelTraceService otelTraceService) {

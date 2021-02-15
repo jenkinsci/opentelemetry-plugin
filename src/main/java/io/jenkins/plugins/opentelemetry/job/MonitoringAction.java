@@ -112,13 +112,13 @@ public class MonitoringAction implements Action, RunAction2 {
         final String label;
         final String url;
         final String iconUrl;
-		final String envVar;
+		final String environmentVariableName;
 
-        public ObservabilityBackendLink(String label, String url, String iconUrl, String envVar) {
+        public ObservabilityBackendLink(String label, String url, String iconUrl, String environmentVariableName) {
             this.label = label;
             this.url = url;
             this.iconUrl = iconUrl;
-            this.envVar = envVar;
+            this.environmentVariableName = environmentVariableName;
         }
 
         public String getLabel() {
@@ -133,8 +133,8 @@ public class MonitoringAction implements Action, RunAction2 {
             return iconUrl;
         }
 
-        public String getEnvVar() {
-            return envVar;
+        public String getEnvironmentVariableName() {
+            return environmentVariableName;
         }
 
         @Override
@@ -143,7 +143,7 @@ public class MonitoringAction implements Action, RunAction2 {
                     "label='" + label + '\'' +
                     ", url='" + url + '\'' +
                     ", iconUrl='" + iconUrl + '\'' +
-                    ", envVar='" + envVar + '\'' +
+                    ", environmentVariableName='" + environmentVariableName + '\'' +
                     '}';
         }
     }

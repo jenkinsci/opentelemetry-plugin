@@ -37,12 +37,8 @@ import static com.google.common.base.Verify.verify;
 import static io.jenkins.plugins.opentelemetry.backend.CustomObservabilityBackend.OTEL_CUSTOM_URL;
 import static io.jenkins.plugins.opentelemetry.backend.ElasticBackend.OTEL_ELASTIC_URL;
 import static io.jenkins.plugins.opentelemetry.backend.JaegerBackend.OTEL_JAEGER_URL;
-import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_PARENT_ID;
-import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_SPAN_ID;
-import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_TRACE_ID;
-import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_TRACE_PARENT;
-import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.TRACEPARENT_SAMPLED_FLAG_HEADER;
-import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.TRACEPARENT_VERSION_HEADER;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.SPAN_ID;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.TRACE_ID;
 
 public class JenkinsOtelPluginIntegrationTest {
     static {
@@ -114,22 +110,6 @@ public class JenkinsOtelPluginIntegrationTest {
         dumpSpans(finishedSpanItems);
         MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(8));
 
-        TaskListener listener = jenkinsRule.createTaskListener();
-        EnvVars environment = build.getEnvironment(listener);
-        MatcherAssert.assertThat(environment.get(OTEL_SPAN_ID), CoreMatchers.notNullValue());
-        MatcherAssert.assertThat(environment.get(OTEL_TRACE_ID), CoreMatchers.notNullValue());
-        MatcherAssert.assertThat(environment.get(OTEL_PARENT_ID), CoreMatchers.notNullValue());
-        MatcherAssert.assertThat(environment.get(OTEL_TRACE_PARENT), CoreMatchers.notNullValue());
-
-        String expectedTraceParent = TRACEPARENT_VERSION_HEADER + "-" +
-		        environment.get(OTEL_TRACE_ID) + "-" +
-		        environment.get(OTEL_PARENT_ID) + "-" + TRACEPARENT_SAMPLED_FLAG_HEADER;
-        MatcherAssert.assertThat(environment.get(OTEL_TRACE_PARENT), CoreMatchers.is(expectedTraceParent));
-
-        MatcherAssert.assertThat(environment.get(OTEL_ELASTIC_URL), CoreMatchers.notNullValue());
-        MatcherAssert.assertThat(environment.get(OTEL_JAEGER_URL), CoreMatchers.nullValue());
-        MatcherAssert.assertThat(environment.get(OTEL_CUSTOM_URL), CoreMatchers.nullValue());
-
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
         Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
@@ -141,6 +121,29 @@ public class JenkinsOtelPluginIntegrationTest {
         Collection<LongPointData> metricPoints = runCompletedCounterData.getLongSumData().getPoints();
         //MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.is(1L));
     }
+
+    @Test
+    public void testTraceEnvironmentVariablesInjectedInShellSteps() throws Exception {
+        String pipelineScript = "node() {\n" +
+                "    stage('ze-stage1') {\n" +
+                "       sh '''\n" +
+                "if [ -z $TRACEPARENT ]\n" +
+                "then\n" +
+                "   echo TRACEPARENT NOT FOUND\n" +
+                "   exit 1\n" +
+                "fi\n" +
+                "'''\n" +
+                "    }\n" +
+                "}";
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-trace-environment-variables-injected-in-shell-steps-" + jobNameSuffix.incrementAndGet());
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        List<SpanData> finishedSpanItems = flush();
+        dumpSpans(finishedSpanItems);
+        MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(6));
+    }
+
 
     @Test
     public void testPipelineWithSkippedSteps() throws Exception {

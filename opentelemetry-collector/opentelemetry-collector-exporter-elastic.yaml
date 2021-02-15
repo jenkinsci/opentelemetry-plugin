@@ -22,8 +22,11 @@ exporters:
   elastic:
     apm_server_url: 'http://localhost:8200'
     secret_token: 'my_secret_token'
+  jaeger:
+    endpoint: localhost:14250
+    insecure: true
   logging:
-    loglevel: info
+    loglevel: warn
   prometheus:
     endpoint: 0.0.0.0:8889
 
@@ -44,5 +47,6 @@ service:
         - batch
       exporters:
         - elastic
+        - jaeger
         - logging
   extensions: [zpages]
