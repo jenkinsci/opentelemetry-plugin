@@ -13,14 +13,16 @@
             <f:entry title="GRPC Authentication Token" field="authenticationTokenValueId">
                 <c:select/>
             </f:entry>
-            <f:entry title="Visualisation">
+            <f:entry title="Visualisation" description="${instance.observabilityBackends.isEmpty() ? instance.getVisualisationObservabilityBackendsString() : null}">
                 <j:invokeStatic var="backendDescriptors" className="io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend" method="allDescriptors"/>
                 <f:hetero-list
                     name="observabilityBackends"
                     hasHeader="true"
                     descriptors="${backendDescriptors}"
                     items="${descriptor.observabilityBackends}"
-                    addCaption="${%Add Visualisation Backend}"/>
+                    addCaption="${%Add Visualisation Observability Backend}"
+                    deleteCaption="${%Remove}"
+                />
             </f:entry>
     </f:section>
 </j:jelly>

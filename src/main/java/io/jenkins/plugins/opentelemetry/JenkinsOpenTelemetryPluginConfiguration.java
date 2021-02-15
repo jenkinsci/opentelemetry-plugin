@@ -11,9 +11,6 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
-import groovy.lang.Writable;
-import groovy.text.GStringTemplateEngine;
-import groovy.text.Template;
 import hudson.Extension;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
@@ -32,14 +29,13 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import java.io.IOException;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Extension
 @Symbol("openTelemetry")
@@ -67,7 +63,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @Override
     public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
-        super.configure(req, json);
+        req.bindJSON(this, json);
+        // stapler oddity, empty lists coming from the HTTP request are not set on bean by  "req.bindJSON(this, json)"
+        this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
         initializeOpenTelemetry();
         save();
         return true;
@@ -145,7 +143,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @DataBoundSetter
     public void setObservabilityBackends(List<ObservabilityBackend> observabilityBackends) {
-        this.observabilityBackends = observabilityBackends;
+        this.observabilityBackends = Optional.of(observabilityBackends).orElse(Collections.emptyList());
     }
 
     @Nonnull
@@ -176,4 +174,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                 .includeCurrentValue(authenticationTokenValueId);
     }
 
+    /**
+     * For visualisation in config.jelly
+     */
+    @Nonnull
+    public String getVisualisationObservabilityBackendsString(){
+        return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(d-> d.getDisplayName()).collect(Collectors.joining(", "));
+    }
 }

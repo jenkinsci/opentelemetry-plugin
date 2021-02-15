@@ -89,10 +89,18 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     }
 
     @Extension
-    public static class DescriptorImpl extends Descriptor<ObservabilityBackend> {
+    public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {
             return "Custom Observability Backend";
+        }
+
+        /**
+         * Should be the last item when listing the observability backend types
+         */
+        @Override
+        public int ordinal() {
+            return 10;
         }
     }
 

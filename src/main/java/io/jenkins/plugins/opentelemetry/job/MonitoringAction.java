@@ -90,7 +90,7 @@ public class MonitoringAction implements Action, RunAction2 {
         List<ObservabilityBackendLink> links = new ArrayList<>();
         for (ObservabilityBackend observabilityBackend : observabilityBackends) {
             links.add(new ObservabilityBackendLink(
-                    "View pipeline with " + observabilityBackend.getDescriptor().getDisplayName(),
+                    "View pipeline with " + observabilityBackend.getName(),
                     observabilityBackend.getTraceVisualisationUrl(binding),
                     observabilityBackend.getIconPath(),
                     observabilityBackend.getEnvVariable()));

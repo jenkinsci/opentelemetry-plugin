@@ -4,4 +4,9 @@
          <f:entry title="Kibana base URL" field="kibanaBaseUrl" description="e.g. 'https://kibana.example.com:5601'">
              <f:textbox />
          </f:entry>
+         <f:advanced>
+            <f:entry title="Name" field="name">
+               <f:textbox default="${descriptor.displayName}"/>
+            </f:entry>
+         </f:advanced>
 </j:jelly>

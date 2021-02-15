@@ -3,7 +3,7 @@
   <t:summary icon="/plugin/opentelemetry/images/48x48/opentelemetry.png">
       OpenTelemetry:
       <j:forEach items="${it.links}" var="link" varStatus="loop">
-        <img src="${resURL}${link.iconUrl}" height="24px"/><a href="${link.url}">${link.label}</a>
+        <img src="${resURL}${link.iconUrl}" height="24px"/><a href="${link.url}" target="_blank">${link.label}</a>
         <j:if test="${!loop.last}">, </j:if>
       </j:forEach>
   </t:summary>
