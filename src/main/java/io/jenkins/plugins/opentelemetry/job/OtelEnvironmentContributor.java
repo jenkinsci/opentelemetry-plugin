@@ -7,13 +7,11 @@ package io.jenkins.plugins.opentelemetry.job;
 
 import hudson.EnvVars;
 import hudson.Extension;
-import hudson.model.ParameterValue;
 import hudson.model.TaskListener;
 import hudson.model.EnvironmentContributor;
 import hudson.model.Run;
 
 import javax.annotation.Nonnull;
-import java.util.List;
 
 @Extension
 public class OtelEnvironmentContributor extends EnvironmentContributor {
