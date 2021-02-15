@@ -63,7 +63,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
-    public String getEnvVariable() {
+    public String getEnvVariableName() {
         return OTEL_CUSTOM_URL;
     }
 

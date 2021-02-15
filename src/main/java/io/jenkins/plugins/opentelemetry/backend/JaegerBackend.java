@@ -57,7 +57,7 @@ public class JaegerBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
-    public String getEnvVariable() {
+    public String getEnvVariableName() {
         return OTEL_JAEGER_URL;
     }
 

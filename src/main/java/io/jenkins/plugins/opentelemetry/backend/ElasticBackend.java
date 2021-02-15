@@ -64,7 +64,7 @@ public class ElasticBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
-    public String getEnvVariable() {
+    public String getEnvVariableName() {
         return OTEL_ELASTIC_URL;
     }
 

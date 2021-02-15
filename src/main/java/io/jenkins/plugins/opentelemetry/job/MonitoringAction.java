@@ -93,7 +93,7 @@ public class MonitoringAction implements Action, RunAction2 {
                     "View pipeline with " + observabilityBackend.getName(),
                     observabilityBackend.getTraceVisualisationUrl(binding),
                     observabilityBackend.getIconPath(),
-                    observabilityBackend.getEnvVariable()));
+                    observabilityBackend.getEnvVariableName()));
 
         }
         return links;
