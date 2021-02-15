@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry.backend;
 
 import hudson.Extension;
-import hudson.model.Descriptor;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -16,10 +15,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Extension
-@Symbol("jaeger")
 public class JaegerBackend extends ObservabilityBackend {
 
-    private String jaegerBaseUrl;
+    public static final String OTEL_JAEGER_URL = "OTEL_JAEGER_URL";
+	private String jaegerBaseUrl;
 
     @DataBoundConstructor
     public JaegerBackend(){
@@ -56,6 +55,12 @@ public class JaegerBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
+    public String getEnvVariableName() {
+        return OTEL_JAEGER_URL;
+    }
+
+    @CheckForNull
+    @Override
     public String getMetricsVisualisationUrlTemplate() {
         return null;
     }
@@ -71,6 +76,7 @@ public class JaegerBackend extends ObservabilityBackend {
     }
 
     @Extension
+    @Symbol("jaeger")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {

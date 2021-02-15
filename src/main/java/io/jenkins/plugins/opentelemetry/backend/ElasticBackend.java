@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry.backend;
 
 import hudson.Extension;
-import hudson.model.Descriptor;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -16,9 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Extension
-@Symbol("elastic")
 public class ElasticBackend extends ObservabilityBackend {
 
+    public static final String OTEL_ELASTIC_URL = "OTEL_ELASTIC_URL";
     private String kibanaBaseUrl;
 
     @DataBoundConstructor
@@ -63,6 +62,12 @@ public class ElasticBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
+    public String getEnvVariableName() {
+        return OTEL_ELASTIC_URL;
+    }
+
+    @CheckForNull
+    @Override
     public String getMetricsVisualisationUrlTemplate() {
         return null;
     }
@@ -78,6 +83,7 @@ public class ElasticBackend extends ObservabilityBackend {
     }
 
     @Extension
+    @Symbol("elastic")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {

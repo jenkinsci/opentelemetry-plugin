@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry.backend;
 
 import hudson.Extension;
-import hudson.model.Descriptor;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -16,9 +15,9 @@ import java.util.Map;
 import java.util.Objects;
 
 @Extension
-@Symbol("customObservabilityBackend")
 public class CustomObservabilityBackend extends ObservabilityBackend {
 
+    public static final String OTEL_CUSTOM_URL = "OTEL_CUSTOM_URL";
     private String traceVisualisationUrlTemplate;
     private String metricsVisualisationUrlTemplate;
 
@@ -60,6 +59,12 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
         return "/images/24x24/monitor.png";
     }
 
+    @CheckForNull
+    @Override
+    public String getEnvVariableName() {
+        return OTEL_CUSTOM_URL;
+    }
+
     @Override
     public String toString() {
         return "CustomBackend{" +
@@ -82,6 +87,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     }
 
     @Extension
+    @Symbol("customObservabilityBackend")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {

@@ -5,8 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.Result;
+import hudson.model.TaskListener;
+import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
+import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
@@ -22,7 +26,6 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.*;
 import org.jvnet.hudson.test.BuildWatcher;
-import org.jvnet.hudson.test.JenkinsRule;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +34,15 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verify;
+import static io.jenkins.plugins.opentelemetry.backend.CustomObservabilityBackend.OTEL_CUSTOM_URL;
+import static io.jenkins.plugins.opentelemetry.backend.ElasticBackend.OTEL_ELASTIC_URL;
+import static io.jenkins.plugins.opentelemetry.backend.JaegerBackend.OTEL_JAEGER_URL;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_PARENT_ID;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_SPAN_ID;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_TRACE_ID;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_TRACE_PARENT;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.TRACEPARENT_SAMPLED_FLAG_HEADER;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.TRACEPARENT_VERSION_HEADER;
 
 public class JenkinsOtelPluginIntegrationTest {
     static {
@@ -47,7 +59,8 @@ public class JenkinsOtelPluginIntegrationTest {
     public static BuildWatcher buildWatcher = new BuildWatcher();
 
     @ClassRule
-    public static JenkinsRule jenkinsRule = new JenkinsRule();
+    @ConfiguredWithCode("jcasc-elastic-backend.yml")
+    public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
 
     static OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
@@ -100,6 +113,22 @@ public class JenkinsOtelPluginIntegrationTest {
         List<SpanData> finishedSpanItems = flush();
         dumpSpans(finishedSpanItems);
         MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(8));
+
+        TaskListener listener = jenkinsRule.createTaskListener();
+        EnvVars environment = build.getEnvironment(listener);
+        MatcherAssert.assertThat(environment.get(OTEL_SPAN_ID), CoreMatchers.notNullValue());
+        MatcherAssert.assertThat(environment.get(OTEL_TRACE_ID), CoreMatchers.notNullValue());
+        MatcherAssert.assertThat(environment.get(OTEL_PARENT_ID), CoreMatchers.notNullValue());
+        MatcherAssert.assertThat(environment.get(OTEL_TRACE_PARENT), CoreMatchers.notNullValue());
+
+        String expectedTraceParent = TRACEPARENT_VERSION_HEADER + "-" +
+		        environment.get(OTEL_TRACE_ID) + "-" +
+		        environment.get(OTEL_PARENT_ID) + "-" + TRACEPARENT_SAMPLED_FLAG_HEADER;
+        MatcherAssert.assertThat(environment.get(OTEL_TRACE_PARENT), CoreMatchers.is(expectedTraceParent));
+
+        MatcherAssert.assertThat(environment.get(OTEL_ELASTIC_URL), CoreMatchers.notNullValue());
+        MatcherAssert.assertThat(environment.get(OTEL_JAEGER_URL), CoreMatchers.nullValue());
+        MatcherAssert.assertThat(environment.get(OTEL_CUSTOM_URL), CoreMatchers.nullValue());
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);

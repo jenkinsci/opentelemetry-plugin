@@ -11,7 +11,6 @@ import groovy.lang.Writable;
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
 import hudson.DescriptorExtensionList;
-import hudson.Extension;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
@@ -39,6 +38,9 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
 
     @CheckForNull
     public abstract String getIconPath();
+
+    @CheckForNull
+    public abstract String getEnvVariableName();
 
     @Override
     public abstract boolean equals(Object obj);
