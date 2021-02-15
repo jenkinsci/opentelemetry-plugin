@@ -37,8 +37,12 @@ import static com.google.common.base.Verify.verify;
 import static io.jenkins.plugins.opentelemetry.backend.CustomObservabilityBackend.OTEL_CUSTOM_URL;
 import static io.jenkins.plugins.opentelemetry.backend.ElasticBackend.OTEL_ELASTIC_URL;
 import static io.jenkins.plugins.opentelemetry.backend.JaegerBackend.OTEL_JAEGER_URL;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_PARENT_ID;
 import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_SPAN_ID;
 import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_TRACE_ID;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.OTEL_TRACE_PARENT;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.TRACEPARENT_SAMPLED_FLAG_HEADER;
+import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.TRACEPARENT_VERSION_HEADER;
 
 public class JenkinsOtelPluginIntegrationTest {
     static {
@@ -114,6 +118,14 @@ public class JenkinsOtelPluginIntegrationTest {
         EnvVars environment = build.getEnvironment(listener);
         MatcherAssert.assertThat(environment.get(OTEL_SPAN_ID), CoreMatchers.notNullValue());
         MatcherAssert.assertThat(environment.get(OTEL_TRACE_ID), CoreMatchers.notNullValue());
+        MatcherAssert.assertThat(environment.get(OTEL_PARENT_ID), CoreMatchers.notNullValue());
+        MatcherAssert.assertThat(environment.get(OTEL_TRACE_PARENT), CoreMatchers.notNullValue());
+
+        String expectedTraceParent = TRACEPARENT_VERSION_HEADER + "-" +
+		        environment.get(OTEL_TRACE_ID) + "-" +
+		        environment.get(OTEL_PARENT_ID) + "-" + TRACEPARENT_SAMPLED_FLAG_HEADER;
+        MatcherAssert.assertThat(environment.get(OTEL_TRACE_PARENT), CoreMatchers.is(expectedTraceParent));
+
         MatcherAssert.assertThat(environment.get(OTEL_ELASTIC_URL), CoreMatchers.notNullValue());
         MatcherAssert.assertThat(environment.get(OTEL_JAEGER_URL), CoreMatchers.nullValue());
         MatcherAssert.assertThat(environment.get(OTEL_CUSTOM_URL), CoreMatchers.nullValue());

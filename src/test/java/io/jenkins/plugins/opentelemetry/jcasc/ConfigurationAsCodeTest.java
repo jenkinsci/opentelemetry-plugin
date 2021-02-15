@@ -36,7 +36,6 @@ public class ConfigurationAsCodeTest {
 
         MatcherAssert.assertThat(configuration.isUseTls(), CoreMatchers.is(false));
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("otel-collector-contrib:4317"));
-        MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("otel-collector-contrib:4317"));
         MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(3));
 
         ElasticBackend elastic = (ElasticBackend) configuration.getObservabilityBackends().get(0);
