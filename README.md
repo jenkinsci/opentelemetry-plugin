@@ -12,47 +12,48 @@ Collect Jenkins monitoring data through OpenTelemetry.
 
 ## Features
 
-### Distributed traces of the job executions
+### Monitoring of Jenkins jobs execution using distributed tracing principles
 
-Enables
-
- * Understand where time is spent, including time spent waiting to schedule the job (build queue)
-   * Long span "Phase : Start" --> job waiting to be allocated a build agent
- * Detect increasing time spent in steps like 
-   * Invocations of external systems (git checkout...)
-
-Leverage
-
-* Automated anomaly detection on spans and traces detecting drifts on duration of steps 
-
- * host details of the build agent on which steps are executed
-
-### Ideas
-
-* Collect labels of build agents
-* Expose traceparent to shell calls
-* Detect outages caused by upgrades. Report on the version of the plugin of each plugin being used as a step
-
+* Understand where time is spent, including time spent waiting to schedule the job (time spent in the build queue)
+   * The time spent in the built queue waiting for a build agent is visualised with the span "Phase : Start"
+* Detect increasing time spent in steps like 
+   * Invocations of external systems (e.g. git checkout...)
+* Built in integration with [Elastic Observability](https://www.elastic.co/observability), [Jaeger](https://www.jaegertracing.io/), and [Zipkin](https://zipkin.io/). 
+   Other OpenTelemetry compatible distributed tracing solutions are also supported. 
+   
 ### Metrics on Jenkins health indicators
 
-ci.pipeline.run.active 
-ci.pipeline.run.launched 
-ci.pipeline.run.started 
-ci.pipeline.run.completed 
-ci.pipeline.run.aborted 
-jenkins.queue.waiting 
-jenkins.queue.blocked 
-jenkins.queue.buildable 
-jenkins.queue.left 
-jenkins.queue.time_spent_millis 
+* Jenkins health metrics
+    * ci.pipeline.run.active 
+    * ci.pipeline.run.launched 
+    * ci.pipeline.run.started 
+    * ci.pipeline.run.completed 
+    * ci.pipeline.run.aborted 
+    * jenkins.queue.waiting 
+    * jenkins.queue.blocked 
+    * jenkins.queue.buildable 
+    * jenkins.queue.left 
+    * jenkins.queue.time_spent_millis
+* Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability) 
 
 ## Getting started
 
-Configure the OpenTelemetry endpoint. Only GRPC OTLP is supported for the moment.
-
+* Setup an OpenTelemetry endpoint such as the [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+* Install the Jenkins OpenTelemetry plugin
+* Configure the Jenkins OpenTelemetry plugin navigating to the "Manage Jenkins / Configure System" screen
+* In the OpenTelemetry section define
+  * "OTLP GRPC Endpoint": the hostname and port of the OpenTelemetry GRPC Protocol (OTLP GRPC) endpoint, typically an OpenTelemetry Collector or directly an Observability backend that supports the OTLP GRPC protocol
+  * "Use TLS": check if your OTLP GRPC uses TLS
+  * "GRPC Authentication Token Header" : name of the authentication header if header based authentication is used
+  * "GRPC Authentication Token": token when using header based authentication
+  * Visualization backend: the backend used to visualize job executions as traces.
+    * Elastic Observability
+    * Jaeger
+    * Zipkin
+    * Custom Observability backend for other visualisation solution
 ## Screenshots
 
-Sample of traces collected by Elastic APM for various flavors of pipelines
+Sample of traces collected with Elastic Observability for various flavors of pipelines
 
 ### Declarative Pipeline
 
@@ -126,13 +127,17 @@ node {
 ![freestyle-job](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
 
 
-## Contributing
+### Ideas
 
-TODO review the default [CONTRIBUTING](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md) file and make sure it is appropriate for your plugin, if not then add your own one adapted from the base file
+* Collect labels of build agents
+* Detect outages caused by upgrades. Report on the version of the plugin of each plugin being used as a step
+
+
+## Contributing
 
 Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md)
 
 ## LICENSE
 
-Licensed under MIT, see [LICENSE](LICENSE.md)
+Licensed under Apache Software License 2, see [LICENSE](LICENSE)
 
