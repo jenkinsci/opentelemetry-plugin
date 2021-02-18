@@ -81,13 +81,15 @@ public class OpenTelemetrySdkProvider {
     }
 
     public void initializeForTesting() {
+        LOGGER.log(Level.FINE, "initializeForTesting");
         preDestroy();
-        GlobalOpenTelemetry.resetForTest();
+
         initializeOpenTelemetrySdk(TESTING_METRICS_EXPORTER, TESTING_SPAN_EXPORTER, 500);
         LOGGER.log(Level.INFO, "OpenTelemetry initialized for TESTING");
     }
 
     public void initializeNoOp() {
+        LOGGER.log(Level.FINE, "initializeNoOp");
         preDestroy();
         this.intervalMetricReader = null;
 
@@ -97,14 +99,15 @@ public class OpenTelemetrySdkProvider {
         this.openTelemetry = OpenTelemetrySdk.builder()
                 .setTracerProvider(sdkTracerProvider)
                 .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
-                .build();
-        GlobalOpenTelemetry.set(openTelemetry);
+                .buildAndRegisterGlobal();
 
         this.tracer.setDelegate(Tracer.getDefault());
-        LOGGER.log(Level.INFO, "OpenTelemetry initialized as NoOp");
+        LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
     }
 
     public void initializeForGrpc(@Nonnull String endpoint, boolean useTls, @Nullable String authenticationTokenHeaderName, @Nullable String authenticationTokenHeaderValue) {
+        LOGGER.log(Level.FINE, "initializeForGrpc");
+
         preDestroy();
         // GRPC CHANNEL
         ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forTarget(endpoint);
@@ -144,14 +147,13 @@ public class OpenTelemetrySdkProvider {
 
         // TRACES
         Resource resource = buildResource();
-        LOGGER.log(Level.INFO, () ->"OpenTelemetry SDK resources: " + resource.getAttributes().asMap().entrySet().stream().map( e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
+        LOGGER.log(Level.FINE, () ->"OpenTelemetry SDK resources: " + resource.getAttributes().asMap().entrySet().stream().map( e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
         SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder().setResource(resource).addSpanProcessor(SimpleSpanProcessor.create(spanExporter)).build();
 
         this.openTelemetry = OpenTelemetrySdk.builder()
                 .setTracerProvider(sdkTracerProvider)
                 .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
-                .build();
-        GlobalOpenTelemetry.set(openTelemetry);
+                .buildAndRegisterGlobal();
 
         this.tracer.setDelegate(openTelemetry.getTracer("jenkins"));
     }
@@ -188,5 +190,6 @@ public class OpenTelemetrySdkProvider {
         if (this.intervalMetricReader != null) {
             this.intervalMetricReader.shutdown();
         }
+        GlobalOpenTelemetry.resetForTest();
     }
 }
