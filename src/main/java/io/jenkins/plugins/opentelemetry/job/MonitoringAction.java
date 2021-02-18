@@ -15,6 +15,7 @@ import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
@@ -69,7 +70,7 @@ public class MonitoringAction implements Action, RunAction2 {
         return spanId;
     }
 
-    @CheckForNull
+    @Nonnull
     public List<ObservabilityBackendLink> getLinks() {
         List<ObservabilityBackend> observabilityBackends = this.pluginConfiguration.getObservabilityBackends();
 
