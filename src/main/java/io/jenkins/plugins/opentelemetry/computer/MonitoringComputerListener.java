@@ -36,7 +36,7 @@ public class MonitoringComputerListener extends ComputerListener {
     public void postConstruct() {
         Computer masterComputer = Jenkins.get().getComputer("");
         if (masterComputer == null) {
-            LOGGER.log(Level.INFO, () -> "IllegalState Master computer not found");
+            LOGGER.log(Level.FINE, () -> "IllegalState Master computer not found");
         } else if (masterComputer.getAction(OpenTelemetryAttributesAction.class) != null) {
             // nothing to do.
             // why are we invoked a second time? plugin reload?
@@ -49,7 +49,7 @@ public class MonitoringComputerListener extends ComputerListener {
                     openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
                 }
                 openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey()), JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME_MASTER);
-                LOGGER.log(Level.INFO, () -> "Resources for master computer " + masterComputer + ": " + openTelemetryAttributesAction);
+                LOGGER.log(Level.FINE, () -> "Resources for master computer " + masterComputer + ": " + openTelemetryAttributesAction);
                 masterComputer.addAction(openTelemetryAttributesAction);
             } catch (IOException e) {
                 LOGGER.log(Level.WARNING,  "Failure getting attributes for master computer " + masterComputer, e);

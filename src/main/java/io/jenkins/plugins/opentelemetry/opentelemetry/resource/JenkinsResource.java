@@ -29,7 +29,7 @@ public class JenkinsResource extends ResourceProvider {
                 ResourceAttributes.SERVICE_NAME, JenkinsOtelSemanticAttributes.SERVICE_NAME_JENKINS,
                 JenkinsOtelSemanticAttributes.JENKINS_URL, rootUrl
         );
-        LOGGER.log(Level.INFO, () -> "Attributes: " + attributes);
+        LOGGER.log(Level.FINE, () -> "Attributes: " + attributes);
         return attributes;
     }
 }

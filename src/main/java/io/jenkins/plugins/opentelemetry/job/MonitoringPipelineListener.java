@@ -89,16 +89,15 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     @Override
     public void onAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {
         if (isIgnoredStep(node.getDescriptor())){
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - don't create span for step '" + node.getDisplayFunctionName() + "'");
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - don't create span for step '" + node.getDisplayFunctionName() + "'");
             return;
         }
         try (Scope ignored = setupContext(run, node)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, node);
 
             String principal = Objects.toString(node.getExecution().getAuthentication().getPrincipal(), "#null#");
-            LOGGER.log(Level.INFO, () -> node.getDisplayFunctionName() + " - principal: " + principal);
-
-
+            LOGGER.log(Level.FINE, () -> node.getDisplayFunctionName() + " - principal: " + principal);
+            
             SpanBuilder spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName())
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, node.getDisplayFunctionName())
@@ -125,7 +124,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     @Override
     public void onAfterAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {
         if (isIgnoredStep(node.getDescriptor())){
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - don't end span for step '" + node.getDisplayFunctionName() + "'");
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - don't end span for step '" + node.getDisplayFunctionName() + "'");
             return;
         }
         endCurrentSpan(node, run);

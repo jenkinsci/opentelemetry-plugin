@@ -46,7 +46,7 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
             LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + "buildEnvironmentFor() NO flowNode found for context " + stepContext);
             span = otelTraceService.getSpan(run);
         } else {
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + "buildEnvironmentFor(flowNode: " + flowNode.getDisplayFunctionName() + ") ");
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + "buildEnvironmentFor(flowNode: " + flowNode.getDisplayFunctionName() + ") ");
             span = otelTraceService.getSpan(run, flowNode);
         }
 

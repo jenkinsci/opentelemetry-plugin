@@ -75,7 +75,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     public void initializeOpenTelemetry() {
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.endpoint, this.useTls, this.authenticationTokenName, this.authenticationTokenValueId);
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
-            LOGGER.log(Level.INFO, "Configuration didn't change, skip reconfiguration");
+            LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
         }
 
