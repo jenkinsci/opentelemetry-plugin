@@ -5,13 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.Result;
-import hudson.model.TaskListener;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
@@ -34,11 +33,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verify;
-import static io.jenkins.plugins.opentelemetry.backend.CustomObservabilityBackend.OTEL_CUSTOM_URL;
-import static io.jenkins.plugins.opentelemetry.backend.ElasticBackend.OTEL_ELASTIC_URL;
-import static io.jenkins.plugins.opentelemetry.backend.JaegerBackend.OTEL_JAEGER_URL;
-import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.SPAN_ID;
-import static io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributor.TRACE_ID;
 
 public class JenkinsOtelPluginIntegrationTest {
     static {
@@ -272,6 +266,11 @@ public class JenkinsOtelPluginIntegrationTest {
         Collections.sort(spansAsString);
 
         System.out.println(spansAsString.stream().collect(Collectors.joining(", \n")));
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        GlobalOpenTelemetry.resetForTest();
     }
 
 }

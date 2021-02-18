@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -16,9 +17,7 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -70,5 +69,15 @@ public class OpenTelemetryTest {
     @After
     public void after() {
 
+    }
+
+    @BeforeClass
+    public static void beforeClass() {
+        GlobalOpenTelemetry.resetForTest();
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        GlobalOpenTelemetry.resetForTest();
     }
 }

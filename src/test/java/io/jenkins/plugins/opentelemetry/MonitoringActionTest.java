@@ -7,6 +7,9 @@ package io.jenkins.plugins.opentelemetry;
 
 import groovy.text.GStringTemplateEngine;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,5 +39,15 @@ public class MonitoringActionTest {
         binding.put("startTime", Instant.ofEpochMilli(1613086645141L));
         String actual = new GStringTemplateEngine().createTemplate(template).make(binding).toString();
         System.out.println(actual);
+    }
+
+    @BeforeClass
+    public static void beforeClass() {
+        GlobalOpenTelemetry.resetForTest();
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        GlobalOpenTelemetry.resetForTest();
     }
 }
