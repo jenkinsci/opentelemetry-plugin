@@ -29,7 +29,9 @@ exporters:
     loglevel: warn
   prometheus:
     endpoint: 0.0.0.0:8889
-
+  zipkin:
+    endpoint: "http://localhost:9411/api/v2/spans"
+    insecure: true
 service:
   pipelines:
     metrics:
@@ -48,5 +50,5 @@ service:
       exporters:
         - elastic
         - jaeger
-        - logging
+        - zipkin
   extensions: [zpages]
