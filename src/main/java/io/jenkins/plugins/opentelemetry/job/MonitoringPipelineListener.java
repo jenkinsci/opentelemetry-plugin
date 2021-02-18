@@ -97,7 +97,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             String principal = Objects.toString(node.getExecution().getAuthentication().getPrincipal(), "#null#");
             LOGGER.log(Level.FINE, () -> node.getDisplayFunctionName() + " - principal: " + principal);
-            
+
             SpanBuilder spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName())
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, node.getDisplayFunctionName())
