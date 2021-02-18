@@ -51,6 +51,9 @@ Collect Jenkins monitoring data through OpenTelemetry.
     * Jaeger
     * Zipkin
     * Custom Observability backend for other visualisation solution
+
+![Sample Configuration](https://raw.githubusercontent.com/cyrille-leclerc/opentelemetry-plugin/master/docs/images/jenkins-otel-plugin-configuration.png)  
+
 ## Screenshots
 
 Sample of traces collected with Elastic Observability for various flavors of pipelines
