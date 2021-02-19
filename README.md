@@ -56,11 +56,46 @@ Collect Jenkins monitoring data through OpenTelemetry.
 
 ## Screenshots
 
-Sample of traces collected with Elastic Observability for various flavors of pipelines
+Sample of traces collected for various flavors of pipelines
+
+### Scripted Pipeline
+
+#### Scripted pipeline status page
+
+```groovy
+node {
+    stage('Prepare') {
+        echo("Prepare")
+    }
+    stage('Build') {
+        git 'https://github.com/jglick/simple-maven-project-with-tests.git'
+        sh "mvn -Dmaven.test.failure.ignore=true clean package"
+    }
+    stage('Post Build') {
+        echo("this is the post build phase")
+    }
+}
+```
+
+![Scripted pipeline status page with Elastic Observability link](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
+
+
+#### Scripted pipeline visualized with Elastic Observability 
+
+![Scripted pipeline visualised with Elastic Observability](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
+
+#### Scripted pipeline visualized with Jaeger
+
+![Scripted pipeline visualised with Jaeger](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-jaeger.png)
+
+#### Scripted pipeline visualized with Zipkin
+
+![Scripted pipeline visualised with Jaeger](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-zipkin.png)
+
 
 ### Declarative Pipeline
 
-![declarative-pipeline](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/declarative-pipeline.png)
+![Declarative pipeline visualised with Elastic Observability](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/declarative-pipeline.png)
 
 ```groovy
 pipeline {
