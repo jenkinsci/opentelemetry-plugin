@@ -44,6 +44,7 @@ bin/
 
 # Project specific ignores
 .otel/
+.prometheus-otel/
 *.log
 
 
