@@ -26,7 +26,7 @@
         <opentelemetry.version>0.16.0</opentelemetry.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
-    <description>Publish Jenkins metrics, including distributed traces of job executions, to an OpenTelemetry endpoint</description>
+    <description>Publish Jenkins metrics to an OpenTelemetry endpoint, including distributed traces of job executions and health metrics of the controller.</description>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
 
     <dependencyManagement>
