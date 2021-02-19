@@ -57,7 +57,7 @@ public final class JenkinsOtelSemanticAttributes {
      * As {@link Jenkins.MasterComputer#getName()} return "", choose another name
      * @see Jenkins.MasterComputer#getName()
      */
-    public static final String JENKINS_COMPUTER_NAME_MASTER = "#master#";
+    public static final String JENKINS_COMPUTER_NAME_CONTROLLER = "#controller#";
 
     public static final String JENKINS_JOB_SPAN_PHASE_START_NAME = "Phase: Start";
     public static final String JENKINS_JOB_SPAN_PHASE_RUN_NAME = "Phase: Run";

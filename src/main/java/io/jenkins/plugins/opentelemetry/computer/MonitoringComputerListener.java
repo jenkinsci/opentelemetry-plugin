@@ -34,13 +34,13 @@ public class MonitoringComputerListener extends ComputerListener {
 
     @PostConstruct
     public void postConstruct() {
-        Computer masterComputer = Jenkins.get().getComputer("");
-        if (masterComputer == null) {
-            LOGGER.log(Level.FINE, () -> "IllegalState Master computer not found");
-        } else if (masterComputer.getAction(OpenTelemetryAttributesAction.class) != null) {
+        Computer controllerComputer = Jenkins.get().getComputer("");
+        if (controllerComputer == null) {
+            LOGGER.log(Level.FINE, () -> "IllegalState Jenkins Controller computer not found");
+        } else if (controllerComputer.getAction(OpenTelemetryAttributesAction.class) != null) {
             // nothing to do.
             // why are we invoked a second time? plugin reload?
-            LOGGER.log(Level.FINE, () -> "Resources for master computer " + masterComputer + " have already been defined: " + masterComputer.getAction(OpenTelemetryAttributesAction.class));
+            LOGGER.log(Level.FINE, () -> "Resources for Jenkins Controller computer " + controllerComputer + " have already been defined: " + controllerComputer.getAction(OpenTelemetryAttributesAction.class));
         } else {
             try {
                 OpenTelemetryAttributesAction openTelemetryAttributesAction = new OpenTelemetryAttributesAction();
@@ -48,11 +48,11 @@ public class MonitoringComputerListener extends ComputerListener {
                 for (Map.Entry<String, String> attribute : attributesAsMap.entrySet()) {
                     openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
                 }
-                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey()), JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME_MASTER);
-                LOGGER.log(Level.FINE, () -> "Resources for master computer " + masterComputer + ": " + openTelemetryAttributesAction);
-                masterComputer.addAction(openTelemetryAttributesAction);
+                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey()), JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
+                LOGGER.log(Level.FINE, () -> "Resources for Jenkins Controller computer " + controllerComputer + ": " + openTelemetryAttributesAction);
+                controllerComputer.addAction(openTelemetryAttributesAction);
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING,  "Failure getting attributes for master computer " + masterComputer, e);
+                LOGGER.log(Level.WARNING,  "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
             }
         }
     }
