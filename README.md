@@ -1,4 +1,4 @@
-# jenkins-opentelemetry
+# opentelemetry
 
 [![Build Status](https://ci.jenkins.io/job/Plugins/job/jenkins-opentelemetry-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/jenkins-opentelemetry-plugin/job/master/)
 [![Contributors](https://img.shields.io/github/contributors/jenkinsci/jenkins-opentelemetry-plugin.svg)](https://github.com/jenkinsci/jenkins-opentelemetry-plugin/graphs/contributors)
