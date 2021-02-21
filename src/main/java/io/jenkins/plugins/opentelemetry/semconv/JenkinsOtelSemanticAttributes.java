@@ -49,7 +49,7 @@ public final class JenkinsOtelSemanticAttributes {
 
 
     /**
-     * @see io.opentelemetry.sdk.resources.ResourceAttributes#SERVICE_NAME
+     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAME
      */
     public static final String SERVICE_NAME_JENKINS = "jenkins";
 

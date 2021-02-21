@@ -102,7 +102,7 @@ public class GitStepHandler implements StepHandler {
 
     /**
      * Remove the `username` and the `password` params of the URL.
-     * <p/>
+     *
      * Example: "https://my_username:my_password@github.com/open-telemetry/opentelemetry-java.git" is sanitized as
      * "https://github.com/open-telemetry/opentelemetry-java.git"
      *
