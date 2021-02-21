@@ -273,20 +273,20 @@
     </scm>
     <contributors>
         <contributor>
-            <id>cleclerc</id>
+            <!-- jenkins id cleclerc -->
             <name>Cyrille Le Clerc</name>
             <email>cyrille@cyrilleleclerc.com</email>
             <organization>Elastic</organization>
             <organizationUrl>https://elastic.co</organizationUrl>
         </contributor>
         <contributor>
-            <id>v1v</id>
+            <!-- jenkins id v1v -->
             <name>Victor Martinez</name>
             <organization>Elastic</organization>
             <organizationUrl>https://elastic.co</organizationUrl>
         </contributor>
         <contributor>
-            <id>ifernandezcalvo</id>
+            <!-- jenkins id ifernandezcalvo -->
             <name>Ivan Fernandez Calvo</name>
             <organization>Elastic</organization>
             <organizationUrl>https://elastic.co</organizationUrl>
