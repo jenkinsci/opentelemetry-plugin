@@ -34,6 +34,10 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verify;
 
+/**
+ * Note usage of `def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}}` is inspired by
+ * https://github.com/jenkinsci/workflow-basic-steps-plugin/blob/474cea2a53753e1fb9b166fa1ca0f6184b5cee4a/src/test/java/org/jenkinsci/plugins/workflow/steps/IsUnixStepTest.java#L39
+ */
 public class JenkinsOtelPluginIntegrationTest {
     static {
         OpenTelemetrySdkProvider.TESTING_INMEMORY_MODE = true;
@@ -88,12 +92,13 @@ public class JenkinsOtelPluginIntegrationTest {
         // BEFORE
 
 
-        String pipelineScript = "node() {\n" +
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+                "node() {\n" +
                 "    stage('ze-stage1') {\n" +
-                "       sh 'echo ze-echo' \n" +
+                "       xsh 'echo ze-echo' \n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
-                "       sh 'echo ze-echo-2' \n" +
+                "       xsh 'echo ze-echo-2' \n" +
                 "    }\n" +
                 "}";
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
@@ -118,7 +123,8 @@ public class JenkinsOtelPluginIntegrationTest {
 
     @Test
     public void testTraceEnvironmentVariablesInjectedInShellSteps() throws Exception {
-        String pipelineScript = "node() {\n" +
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+                "node() {\n" +
                 "    stage('ze-stage1') {\n" +
                 "       sh '''\n" +
                 "if [ -z $TRACEPARENT ]\n" +
@@ -141,7 +147,8 @@ public class JenkinsOtelPluginIntegrationTest {
 
     @Test
     public void testPipelineWithSkippedSteps() throws Exception {
-        String pipelineScript = "node() {\n" +
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+                "node() {\n" +
                 "    stage('ze-stage1') {\n" +
                 "       sh 'echo ze-echo' \n" +
                 "       echo 'ze-echo-step' \n" +
@@ -194,7 +201,8 @@ public class JenkinsOtelPluginIntegrationTest {
 
     @Test
     public void testPipelineWithWrappingStep() throws Exception {
-        String pipelineScript = "node() {\n" +
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+                "node() {\n" +
                 "    stage('ze-stage1') {\n" +
                 "       withEnv(['MY_VARIABLE=MY_VALUE']) {\n" +
                 "          sh 'echo ze-echo' \n" +
@@ -216,7 +224,8 @@ public class JenkinsOtelPluginIntegrationTest {
 
     @Test
     public void testPipelineWithError() throws Exception {
-        String pipelineScript = "node() {\n" +
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+                "node() {\n" +
                 "    stage('ze-stage1') {\n" +
                 "       sh 'echo ze-echo' \n" +
                 "    }\n" +
@@ -236,7 +245,8 @@ public class JenkinsOtelPluginIntegrationTest {
 
     @Test
     public void testPipelineWithParallelStep() throws Exception {
-        String pipelineScript = "node {\n" +
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+                "node() {\n" +
                 "    stage('ze-parallel-stage') {\n" +
                 "        parallel parallelBranch1: {\n" +
                 "            sh 'echo this-is-the-parallel-branch-1'\n" +
