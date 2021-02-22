@@ -4,18 +4,17 @@
   ~ SPDX-License-Identifier: Apache-2.0
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
         <version>4.16</version>
-        <relativePath/>
+        <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>opentelemetry</artifactId>
-    <version>${revision}${changelist}</version>
+    <version>0.1-alpha</version>
     <packaging>hpi</packaging>
     <properties>
         <revision>1.0</revision>
@@ -269,7 +268,7 @@
         <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
         <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
         <url>https://github.com/${gitHubRepo}</url>
-        <tag>${scmTag}</tag>
+        <tag>opentelemetry-0.1-alpha</tag>
     </scm>
     <contributors>
         <contributor>
