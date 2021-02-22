@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import hudson.ExtensionList;
+import hudson.Functions;
 import hudson.model.Result;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
@@ -123,25 +124,28 @@ public class JenkinsOtelPluginIntegrationTest {
 
     @Test
     public void testTraceEnvironmentVariablesInjectedInShellSteps() throws Exception {
-        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-                "node() {\n" +
-                "    stage('ze-stage1') {\n" +
-                "       xsh '''\n" +
-                "if [ -z $TRACEPARENT ]\n" +
-                "then\n" +
-                "   echo TRACEPARENT NOT FOUND\n" +
-                "   exit 1\n" +
-                "fi\n" +
-                "'''\n" +
-                "    }\n" +
-                "}";
-        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-trace-environment-variables-injected-in-shell-steps-" + jobNameSuffix.incrementAndGet());
-        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        if (Functions.isWindows()) {
+            // TODO test on windows
+        } else {
+            String pipelineScript = "node() {\n" +
+                    "    stage('ze-stage1') {\n" +
+                    "       sh '''\n" +
+                    "if [ -z $TRACEPARENT ]\n" +
+                    "then\n" +
+                    "   echo TRACEPARENT NOT FOUND\n" +
+                    "   exit 1\n" +
+                    "fi\n" +
+                    "'''\n" +
+                    "    }\n" +
+                    "}";
+            WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-trace-environment-variables-injected-in-shell-steps-" + jobNameSuffix.incrementAndGet());
+            pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+            WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        List<SpanData> finishedSpanItems = flush();
-        dumpSpans(finishedSpanItems);
-        MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(6));
+            List<SpanData> finishedSpanItems = flush();
+            dumpSpans(finishedSpanItems);
+            MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(6));
+        }
     }
 
 
