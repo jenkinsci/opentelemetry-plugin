@@ -12,4 +12,4 @@ First alpha release of the Jenkins OpenTelemetry plugin.
     * Job executions
     * Authentication success/failure
 * Built-in integration with [Elastic Observability](https://www.elastic.co/observability), [Jaeger](https://www.jaegertracing.io/), and [Zipkin](https://zipkin.io/).
-  Other OpenTelemetry compatible distributed tracing and Metrics solutions are also supported ([Prometheus](https://prometheus.io/)...). 
+  Other OpenTelemetry compatible distributed tracing and metrics solutions are also supported ([Prometheus](https://prometheus.io/)...). 
