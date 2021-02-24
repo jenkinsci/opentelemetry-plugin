@@ -14,6 +14,7 @@ import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.CustomObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.JaegerBackend;
+import io.jenkins.plugins.opentelemetry.backend.ZipkinBackend;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
 import org.hamcrest.CoreMatchers;
@@ -24,7 +25,6 @@ import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
 import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
 import static io.jenkins.plugins.casc.misc.Util.toYamlString;
 
-@Ignore
 public class ConfigurationAsCodeTest {
 
     @ClassRule
@@ -37,7 +37,7 @@ public class ConfigurationAsCodeTest {
 
         MatcherAssert.assertThat(configuration.isUseTls(), CoreMatchers.is(false));
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("otel-collector-contrib:4317"));
-        MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(3));
+        MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(4));
 
         ElasticBackend elastic = (ElasticBackend) configuration.getObservabilityBackends().get(0);
         MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("http://localhost:5601"));
@@ -48,6 +48,9 @@ public class ConfigurationAsCodeTest {
         CustomObservabilityBackend custom = (CustomObservabilityBackend) configuration.getObservabilityBackends().get(2);
         MatcherAssert.assertThat(custom.getMetricsVisualisationUrlTemplate(), CoreMatchers.is("foo"));
         MatcherAssert.assertThat(custom.getTraceVisualisationUrlTemplate(), CoreMatchers.is("http://example.com"));
+
+        ZipkinBackend zipkin = (ZipkinBackend) configuration.getObservabilityBackends().get(3);
+        MatcherAssert.assertThat(zipkin.getZipkinBaseUrl(), CoreMatchers.is("http://localhost:9411/"));
 	}
 
     @Test
