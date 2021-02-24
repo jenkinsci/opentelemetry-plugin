@@ -25,12 +25,11 @@ public class MonitoringAction implements Action, RunAction2 {
 
     final String traceId;
     final String spanId;
-    final String rootSpanName;
+    String rootSpanName;
     transient Run run;
     transient JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
 
-    public MonitoringAction(String rootSpanName, String traceId, String spanId) {
-        this.rootSpanName = rootSpanName;
+    public MonitoringAction(String traceId, String spanId) {
         this.traceId = traceId;
         this.spanId = spanId;
     }
@@ -38,12 +37,14 @@ public class MonitoringAction implements Action, RunAction2 {
     @Override
     public void onAttached(Run<?, ?> r) {
         this.run = r;
+        this.rootSpanName = OtelTraceService.getRootSpanName(r);
         this.pluginConfiguration = ExtensionList.lookupSingleton(JenkinsOpenTelemetryPluginConfiguration.class);
     }
 
     @Override
     public void onLoad(Run<?, ?> r) {
         this.run = r;
+        this.rootSpanName = OtelTraceService.getRootSpanName(r);
         this.pluginConfiguration = ExtensionList.lookupSingleton(JenkinsOpenTelemetryPluginConfiguration.class);
     }
 

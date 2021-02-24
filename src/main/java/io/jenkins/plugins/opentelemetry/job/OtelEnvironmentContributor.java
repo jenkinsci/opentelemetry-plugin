@@ -46,28 +46,23 @@ public class OtelEnvironmentContributor extends EnvironmentContributor {
             LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + "buildEnvironmentFor() NO span found");
             return;
         }
+        String spanId = span.getSpanContext().getSpanId();
+        String traceId = span.getSpanContext().getTraceId();
         try (Scope ignored = span.makeCurrent()) {
-            String spanId = span.getSpanContext().getSpanId();
-            String traceId = span.getSpanContext().getTraceId();
             envs.put(TRACE_ID, traceId);
             envs.put(SPAN_ID, spanId);
             TextMapPropagator.Setter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
             W3CTraceContextPropagator.getInstance().inject(Context.current(), envs, setter);
         }
 
-        // FIXME MonitoringAction may be positioned on a wrong spanId (in case of parallel steps). We need another mechanism if we want to output the visualisation URLs
-        MonitoringAction action = run.getAction(MonitoringAction.class);
-        if (action == null) {
-            // unexpected
-        } else {
-            for (MonitoringAction.ObservabilityBackendLink link : action.getLinks()) {
-                // Default backend link got an empty environment variable.
-                if (link.getEnvironmentVariableName() != null) {
-                    envs.put(link.getEnvironmentVariableName(), link.getUrl());
-                }
+        MonitoringAction action = new MonitoringAction(traceId, spanId);
+        action.onAttached(run);
+        for (MonitoringAction.ObservabilityBackendLink link : action.getLinks()) {
+            // Default backend link got an empty environment variable.
+            if (link.getEnvironmentVariableName() != null) {
+                envs.put(link.getEnvironmentVariableName(), link.getUrl());
             }
         }
-
     }
 
 

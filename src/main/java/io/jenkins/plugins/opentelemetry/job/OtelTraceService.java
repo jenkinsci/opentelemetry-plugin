@@ -307,4 +307,9 @@ public class OtelTraceService {
             return ComparisonChain.start().compare(this.jobName, o.jobName).compare(this.runNumber, o.runNumber).result();
         }
     }
+
+    @Nonnull
+    public static String getRootSpanName(@Nonnull Run run) {
+        return run.getParent().getFullName();
+    }
 }

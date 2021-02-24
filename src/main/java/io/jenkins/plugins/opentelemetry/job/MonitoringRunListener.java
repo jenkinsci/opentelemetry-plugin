@@ -120,7 +120,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         Span rootSpan = rootSpanBuilder.startSpan();
         String traceId = rootSpan.getSpanContext().getTraceId();
         String spanId = rootSpan.getSpanContext().getSpanId();
-        MonitoringAction monitoringAction = new MonitoringAction(rootSpanName,traceId, spanId);
+        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId);
         run.addAction(monitoringAction);
 
         this.getTraceService().putSpan(run, rootSpan);

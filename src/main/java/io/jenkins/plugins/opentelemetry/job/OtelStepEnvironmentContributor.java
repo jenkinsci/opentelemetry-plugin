@@ -63,20 +63,12 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
             W3CTraceContextPropagator.getInstance().inject(Context.current(), envs, setter);
         }
 
-        MonitoringAction action = run.getAction(MonitoringAction.class);
-        if (action == null) {
-            // unexpected
-        } else {
-            if (!Objects.equals(action.getTraceId(), traceId) || ! Objects.equals(action.getSpanId(), spanId)) {
-                // mismatch
-                // FIXME better generation of URLs
-                return;
-            }
-            for (MonitoringAction.ObservabilityBackendLink link : action.getLinks()) {
-                // Default backend link got an empty environment variable.
-                if (link.getEnvironmentVariableName() != null) {
-                    envs.put(link.getEnvironmentVariableName(), link.getUrl());
-                }
+        MonitoringAction action = new MonitoringAction(traceId, spanId);
+        action.onAttached(run);
+        for (MonitoringAction.ObservabilityBackendLink link : action.getLinks()) {
+            // Default backend link got an empty environment variable.
+            if (link.getEnvironmentVariableName() != null) {
+                envs.put(link.getEnvironmentVariableName(), link.getUrl());
             }
         }
     }
