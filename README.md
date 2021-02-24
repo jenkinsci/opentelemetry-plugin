@@ -179,6 +179,29 @@ node {
 * Collect labels of build agents
 * Detect outages caused by upgrades. Report on the version of the plugin of each plugin being used as a step
 
+## Configuration as code
+
+This plugin supports configuration as code
+Add to your yaml file:
+
+```yaml
+unclassified:
+  openTelemetry:
+    endpoint: "otel-collector-contrib:4317"
+    observabilityBackends:
+      - elastic:
+          kibanaBaseUrl: "http://localhost:5601"
+      - jaeger:
+          jaegerBaseUrl: "http://localhost:16686"
+      - customObservabilityBackend:
+          metricsVisualisationUrlTemplate: "foo"
+          traceVisualisationUrlTemplate: "http://example.com"
+    useTls: false
+```
+
+For more details see the configuration as code plugin documentation:
+<https://github.com/jenkinsci/configuration-as-code-plugin#getting-started>
+
 
 ## Contributing
 
