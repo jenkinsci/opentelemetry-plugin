@@ -9,4 +9,6 @@ unclassified:
       - customObservabilityBackend:
           metricsVisualisationUrlTemplate: "foo"
           traceVisualisationUrlTemplate: "http://example.com"
+      - zipkin:
+          zipkinBaseUrl: "http://localhost:9411/"
     useTls: false
