@@ -196,6 +196,8 @@ unclassified:
       - customObservabilityBackend:
           metricsVisualisationUrlTemplate: "foo"
           traceVisualisationUrlTemplate: "http://example.com"
+      - zipkin:
+          zipkinBaseUrl: "http://localhost:9411/"
     useTls: false
 ```
 
@@ -210,4 +212,3 @@ Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob
 ## LICENSE
 
 Licensed under Apache Software License 2, see [LICENSE](LICENSE)
-
