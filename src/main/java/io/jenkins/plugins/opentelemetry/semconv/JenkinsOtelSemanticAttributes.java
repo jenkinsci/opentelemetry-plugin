@@ -54,6 +54,11 @@ public final class JenkinsOtelSemanticAttributes {
     public static final String SERVICE_NAME_JENKINS = "jenkins";
 
     /**
+     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAMESPACE
+     */
+    public static final String SERVICE_NAMESPACE_JENKINS = "jenkins";
+
+    /**
      * As {@link Jenkins.MasterComputer#getName()} return "", choose another name
      * @see Jenkins.MasterComputer#getName()
      */

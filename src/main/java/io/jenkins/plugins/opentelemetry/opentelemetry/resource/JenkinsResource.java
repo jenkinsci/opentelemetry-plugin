@@ -26,7 +26,9 @@ public class JenkinsResource extends ResourceProvider {
         Jenkins jenkins = Jenkins.getInstanceOrNull();
         String rootUrl = jenkins == null ? "#unknown#" : Objects.toString(jenkins.getRootUrl(), "#undefined#");
         Attributes attributes = Attributes.of(
+                ResourceAttributes.SERVICE_NAMESPACE, JenkinsOtelSemanticAttributes.SERVICE_NAMESPACE_JENKINS,
                 ResourceAttributes.SERVICE_NAME, JenkinsOtelSemanticAttributes.SERVICE_NAME_JENKINS,
+                ResourceAttributes.SERVICE_VERSION, Jenkins.getVersion().toString(),
                 JenkinsOtelSemanticAttributes.JENKINS_URL, rootUrl
         );
         LOGGER.log(Level.FINE, () -> "Attributes: " + attributes);
