@@ -7,7 +7,9 @@
         <f:entry title="Trace visualisation URL template" field="traceVisualisationUrlTemplate" description="e.g. 'https://my-observability.example.com:5601/traces/\$\{traceId}'">
             <f:textbox/>
         </f:entry>
+    <!--
         <f:entry title="Metrics visualisation URL template" field="metricsVisualisationUrlTemplate">
             <f:textbox />
         </f:entry>
+    -->
 </j:jelly>
