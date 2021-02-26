@@ -4,10 +4,10 @@
             <f:entry title="OTLP GRPC Endpoint" field="endpoint" description="e.g. 'http://otel.example.com:4317'">
                 <f:textbox />
             </f:entry>
-            <f:entry title="Authentication" field="otlpAuthentication">
+            <f:entry title="Authentication" field="authentication">
                 <j:invokeStatic var="authenticationDescriptors" className="io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication" method="allDescriptors"/>
                 <f:hetero-radio
-                     descriptors="${authenticationDescriptors}" field="otlpAuthentication"/>
+                     descriptors="${authenticationDescriptors}" field="authentication"/>
                 
             </f:entry>
 
