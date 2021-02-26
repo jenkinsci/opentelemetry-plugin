@@ -5,28 +5,22 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import hudson.Extension;
-import hudson.security.ACL;
-import hudson.util.ListBoxModel;
-import hudson.util.Secret;
+import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import jenkins.model.GlobalConfiguration;
-import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
-import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -43,9 +37,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private final static Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());
 
     private String endpoint;
-    private boolean useTls;
-    private String authenticationTokenName;
-    private String authenticationTokenValueId;
+
+    private OtlpAuthentication authentication;
 
     private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
 
@@ -66,6 +59,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         req.bindJSON(this, json);
         // stapler oddity, empty lists coming from the HTTP request are not set on bean by  "req.bindJSON(this, json)"
         this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
+        this.endpoint = sanitizeOtlpEndpoint(this.endpoint);
         initializeOpenTelemetry();
         save();
         return true;
@@ -73,72 +67,51 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.endpoint, this.useTls, this.authenticationTokenName, this.authenticationTokenValueId);
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getAuthentication());
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
         }
-
-        if (this.endpoint == null) {
-            openTelemetrySdkProvider.initializeNoOp();
-        } else {
-            String authenticationTokenValue;
-            if (Strings.isNullOrEmpty(this.authenticationTokenValueId)) {
-                authenticationTokenValue = null;
-            } else {
-                StringCredentials credentials = (StringCredentials) CredentialsMatchers.firstOrNull(
-                        CredentialsProvider.lookupCredentials(StringCredentials.class, Jenkins.get(),
-                                ACL.SYSTEM, Collections.EMPTY_LIST),
-                        CredentialsMatchers.withId(this.authenticationTokenValueId));
-                if (credentials == null) {
-                    LOGGER.log(Level.WARNING, () -> "StringCredentials with id `" + authenticationTokenValueId + "` not found. Fall back to empty secret, an authentication error is likely to happen.");
-                    authenticationTokenValue = "";
-                } else {
-                    authenticationTokenValue = Secret.toString(credentials.getSecret());
-                }
-            }
-            openTelemetrySdkProvider.initializeForGrpc(this.endpoint, this.useTls, this.authenticationTokenName, authenticationTokenValue);
-        }
+        openTelemetrySdkProvider.initialize(newOpenTelemetryConfiguration);
         this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
     }
 
+    /**
+     *
+     * @return {@code null} or endpoint URI prefixed by a protocol scheme ("http://", "https://"...)
+     */
+    @CheckForNull
+    public String sanitizeOtlpEndpoint(@Nullable String grpcEndpoint) {
+        if (Strings.isNullOrEmpty(grpcEndpoint)) {
+            return null;
+        } else if (grpcEndpoint.contains("://")) {
+            return grpcEndpoint;
+        } else {
+            return "http://" + grpcEndpoint;
+        }
+    }
+
+    /**
+     * Never empty
+     */
     @CheckForNull
     public String getEndpoint() {
-        return endpoint;
+        return sanitizeOtlpEndpoint(this.endpoint);
     }
 
     @DataBoundSetter
     public void setEndpoint(String endpoint) {
-        this.endpoint = endpoint;
+        this.endpoint = sanitizeOtlpEndpoint(endpoint);
     }
 
-    public boolean isUseTls() {
-        return useTls;
-    }
-
-    @DataBoundSetter
-    public void setUseTls(boolean useTls) {
-        this.useTls = useTls;
-    }
-
-    @CheckForNull
-    public String getAuthenticationTokenName() {
-        return authenticationTokenName;
+    @Nonnull
+    public OtlpAuthentication getAuthentication() {
+        return this.authentication == null ? new NoAuthentication() : this.authentication;
     }
 
     @DataBoundSetter
-    public void setAuthenticationTokenName(String authenticationTokenName) {
-        this.authenticationTokenName = authenticationTokenName;
-    }
-
-    @CheckForNull
-    public String getAuthenticationTokenValueId() {
-        return authenticationTokenValueId;
-    }
-
-    @DataBoundSetter
-    public void setAuthenticationTokenValueId(String authenticationTokenValueId) {
-        this.authenticationTokenValueId = authenticationTokenValueId;
+    public void setAuthentication(OtlpAuthentication authentication) {
+        this.authentication = authentication;
     }
 
     @DataBoundSetter
@@ -157,21 +130,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Inject
     public void setOpenTelemetrySdkProvider(OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
-    }
-
-    public ListBoxModel doFillAuthenticationTokenValueIdItems() {
-        if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
-            return new StandardListBoxModel().includeCurrentValue(this.authenticationTokenValueId);
-        }
-        return new StandardListBoxModel()
-                .includeEmptyValue()
-                .includeMatchingAs(
-                        ACL.SYSTEM,
-                        Jenkins.get(),
-                        StringCredentials.class,
-                        Collections.<DomainRequirement>emptyList(),
-                        CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StringCredentials.class)))
-                .includeCurrentValue(authenticationTokenValueId);
     }
 
     /**

@@ -1,18 +1,16 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
     <f:section title="OpenTelemetry">
-            <f:entry title="OTLP GRPC Endpoint" field="endpoint" description="e.g. 'otel.example.com:4317'">
+            <f:entry title="OTLP GRPC Endpoint" field="endpoint" description="e.g. 'http://otel.example.com:4317'">
                 <f:textbox />
             </f:entry>
-            <f:entry title="Use TLS" field="useTls">
-                <f:checkbox field="useTLS" />
+            <f:entry title="Authentication" field="otlpAuthentication">
+                <j:invokeStatic var="authenticationDescriptors" className="io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication" method="allDescriptors"/>
+                <f:hetero-radio
+                     descriptors="${authenticationDescriptors}" field="otlpAuthentication"/>
+                
             </f:entry>
-            <f:entry title="GRPC Authentication Token Header" field="authenticationTokenName">
-                <f:textbox />
-            </f:entry>
-            <f:entry title="GRPC Authentication Token" field="authenticationTokenValueId">
-                <c:select/>
-            </f:entry>
+
             <f:entry title="Visualisation" description="${instance.observabilityBackends.isEmpty() ? instance.getVisualisationObservabilityBackendsString() : null}">
                 <j:invokeStatic var="backendDescriptors" className="io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend" method="allDescriptors"/>
                 <f:hetero-list

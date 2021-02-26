@@ -1,4 +1,5 @@
-endpoint: "otel-collector-contrib:4317"
+authentication: "noAuthentication"
+endpoint: "http://otel-collector-contrib:4317"
 observabilityBackends:
 - elastic:
     kibanaBaseUrl: "http://localhost:5601"
@@ -9,4 +10,3 @@ observabilityBackends:
     traceVisualisationUrlTemplate: "http://example.com"
 - zipkin:
     zipkinBaseUrl: "http://localhost:9411/"
-useTls: false

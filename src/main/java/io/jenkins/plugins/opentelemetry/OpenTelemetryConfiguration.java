@@ -5,37 +5,34 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
+
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
 public class OpenTelemetryConfiguration {
 
     private final String endpoint;
-    private final boolean useTls;
-    private final String authenticationTokenName;
-    private final String authenticationTokenValueId;
+    private final OtlpAuthentication authentication;
 
-    public OpenTelemetryConfiguration(@Nullable String endpoint, boolean useTls, @Nullable String authenticationTokenName, @Nullable String authenticationTokenValueId) {
+    public OpenTelemetryConfiguration(@Nullable String endpoint, @Nullable OtlpAuthentication authentication) {
         this.endpoint = endpoint;
-        this.useTls = useTls;
-        this.authenticationTokenName = authenticationTokenName;
-        this.authenticationTokenValueId = authenticationTokenValueId;
+        this.authentication = authentication;
     }
 
+    @Nullable
     public String getEndpoint() {
         return endpoint;
     }
 
-    public boolean isUseTls() {
-        return useTls;
-    }
-
-    public String getAuthenticationTokenName() {
-        return authenticationTokenName;
-    }
-
-    public String getAuthenticationTokenValueId() {
-        return authenticationTokenValueId;
+    /**
+     * @return default to {@link NoAuthentication}
+     */
+    @Nonnull
+    public OtlpAuthentication getAuthentication() {
+        return authentication == null ? new NoAuthentication() : authentication;
     }
 
     @Override
@@ -43,21 +40,19 @@ public class OpenTelemetryConfiguration {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         OpenTelemetryConfiguration that = (OpenTelemetryConfiguration) o;
-        return useTls == that.useTls && Objects.equals(endpoint, that.endpoint) && Objects.equals(authenticationTokenName, that.authenticationTokenName) && Objects.equals(authenticationTokenValueId, that.authenticationTokenValueId);
+        return Objects.equals(endpoint, that.endpoint) && Objects.equals(authentication, that.authentication);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endpoint, useTls, authenticationTokenName, authenticationTokenValueId);
+        return Objects.hash(endpoint, authentication);
     }
 
     @Override
     public String toString() {
         return "OpenTelemetryConfiguration{" +
                 "endpoint='" + endpoint + '\'' +
-                ", useTls=" + useTls +
-                ", authenticationTokenName='" + authenticationTokenName + '\'' +
-                ", authenticationTokenValueId='" + authenticationTokenValueId + '\'' +
+                ", authentication=" + authentication +
                 '}';
     }
 }
