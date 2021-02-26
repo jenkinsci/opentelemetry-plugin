@@ -1,3 +1,4 @@
+authentication: "noAuthentication"
 endpoint: "http://otel-collector-contrib:4317"
 observabilityBackends:
 - elastic:
@@ -7,3 +8,5 @@ observabilityBackends:
 - customObservabilityBackend:
     metricsVisualisationUrlTemplate: "foo"
     traceVisualisationUrlTemplate: "http://example.com"
+- zipkin:
+    zipkinBaseUrl: "http://localhost:9411/"

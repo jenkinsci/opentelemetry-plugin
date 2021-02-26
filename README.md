@@ -61,7 +61,7 @@ Here are few examples of architecture:
     * Zipkin
     * Custom Observability backend for other visualisation solution
 
-![Sample Configuration](https://raw.githubusercontent.com/cyrille-leclerc/opentelemetry-plugin/master/docs/images/jenkins-otel-plugin-configuration.png)  
+![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-otel-plugin-configuration.png)
 
 ## Screenshots
 
@@ -86,25 +86,25 @@ node {
 }
 ```
 
-![Scripted pipeline status page with Elastic Observability link](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
+![Scripted pipeline status page with Elastic Observability link](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
 
 
 #### Scripted pipeline visualized with Elastic Observability 
 
-![Scripted pipeline visualised with Elastic Observability](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
+![Scripted pipeline visualised with Elastic Observability](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
 
 #### Scripted pipeline visualized with Jaeger
 
-![Scripted pipeline visualised with Jaeger](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-jaeger.png)
+![Scripted pipeline visualised with Jaeger](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-jaeger.png)
 
 #### Scripted pipeline visualized with Zipkin
 
-![Scripted pipeline visualised with Jaeger](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-zipkin.png)
+![Scripted pipeline visualised with Jaeger](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-zipkin.png)
 
 
 ### Declarative Pipeline
 
-![Declarative pipeline visualised with Elastic Observability](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/declarative-pipeline.png)
+![Declarative pipeline visualised with Elastic Observability](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/declarative-pipeline.png)
 
 ```groovy
 pipeline {
@@ -128,7 +128,7 @@ pipeline {
 ```
 ### Scripted Pipeline with Error
 
-![scripted-pipeline-with-error](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-error.png)
+![scripted-pipeline-with-error](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-error.png)
 
 ```
 node {
@@ -147,7 +147,7 @@ node {
 
 ### Scripted Pipeline with Parallel Step
 
-![scripted-pipeline-with-parallel-step](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-parallel-step.png)
+![scripted-pipeline-with-parallel-step](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-parallel-step.png)
 
 ```
 node {
@@ -171,13 +171,38 @@ node {
 
 ### Freestyle Job
 
-![freestyle-job](https://github.com/cyrille-leclerc/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
+![freestyle-job](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
 
 
 ### Ideas
 
 * Collect labels of build agents
 * Detect outages caused by upgrades. Report on the version of the plugin of each plugin being used as a step
+
+## Configuration as code
+
+This plugin supports configuration as code
+Add to your yaml file:
+
+```yaml
+unclassified:
+  openTelemetry:
+    endpoint: "otel-collector-contrib:4317"
+    observabilityBackends:
+      - elastic:
+          kibanaBaseUrl: "http://localhost:5601"
+      - jaeger:
+          jaegerBaseUrl: "http://localhost:16686"
+      - customObservabilityBackend:
+          metricsVisualisationUrlTemplate: "foo"
+          traceVisualisationUrlTemplate: "http://example.com"
+      - zipkin:
+          zipkinBaseUrl: "http://localhost:9411/"
+    useTls: false
+```
+
+For more details see the configuration as code plugin documentation:
+<https://github.com/jenkinsci/configuration-as-code-plugin#getting-started>
 
 
 ## Contributing
@@ -187,4 +212,3 @@ Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob
 ## LICENSE
 
 Licensed under Apache Software License 2, see [LICENSE](LICENSE)
-
