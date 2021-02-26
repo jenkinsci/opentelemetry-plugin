@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry.resource;
 
+import hudson.util.VersionNumber;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
@@ -25,10 +26,12 @@ public class JenkinsResource extends ResourceProvider {
     protected Attributes getAttributes() {
         Jenkins jenkins = Jenkins.getInstanceOrNull();
         String rootUrl = jenkins == null ? "#unknown#" : Objects.toString(jenkins.getRootUrl(), "#undefined#");
+        final VersionNumber versionNumber = Jenkins.getVersion();
+        final String version =  versionNumber == null ? "#unknown" : versionNumber.toString(); // should not be null except maybe in development of Jenkins itself
         Attributes attributes = Attributes.of(
                 ResourceAttributes.SERVICE_NAMESPACE, JenkinsOtelSemanticAttributes.SERVICE_NAMESPACE_JENKINS,
                 ResourceAttributes.SERVICE_NAME, JenkinsOtelSemanticAttributes.SERVICE_NAME_JENKINS,
-                ResourceAttributes.SERVICE_VERSION, Jenkins.getVersion().toString(),
+                ResourceAttributes.SERVICE_VERSION, version,
                 JenkinsOtelSemanticAttributes.JENKINS_URL, rootUrl
         );
         LOGGER.log(Level.FINE, () -> "Attributes: " + attributes);
