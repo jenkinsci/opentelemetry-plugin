@@ -47,5 +47,8 @@ bin/
 .prometheus-otel/
 *.log
 
+private/
+
+
 
 
