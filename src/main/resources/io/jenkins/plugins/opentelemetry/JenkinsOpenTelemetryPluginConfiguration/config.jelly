@@ -8,7 +8,6 @@
                 <j:invokeStatic var="authenticationDescriptors" className="io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication" method="allDescriptors"/>
                 <f:hetero-radio
                      descriptors="${authenticationDescriptors}" field="authentication"/>
-                
             </f:entry>
 
             <f:entry title="Visualisation" description="${instance.observabilityBackends.isEmpty() ? instance.getVisualisationObservabilityBackendsString() : null}">
