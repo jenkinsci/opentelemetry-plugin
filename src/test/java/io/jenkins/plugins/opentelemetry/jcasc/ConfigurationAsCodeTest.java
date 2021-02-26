@@ -35,7 +35,6 @@ public class ConfigurationAsCodeTest {
     public void should_support_configuration_as_code() {
         final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
-        MatcherAssert.assertThat(configuration.isUseTls(), CoreMatchers.is(false));
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("otel-collector-contrib:4317"));
         MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(3));
 

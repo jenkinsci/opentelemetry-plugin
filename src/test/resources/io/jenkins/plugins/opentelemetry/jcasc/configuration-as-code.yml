@@ -1,6 +1,6 @@
 unclassified:
   openTelemetry:
-    endpoint: "otel-collector-contrib:4317"
+    endpoint: "http://otel-collector-contrib:4317"
     observabilityBackends:
       - elastic:
           kibanaBaseUrl: "http://localhost:5601"
@@ -9,4 +9,3 @@ unclassified:
       - customObservabilityBackend:
           metricsVisualisationUrlTemplate: "foo"
           traceVisualisationUrlTemplate: "http://example.com"
-    useTls: false
