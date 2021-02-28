@@ -62,12 +62,12 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
 
     @Override
     public void configure(@Nonnull OtlpGrpcMetricExporterBuilder metricExporterBuilder) {
-        metricExporterBuilder.addHeader("Authentication", "Bearer " + this.getAuthenticationHeaderValue());
+        metricExporterBuilder.addHeader("Authorization", "Bearer " + this.getAuthenticationHeaderValue());
     }
 
     @Override
     public void configure(@Nonnull OtlpGrpcSpanExporterBuilder spanExporterBuilder) {
-        spanExporterBuilder.addHeader("Authentication", "Bearer " + this.getAuthenticationHeaderValue());
+        spanExporterBuilder.addHeader("Authorization", "Bearer " + this.getAuthenticationHeaderValue());
     }
 
     public String getTokenId() {
