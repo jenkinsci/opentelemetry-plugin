@@ -14,7 +14,7 @@
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>opentelemetry</artifactId>
-    <version>${revision}${changelist}</version>
+    <version>0.2-alpha</version>
     <packaging>hpi</packaging>
     <properties>
         <revision>0.2-alpha</revision>
@@ -268,7 +268,7 @@
         <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
         <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
         <url>https://github.com/${gitHubRepo}</url>
-        <tag>${scmTag}</tag>
+        <tag>opentelemetry-0.2-alpha</tag>
     </scm>
     <contributors>
         <contributor>
