@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import com.google.common.base.Strings;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 
@@ -15,10 +16,12 @@ import java.util.Objects;
 public class OpenTelemetryConfiguration {
 
     private final String endpoint;
+    private final String trustedCertificatesPem;
     private final OtlpAuthentication authentication;
 
-    public OpenTelemetryConfiguration(@Nullable String endpoint, @Nullable OtlpAuthentication authentication) {
+    public OpenTelemetryConfiguration(@Nullable String endpoint, @Nullable String trustedCertificatesPem, @Nullable OtlpAuthentication authentication) {
         this.endpoint = endpoint;
+        this.trustedCertificatesPem = trustedCertificatesPem;
         this.authentication = authentication;
     }
 
@@ -35,23 +38,29 @@ public class OpenTelemetryConfiguration {
         return authentication == null ? new NoAuthentication() : authentication;
     }
 
+    @Nullable
+    public String getTrustedCertificatesPem() {
+        return trustedCertificatesPem;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         OpenTelemetryConfiguration that = (OpenTelemetryConfiguration) o;
-        return Objects.equals(endpoint, that.endpoint) && Objects.equals(authentication, that.authentication);
+        return Objects.equals(endpoint, that.endpoint) && Objects.equals(authentication, that.authentication) && Objects.equals(trustedCertificatesPem, that.trustedCertificatesPem);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endpoint, authentication);
+        return Objects.hash(endpoint, authentication, trustedCertificatesPem);
     }
 
     @Override
     public String toString() {
         return "OpenTelemetryConfiguration{" +
                 "endpoint='" + endpoint + '\'' +
+                ", trustedCertificatesPem=" + ((!(Strings.isNullOrEmpty(trustedCertificatesPem)))) +
                 ", authentication=" + authentication +
                 '}';
     }

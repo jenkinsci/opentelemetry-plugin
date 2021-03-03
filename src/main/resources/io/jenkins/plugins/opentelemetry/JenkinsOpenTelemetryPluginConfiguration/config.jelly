@@ -1,7 +1,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
     <f:section title="OpenTelemetry">
-            <f:entry title="OTLP GRPC Endpoint" field="endpoint" description="e.g. 'http://otel.example.com:4317'">
+            <f:entry title="OTLP GRPC Endpoint" field="endpoint" description="e.g. 'http://otel.example.com:4317', aka OTEL_EXPORTER_OTLP_ENDPOINT">
                 <f:textbox />
             </f:entry>
             <f:entry title="Authentication" field="authentication">
@@ -21,5 +21,10 @@
                     deleteCaption="${%Remove}"
                 />
             </f:entry>
+            <f:advanced>
+                <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format). Metrics exporter get disabled for the moment when feature is used. Aka OTEL_EXPORTER_OTLP_CERTIFICATE">
+                    <f:textarea />
+                </f:entry>
+            </f:advanced>
     </f:section>
 </j:jelly>

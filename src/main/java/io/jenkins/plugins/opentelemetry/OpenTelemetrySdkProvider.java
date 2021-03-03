@@ -7,9 +7,11 @@ package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.jenkins.plugins.opentelemetry.opentelemetry.metrics.exporter.NoOpMetricExporter;
 import io.jenkins.plugins.opentelemetry.opentelemetry.resource.JenkinsResource;
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -33,8 +35,10 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
 import jenkins.model.Jenkins;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -107,7 +111,7 @@ public class OpenTelemetrySdkProvider {
      *
      * @param endpoint "http://host:port", "https://host:port"
      */
-    public void initializeForGrpc(@Nonnull String endpoint, @Nonnull OtlpAuthentication otlpAuthentication) {
+    public void initializeForGrpc(@Nonnull String endpoint, @Nullable String trustedCertificatesPem, @Nonnull OtlpAuthentication otlpAuthentication) {
         Preconditions.checkArgument(endpoint.startsWith("http://") || endpoint.startsWith("https://"), "endpoint must be prefixed by 'http://' or 'https://': %s", endpoint);
         LOGGER.log(Level.FINE, "initializeForGrpc");
 
@@ -129,8 +133,22 @@ public class OpenTelemetrySdkProvider {
         otlpAuthentication.configure(spanExporterBuilder);
         otlpAuthentication.configure(metricExporterBuilder);
 
+        if (!Strings.isNullOrEmpty(trustedCertificatesPem)) {
+            final byte[] trustedCertificatesPemBytes = trustedCertificatesPem.getBytes(StandardCharsets.UTF_8);
+            spanExporterBuilder.setTrustedCertificates(trustedCertificatesPemBytes);
+            // FIXME not yet supported on OtlpGrpcMetricExporterBuilder
+            // See https://github.com/open-telemetry/opentelemetry-java/blob/v1.0.0/exporters/otlp/metrics/src/main/java/io/opentelemetry/exporter/otlp/metrics/OtlpGrpcMetricExporterBuilder.java
+            // See https://github.com/open-telemetry/opentelemetry-java/blob/v1.0.0/exporters/otlp/trace/src/main/java/io/opentelemetry/exporter/otlp/trace/OtlpGrpcSpanExporterBuilder.java#L141
+        }
+
         SpanExporter spanExporter = spanExporterBuilder.build();
         MetricExporter metricExporter = metricExporterBuilder.build();
+
+        if(!Strings.isNullOrEmpty(trustedCertificatesPem)) {
+            // FIXME remove once OtlpGrpcMetricExporterBuilder supports #setTrustedCertificates()
+            LOGGER.log(Level.WARNING, "Metrics Exporter don't support trusted certificates yet, use a NoOpMetricsExporter");
+            metricExporter = new NoOpMetricExporter();
+        }
 
         initializeOpenTelemetrySdk(metricExporter, spanExporter, exportIntervalMillis);
 
@@ -199,7 +217,7 @@ public class OpenTelemetrySdkProvider {
         if (configuration.getEndpoint() == null) {
             initializeNoOp();
         } else {
-            initializeForGrpc(configuration.getEndpoint(), configuration.getAuthentication());
+            initializeForGrpc(configuration.getEndpoint(), configuration.getTrustedCertificatesPem(), configuration.getAuthentication());
         }
     }
 }

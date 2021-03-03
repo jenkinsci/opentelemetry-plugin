@@ -38,6 +38,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private String endpoint;
 
+    private String trustedCertificatesPem;
+
     private OtlpAuthentication authentication;
 
     private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
@@ -67,7 +69,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getAuthentication());
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication());
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
@@ -112,6 +114,16 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setAuthentication(OtlpAuthentication authentication) {
         this.authentication = authentication;
+    }
+
+    @CheckForNull
+    public String getTrustedCertificatesPem() {
+        return trustedCertificatesPem;
+    }
+
+    @DataBoundSetter
+    public void setTrustedCertificatesPem(String trustedCertificatesPem) {
+        this.trustedCertificatesPem = trustedCertificatesPem;
     }
 
     @DataBoundSetter
