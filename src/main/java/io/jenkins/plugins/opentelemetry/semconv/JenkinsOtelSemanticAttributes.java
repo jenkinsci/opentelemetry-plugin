@@ -38,6 +38,10 @@ public final class JenkinsOtelSemanticAttributes {
      */
     public static final AttributeKey<String>        JENKINS_URL = AttributeKey.stringKey("jenkins.url");
     /**
+     * @see StepDescriptor#getDisplayName()
+     */
+    public static final AttributeKey<String>        JENKINS_STEP_NAME = AttributeKey.stringKey("jenkins.pipeline.step.name");
+    /**
      * @see StepDescriptor#getFunctionName()
      */
     public static final AttributeKey<String>        JENKINS_STEP_TYPE = AttributeKey.stringKey("jenkins.pipeline.step.type");

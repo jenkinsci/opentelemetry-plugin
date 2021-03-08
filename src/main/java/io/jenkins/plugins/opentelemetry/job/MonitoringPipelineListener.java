@@ -73,7 +73,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             Span stageSpan = getTracer().spanBuilder("Stage: " + stageName)
                     .setParent(Context.current())
-                    .setAttribute("jenkins.pipeline.step.type", stepStartNode.getDisplayFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepStartNode.getDescriptor().getFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stageName)
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
@@ -100,7 +101,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             SpanBuilder spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName())
                     .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, node.getDisplayFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, node.getDescriptor().getFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, node.getDescriptor().getDisplayName())
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal);
 
             for (StepHandler stepHandler : ExtensionList.lookup(StepHandler.class)) {
@@ -146,7 +148,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             Span atomicStepSpan = getTracer().spanBuilder("Parallel branch: " + branchName)
                     .setParent(Context.current())
-                    .setAttribute("jenkins.pipeline.step.type", stepStartNode.getDisplayFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepStartNode.getDescriptor().getFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, branchName)
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + stepStartNode.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
