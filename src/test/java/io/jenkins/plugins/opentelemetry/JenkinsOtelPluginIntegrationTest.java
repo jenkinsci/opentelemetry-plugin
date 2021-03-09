@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -96,11 +97,10 @@ public class JenkinsOtelPluginIntegrationTest {
     public void testSimplePipeline() throws Exception {
         // BEFORE
 
-
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
                 "node() {\n" +
                 "    stage('ze-stage1') {\n" +
-                "       xsh 'echo ze-echo' \n" +
+                "       xsh (label: 'shell-1', script: 'echo ze-echo') \n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
                 "       xsh 'echo ze-echo-2' \n" +
@@ -111,8 +111,11 @@ public class JenkinsOtelPluginIntegrationTest {
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         List<SpanData> finishedSpanItems = flush();
-        dumpSpans(finishedSpanItems);
+        final Tree<SpanDataWrapper> spanTree = dumpSpans(finishedSpanItems);
         MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(8));
+        final Optional<SpanDataWrapper> shell1SpanOptional = spanTree.breadthFirstSearch(spanDataWrapper -> "shell-1".equals(spanDataWrapper.spanData.getName()));
+        MatcherAssert.assertThat("Span shell-1 not found", shell1SpanOptional.isPresent(), CoreMatchers.is(true));
+
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
@@ -276,7 +279,7 @@ public class JenkinsOtelPluginIntegrationTest {
 
     }
 
-    protected void dumpSpans(List<SpanData> spans) {
+    protected Tree<SpanDataWrapper> dumpSpans(List<SpanData> spans) {
         final BiPredicate<Tree.Node<SpanDataWrapper>, Tree.Node<SpanDataWrapper>> parentChildMatcher = (spanDataNode1, spanDataNode2) -> {
             final SpanData spanData1 = spanDataNode1.getData().spanData;
             final SpanData spanData2 = spanDataNode2.getData().spanData;
@@ -288,6 +291,7 @@ public class JenkinsOtelPluginIntegrationTest {
             System.out.println(tree);
         }
 
+        return trees.get(0);
     }
 
     @AfterClass

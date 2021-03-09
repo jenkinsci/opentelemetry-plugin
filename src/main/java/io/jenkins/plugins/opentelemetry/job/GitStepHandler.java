@@ -5,9 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.annotations.VisibleForTesting;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.plugins.git.GitStep;
@@ -17,6 +19,7 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import javax.annotation.Nonnull;
+import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -29,13 +32,16 @@ public class GitStepHandler implements StepHandler {
     private final static Logger LOGGER = Logger.getLogger(GitStepHandler.class.getName());
 
     @Override
-    public boolean canHandle(@Nonnull FlowNode flowNode) {
+    public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode) {
         return flowNode instanceof StepAtomNode && ((StepAtomNode) flowNode).getDescriptor() instanceof GitStep.DescriptorImpl;
     }
 
+    @Nonnull
     @Override
-    public void handle(@Nonnull FlowNode node, @Nonnull SpanBuilder spanBuilder) throws Exception {
-        handle(ArgumentsAction.getFilteredArguments(node), spanBuilder);
+    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull Tracer tracer) throws Exception {
+        final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
+        final String displayFunctionName = node.getDisplayFunctionName();
+        return createSpanBuilder(displayFunctionName, arguments, tracer);
     }
 
     /**
@@ -43,8 +49,9 @@ public class GitStepHandler implements StepHandler {
      * https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/rpc.md
      * https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols
      */
-    protected void handle(@Nonnull Map<String, Object> arguments, @Nonnull SpanBuilder spanBuilder) throws Exception {
-
+    @VisibleForTesting
+    public SpanBuilder createSpanBuilder(String spanName, Map<String, Object> arguments, Tracer tracer) throws URISyntaxException {
+        final SpanBuilder spanBuilder = tracer.spanBuilder(spanName);
         String gitUrlAsString = checkNotNull(arguments.get("url")).toString();
         URIish gitUri = new URIish(gitUrlAsString);
         String host = gitUri.getHost();
@@ -52,7 +59,6 @@ public class GitStepHandler implements StepHandler {
 
         if ("https".equals(gitUri.getScheme())) {
             // HTTPS URL e.g. https://github.com/open-telemetry/opentelemetry-java
-
 
             spanBuilder
                     .setAttribute(SemanticAttributes.RPC_SYSTEM, gitUri.getScheme())
@@ -87,6 +93,7 @@ public class GitStepHandler implements StepHandler {
                     .setAttribute(JenkinsOtelSemanticAttributes.GIT_REPOSITORY, gitRepositoryPath)
             ;
         }
+        return spanBuilder;
     }
 
     private String normalizeGitRepositoryPath(URIish gitUri) {

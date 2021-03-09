@@ -100,23 +100,27 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             String principal = Objects.toString(node.getExecution().getAuthentication().getPrincipal(), "#null#");
             LOGGER.log(Level.FINE, () -> node.getDisplayFunctionName() + " - principal: " + principal);
 
-            SpanBuilder spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName())
-                    .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(node.getDescriptor(), "step"))
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node.getDescriptor(), "step"))
-                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal);
-
+            SpanBuilder spanBuilder = null;
             for (StepHandler stepHandler : ExtensionList.lookup(StepHandler.class)) {
-                if (stepHandler.canHandle(node)) {
+                if (stepHandler.canCreateSpanBuilder(node)) {
                     try {
-                        stepHandler.handle(node, spanBuilder);
+                        spanBuilder = stepHandler.createSpanBuilder(node, getTracer());
                     } catch (Exception e) {
                         LOGGER.log(Level.WARNING, run.getFullDisplayName() + " failure to handle step " + node + " with handler " + stepHandler, e);
                     }
                     break;
                 }
             }
+            if (spanBuilder == null) {
+                spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName());
+            }
+
+            spanBuilder
+                    .setParent(Context.current())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(node.getDescriptor(), "step"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node.getDescriptor(), "step"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal);
 
             Span atomicStepSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));

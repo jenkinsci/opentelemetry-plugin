@@ -6,12 +6,14 @@
 package io.jenkins.plugins.opentelemetry.job;
 
 import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.Tracer;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import javax.annotation.Nonnull;
 
 public interface StepHandler {
-    boolean canHandle(@Nonnull FlowNode flowNode);
+    boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode);
 
-    void handle(@Nonnull FlowNode node, @Nonnull SpanBuilder spanBuilder) throws Exception ;
+    @Nonnull
+    SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull Tracer tracer) throws Exception ;
 }

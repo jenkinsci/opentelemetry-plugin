@@ -8,14 +8,14 @@ package io.jenkins.plugins.opentelemetry.job;
 import com.google.common.collect.Maps;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.sdk.testing.exporter.SpanBuilderMock;
+import io.opentelemetry.sdk.testing.trace.SpanBuilderMock;
+import io.opentelemetry.sdk.testing.trace.TracerMock;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.eclipse.jgit.transport.URIish;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
-import java.net.URL;
 import java.util.Map;
 
 public class GitStepHandlerTest {
@@ -143,12 +143,12 @@ public class GitStepHandlerTest {
     }
 
     private SpanBuilderMock testGithubUrl(String githubUrl) throws Exception {
-        SpanBuilderMock spanBuilder = new SpanBuilderMock("git");
+
         GitStepHandler handler = new GitStepHandler();
         Map<String, Object> arguments = Maps.newHashMap();
         arguments.put("url", githubUrl);
 
-        handler.handle(arguments, spanBuilder);
+        SpanBuilderMock spanBuilder = (SpanBuilderMock) handler.createSpanBuilder("git", arguments, new TracerMock());
         return spanBuilder;
     }
 
