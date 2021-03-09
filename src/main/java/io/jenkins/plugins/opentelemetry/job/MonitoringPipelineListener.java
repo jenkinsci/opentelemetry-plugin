@@ -73,7 +73,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             String spanStageName = "Stage: " + stageName;
             Span stageSpan = getTracer().spanBuilder(spanStageName)
                     .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, spanStageName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "stage"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(stepStartNode.getDescriptor(), stageName))
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
@@ -100,7 +101,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             SpanBuilder spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName())
                     .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, node.getDisplayFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(node.getDescriptor(), "step"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node.getDescriptor(), "step"))
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal);
 
             for (StepHandler stepHandler : ExtensionList.lookup(StepHandler.class)) {
@@ -139,14 +141,29 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         return ignoreStep;
     }
 
+    private String getStepName(@Nullable StepDescriptor stepDescriptor, @Nonnull String name) {
+        if (stepDescriptor == null) {
+            return name;
+        }
+        return stepDescriptor.getDisplayName();
+    }
+
+    private String getStepType(@Nullable StepDescriptor stepDescriptor, @Nonnull String type) {
+        if (stepDescriptor == null) {
+            return type;
+        }
+        return stepDescriptor.getFunctionName();
+    }
+
     @Override
     public void onStartParallelStepBranch(@Nonnull StepStartNode stepStartNode, @Nonnull String branchName, @Nonnull WorkflowRun run) {
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
             String spanBranchName = "Parallel branch: " + branchName;
-            Span atomicStepSpan = getTracer().spanBuilder(spanBranchName)
+            Span atomicStepSpan = getTracer().spanBuilder("Parallel branch: " + branchName)
                     .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, spanBranchName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "branch"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(stepStartNode.getDescriptor(), branchName)
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > parallel branch(" + branchName + ") - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
