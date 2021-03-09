@@ -5,13 +5,16 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import com.github.rutledgepaulv.prune.Tree;
 import hudson.ExtensionList;
 import hudson.Functions;
 import hudson.model.Result;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
@@ -30,6 +33,7 @@ import org.jvnet.hudson.test.BuildWatcher;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -272,14 +276,18 @@ public class JenkinsOtelPluginIntegrationTest {
 
     }
 
-    protected void dumpSpans(List<SpanData> finishedSpanItems) {
-        System.out.println(finishedSpanItems.size());
-        List<String> spansAsString = finishedSpanItems.stream().map(spanData ->
-                "   " + spanData.getStartEpochNanos() + " - " + spanData.getName() + ", id: " + spanData.getSpanId() + ", parentId: " + spanData.getParentSpanId() + ", attributes: " + spanData.getAttributes().asMap()
-        ).collect(Collectors.toList());
-        Collections.sort(spansAsString);
+    protected void dumpSpans(List<SpanData> spans) {
+        final BiPredicate<Tree.Node<SpanDataWrapper>, Tree.Node<SpanDataWrapper>> parentChildMatcher = (spanDataNode1, spanDataNode2) -> {
+            final SpanData spanData1 = spanDataNode1.getData().spanData;
+            final SpanData spanData2 = spanDataNode2.getData().spanData;
+            return Objects.equals(spanData1.getSpanId(), spanData2.getParentSpanId());
+        };
+        final List<Tree<SpanDataWrapper>> trees = Tree.of(spans.stream().map(span -> new SpanDataWrapper(span)).collect(Collectors.toList()), parentChildMatcher);
+        System.out.println("## TREE VIEW OF SPANS ## ");
+        for(Tree<SpanDataWrapper> tree: trees) {
+            System.out.println(tree);
+        }
 
-        System.out.println(spansAsString.stream().collect(Collectors.joining(", \n")));
     }
 
     @AfterClass
@@ -287,4 +295,25 @@ public class JenkinsOtelPluginIntegrationTest {
         GlobalOpenTelemetry.resetForTest();
     }
 
+    static class SpanDataWrapper {
+        final SpanData spanData;
+
+        public SpanDataWrapper(SpanData spanData) {
+            this.spanData = spanData;
+        }
+
+        @Override
+        public String toString() {
+            String result = spanData.getName();
+
+            final Attributes attributes = spanData.getAttributes();
+            if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE) != null) {
+                result += ", function: " +  attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE);
+            }
+            if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID) != null) {
+                result += ", node.id: " +  attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID);
+            }
+            return result;
+        }
+    }
 }

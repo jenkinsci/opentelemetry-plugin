@@ -74,6 +74,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             Span stageSpan = getTracer().spanBuilder(spanStageName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "stage"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(stepStartNode.getDescriptor(), stageName))
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
@@ -102,6 +103,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             SpanBuilder spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName())
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(node.getDescriptor(), "step"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node.getDescriptor(), "step"))
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal);
 
@@ -162,6 +164,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             Span atomicStepSpan = getTracer().spanBuilder("Parallel branch: " + branchName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "branch"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(stepStartNode.getDescriptor(), branchName))
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > parallel branch(" + branchName + ") - begin " + OtelUtils.toDebugString(atomicStepSpan));
