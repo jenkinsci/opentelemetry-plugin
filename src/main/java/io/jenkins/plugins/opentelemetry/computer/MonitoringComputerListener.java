@@ -15,6 +15,7 @@ import hudson.remoting.Channel;
 import hudson.slaves.ComputerListener;
 import hudson.slaves.OfflineCause;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
@@ -24,7 +25,9 @@ import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
+import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.HashMap;
@@ -138,5 +141,13 @@ public class MonitoringComputerListener extends ComputerListener {
         this.offlineAgentsRecorder.record(offlineAgents);
         this.onlineAgentsRecorder.record(onlineAgents);
         this.agentsRecorder.record(computers.length);
+    }
+
+    /**
+     * Jenkins doesn't support {@link com.google.inject.Provides} so we manually wire dependencies :-(
+     */
+    @Inject
+    public void setMeter(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+        this.meter = openTelemetrySdkProvider.getMeter();
     }
 }
