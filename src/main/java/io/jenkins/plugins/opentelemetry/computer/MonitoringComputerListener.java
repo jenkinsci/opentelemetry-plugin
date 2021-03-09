@@ -37,9 +37,9 @@ public class MonitoringComputerListener extends ComputerListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
 	protected Meter meter;
-	private LongValueRecorder workersRecorder;
-	private LongValueRecorder onlineWorkersRecorder;
-	private LongValueRecorder offlineWorkersRecorder;
+	private LongValueRecorder agentsRecorder;
+	private LongValueRecorder onlineAgentsRecorder;
+	private LongValueRecorder offlineAgentsRecorder;
 
     @PostConstruct
     public void postConstruct() {
@@ -64,16 +64,16 @@ public class MonitoringComputerListener extends ComputerListener {
                 LOGGER.log(Level.WARNING,  "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
             }
         }
-        offlineWorkersRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
-                .setDescription("Number of offline workers")
+        offlineAgentsRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
+                .setDescription("Number of offline agents")
                 .setUnit("1")
                 .build();
-        onlineWorkersRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
-                .setDescription("Number of offline workers")
+        onlineAgentsRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
+                .setDescription("Number of offline agents")
                 .setUnit("1")
                 .build();
-        workersRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
-                .setDescription("Number of workers")
+        agentsRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
+                .setDescription("Number of agents")
                 .setUnit("1")
                 .build();
     }
@@ -95,13 +95,13 @@ public class MonitoringComputerListener extends ComputerListener {
     @Override
     public void onOnline(Computer c, TaskListener listener) throws IOException, InterruptedException {
         super.onOnline(c, listener);
-        updateWorkers();
+        updateAgents();
     }
 
     @Override
     public void onOffline(@NonNull Computer c, @CheckForNull OfflineCause cause) {
         super.onOffline(c, cause);
-        updateWorkers();
+        updateAgents();
     }
 
     private static class GetComputerAttributes extends MasterToSlaveCallable<Map<String, String>, IOException> {
@@ -119,24 +119,24 @@ public class MonitoringComputerListener extends ComputerListener {
         }
     }
 
-    private void updateWorkers() {
+    private void updateAgents() {
         Jenkins jenkins = Jenkins.getInstance();
         Computer[] computers = new Computer[0];
         if(jenkins != null){
             computers = jenkins.getComputers();
         }
-        long offlineWorkers = 0;
-        long onlineWorkers = 0;
+        long offlineAgents = 0;
+        long onlineAgents = 0;
         for (Computer computer : computers) {
             if (computer.isOffline()) {
-                offlineWorkers++;
+                offlineAgents++;
             }
             if (computer.isOnline()) {
-                onlineWorkers++;
+                onlineAgents++;
             }
         }
-        this.offlineWorkersRecorder.record(offlineWorkers);
-        this.onlineWorkersRecorder.record(onlineWorkers);
-        this.workersRecorder.record(computers.length);
+        this.offlineAgentsRecorder.record(offlineAgents);
+        this.onlineAgentsRecorder.record(onlineAgents);
+        this.agentsRecorder.record(computers.length);
     }
 }
