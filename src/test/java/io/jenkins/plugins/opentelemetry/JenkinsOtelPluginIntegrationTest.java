@@ -260,11 +260,11 @@ public class JenkinsOtelPluginIntegrationTest {
                 "node() {\n" +
                 "    stage('ze-parallel-stage') {\n" +
                 "        parallel parallelBranch1: {\n" +
-                "            xsh 'echo this-is-the-parallel-branch-1'\n" +
+                "            xsh (label: 'shell-1', script: 'echo this-is-the-parallel-branch-1')\n" +
                 "        } ,parallelBranch2: {\n" +
-                "            xsh 'echo this-is-the-parallel-branch-2'\n" +
+                "            xsh (label: 'shell-2', script: 'echo this-is-the-parallel-branch-2')\n" +
                 "        } ,parallelBranch3: {\n" +
-                "            xsh 'echo this-is-the-parallel-branch-3'\n" +
+                "            xsh (label: 'shell-3', script: 'echo this-is-the-parallel-branch-3')\n" +
                 "        }\n" +
                 "    }\n" +
                 "}";
