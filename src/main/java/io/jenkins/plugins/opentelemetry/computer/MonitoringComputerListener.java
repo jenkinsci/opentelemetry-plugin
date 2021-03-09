@@ -36,10 +36,10 @@ import java.util.logging.Logger;
 public class MonitoringComputerListener extends ComputerListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
-	protected Meter meter;
-	private LongValueRecorder agentsRecorder;
-	private LongValueRecorder onlineAgentsRecorder;
-	private LongValueRecorder offlineAgentsRecorder;
+    protected Meter meter;
+    private LongValueRecorder agentsRecorder;
+    private LongValueRecorder onlineAgentsRecorder;
+    private LongValueRecorder offlineAgentsRecorder;
 
     @PostConstruct
     public void postConstruct() {
