@@ -21,6 +21,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.metrics.LongValueRecorder;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.metrics.common.Labels;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
@@ -30,6 +31,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -40,9 +42,6 @@ public class MonitoringComputerListener extends ComputerListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
     protected Meter meter;
-    private LongValueRecorder agentsRecorder;
-    private LongValueRecorder onlineAgentsRecorder;
-    private LongValueRecorder offlineAgentsRecorder;
 
     @PostConstruct
     public void postConstruct() {
@@ -67,18 +66,31 @@ public class MonitoringComputerListener extends ComputerListener {
                 LOGGER.log(Level.WARNING,  "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
             }
         }
-        offlineAgentsRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
+        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
+                .setUpdater(longResult -> longResult.observe(this.getOfflineAgentsCount(), Labels.empty()))
                 .setDescription("Number of offline agents")
                 .setUnit("1")
                 .build();
-        onlineAgentsRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
+        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
+                .setUpdater(longResult -> longResult.observe(this.getOnlineAgentsCount(), Labels.empty()))
                 .setDescription("Number of online agents")
                 .setUnit("1")
                 .build();
-        agentsRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
+        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
+                .setUpdater(longResult -> longResult.observe(this.getAgentsCount(), Labels.empty()))
                 .setDescription("Number of agents")
                 .setUnit("1")
                 .build();
+    }
+
+    private long getOfflineAgentsCount() {
+        return Arrays.stream(Jenkins.get().getComputers()).filter(computer -> computer.isOffline()).count();
+    }
+    private long getOnlineAgentsCount() {
+        return Arrays.stream(Jenkins.get().getComputers()).filter(computer -> computer.isOnline()).count();
+    }
+    private long getAgentsCount() {
+        return Arrays.stream(Jenkins.get().getComputers()).count();
     }
 
     @Override
@@ -95,18 +107,6 @@ public class MonitoringComputerListener extends ComputerListener {
         computer.addAction(openTelemetryAttributesAction);
     }
 
-    @Override
-    public void onOnline(Computer c, TaskListener listener) throws IOException, InterruptedException {
-        super.onOnline(c, listener);
-        updateAgents();
-    }
-
-    @Override
-    public void onOffline(@NonNull Computer c, @CheckForNull OfflineCause cause) {
-        super.onOffline(c, cause);
-        updateAgents();
-    }
-
     private static class GetComputerAttributes extends MasterToSlaveCallable<Map<String, String>, IOException> {
         @Override
         public Map<String, String> call() throws IOException {
@@ -120,27 +120,6 @@ public class MonitoringComputerListener extends ComputerListener {
             attributes.put("host.ip", localHost.getHostAddress());
             return attributes;
         }
-    }
-
-    private void updateAgents() {
-        Jenkins jenkins = Jenkins.getInstance();
-        Computer[] computers = new Computer[0];
-        if(jenkins != null){
-            computers = jenkins.getComputers();
-        }
-        long offlineAgents = 0;
-        long onlineAgents = 0;
-        for (Computer computer : computers) {
-            if (computer.isOffline()) {
-                offlineAgents++;
-            }
-            if (computer.isOnline()) {
-                onlineAgents++;
-            }
-        }
-        this.offlineAgentsRecorder.record(offlineAgents);
-        this.onlineAgentsRecorder.record(onlineAgents);
-        this.agentsRecorder.record(computers.length);
     }
 
     /**
