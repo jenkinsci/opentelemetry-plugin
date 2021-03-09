@@ -70,12 +70,12 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     public void onStartStageStep(@Nonnull StepStartNode stepStartNode, @Nonnull String stageName, @Nonnull WorkflowRun run) {
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
-
-            Span stageSpan = getTracer().spanBuilder("Stage: " + stageName)
+            String spanStageName = "Stage: " + stageName;
+            Span stageSpan = getTracer().spanBuilder(spanStageName)
                     .setParent(Context.current())
-                    .setAttribute("jenkins.pipeline.step.type", stepStartNode.getDisplayFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, spanStageName)
                     .startSpan();
-            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
             getTracerService().putSpan(run, stageSpan, stepStartNode);
         }
@@ -143,12 +143,12 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     public void onStartParallelStepBranch(@Nonnull StepStartNode stepStartNode, @Nonnull String branchName, @Nonnull WorkflowRun run) {
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
-
-            Span atomicStepSpan = getTracer().spanBuilder("Parallel branch: " + branchName)
+            String spanBranchName = "Parallel branch: " + branchName;
+            Span atomicStepSpan = getTracer().spanBuilder(spanBranchName)
                     .setParent(Context.current())
-                    .setAttribute("jenkins.pipeline.step.type", stepStartNode.getDisplayFunctionName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, spanBranchName)
                     .startSpan();
-            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + stepStartNode.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > parallel branch(" + branchName + ") - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
             getTracerService().putSpan(run, atomicStepSpan, stepStartNode);
         }
