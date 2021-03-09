@@ -69,7 +69,7 @@ public class MonitoringComputerListener extends ComputerListener {
                 .setUnit("1")
                 .build();
         onlineAgentsRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
-                .setDescription("Number of offline agents")
+                .setDescription("Number of online agents")
                 .setUnit("1")
                 .build();
         agentsRecorder = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
