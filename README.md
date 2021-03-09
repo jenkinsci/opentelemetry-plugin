@@ -32,18 +32,24 @@ Here are few examples of architecture:
    
 ### Metrics on Jenkins health indicators
 
-* Jenkins health metrics
-    * ci.pipeline.run.active 
-    * ci.pipeline.run.launched 
-    * ci.pipeline.run.started 
-    * ci.pipeline.run.completed 
-    * ci.pipeline.run.aborted 
-    * jenkins.queue.waiting 
-    * jenkins.queue.blocked 
-    * jenkins.queue.buildable 
-    * jenkins.queue.left 
-    * jenkins.queue.time_spent_millis
-* Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability) 
+| Metrics                          | Description  |
+|----------------------------------|--------------|
+| ci.pipeline.run.active           | Gauge of active jobs |
+| ci.pipeline.run.launched         | Job launched |
+| ci.pipeline.run.started          | Job started |
+| ci.pipeline.run.completed        | Job completed |
+| ci.pipeline.run.aborted          | Job aborted |
+| jenkins.queue.waiting            | Number of waiting items in queue |
+| jenkins.queue.blocked            | Number of blocked items in queue |
+| jenkins.queue.buildable          | Number of buildable items in queue |
+| jenkins.queue.left               | Total count of left items |
+| jenkins.queue.time_spent_millis  | Total time spent in queue by items |
+| jenkins.agents.total             | Number of agents|
+| jenkins.agents.online            | Number of online agents |
+| jenkins.agents.offline           | Number of offline agents |
+
+
+Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability) 
 
 ## Getting started
 
@@ -181,8 +187,7 @@ node {
 
 ## Configuration as code
 
-This plugin supports configuration as code
-Add to your yaml file:
+This plugin supports configuration as code. Add to your yaml file:
 
 ```yaml
 unclassified:
