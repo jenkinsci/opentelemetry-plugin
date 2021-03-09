@@ -14,6 +14,7 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor;
@@ -59,7 +60,7 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
         try (Scope ignored = span.makeCurrent()) {
             envs.put(TRACE_ID, traceId);
             envs.put(SPAN_ID, spanId);
-            TextMapPropagator.Setter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
+            TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
             W3CTraceContextPropagator.getInstance().inject(Context.current(), envs, setter);
         }
 

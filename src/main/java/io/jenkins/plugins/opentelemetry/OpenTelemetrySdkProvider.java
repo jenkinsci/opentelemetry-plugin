@@ -12,9 +12,10 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.opentelemetry.metrics.exporter.NoOpMetricExporter;
-import io.jenkins.plugins.opentelemetry.opentelemetry.resource.JenkinsResource;
+import io.jenkins.plugins.opentelemetry.opentelemetry.resource.JenkinsResourceProvider;
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.GlobalMetricsProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
@@ -25,6 +26,7 @@ import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporterBuilder;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.autoconfigure.ConfigProperties;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.IntervalMetricReader;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
@@ -76,7 +78,7 @@ public class OpenTelemetrySdkProvider {
     @PostConstruct
     @VisibleForTesting
     public void postConstruct() {
-        this.tracer = new TracerDelegate(Tracer.getDefault());
+        this.tracer = new TracerDelegate(OpenTelemetry.noop().getTracer("jenkins"));
         Resource resource = buildResource();
         this.sdkMeterProvider = SdkMeterProvider.builder().setResource(resource).buildAndRegisterGlobal();
         this.meter = GlobalMetricsProvider.getMeter("jenkins");
@@ -103,7 +105,7 @@ public class OpenTelemetrySdkProvider {
                 .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
                 .buildAndRegisterGlobal();
 
-        this.tracer.setDelegate(Tracer.getDefault());
+        this.tracer.setDelegate(OpenTelemetry.noop().getTracer("noop"));
         LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
     }
 
@@ -179,10 +181,10 @@ public class OpenTelemetrySdkProvider {
     }
 
     /**
-     * TODO refresh {@link JenkinsResource} when {@link Jenkins#getRootUrl()} changes
+     * TODO refresh resources when {@link Jenkins#getRootUrl()} changes
      */
     private Resource buildResource() {
-        return Resource.getDefault().merge(new JenkinsResource().create());
+        return Resource.getDefault().merge(new JenkinsResourceProvider().createResource(null));
     }
 
     @Nonnull

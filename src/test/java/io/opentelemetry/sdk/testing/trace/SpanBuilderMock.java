@@ -5,6 +5,7 @@
 
 package io.opentelemetry.sdk.testing.trace;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.*;
@@ -23,7 +24,7 @@ public class SpanBuilderMock implements SpanBuilder {
     private Map<AttributeKey, Object> attributes = new HashMap<>();
 
     public SpanBuilderMock(String spanName) {
-        this.delegate = Tracer.getDefault().spanBuilder(spanName);
+        this.delegate = OpenTelemetry.noop().getTracer("noop").spanBuilder(spanName);
     }
 
     @Override

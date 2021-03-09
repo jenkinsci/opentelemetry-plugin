@@ -8,8 +8,10 @@ package io.jenkins.plugins.opentelemetry.opentelemetry.resource;
 import hudson.util.VersionNumber;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.autoconfigure.ConfigProperties;
+import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
+import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
-import io.opentelemetry.sdk.resources.ResourceProvider;
 import jenkins.model.Jenkins;
 
 import java.util.Objects;
@@ -17,13 +19,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * A {@link ResourceProvider} which provides information about the current Jenkins instance.
+ * A factory of a {@link Resource} which provides information about the current Jenkins instance.
  */
-public class JenkinsResource extends ResourceProvider {
-    private final static Logger LOGGER = Logger.getLogger(JenkinsResource.class.getName());
+public class JenkinsResourceProvider implements ResourceProvider {
+    private final static Logger LOGGER = Logger.getLogger(JenkinsResourceProvider.class.getName());
 
     @Override
-    protected Attributes getAttributes() {
+    public Resource createResource(ConfigProperties config) {
         Jenkins jenkins = Jenkins.getInstanceOrNull();
         String rootUrl = jenkins == null ? "#unknown#" : Objects.toString(jenkins.getRootUrl(), "#undefined#");
         final VersionNumber versionNumber = Jenkins.getVersion();
@@ -35,6 +37,6 @@ public class JenkinsResource extends ResourceProvider {
                 JenkinsOtelSemanticAttributes.JENKINS_URL, rootUrl
         );
         LOGGER.log(Level.FINE, () -> "Attributes: " + attributes);
-        return attributes;
+        return Resource.create(attributes);
     }
 }
