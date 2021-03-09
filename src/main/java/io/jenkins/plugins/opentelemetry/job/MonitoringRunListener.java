@@ -23,6 +23,7 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import jenkins.model.Jenkins;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
@@ -84,10 +85,11 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         activeRun.incrementAndGet();
 
         String rootSpanName = run.getParent().getFullName();
+        String runUrl = Objects.toString(Jenkins.get().getRootUrl(), "") + run.getUrl();
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(rootSpanName)
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, run.getUrl())
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, runUrl)
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber());
 
         // PARAMETERS
