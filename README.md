@@ -43,6 +43,9 @@ Here are few examples of architecture:
     * jenkins.queue.buildable 
     * jenkins.queue.left 
     * jenkins.queue.time_spent_millis
+    * jenkins.agents.total
+    * jenkins.agents.online
+    * jenkins.agents.offline
 * Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability) 
 
 ## Getting started
