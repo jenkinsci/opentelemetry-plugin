@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.computer;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
@@ -15,7 +16,10 @@ import hudson.slaves.ComputerListener;
 import hudson.slaves.OfflineCause;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.metrics.LongValueRecorder;
+import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
@@ -31,6 +35,9 @@ import java.util.logging.Logger;
 @Extension
 public class MonitoringComputerListener extends ComputerListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
+
+	protected Meter meter;
+	private LongValueRecorder workersObserver;
 
     @PostConstruct
     public void postConstruct() {
@@ -55,6 +62,10 @@ public class MonitoringComputerListener extends ComputerListener {
                 LOGGER.log(Level.WARNING,  "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
             }
         }
+        workersObserver = meter.longValueRecorderBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
+                .setDescription("Number of workers")
+                .setUnit("1")
+                .build();
     }
 
     @Override
@@ -72,8 +83,15 @@ public class MonitoringComputerListener extends ComputerListener {
     }
 
     @Override
-    public void onOffline(@NonNull Computer c, OfflineCause cause) {
+    public void onOnline(Computer c, TaskListener listener) throws IOException, InterruptedException {
+        super.onOnline(c, listener);
+        updateWorkers();
+    }
+
+    @Override
+    public void onOffline(@NonNull Computer c, @CheckForNull OfflineCause cause) {
         super.onOffline(c, cause);
+        updateWorkers();
     }
 
     private static class GetComputerAttributes extends MasterToSlaveCallable<Map<String, String>, IOException> {
@@ -89,5 +107,14 @@ public class MonitoringComputerListener extends ComputerListener {
             attributes.put("host.ip", localHost.getHostAddress());
             return attributes;
         }
+    }
+
+    private void updateWorkers() {
+        Jenkins jenkins = Jenkins.getInstance();
+        Computer[] computers = new Computer[0];
+        if(jenkins != null){
+            computers = jenkins.getComputers();
+        }
+        this.workersObserver.record(computers.length);
     }
 }

@@ -16,6 +16,7 @@ public class JenkinsSemanticMetrics {
     public static final String JENKINS_QUEUE_BUILDABLE =            "jenkins.queue.buildable";
     public static final String JENKINS_QUEUE_LEFT =                 "jenkins.queue.left";
     public static final String JENKINS_QUEUE_TIME_SPENT_MILLIS =    "jenkins.queue.time_spent_millis";
+    public static final String JENKINS_AGENTS_TOTAL =               "jenkins.worker.total";
 
     private JenkinsSemanticMetrics(){}
 }
