@@ -67,7 +67,7 @@ Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solu
     * Zipkin
     * Custom Observability backend for other visualisation solution
 
-![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-otel-plugin-configuration.png)
+![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
 ## Screenshots
 
