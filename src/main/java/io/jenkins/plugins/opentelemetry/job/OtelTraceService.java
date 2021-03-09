@@ -181,7 +181,6 @@ public class OtelTraceService {
     }
 
     /**
-     * @param run
      * @return {@code null} if no {@link Span} has been created for the given {@link Run}
      */
     @CheckForNull

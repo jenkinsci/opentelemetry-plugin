@@ -52,14 +52,13 @@ public final class JenkinsOtelSemanticAttributes {
      */
     public static final AttributeKey<String>        JENKINS_STEP_TYPE = AttributeKey.stringKey("jenkins.pipeline.step.type");
     /**
-     * @see FlowNode#getId()
+     * @see org.jenkinsci.plugins.workflow.graph.FlowNode#getId()
      */
     public static final AttributeKey<String>        JENKINS_STEP_ID = AttributeKey.stringKey("jenkins.pipeline.step.id");
     /**
      * @see Computer#getName()
      */
     public static final AttributeKey<String>        JENKINS_COMPUTER_NAME = AttributeKey.stringKey("jenkins.computer.name");
-
 
 
     /**
