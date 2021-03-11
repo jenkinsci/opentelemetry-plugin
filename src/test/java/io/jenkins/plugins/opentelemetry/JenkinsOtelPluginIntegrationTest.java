@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry;
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.ExtensionList;
 import hudson.Functions;
+import hudson.model.Node;
 import hudson.model.Result;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
@@ -105,6 +106,8 @@ public class JenkinsOtelPluginIntegrationTest {
                 "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "    }\n" +
                 "}";
+        final Node node = jenkinsRule.createOnlineSlave();
+
         final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
@@ -113,10 +116,10 @@ public class JenkinsOtelPluginIntegrationTest {
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node: Ready", "Node: Allocate", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
@@ -167,15 +170,46 @@ public class JenkinsOtelPluginIntegrationTest {
                     "'''\n" +
                     "    }\n" +
                     "}";
+            final Node node = jenkinsRule.createOnlineSlave();
+
             WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-trace-environment-variables-injected-in-shell-steps-" + jobNameSuffix.incrementAndGet());
             pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
             WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
             final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
+            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
         }
     }
 
+    @Test
+    public void testPipelineWithNodeSteps() throws Exception {
+        String pipelineScript = "pipeline {\n" +
+                "  agent none\n" +
+                "  stages {\n" +
+                "    stage('foo') {\n" +
+                "      steps {\n" +
+                "        node('bar') { \n" +
+                "          echo 'hi bar' \n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}";
+
+        final Node node = jenkinsRule.createOnlineSlave();
+        node.setLabelString("bar");
+
+        final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Start", jobName);
+        checkChainOfSpans(spans, "Node: Ready", "Node: Allocate", "Stage: foo", "Phase: Run");
+        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
+    }
 
     @Test
     public void testPipelineWithSkippedSteps() throws Exception {
@@ -189,14 +223,17 @@ public class JenkinsOtelPluginIntegrationTest {
                 "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "    }\n" +
                 "}";
+
+        final Node node = jenkinsRule.createOnlineSlave();
+
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node: Ready", "Node: Allocate", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
     }
 
     private void dumpMetrics(Map<String, MetricData> exportedMetrics) {
@@ -241,14 +278,16 @@ public class JenkinsOtelPluginIntegrationTest {
                 "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "    }\n" +
                 "}";
+        final Node node = jenkinsRule.createOnlineSlave();
+
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node: Ready", "Node: Allocate", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
     }
 
     @Test
@@ -263,15 +302,17 @@ public class JenkinsOtelPluginIntegrationTest {
                 "       error 'ze-pipeline-error' \n" +
                 "    }\n" +
                 "}";
+        final Node node = jenkinsRule.createOnlineSlave();
+
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-failure" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Phase: Run");
-        checkChainOfSpans(spans, "error", "Stage: ze-stage2", "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node: Ready", "Node: Allocate", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run");
+        checkChainOfSpans(spans, "error", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
     }
 
     @Test
@@ -288,15 +329,17 @@ public class JenkinsOtelPluginIntegrationTest {
                 "        }\n" +
                 "    }\n" +
                 "}";
+        final Node node = jenkinsRule.createOnlineSlave();
+
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-parallel-step" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", "Phase: Run");
-        checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
+        checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", "Node: Ready", "Node: Allocate", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", "Node: Ready", "Node: Allocate", "Phase: Run");
+        checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", "Node: Ready", "Node: Allocate", "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
 
     }
 

@@ -70,6 +70,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
+
             String spanNodeName = "Node: " + nodeName;
             Span nodeSpan = getTracer().spanBuilder(spanNodeName)
                     .setParent(Context.current())
