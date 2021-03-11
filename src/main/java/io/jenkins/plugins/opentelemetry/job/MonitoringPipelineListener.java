@@ -67,6 +67,23 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
+    public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
+        try (Scope ignored = setupContext(run, stepStartNode)) {
+            verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
+            String spanNodeName = "Node: " + nodeName;
+            Span nodeSpan = getTracer().spanBuilder(spanNodeName)
+                    .setParent(Context.current())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "node"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, nodeName)
+                    .startSpan();
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + nodeName + ") - begin " + OtelUtils.toDebugString(nodeSpan));
+
+            getTracerService().putSpan(run, nodeSpan, stepStartNode);
+        }
+    }
+
+    @Override
     public void onStartStageStep(@Nonnull StepStartNode stepStartNode, @Nonnull String stageName, @Nonnull WorkflowRun run) {
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
@@ -81,6 +98,11 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             getTracerService().putSpan(run, stageSpan, stepStartNode);
         }
+    }
+
+    @Override
+    public void onEndNodeStep(@Nonnull StepEndNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
+        endCurrentSpan(node, run);
     }
 
     @Override
