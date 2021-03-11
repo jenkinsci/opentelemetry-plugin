@@ -67,30 +67,19 @@ public class OtelTraceService {
             return null;
         }
         verify(runSpans.pipelineStepSpansByFlowNodeId.isEmpty(), run.getFullDisplayName() + " - Can't access run phase span while there are remaining pipeline step spans: " + runSpans);
-        LOGGER.log(Level.FINER, () -> "getSpan(" + run.getFullDisplayName() + ") - " + runSpans);
+        LOGGER.log(Level.INFO, () -> "getSpan(" + run.getFullDisplayName() + ") - " + runSpans);
         return Iterables.getLast(runSpans.runPhasesSpans, null);
     }
 
     @Nonnull
     public Span getSpan(@Nonnull Run run, FlowNode flowNode) {
-        List<String> parentFlowNodeIds = flowNode.getParents().stream().map(FlowNode::getId).collect(Collectors.toList());
-        List<String> flowNodesToEvaluate = new ArrayList<>(parentFlowNodeIds.size() + 1);
-        flowNodesToEvaluate.add(flowNode.getId());
-        flowNodesToEvaluate.addAll(parentFlowNodeIds);
-        if (flowNode instanceof StepEndNode) {
-            //  verify this logic, shouldn't we recurse?
-            StepEndNode endNode = (StepEndNode) flowNode;
-            StepStartNode startNode = endNode.getStartNode();
-            flowNodesToEvaluate.add(startNode.getId());
-            flowNodesToEvaluate.addAll(startNode.getParents().stream().map(FlowNode::getId).collect(Collectors.toList()));
-        }
 
         RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromRun(run);
         RunSpans runSpans = this.spansByRun.get(runIdentifier);
         if (runSpans == null) {
-            LOGGER.log(Level.INFO, ()->"No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
+            LOGGER.log(Level.INFO, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
             RunSpans newRunSpans = new RunSpans();
-            SpanBuilder rootSpanBuilder = getTracer().spanBuilder(run.getParent().getFullName() + "_recovered-after-restart" )
+            SpanBuilder rootSpanBuilder = getTracer().spanBuilder(run.getParent().getFullName() + "_recovered-after-restart")
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber());
@@ -103,15 +92,40 @@ public class OtelTraceService {
 
             return runSpan;
         }
-        LOGGER.log(Level.FINER, () -> "getSpan(" + run.getFullDisplayName() + ", " + flowNode + ") -  " + runSpans);
+        LOGGER.log(Level.INFO, () -> "getSpan(" + run.getFullDisplayName() + ", FlowNode[name" + flowNode.getDisplayName() + ", function:" + flowNode.getDisplayFunctionName() + ", id=" + flowNode.getId() + "]) -  " + runSpans);
+        LOGGER.log(Level.INFO, () -> "parentFlowNodes: " + flowNode.getParents().stream().map(node -> node.getDisplayName() + ", id: " + node.getId()).collect(Collectors.toList()));
 
-        for (String flowNodeId : flowNodesToEvaluate) {
-            PipelineSpanContext pipelineSpanContext = runSpans.pipelineStepSpansByFlowNodeId.get(flowNodeId);
+        // TODO optimise lazy loading the list of ancestors just loading until w have found a span
+        List<FlowNode> ancestors = getAncestors(flowNode);
+        for (FlowNode ancestor : ancestors) {
+            PipelineSpanContext pipelineSpanContext = runSpans.pipelineStepSpansByFlowNodeId.get(ancestor.getId());
             if (pipelineSpanContext != null) {
                 return pipelineSpanContext.getSpan();
             }
         }
-        return Iterables.getLast(runSpans.runPhasesSpans);
+        final Span last = Iterables.getLast(runSpans.runPhasesSpans);
+        LOGGER.log(Level.INFO, () -> "span: " + last.getSpanContext().getSpanId());
+        return last;
+    }
+
+    @Nonnull
+    private List<FlowNode> getAncestors(FlowNode flowNode) {
+        List<FlowNode> ancestors = new ArrayList<>();
+        buildListOfAncestors(flowNode, ancestors);
+        return ancestors;
+    }
+
+    public void buildListOfAncestors(@Nonnull FlowNode flowNode, List<FlowNode> parents) {
+        parents.add(flowNode);
+        if (flowNode instanceof StepEndNode) {
+            StepEndNode endNode = (StepEndNode) flowNode;
+            final StepStartNode startNode = endNode.getStartNode();
+            parents.add(startNode);
+            flowNode = startNode;
+        }
+        for (FlowNode parentNode : flowNode.getParents()) {
+            buildListOfAncestors(parentNode, parents);
+        }
     }
 
     public void removePipelineStepSpan(@Nonnull Run run, @Nonnull FlowNode flowNode, @Nonnull Span span) {
@@ -128,7 +142,7 @@ public class OtelTraceService {
             throw new VerifyException("Can't remove span from node of type" + flowNode.getClass() + " - " + flowNode);
         }
         PipelineSpanContext pipelineSpanContext = runSpans.pipelineStepSpansByFlowNodeId.remove(startSpanNode.getId());
-        verifyNotNull(pipelineSpanContext,"%s - No span found for node %s: %s", run, startSpanNode, span, runSpans);
+        verifyNotNull(pipelineSpanContext, "%s - No span found for node %s: %s", run, startSpanNode, span, runSpans);
     }
 
     public void removeJobPhaseSpan(@Nonnull Run run, @Nonnull Span span) {
@@ -164,7 +178,7 @@ public class OtelTraceService {
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans());
         runSpans.runPhasesSpans.add(span);
 
-        LOGGER.log(Level.FINER, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") - new stack: " + runSpans);
+        LOGGER.log(Level.INFO, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") - new stack: " + runSpans);
     }
 
     public void putSpan(@Nonnull Run run, @Nonnull Span span, @Nonnull FlowNode flowNode) {
@@ -172,7 +186,7 @@ public class OtelTraceService {
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans());
         runSpans.pipelineStepSpansByFlowNodeId.put(flowNode.getId(), new PipelineSpanContext(span, flowNode));
 
-        LOGGER.log(Level.FINER, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") -  " + runSpans);
+        LOGGER.log(Level.INFO, () -> "putSpan(" + run.getFullDisplayName() + "," + " FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], Span[id: " + span.getSpanContext().getSpanId() + "]" + ") -  " + runSpans);
     }
 
     @Inject
@@ -181,6 +195,7 @@ public class OtelTraceService {
     }
 
     /**
+     * @param run
      * @return {@code null} if no {@link Span} has been created for the given {@link Run}
      */
     @CheckForNull
