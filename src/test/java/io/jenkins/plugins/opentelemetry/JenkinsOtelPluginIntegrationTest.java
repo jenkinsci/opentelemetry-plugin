@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.github.rutledgepaulv.prune.Tree;
-import com.google.common.collect.Lists;
 import hudson.ExtensionList;
 import hudson.Functions;
 import hudson.model.Result;
@@ -35,7 +34,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -101,34 +99,24 @@ public class JenkinsOtelPluginIntegrationTest {
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
                 "node() {\n" +
                 "    stage('ze-stage1') {\n" +
-                "       xsh (label: 'shell-1', script: 'echo ze-echo') \n" +
+                "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
-                "       xsh 'echo ze-echo-2' \n" +
+                "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "    }\n" +
                 "}";
-        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
+        final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        List<SpanData> spans = flush();
-        final Tree<SpanDataWrapper> spanTree = dumpSpans(spans);
-        MatcherAssert.assertThat(spans.size(), CoreMatchers.is(8));
-        final Optional<SpanDataWrapper> shell1SpanOptional = spanTree.breadthFirstSearch(spanDataWrapper -> "shell-1".equals(spanDataWrapper.spanData.getName()));
-        MatcherAssert.assertThat("Span shell-1 not found", shell1SpanOptional.isPresent(), CoreMatchers.is(true));
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
-        final ArrayList<String> expectedSpanNamesList = Lists.newArrayList("shell-1", "Stage: ze-stage1", "Phase: Run");
-        final Iterator<String> expectedSpanNames = expectedSpanNamesList.iterator();
-        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(node -> expectedSpanNames.next().equals(node.getData().spanData.getName()));
-        if (!actualNodeOptional.isPresent()) {
-            // error
-        }
-        while (expectedSpanNames.hasNext()) {
-            String expectedSpanName = expectedSpanNames.next();
-            actualNodeOptional = actualNodeOptional.get().getParent();
-            // FIXME enable this check
-            // MatcherAssert.assertThat("Expected span:" + expectedSpanName + " in chain of span" + expectedSpanNamesList, actualNodeOptional.get().getData().spanData.getName(), CoreMatchers.is(expectedSpanName));
-        }
+        checkChainOfSpans(spans, "Phase: Start", jobName);
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
@@ -142,6 +130,25 @@ public class JenkinsOtelPluginIntegrationTest {
         //MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.is(1L));
 
 
+    }
+
+    private void checkChainOfSpans(Tree<SpanDataWrapper> spanTree, String... expectedSpanNames) {
+        final List<String> expectedSpanNamesList = Arrays.asList(expectedSpanNames);
+        final Iterator<String> expectedSpanNamesIt = expectedSpanNamesList.iterator();
+        if (!expectedSpanNamesIt.hasNext()) {
+            Assert.fail("No element in the list of expected spans for " + Arrays.asList(expectedSpanNames));
+        }
+        final String leafSpanName = expectedSpanNamesIt.next();
+        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(node -> leafSpanName.equals(node.getData().spanData.getName()));
+
+        if (!actualNodeOptional.isPresent()) {
+            // error
+        }
+        while (expectedSpanNamesIt.hasNext()) {
+            String expectedSpanName = expectedSpanNamesIt.next();
+            actualNodeOptional = actualNodeOptional.get().getParent();
+            MatcherAssert.assertThat("Expected span:" + expectedSpanName + " in chain of span" + expectedSpanNamesIt, actualNodeOptional.get().getData().spanData.getName(), CoreMatchers.is(expectedSpanName));
+        }
     }
 
     @Test
@@ -164,9 +171,8 @@ public class JenkinsOtelPluginIntegrationTest {
             pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
             WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-            List<SpanData> finishedSpanItems = flush();
-            dumpSpans(finishedSpanItems);
-            MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(6));
+            final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
         }
     }
 
@@ -176,20 +182,21 @@ public class JenkinsOtelPluginIntegrationTest {
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
                 "node() {\n" +
                 "    stage('ze-stage1') {\n" +
-                "       xsh 'echo ze-echo' \n" +
+                "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
                 "       echo 'ze-echo-step' \n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
-                "       xsh 'echo ze-echo-2' \n" +
+                "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "    }\n" +
                 "}";
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        List<SpanData> finishedSpanItems = flush();
-        dumpSpans(finishedSpanItems);
-        MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(8));
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
     }
 
     private void dumpMetrics(Map<String, MetricData> exportedMetrics) {
@@ -219,11 +226,6 @@ public class JenkinsOtelPluginIntegrationTest {
         }).collect(Collectors.joining(" \n")));
     }
 
-    protected List<SpanData> flush() {
-        CompletableResultCode completableResultCode = this.openTelemetrySdkProvider.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
-        completableResultCode.join(1, TimeUnit.SECONDS);
-        return ((InMemorySpanExporter) OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER).getFinishedSpanItems();
-    }
 
     @Test
     public void testPipelineWithWrappingStep() throws Exception {
@@ -231,21 +233,22 @@ public class JenkinsOtelPluginIntegrationTest {
                 "node() {\n" +
                 "    stage('ze-stage1') {\n" +
                 "       withEnv(['MY_VARIABLE=MY_VALUE']) {\n" +
-                "          xsh 'echo ze-echo' \n" +
+                "          xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
                 "       }\n" +
                 "       xsh 'echo ze-echo' \n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
-                "       xsh 'echo ze-echo2' \n" +
+                "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "    }\n" +
                 "}";
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        List<SpanData> finishedSpanItems = flush();
-        dumpSpans(finishedSpanItems);
-        MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(9));
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
     }
 
     @Test
@@ -253,10 +256,10 @@ public class JenkinsOtelPluginIntegrationTest {
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
                 "node() {\n" +
                 "    stage('ze-stage1') {\n" +
-                "       xsh 'echo ze-echo' \n" +
+                "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
-                "       xsh 'echo ze-echo2' \n" +
+                "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "       error 'ze-pipeline-error' \n" +
                 "    }\n" +
                 "}";
@@ -264,9 +267,11 @@ public class JenkinsOtelPluginIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
-        List<SpanData> finishedSpanItems = flush();
-        dumpSpans(finishedSpanItems);
-        MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(9));
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Phase: Run");
+        checkChainOfSpans(spans, "error", "Stage: ze-stage2", "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
     }
 
     @Test
@@ -287,14 +292,20 @@ public class JenkinsOtelPluginIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        List<SpanData> finishedSpanItems = flush();
-        dumpSpans(finishedSpanItems);
-
-        MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(11));
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", "Phase: Run");
+        checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
 
     }
 
-    protected Tree<SpanDataWrapper> dumpSpans(List<SpanData> spans) {
+    protected Tree<SpanDataWrapper> getGeneratedSpans() {
+
+        CompletableResultCode completableResultCode = this.openTelemetrySdkProvider.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
+        completableResultCode.join(1, TimeUnit.SECONDS);
+        List<SpanData> spans = ((InMemorySpanExporter) OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER).getFinishedSpanItems();
+
         final BiPredicate<Tree.Node<SpanDataWrapper>, Tree.Node<SpanDataWrapper>> parentChildMatcher = (spanDataNode1, spanDataNode2) -> {
             final SpanData spanData1 = spanDataNode1.getData().spanData;
             final SpanData spanData2 = spanDataNode2.getData().spanData;
@@ -302,7 +313,7 @@ public class JenkinsOtelPluginIntegrationTest {
         };
         final List<Tree<SpanDataWrapper>> trees = Tree.of(spans.stream().map(span -> new SpanDataWrapper(span)).collect(Collectors.toList()), parentChildMatcher);
         System.out.println("## TREE VIEW OF SPANS ## ");
-        for(Tree<SpanDataWrapper> tree: trees) {
+        for (Tree<SpanDataWrapper> tree : trees) {
             System.out.println(tree);
         }
 
@@ -327,10 +338,10 @@ public class JenkinsOtelPluginIntegrationTest {
 
             final Attributes attributes = spanData.getAttributes();
             if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE) != null) {
-                result += ", function: " +  attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE);
+                result += ", function: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE);
             }
             if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID) != null) {
-                result += ", node.id: " +  attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID);
+                result += ", node.id: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID);
             }
             return result;
         }
