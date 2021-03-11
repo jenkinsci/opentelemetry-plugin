@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.github.rutledgepaulv.prune.Tree;
+import com.google.common.collect.Lists;
 import hudson.ExtensionList;
 import hudson.Functions;
 import hudson.model.Result;
@@ -110,12 +111,23 @@ public class JenkinsOtelPluginIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        List<SpanData> finishedSpanItems = flush();
-        final Tree<SpanDataWrapper> spanTree = dumpSpans(finishedSpanItems);
-        MatcherAssert.assertThat(finishedSpanItems.size(), CoreMatchers.is(8));
+        List<SpanData> spans = flush();
+        final Tree<SpanDataWrapper> spanTree = dumpSpans(spans);
+        MatcherAssert.assertThat(spans.size(), CoreMatchers.is(8));
         final Optional<SpanDataWrapper> shell1SpanOptional = spanTree.breadthFirstSearch(spanDataWrapper -> "shell-1".equals(spanDataWrapper.spanData.getName()));
         MatcherAssert.assertThat("Span shell-1 not found", shell1SpanOptional.isPresent(), CoreMatchers.is(true));
 
+        final ArrayList<String> expectedSpanNamesList = Lists.newArrayList("shell-1", "Stage: ze-stage1", "Phase: Run");
+        final Iterator<String> expectedSpanNames = expectedSpanNamesList.iterator();
+        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(node -> expectedSpanNames.next().equals(node.getData().spanData.getName()));
+        if (!actualNodeOptional.isPresent()) {
+            // error
+        }
+        while (expectedSpanNames.hasNext()) {
+            String expectedSpanName = expectedSpanNames.next();
+            actualNodeOptional = actualNodeOptional.get().getParent();
+            MatcherAssert.assertThat("Expected span:" + expectedSpanName + " in chain of span" + expectedSpanNamesList, actualNodeOptional.get().getData().spanData.getName(), CoreMatchers.is(expectedSpanName));
+        }
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
@@ -127,6 +139,8 @@ public class JenkinsOtelPluginIntegrationTest {
         MatcherAssert.assertThat(runCompletedCounterData.getType(), CoreMatchers.is(MetricDataType.LONG_SUM));
         Collection<LongPointData> metricPoints = runCompletedCounterData.getLongSumData().getPoints();
         //MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.is(1L));
+
+
     }
 
     @Test

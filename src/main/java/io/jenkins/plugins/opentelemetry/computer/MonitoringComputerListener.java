@@ -84,13 +84,25 @@ public class MonitoringComputerListener extends ComputerListener {
     }
 
     private long getOfflineAgentsCount() {
-        return Arrays.stream(Jenkins.get().getComputers()).filter(computer -> computer.isOffline()).count();
+        final Jenkins jenkins = Jenkins.getInstanceOrNull();
+        if (jenkins == null) {
+            return 0;
+        }
+        return Arrays.stream(jenkins.getComputers()).filter(computer -> computer.isOffline()).count();
     }
     private long getOnlineAgentsCount() {
-        return Arrays.stream(Jenkins.get().getComputers()).filter(computer -> computer.isOnline()).count();
+        final Jenkins jenkins = Jenkins.getInstanceOrNull();
+        if (jenkins == null) {
+            return 0;
+        }
+        return Arrays.stream(jenkins.getComputers()).filter(computer -> computer.isOnline()).count();
     }
     private long getAgentsCount() {
-        return Arrays.stream(Jenkins.get().getComputers()).count();
+        final Jenkins jenkins = Jenkins.getInstanceOrNull();
+        if (jenkins == null) {
+            return 0;
+        }
+        return Arrays.stream(jenkins.getComputers()).count();
     }
 
     @Override
