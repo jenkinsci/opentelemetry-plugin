@@ -75,7 +75,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "stage"))
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(stepStartNode.getDescriptor(), stageName))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stageName)
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
@@ -169,7 +169,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "branch"))
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(stepStartNode.getDescriptor(), branchName))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, branchName)
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > parallel branch(" + branchName + ") - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
