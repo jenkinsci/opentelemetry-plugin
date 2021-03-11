@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.ExtensionList;
@@ -26,6 +27,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.compress.utils.Sets;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
@@ -71,14 +73,18 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
 
-            String spanNodeName = "Node: " + nodeName;
+            final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
+            final String label = Objects.toString(arguments.get("label"), null);
+            String labelName = Strings.isNullOrEmpty(label) ? nodeName : nodeName + " (" + label + ")";
+
+            String spanNodeName = "Node: " + labelName;
             Span nodeSpan = getTracer().spanBuilder(spanNodeName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "node"))
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, nodeName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, labelName)
                     .startSpan();
-            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + nodeName + ") - begin " + OtelUtils.toDebugString(nodeSpan));
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + labelName + ") - begin " + OtelUtils.toDebugString(nodeSpan));
 
             getTracerService().putSpan(run, nodeSpan, stepStartNode);
         }

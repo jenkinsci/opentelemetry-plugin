@@ -188,8 +188,8 @@ public class JenkinsOtelPluginIntegrationTest {
                 "  stages {\n" +
                 "    stage('foo') {\n" +
                 "      steps {\n" +
-                "        node('bar') { \n" +
-                "          echo 'hi bar' \n" +
+                "        node('linux') { \n" +
+                "          echo 'hello world' \n" +
                 "        }\n" +
                 "      }\n" +
                 "    }\n" +
@@ -197,7 +197,7 @@ public class JenkinsOtelPluginIntegrationTest {
                 "}";
 
         final Node node = jenkinsRule.createOnlineSlave();
-        node.setLabelString("bar");
+        node.setLabelString("linux");
 
         final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
@@ -206,7 +206,7 @@ public class JenkinsOtelPluginIntegrationTest {
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "Node: Ready", "Node: Allocate", "Stage: foo", "Phase: Run");
+        checkChainOfSpans(spans, "Node: Ready", "Node: Allocate (linux)", "Stage: foo", "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
     }
