@@ -106,7 +106,7 @@ public class JenkinsOtelPluginIntegrationTest {
                 "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "    }\n" +
                 "}";
-        final Node node = jenkinsRule.createOnlineSlave();
+        final Node agent = jenkinsRule.createOnlineSlave();
 
         final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
@@ -120,6 +120,12 @@ public class JenkinsOtelPluginIntegrationTest {
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
+
+        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spans.breadthFirstSearchNodes(node -> "Node: Allocate".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(actualNodeOptional, CoreMatchers.is(CoreMatchers.notNullValue(Optional.class)));
+
+        final Attributes attributes = actualNodeOptional.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is(""));
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
@@ -196,8 +202,8 @@ public class JenkinsOtelPluginIntegrationTest {
                 "  }\n" +
                 "}";
 
-        final Node node = jenkinsRule.createOnlineSlave();
-        node.setLabelString("linux");
+        final Node agent = jenkinsRule.createOnlineSlave();
+        agent.setLabelString("linux");
 
         final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
@@ -209,6 +215,12 @@ public class JenkinsOtelPluginIntegrationTest {
         checkChainOfSpans(spans, "Node: Ready", "Node: Allocate (linux)", "Stage: foo", "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
+
+        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spans.breadthFirstSearchNodes(node -> "Node: Allocate (linux)".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(actualNodeOptional, CoreMatchers.is(CoreMatchers.notNullValue(Optional.class)));
+
+        final Attributes attributes = actualNodeOptional.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
     }
 
     @Test
@@ -382,6 +394,9 @@ public class JenkinsOtelPluginIntegrationTest {
             final Attributes attributes = spanData.getAttributes();
             if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE) != null) {
                 result += ", function: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE);
+            }
+            if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME) != null) {
+                result += ", name: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME);
             }
             if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID) != null) {
                 result += ", node.id: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID);

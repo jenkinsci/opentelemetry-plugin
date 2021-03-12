@@ -83,6 +83,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "node"))
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, labelName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, label)
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + labelName + ") - begin " + OtelUtils.toDebugString(nodeSpan));
 
