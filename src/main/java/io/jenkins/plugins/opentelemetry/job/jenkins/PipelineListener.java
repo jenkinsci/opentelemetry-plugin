@@ -33,6 +33,11 @@ public interface PipelineListener {
     void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String nodeName, @Nonnull WorkflowRun run);
 
     /**
+     * Just after the `node` step starts.
+     */
+    void onAfterStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String nodeName, @Nonnull WorkflowRun run);
+
+    /**
      * Just after the `node` step ends
      */
     void onEndNodeStep(@Nonnull StepEndNode nodeStepEndNode, @Nonnull String nodeName, @Nonnull WorkflowRun run);
