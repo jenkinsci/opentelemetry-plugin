@@ -125,7 +125,7 @@ public class JenkinsOtelPluginIntegrationTest {
         MatcherAssert.assertThat(actualNodeOptional, CoreMatchers.is(CoreMatchers.notNullValue(Optional.class)));
 
         final Attributes attributes = actualNodeOptional.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is(""));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.nullValue());
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
@@ -217,7 +217,7 @@ public class JenkinsOtelPluginIntegrationTest {
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
 
         Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spans.breadthFirstSearchNodes(node -> "Node: Allocate (linux)".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(actualNodeOptional, CoreMatchers.is(CoreMatchers.notNullValue(Optional.class)));
+        MatcherAssert.assertThat(actualNodeOptional, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         final Attributes attributes = actualNodeOptional.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
