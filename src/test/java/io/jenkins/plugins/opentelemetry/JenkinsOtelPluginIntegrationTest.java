@@ -121,10 +121,15 @@ public class JenkinsOtelPluginIntegrationTest {
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
-        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spans.breadthFirstSearchNodes(node -> "Node: Allocate".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(actualNodeOptional, CoreMatchers.is(CoreMatchers.notNullValue(Optional.class)));
+        Optional<Tree.Node<SpanDataWrapper>> allocateNode = spans.breadthFirstSearchNodes(node -> "Node: Allocate".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(allocateNode, CoreMatchers.is(CoreMatchers.notNullValue(Optional.class)));
 
-        final Attributes attributes = actualNodeOptional.get().getData().spanData.getAttributes();
+        Attributes attributes = allocateNode.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.nullValue());
+
+        Optional<Tree.Node<SpanDataWrapper>> readyNode = spans.breadthFirstSearchNodes(node -> "Node: Ready".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(readyNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+        attributes = readyNode.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.nullValue());
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
@@ -216,10 +221,15 @@ public class JenkinsOtelPluginIntegrationTest {
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
 
-        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spans.breadthFirstSearchNodes(node -> "Node: Allocate (linux)".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(actualNodeOptional, CoreMatchers.is(CoreMatchers.notNullValue()));
+        Optional<Tree.Node<SpanDataWrapper>> allocateNode = spans.breadthFirstSearchNodes(node -> "Node: Allocate (linux)".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(allocateNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
-        final Attributes attributes = actualNodeOptional.get().getData().spanData.getAttributes();
+        Attributes attributes = allocateNode.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
+
+        Optional<Tree.Node<SpanDataWrapper>> readyNode = spans.breadthFirstSearchNodes(node -> "Node: Ready".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(readyNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+        attributes = readyNode.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
     }
 

@@ -15,6 +15,7 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
+import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineNodeUtil;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.FlowNodeContextKey;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -68,15 +69,20 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         this.ignoredSteps = Sets.newHashSet("dir", "echo", "isUnix", "pwd");
     }
 
+    private String fetchNodeLabels(FlowNode node) {
+        if (node == null) {
+            return null;
+        }
+        final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
+        return Objects.toString(arguments.get("label"), null);
+    }
+
     @Override
     public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
-
-            final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
-            final String label = Objects.toString(arguments.get("label"), null);
-            String labelName = Strings.isNullOrEmpty(label) ? nodeName : nodeName + " (" + label + ")";
-
+            final String label = fetchNodeLabels(stepStartNode);
+            final String labelName = Strings.isNullOrEmpty(label) ? nodeName : nodeName + " (" + label + ")";
             String spanNodeName = "Node: " + labelName;
             Span nodeSpan = getTracer().spanBuilder(spanNodeName)
                     .setParent(Context.current())
@@ -97,13 +103,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
 
             // TODO: can we calculate the provisioning time between this span and its parent?
-            // TODO: can we popualte the parents labels to this span? Should we?
+            final String label = fetchNodeLabels(PipelineNodeUtil.getPreviousNode(stepStartNode));
             String spanNodeName = "Node: " + nodeName;
             Span nodeSpan = getTracer().spanBuilder(spanNodeName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "node"))
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, nodeName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, label)
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + nodeName + ") - begin " + OtelUtils.toDebugString(nodeSpan));
 
