@@ -131,6 +131,7 @@ public class JenkinsOtelPluginIntegrationTest {
         MatcherAssert.assertThat(readyNode, CoreMatchers.is(CoreMatchers.notNullValue()));
         attributes = readyNode.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.nullValue());
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_ALLOCATION_TIME), CoreMatchers.notNullValue());
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
@@ -231,6 +232,7 @@ public class JenkinsOtelPluginIntegrationTest {
         MatcherAssert.assertThat(readyNode, CoreMatchers.is(CoreMatchers.notNullValue()));
         attributes = readyNode.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_ALLOCATION_TIME), CoreMatchers.notNullValue());
     }
 
     @Test

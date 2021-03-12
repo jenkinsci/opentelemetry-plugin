@@ -30,6 +30,7 @@ import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.compress.utils.Sets;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
+import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
@@ -69,6 +70,24 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         this.ignoredSteps = Sets.newHashSet("dir", "echo", "isUnix", "pwd");
     }
 
+    private long calculateAllocationTime(FlowNode node, FlowNode parent) {
+        if (node == null || parent == null) {
+            return 0;
+        }
+        TimingAction childTimingAction = node.getAction(TimingAction.class);
+        TimingAction parentTimingAction = parent.getAction(TimingAction.class);
+
+        if (childTimingAction == null || parentTimingAction == null) {
+            return 0;
+        }
+
+        if (childTimingAction.getStartTime() < parentTimingAction.getStartTime()) {
+            return 0;
+        }
+
+        return childTimingAction.getStartTime() - parentTimingAction.getStartTime();
+    }
+
     private String fetchNodeLabels(FlowNode node) {
         if (node == null) {
             return null;
@@ -102,7 +121,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
 
-            // TODO: can we calculate the provisioning time between this span and its parent?
+            final long allocationTime = calculateAllocationTime(stepStartNode, PipelineNodeUtil.getPreviousNode(stepStartNode));
             final String label = fetchNodeLabels(PipelineNodeUtil.getPreviousNode(stepStartNode));
             String spanNodeName = "Node: " + nodeName;
             Span nodeSpan = getTracer().spanBuilder(spanNodeName)
@@ -111,6 +130,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, nodeName)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, label)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_ALLOCATION_TIME, allocationTime)
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + nodeName + ") - begin " + OtelUtils.toDebugString(nodeSpan));
 
