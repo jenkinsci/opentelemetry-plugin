@@ -28,6 +28,16 @@ public interface PipelineListener {
     void onStartPipeline(@Nonnull FlowNode node, @Nonnull WorkflowRun run);
 
     /**
+     * Just before the `node` step starts.
+     */
+    void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String nodeName, @Nonnull WorkflowRun run);
+
+    /**
+     * Just after the `node` step ends
+     */
+    void onEndNodeStep(@Nonnull StepEndNode nodeStepEndNode, @Nonnull String nodeName, @Nonnull WorkflowRun run);
+
+    /**
      * Just before the `stage`step starts
      */
     void onStartStageStep(@Nonnull StepStartNode stepStartNode, @Nonnull String stageName, @Nonnull WorkflowRun run);

@@ -49,6 +49,9 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             if (previousNode instanceof StepAtomNode) {
                 StepAtomNode stepAtomNode = (StepAtomNode) previousNode;
                 fireOnAfterAtomicStep(stepAtomNode, run);
+            } else if (isBeforeEndNodeStep(previousNode)) {
+                String nodeName = PipelineNodeUtil.getDisplayName(((StepEndNode) previousNode).getStartNode());
+                fireOnAfterEndNodeStep((StepEndNode) previousNode, nodeName, run);
             } else if (isBeforeEndStageStep(previousNode)) {
                 String stageName = PipelineNodeUtil.getDisplayName(((StepEndNode) previousNode).getStartNode());
                 fireOnAfterEndStageStep((StepEndNode) previousNode, stageName, run);
@@ -78,11 +81,10 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             // begin parallel block
         } else if (PipelineNodeUtil.isEndParallelBlock(node)) {
             // ignore
-        } else if (PipelineNodeUtil.isStartNode(node)) {
-            StepStartNode stepStartNode = (StepStartNode) node;
-            // we don't know how to surface the requested labels.
-            // ignore
-            LOGGER.log(Level.FINE, "begin node{} block " + PipelineNodeUtil.getDetailedDebugString(stepStartNode) );
+        } else if (PipelineNodeUtil.isNodeAllocate(node)) {
+            fireOnBeforeStartNodeStep((StepStartNode) node, "Allocate", run);
+        } else if (PipelineNodeUtil.isNodeReady(node)) {
+            fireOnBeforeStartNodeStep((StepStartNode) node, "Ready", run);
         } else {
             logFlowNodeDetails(node, run);
         }
@@ -175,6 +177,17 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    public void fireOnAfterEndNodeStep(@Nonnull StepEndNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(() -> "onAfterEndNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError().toString()) : ""));
+            try {
+                pipelineListener.onEndNodeStep(node, nodeName, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onAfterEndNodeStep` on " + pipelineListener);
+            }
+        }
+    }
+
     public void fireOnAfterEndStageStep(@Nonnull StepEndNode node, @Nonnull String stageName, @Nonnull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onAfterEndStageStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError().toString()) : ""));
@@ -197,6 +210,17 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    public void fireOnBeforeStartNodeStep(@Nonnull StepStartNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(() -> "fireOnBeforeStartNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onStartNodeStep(node, nodeName, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `fireOnBeforeStartNodeStep` on " + pipelineListener);
+            }
+        }
+    }
+
     public void fireOnBeforeStartStageStep(@Nonnull StepStartNode node, @Nonnull String stageName, @Nonnull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onBeforeStartStageStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
@@ -206,6 +230,10 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
                 LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onBeforeStartStageStep` on " + pipelineListener);
             }
         }
+    }
+
+    private boolean isBeforeEndNodeStep(@Nonnull FlowNode node) {
+        return (node instanceof StepEndNode) && PipelineNodeUtil.isStartNode(((StepEndNode) node).getStartNode());
     }
 
     private boolean isBeforeEndStageStep(@Nonnull FlowNode node) {
