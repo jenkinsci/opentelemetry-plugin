@@ -205,6 +205,24 @@ public class PipelineNodeUtil {
         return isStartParallelBlock(stepEndNode.getStartNode());
     }
 
+    public static boolean isNodeReady(@Nonnull FlowNode node) {
+        if (!isStartNode(node)) {
+            return false;
+        }
+
+        BodyInvocationAction bodyInvocationAction = node.getAction(BodyInvocationAction.class);
+        return bodyInvocationAction != null;
+    }
+
+    public static boolean isNodeAllocate(@Nonnull FlowNode node) {
+        if (!isStartNode(node)) {
+            return false;
+        }
+
+        BodyInvocationAction bodyInvocationAction = node.getAction(BodyInvocationAction.class);
+        return bodyInvocationAction == null;
+    }
+
     /**
      * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
      */

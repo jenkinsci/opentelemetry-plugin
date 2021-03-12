@@ -81,11 +81,10 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             // begin parallel block
         } else if (PipelineNodeUtil.isEndParallelBlock(node)) {
             // ignore
-        } else if (PipelineNodeUtil.isStartNode(node)) {
-            // The pipeline step `node` (aka allocate) display name can be like "Allocate node: Start" or "Allocate node: Body : Start"
-            final String nodeDisplayName = PipelineNodeUtil.getDisplayName(node);
-            String nodeName = nodeDisplayName.matches(".*Body.*") ?  "Ready" : "Allocate";
-            fireOnBeforeStartNodeStep((StepStartNode) node, nodeName, run);
+        } else if (PipelineNodeUtil.isNodeAllocate(node)) {
+            fireOnBeforeStartNodeStep((StepStartNode) node, "Allocate", run);
+        } else if (PipelineNodeUtil.isNodeReady(node)) {
+            fireOnBeforeStartNodeStep((StepStartNode) node, "Ready", run);
         } else {
             logFlowNodeDetails(node, run);
         }
