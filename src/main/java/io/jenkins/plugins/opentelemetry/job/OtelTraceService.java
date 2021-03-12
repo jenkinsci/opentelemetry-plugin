@@ -5,8 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import static com.google.common.base.Verify.*;
-
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterables;
@@ -36,6 +34,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import static com.google.common.base.Verify.verify;
+import static com.google.common.base.Verify.verifyNotNull;
 
 @Extension
 public class OtelTraceService {
@@ -96,7 +97,7 @@ public class OtelTraceService {
         LOGGER.log(Level.INFO, () -> "parentFlowNodes: " + flowNode.getParents().stream().map(node -> node.getDisplayName() + ", id: " + node.getId()).collect(Collectors.toList()));
 
         // TODO optimise lazy loading the list of ancestors just loading until w have found a span
-        List<FlowNode> ancestors = getAncestors(flowNode);
+        Iterable<FlowNode> ancestors = getAncestors(flowNode);
         for (FlowNode ancestor : ancestors) {
             PipelineSpanContext pipelineSpanContext = runSpans.pipelineStepSpansByFlowNodeId.get(ancestor.getId());
             if (pipelineSpanContext != null) {
@@ -109,7 +110,7 @@ public class OtelTraceService {
     }
 
     @Nonnull
-    private List<FlowNode> getAncestors(FlowNode flowNode) {
+    private Iterable<FlowNode> getAncestors(FlowNode flowNode) {
         List<FlowNode> ancestors = new ArrayList<>();
         buildListOfAncestors(flowNode, ancestors);
         return ancestors;
