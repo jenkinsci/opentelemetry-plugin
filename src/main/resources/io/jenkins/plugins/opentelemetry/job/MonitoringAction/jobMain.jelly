@@ -1,0 +1,13 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <table style="margin-top: 1em; margin-left:1em;">
+        <t:summary icon="/plugin/opentelemetry/images/48x48/opentelemetry.png">
+            OpenTelemetry:
+            <j:forEach items="${it.links}" var="link" varStatus="loop">
+                <img src="${resURL}${link.iconUrl}" height="24px"/><a href="${link.url}" target="_blank">${link.label}</a>
+                <j:if test="${!loop.last}">, </j:if>
+            </j:forEach>
+        </t:summary>
+    </table>
+</j:jelly>

@@ -13,6 +13,7 @@ import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
+import jenkins.tasks.SimpleBuildStep;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -20,7 +21,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
 
-public class MonitoringAction implements Action, RunAction2 {
+public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.LastBuildAction {
     private final static Logger LOGGER = Logger.getLogger(MonitoringAction.class.getName());
 
     final String traceId;
@@ -56,6 +57,11 @@ public class MonitoringAction implements Action, RunAction2 {
     @Override
     public String getDisplayName() {
         return "OpenTelemetry";
+    }
+
+    @Override
+    public Collection<? extends Action> getProjectActions() {
+        return run.getParent().getLastSuccessfulBuild().getActions(MonitoringAction.class);
     }
 
     @Override
