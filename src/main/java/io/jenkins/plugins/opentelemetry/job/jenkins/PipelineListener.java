@@ -28,7 +28,7 @@ public interface PipelineListener {
     void onStartPipeline(@Nonnull FlowNode node, @Nonnull WorkflowRun run);
 
     /**
-     * Just before the `node`step starts
+     * Just before the `node` step starts.
      */
     void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String nodeName, @Nonnull WorkflowRun run);
 
