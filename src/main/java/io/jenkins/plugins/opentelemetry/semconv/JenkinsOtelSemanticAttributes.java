@@ -61,7 +61,6 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String>        JENKINS_COMPUTER_NAME = AttributeKey.stringKey("jenkins.computer.name");
 
     public static final AttributeKey<String>        JENKINS_STEP_NODE_LABEL = AttributeKey.stringKey("jenkins.pipeline.step.node.label");
-    public static final AttributeKey<Long>          JENKINS_STEP_NODE_ALLOCATION_TIME = AttributeKey.longKey("jenkins.pipeline.step.node.allocation.time");
 
     /**
      * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAME
