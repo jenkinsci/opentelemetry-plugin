@@ -1,5 +1,6 @@
 unclassified:
   openTelemetry:
+    authentication: "noAuthentication"
     endpoint: "http://otel-collector-contrib:4317"
     observabilityBackends:
       - elasticBackend:

@@ -11,6 +11,8 @@ import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
+import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.CustomObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.JaegerBackend;
@@ -24,6 +26,7 @@ import org.junit.*;
 import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
 import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
 import static io.jenkins.plugins.casc.misc.Util.toYamlString;
+import static org.hamcrest.CoreMatchers.instanceOf;
 
 public class ConfigurationAsCodeTest {
 
@@ -50,7 +53,10 @@ public class ConfigurationAsCodeTest {
 
         ZipkinBackend zipkin = (ZipkinBackend) configuration.getObservabilityBackends().get(3);
         MatcherAssert.assertThat(zipkin.getZipkinBaseUrl(), CoreMatchers.is("http://localhost:9411/"));
-	}
+
+        OtlpAuthentication authentication = configuration.getAuthentication();
+        MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
+    }
 
     @Test
     public void should_support_configuration_export() throws Exception {
