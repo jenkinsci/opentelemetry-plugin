@@ -13,10 +13,12 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.common.Labels;
+import jenkins.model.Jenkins;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,7 +42,7 @@ public class MonitoringQueueListener extends QueueListener {
     @PostConstruct
     public void postConstruct() {
         meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_WAITING)
-                .setUpdater(longResult -> longResult.observe(this.waitingItemGauge.longValue(), Labels.empty()))
+                .setUpdater(longResult -> longResult.observe(this.getUnblockedItemsSize(), Labels.empty()))
                 .setDescription("Number of waiting items in queue")
                 .setUnit("1")
                 .build();
@@ -50,7 +52,7 @@ public class MonitoringQueueListener extends QueueListener {
                 .setUnit("1")
                 .build();
         meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BUILDABLE)
-                .setUpdater(longResult -> longResult.observe(this.buildableItemGauge.longValue(), Labels.empty()))
+                .setUpdater(longResult -> longResult.observe(this.getBuildableItemsSize(), Labels.empty()))
                 .setDescription("Number of buildable items in queue")
                 .setUnit("1")
                 .build();
@@ -64,6 +66,29 @@ public class MonitoringQueueListener extends QueueListener {
                 .build();
     }
 
+    private long getUnblockedItemsSize() {
+        final Jenkins jenkins = Jenkins.getInstanceOrNull();
+        if (jenkins == null) {
+            return 0;
+        }
+        final Queue queue = jenkins.getQueue();
+        if (queue == null) {
+            return 0;
+        }
+        return queue.getUnblockedItems().size();
+    }
+
+    private long getBuildableItemsSize() {
+        final Jenkins jenkins = Jenkins.getInstanceOrNull();
+        if (jenkins == null) {
+            return 0;
+        }
+        final Queue queue = jenkins.getQueue();
+        if (queue == null) {
+            return 0;
+        }
+        return queue.getBuildableItems().size();
+    }
 
     @Override
     public void onEnterWaiting(Queue.WaitingItem wi) {
