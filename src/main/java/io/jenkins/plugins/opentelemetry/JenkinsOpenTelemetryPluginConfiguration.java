@@ -104,6 +104,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setEndpoint(String endpoint) {
         this.endpoint = sanitizeOtlpEndpoint(endpoint);
+        initializeOpenTelemetry();
     }
 
     @Nonnull
@@ -114,6 +115,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setAuthentication(OtlpAuthentication authentication) {
         this.authentication = authentication;
+        initializeOpenTelemetry();
     }
 
     @CheckForNull
@@ -124,11 +126,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setTrustedCertificatesPem(String trustedCertificatesPem) {
         this.trustedCertificatesPem = trustedCertificatesPem;
+        initializeOpenTelemetry();
     }
 
     @DataBoundSetter
     public void setObservabilityBackends(List<ObservabilityBackend> observabilityBackends) {
         this.observabilityBackends = Optional.of(observabilityBackends).orElse(Collections.emptyList());
+        initializeOpenTelemetry();
     }
 
     @Nonnull
