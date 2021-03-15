@@ -82,9 +82,9 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         } else if (PipelineNodeUtil.isEndParallelBlock(node)) {
             // ignore
         } else if (PipelineNodeUtil.isNodeAllocate(node)) {
-            fireOnBeforeStartNodeStep((StepStartNode) node, "Allocate", run);
+            fireOnStartNodeStep((StepStartNode) node, "Allocate", run);
         } else if (PipelineNodeUtil.isNodeReady(node)) {
-            fireOnBeforeStartNodeStep((StepStartNode) node, "Ready", run);
+            fireOnAfterStartNodeStep((StepStartNode) node, "Ready", run);
         } else {
             logFlowNodeDetails(node, run);
         }
@@ -210,13 +210,24 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
-    public void fireOnBeforeStartNodeStep(@Nonnull StepStartNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
+    public void fireOnStartNodeStep(@Nonnull StepStartNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
-            log(() -> "fireOnBeforeStartNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            log(() -> "onStartNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
             try {
                 pipelineListener.onStartNodeStep(node, nodeName, run);
             } catch (RuntimeException e) {
-                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `fireOnBeforeStartNodeStep` on " + pipelineListener);
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onStartNodeStep` on " + pipelineListener);
+            }
+        }
+    }
+
+    public void fireOnAfterStartNodeStep(@Nonnull StepStartNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(() -> "onAfterStartNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onAfterStartNodeStep(node, nodeName, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onAfterStartNodeStep` on " + pipelineListener);
             }
         }
     }
