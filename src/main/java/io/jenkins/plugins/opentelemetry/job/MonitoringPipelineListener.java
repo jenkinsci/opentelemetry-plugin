@@ -65,7 +65,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     @PostConstruct
     public void postConstruct() {
         // TODO make this list configurable
-        this.ignoredSteps = Sets.newHashSet("dir", "echo", "isUnix", "pwd");
+        this.ignoredSteps = Sets.newHashSet("dir", "echo", "isUnix", "pwd", "properties");
     }
 
     @Override
