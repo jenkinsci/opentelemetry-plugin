@@ -68,7 +68,7 @@ public class OtelTraceService {
             return null;
         }
         verify(runSpans.pipelineStepSpansByFlowNodeId.isEmpty(), run.getFullDisplayName() + " - Can't access run phase span while there are remaining pipeline step spans: " + runSpans);
-        LOGGER.log(Level.INFO, () -> "getSpan(" + run.getFullDisplayName() + ") - " + runSpans);
+        LOGGER.log(Level.FINEST, () -> "getSpan(" + run.getFullDisplayName() + ") - " + runSpans);
         return Iterables.getLast(runSpans.runPhasesSpans, null);
     }
 
@@ -93,8 +93,8 @@ public class OtelTraceService {
 
             return runSpan;
         }
-        LOGGER.log(Level.INFO, () -> "getSpan(" + run.getFullDisplayName() + ", FlowNode[name" + flowNode.getDisplayName() + ", function:" + flowNode.getDisplayFunctionName() + ", id=" + flowNode.getId() + "]) -  " + runSpans);
-        LOGGER.log(Level.INFO, () -> "parentFlowNodes: " + flowNode.getParents().stream().map(node -> node.getDisplayName() + ", id: " + node.getId()).collect(Collectors.toList()));
+        LOGGER.log(Level.FINEST, () -> "getSpan(" + run.getFullDisplayName() + ", FlowNode[name" + flowNode.getDisplayName() + ", function:" + flowNode.getDisplayFunctionName() + ", id=" + flowNode.getId() + "]) -  " + runSpans);
+        LOGGER.log(Level.FINEST, () -> "parentFlowNodes: " + flowNode.getParents().stream().map(node -> node.getDisplayName() + ", id: " + node.getId()).collect(Collectors.toList()));
 
         // TODO optimise lazy loading the list of ancestors just loading until w have found a span
         Iterable<FlowNode> ancestors = getAncestors(flowNode);
@@ -105,7 +105,7 @@ public class OtelTraceService {
             }
         }
         final Span last = Iterables.getLast(runSpans.runPhasesSpans);
-        LOGGER.log(Level.INFO, () -> "span: " + last.getSpanContext().getSpanId());
+        LOGGER.log(Level.FINEST, () -> "span: " + last.getSpanContext().getSpanId());
         return last;
     }
 
@@ -179,7 +179,7 @@ public class OtelTraceService {
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans());
         runSpans.runPhasesSpans.add(span);
 
-        LOGGER.log(Level.INFO, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") - new stack: " + runSpans);
+        LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") - new stack: " + runSpans);
     }
 
     public void putSpan(@Nonnull Run run, @Nonnull Span span, @Nonnull FlowNode flowNode) {
@@ -187,7 +187,7 @@ public class OtelTraceService {
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans());
         runSpans.pipelineStepSpansByFlowNodeId.put(flowNode.getId(), new PipelineSpanContext(span, flowNode));
 
-        LOGGER.log(Level.INFO, () -> "putSpan(" + run.getFullDisplayName() + "," + " FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], Span[id: " + span.getSpanContext().getSpanId() + "]" + ") -  " + runSpans);
+        LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + " FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], Span[id: " + span.getSpanContext().getSpanId() + "]" + ") -  " + runSpans);
     }
 
     @Inject
