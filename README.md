@@ -192,6 +192,7 @@ This plugin supports configuration as code. Add to your yaml file:
 ```yaml
 unclassified:
   openTelemetry:
+    authentication: "noAuthentication"
     endpoint: "otel-collector-contrib:4317"
     observabilityBackends:
       - elastic:
@@ -203,7 +204,6 @@ unclassified:
           traceVisualisationUrlTemplate: "http://example.com"
       - zipkin:
           zipkinBaseUrl: "http://localhost:9411/"
-    useTls: false
 ```
 
 For more details see the configuration as code plugin documentation:
