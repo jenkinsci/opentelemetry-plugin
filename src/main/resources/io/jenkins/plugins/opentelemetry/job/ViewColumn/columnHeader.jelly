@@ -1,4 +1,4 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core">
-  <th>Observability</th>
+  <th>${%Observability}</th>
 </j:jelly>
