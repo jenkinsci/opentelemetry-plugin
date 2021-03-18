@@ -10,6 +10,7 @@ import hudson.model.Job;
 import hudson.model.Run;
 import hudson.views.ListViewColumn;
 import hudson.views.ListViewColumnDescriptor;
+import io.jenkins.plugins.opentelemetry.Messages;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.List;
@@ -42,7 +43,7 @@ public class ViewColumn extends ListViewColumn {
 
         @Override
         public String getDisplayName() {
-            return "Observability";
+            return Messages.observabilityColumn();
         }
 
         public boolean shownByDefault() {
