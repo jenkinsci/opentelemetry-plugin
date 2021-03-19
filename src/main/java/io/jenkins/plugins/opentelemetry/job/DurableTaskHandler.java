@@ -19,6 +19,9 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Customization of spans for shell step: ({@code sh}, {@code cmd}, and {@code powershell}).
+ */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class DurableTaskHandler implements StepHandler {
     @Override
