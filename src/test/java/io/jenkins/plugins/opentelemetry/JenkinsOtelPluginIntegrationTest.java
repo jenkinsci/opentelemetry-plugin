@@ -116,21 +116,11 @@ public class JenkinsOtelPluginIntegrationTest {
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node: Ready", "Node: Allocate", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "Node Allocation", "Node", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
-
-        Optional<Tree.Node<SpanDataWrapper>> allocateNode = spans.breadthFirstSearchNodes(node -> "Node: Allocate".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(allocateNode, CoreMatchers.is(CoreMatchers.notNullValue(Optional.class)));
-
-        Attributes attributes = allocateNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.nullValue());
-
-        Optional<Tree.Node<SpanDataWrapper>> readyNode = spans.breadthFirstSearchNodes(node -> "Node: Ready".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(readyNode, CoreMatchers.is(CoreMatchers.notNullValue()));
-        attributes = readyNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.nullValue());
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
@@ -153,15 +143,15 @@ public class JenkinsOtelPluginIntegrationTest {
             Assert.fail("No element in the list of expected spans for " + Arrays.asList(expectedSpanNames));
         }
         final String leafSpanName = expectedSpanNamesIt.next();
-        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(node -> leafSpanName.equals(node.getData().spanData.getName()));
+        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(node -> Objects.equals(leafSpanName, node.getData().spanData.getName()));
 
-        if (!actualNodeOptional.isPresent()) {
-            // error
-        }
+        MatcherAssert.assertThat("Expected leaf span '" + leafSpanName + "' in chain of span" + expectedSpanNamesList + " not found", actualNodeOptional.isPresent(), CoreMatchers.is(true));
+
         while (expectedSpanNamesIt.hasNext()) {
             String expectedSpanName = expectedSpanNamesIt.next();
             actualNodeOptional = actualNodeOptional.get().getParent();
-            MatcherAssert.assertThat("Expected span:" + expectedSpanName + " in chain of span" + expectedSpanNamesIt, actualNodeOptional.get().getData().spanData.getName(), CoreMatchers.is(expectedSpanName));
+            final String actualSpanName = actualNodeOptional.get().getData().spanData.getName();
+            MatcherAssert.assertThat("Expected span '" + expectedSpanName + "' in chain of span" + expectedSpanNamesList + " not found, actual is '" + actualSpanName + "'", actualSpanName, CoreMatchers.is(expectedSpanName));
         }
     }
 
@@ -210,26 +200,26 @@ public class JenkinsOtelPluginIntegrationTest {
         final Node agent = jenkinsRule.createOnlineSlave();
         agent.setLabelString("linux");
 
-        final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "test-pipeline-with-node-steps-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "Node: Ready", "Node: Allocate (linux)", "Stage: foo", "Phase: Run");
+        checkChainOfSpans(spans, "Node Allocation: linux", "Node: linux", "Stage: foo", "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
 
-        Optional<Tree.Node<SpanDataWrapper>> allocateNode = spans.breadthFirstSearchNodes(node -> "Node: Allocate (linux)".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(allocateNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+        Optional<Tree.Node<SpanDataWrapper>> executorNodeAllocation = spans.breadthFirstSearchNodes(node -> "Node Allocation: linux".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(executorNodeAllocation, CoreMatchers.is(CoreMatchers.notNullValue()));
 
-        Attributes attributes = allocateNode.get().getData().spanData.getAttributes();
+        Attributes attributes = executorNodeAllocation.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
 
-        Optional<Tree.Node<SpanDataWrapper>> readyNode = spans.breadthFirstSearchNodes(node -> "Node: Ready".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(readyNode, CoreMatchers.is(CoreMatchers.notNullValue()));
-        attributes = readyNode.get().getData().spanData.getAttributes();
+        Optional<Tree.Node<SpanDataWrapper>> executorNode = spans.breadthFirstSearchNodes(node -> "Node: linux".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(executorNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+        attributes = executorNode.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
     }
 
@@ -248,13 +238,13 @@ public class JenkinsOtelPluginIntegrationTest {
 
         final Node node = jenkinsRule.createOnlineSlave();
 
-        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-skipped-tests-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node: Ready", "Node: Allocate", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node", "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
     }
 
@@ -302,13 +292,13 @@ public class JenkinsOtelPluginIntegrationTest {
                 "}";
         final Node node = jenkinsRule.createOnlineSlave();
 
-        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-simple-pipeline-" + jobNameSuffix.incrementAndGet());
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-wrapping-step-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node: Ready", "Node: Allocate", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node", "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
     }
 
@@ -326,14 +316,14 @@ public class JenkinsOtelPluginIntegrationTest {
                 "}";
         final Node node = jenkinsRule.createOnlineSlave();
 
-        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-failure" + jobNameSuffix.incrementAndGet());
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-error-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node: Ready", "Node: Allocate", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run");
-        checkChainOfSpans(spans, "error", "Stage: ze-stage2", "Node: Ready", "Node: Allocate", "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "error", "Stage: ze-stage2", "Node", "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
     }
 
@@ -358,9 +348,9 @@ public class JenkinsOtelPluginIntegrationTest {
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", "Node: Ready", "Node: Allocate", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", "Node: Ready", "Node: Allocate", "Phase: Run");
-        checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", "Node: Ready", "Node: Allocate", "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", "Node", "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
 
     }

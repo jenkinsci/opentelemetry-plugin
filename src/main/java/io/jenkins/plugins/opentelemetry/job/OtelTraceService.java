@@ -6,8 +6,10 @@
 package io.jenkins.plugins.opentelemetry.job;
 
 import com.google.common.base.VerifyException;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.Run;
@@ -23,6 +25,7 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.graph.AtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -99,7 +102,8 @@ public class OtelTraceService {
         // TODO optimise lazy loading the list of ancestors just loading until w have found a span
         Iterable<FlowNode> ancestors = getAncestors(flowNode);
         for (FlowNode ancestor : ancestors) {
-            PipelineSpanContext pipelineSpanContext = runSpans.pipelineStepSpansByFlowNodeId.get(ancestor.getId());
+            final Collection<PipelineSpanContext> pipelineSpanContexts = runSpans.pipelineStepSpansByFlowNodeId.get(ancestor.getId());
+            PipelineSpanContext pipelineSpanContext = Iterables.getLast(pipelineSpanContexts, null);
             if (pipelineSpanContext != null) {
                 return pipelineSpanContext.getSpan();
             }
@@ -139,11 +143,19 @@ public class OtelTraceService {
         } else if (flowNode instanceof StepEndNode) {
             StepEndNode stepEndNode = (StepEndNode) flowNode;
             startSpanNode = stepEndNode.getStartNode();
+        } else if (flowNode instanceof StepStartNode &&
+                ((StepStartNode) flowNode).getDescriptor() instanceof ExecutorStep.DescriptorImpl) {
+            // remove the "node.allocate" span, it's located on the parent node which is also a StepStartNode of a ExecutorStep.DescriptorImpl
+            startSpanNode = Iterables.getFirst(flowNode.getParents(), null);
         } else {
             throw new VerifyException("Can't remove span from node of type" + flowNode.getClass() + " - " + flowNode);
         }
-        PipelineSpanContext pipelineSpanContext = runSpans.pipelineStepSpansByFlowNodeId.remove(startSpanNode.getId());
+        final Collection<PipelineSpanContext> pipelineSpanContexts = runSpans.pipelineStepSpansByFlowNodeId.get(startSpanNode.getId());
+        PipelineSpanContext pipelineSpanContext = Iterables.getLast(pipelineSpanContexts, null);
         verifyNotNull(pipelineSpanContext, "%s - No span found for node %s: %s", run, startSpanNode, span, runSpans);
+        final boolean removed = pipelineSpanContexts.remove(pipelineSpanContext);
+        verify(removed == true, "%s - Failure to remove span %s for node %s: %s", run, pipelineSpanContext, startSpanNode, span, runSpans);
+
     }
 
     public void removeJobPhaseSpan(@Nonnull Run run, @Nonnull Span span) {
@@ -219,7 +231,7 @@ public class OtelTraceService {
 
     @Immutable
     public static class RunSpans {
-        final Map<String, PipelineSpanContext> pipelineStepSpansByFlowNodeId = new HashMap<>();
+        final Multimap<String, PipelineSpanContext> pipelineStepSpansByFlowNodeId = ArrayListMultimap.create();
         final List<Span> runPhasesSpans = new ArrayList<>();
 
         @Override
@@ -271,6 +283,19 @@ public class OtelTraceService {
                     "flowNodeId=" + flowNodeId +
                     ", parentIds=" + parentFlowNodeIds +
                     '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            PipelineSpanContext that = (PipelineSpanContext) o;
+            return Objects.equals(this.span.getSpanContext().getSpanId(), that.span.getSpanContext().getSpanId()) && flowNodeId.equals(that.flowNodeId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(span.getSpanContext().getSpanId(), flowNodeId);
         }
     }
 
