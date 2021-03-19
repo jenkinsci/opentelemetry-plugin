@@ -1,0 +1,8 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+<td>
+    <j:forEach items="${it.getLinks(job)}" var="link" varStatus="loop">
+        <a href="${link.url}" target="_blank"><img src="${resURL}${link.iconUrl}" height="24px" title="${link.label}"/></a>
+    </j:forEach>
+</td>
+</j:jelly>
