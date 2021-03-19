@@ -26,7 +26,6 @@ import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporterBuilder;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.autoconfigure.ConfigProperties;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.IntervalMetricReader;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
@@ -48,7 +47,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 
 @Extension
 public class OpenTelemetrySdkProvider {
@@ -119,9 +117,8 @@ public class OpenTelemetrySdkProvider {
 
         preDestroy();
 
-        // TODO variabilize
-        int timeoutMillis = 30_000;
-        int exportIntervalMillis = 60_000;
+        int timeoutMillis = JenkinsOpenTelemetryPluginConfiguration.get().getTimeoutMillis();
+        int exportIntervalMillis = JenkinsOpenTelemetryPluginConfiguration.get().getExportIntervalMillis();
 
         final OtlpGrpcMetricExporterBuilder metricExporterBuilder = OtlpGrpcMetricExporter.builder();
         final OtlpGrpcSpanExporterBuilder spanExporterBuilder = OtlpGrpcSpanExporter.builder();

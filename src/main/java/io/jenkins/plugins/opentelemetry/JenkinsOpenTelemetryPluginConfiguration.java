@@ -44,6 +44,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
 
+    private int timeoutMillis = 30_000;
+
+    private int exportIntervalMillis = 60_000;
+
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
     /**
@@ -69,7 +73,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication());
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getTimeoutMillis(), this.getExportIntervalMillis());
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
@@ -148,11 +152,36 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
     }
 
+
+    public int getTimeoutMillis() {
+        return timeoutMillis;
+    }
+
+    @DataBoundSetter
+    public void setTimeoutMillis(int timeoutMillis) {
+        this.timeoutMillis = timeoutMillis;
+        initializeOpenTelemetry();
+    }
+
+    public int getExportIntervalMillis() {
+        return exportIntervalMillis;
+    }
+
+    @DataBoundSetter
+    public void setExportIntervalMillis(int exportIntervalMillis) {
+        this.exportIntervalMillis = exportIntervalMillis;
+        initializeOpenTelemetry();
+    }
+
     /**
      * For visualisation in config.jelly
      */
     @Nonnull
     public String getVisualisationObservabilityBackendsString(){
         return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(d-> d.getDisplayName()).collect(Collectors.joining(", "));
+    }
+
+    public static JenkinsOpenTelemetryPluginConfiguration get() {
+        return GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
     }
 }
