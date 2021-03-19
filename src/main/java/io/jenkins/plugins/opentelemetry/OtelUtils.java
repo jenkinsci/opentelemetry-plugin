@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import hudson.ExtensionList;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -37,5 +38,13 @@ public class OtelUtils {
     @Nonnull
     public static String toDebugString(@Nullable Span span) {
         return spanToDebugString().apply(span);
+    }
+
+    public static OpenTelemetryConfiguration getOpenTelemetryConfiguration() {
+        try {
+            return ExtensionList.lookupSingleton(OpenTelemetryConfiguration.class);
+        } catch (IllegalStateException e) {
+            return null;
+        }
     }
 }

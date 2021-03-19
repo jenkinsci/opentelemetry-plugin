@@ -119,9 +119,8 @@ public class OpenTelemetrySdkProvider {
 
         preDestroy();
 
-        // TODO variabilize
-        int timeoutMillis = 30_000;
-        int exportIntervalMillis = 60_000;
+        int timeoutMillis = OtelUtils.getOpenTelemetryConfiguration().getTimeoutMillis();
+        int exportIntervalMillis = OtelUtils.getOpenTelemetryConfiguration().getExportIntervalMillis();
 
         final OtlpGrpcMetricExporterBuilder metricExporterBuilder = OtlpGrpcMetricExporter.builder();
         final OtlpGrpcSpanExporterBuilder spanExporterBuilder = OtlpGrpcSpanExporter.builder();

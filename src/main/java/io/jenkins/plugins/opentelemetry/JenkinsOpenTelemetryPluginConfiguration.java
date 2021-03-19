@@ -44,6 +44,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
 
+    private int timeoutMillis;
+
+    private int exportIntervalMillis;
+
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
     /**
@@ -69,7 +73,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication());
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getTimeoutMillis(), this.getExportIntervalMillis());
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
@@ -146,6 +150,27 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Inject
     public void setOpenTelemetrySdkProvider(OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
+    }
+
+
+    public int getTimeoutMillis() {
+        return timeoutMillis;
+    }
+
+    @DataBoundSetter
+    public void setTimeoutMillis(int timeoutMillis) {
+        this.timeoutMillis = timeoutMillis;
+        initializeOpenTelemetry();
+    }
+
+    public int getExportIntervalMillis() {
+        return exportIntervalMillis;
+    }
+
+    @DataBoundSetter
+    public void setExportIntervalMillis(int exportIntervalMillis) {
+        this.exportIntervalMillis = exportIntervalMillis;
+        initializeOpenTelemetry();
     }
 
     /**
