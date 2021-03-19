@@ -10,6 +10,7 @@ import com.google.common.collect.Iterables;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Run;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
@@ -27,6 +28,7 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -49,7 +51,7 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             if (previousNode instanceof StepAtomNode) {
                 StepAtomNode stepAtomNode = (StepAtomNode) previousNode;
                 fireOnAfterAtomicStep(stepAtomNode, run);
-            } else if (isBeforeEndNodeStep(previousNode)) {
+            } else if (isBeforeEndExecutorNodeStep(previousNode)) {
                 String nodeName = PipelineNodeUtil.getDisplayName(((StepEndNode) previousNode).getStartNode());
                 fireOnAfterEndNodeStep((StepEndNode) previousNode, nodeName, run);
             } else if (isBeforeEndStageStep(previousNode)) {
@@ -81,10 +83,14 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             // begin parallel block
         } else if (PipelineNodeUtil.isEndParallelBlock(node)) {
             // ignore
-        } else if (PipelineNodeUtil.isNodeAllocate(node)) {
-            fireOnStartNodeStep((StepStartNode) node, "Allocate", run);
-        } else if (PipelineNodeUtil.isNodeReady(node)) {
-            fireOnAfterStartNodeStep((StepStartNode) node, "Ready", run);
+        } else if (PipelineNodeUtil.isStartExecutorNode(node)) {
+            final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
+            String label = Objects.toString(arguments.get("label"), null);
+            fireOnStartNodeStep((StepStartNode) node, label, run);
+        } else if (PipelineNodeUtil.isStartExecutorNodeExecution(node)) {
+            final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
+            String label = Objects.toString(arguments.get("label"), null);
+            fireOnAfterStartNodeStep((StepStartNode) node, label, run);
         } else {
             logFlowNodeDetails(node, run);
         }
@@ -210,22 +216,22 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
-    public void fireOnStartNodeStep(@Nonnull StepStartNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
+    public void fireOnStartNodeStep(@Nonnull StepStartNode node, @Nonnull String nodeLabel, @Nonnull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onStartNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
             try {
-                pipelineListener.onStartNodeStep(node, nodeName, run);
+                pipelineListener.onStartNodeStep(node, nodeLabel, run);
             } catch (RuntimeException e) {
                 LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onStartNodeStep` on " + pipelineListener);
             }
         }
     }
 
-    public void fireOnAfterStartNodeStep(@Nonnull StepStartNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
+    public void fireOnAfterStartNodeStep(@Nonnull StepStartNode node, @Nonnull String nodeLabel, @Nonnull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onAfterStartNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
             try {
-                pipelineListener.onAfterStartNodeStep(node, nodeName, run);
+                pipelineListener.onAfterStartNodeStep(node, nodeLabel, run);
             } catch (RuntimeException e) {
                 LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onAfterStartNodeStep` on " + pipelineListener);
             }
@@ -243,8 +249,8 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
-    private boolean isBeforeEndNodeStep(@Nonnull FlowNode node) {
-        return (node instanceof StepEndNode) && PipelineNodeUtil.isStartNode(((StepEndNode) node).getStartNode());
+    private boolean isBeforeEndExecutorNodeStep(@Nonnull FlowNode node) {
+        return (node instanceof StepEndNode) && PipelineNodeUtil.isStartExecutorNode(((StepEndNode) node).getStartNode());
     }
 
     private boolean isBeforeEndStageStep(@Nonnull FlowNode node) {

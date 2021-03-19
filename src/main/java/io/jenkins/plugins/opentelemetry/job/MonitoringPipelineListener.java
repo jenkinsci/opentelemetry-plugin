@@ -69,53 +69,42 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         this.ignoredSteps = Sets.newHashSet("dir", "echo", "isUnix", "pwd", "properties");
     }
 
-    private String fetchNodeLabels(FlowNode node) {
-        if (node == null) {
-            return null;
-        }
-        final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
-        return Objects.toString(arguments.get("label"), null);
-    }
-
     @Override
-    public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
-        try (Scope ignored = setupContext(run, stepStartNode)) {
-            verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
-            final String label = fetchNodeLabels(stepStartNode);
-            final String labelName = Strings.isNullOrEmpty(label) ? nodeName : nodeName + " (" + label + ")";
-            String spanNodeName = "Node: " + labelName;
-            Span nodeSpan = getTracer().spanBuilder(spanNodeName)
+    public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String nodeLabel, @Nonnull WorkflowRun run) {
+        try (Scope nodeSpanScope = setupContext(run, stepStartNode)) {
+            verifyNotNull(nodeSpanScope, "%s - No span found for node %s", run, stepStartNode);
+            String nodeSpanName = Strings.isNullOrEmpty(nodeLabel) ? "Node" : "Node: " + nodeLabel;
+            Span nodeSpan = getTracer().spanBuilder(nodeSpanName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "node"))
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, labelName)
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, label)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, "node") // FIXME verify it's the right semantic and value
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, Strings.emptyToNull(nodeLabel))
                     .startSpan();
-            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + labelName + ") - begin " + OtelUtils.toDebugString(nodeSpan));
+            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - > node(" + nodeLabel + ") - begin " + OtelUtils.toDebugString(nodeSpan));
 
             getTracerService().putSpan(run, nodeSpan, stepStartNode);
+
+            try (Scope allocateNodeSpanScope = nodeSpan.makeCurrent()) {
+                String allocateNodeSpanName = Strings.isNullOrEmpty(nodeLabel) ? "Node Allocation" : "Node Allocation: " + nodeLabel;;
+                Span allocateNodeSpan = getTracer().spanBuilder(allocateNodeSpanName)
+                        .setParent(Context.current())
+                        .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "node"))
+                        .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                        .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, "node.allocate") // FIXME verify it's the right semantic and value
+                        .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, Strings.emptyToNull(nodeLabel))
+                        .startSpan();
+                LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - > node(" + nodeLabel + ") - begin " + OtelUtils.toDebugString(allocateNodeSpan));
+
+                getTracerService().putSpan(run, allocateNodeSpan, stepStartNode);
+            }
         }
     }
 
     @Override
-    public void onAfterStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
-        try (Scope ignored = setupContext(run, stepStartNode)) {
-            verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
-
-            // TODO: can we calculate the provisioning time between this span and its parent?
-            final String label = fetchNodeLabels(PipelineNodeUtil.getPreviousNode(stepStartNode));
-            String spanNodeName = "Node: " + nodeName;
-            Span nodeSpan = getTracer().spanBuilder(spanNodeName)
-                    .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "node"))
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, nodeName)
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, label)
-                    .startSpan();
-            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + nodeName + ") - begin " + OtelUtils.toDebugString(nodeSpan));
-
-            getTracerService().putSpan(run, nodeSpan, stepStartNode);
-        }
+    public void onAfterStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String nodeLabel, @Nonnull WorkflowRun run) {
+        // end the "node.allocate" span
+        endCurrentSpan(stepStartNode, run);
     }
 
     @Override
