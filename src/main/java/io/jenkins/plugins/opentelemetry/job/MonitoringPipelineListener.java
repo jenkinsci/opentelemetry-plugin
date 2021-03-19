@@ -81,7 +81,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, "node") // FIXME verify it's the right semantic and value
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, Strings.emptyToNull(nodeLabel))
                     .startSpan();
-            LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - > node(" + nodeLabel + ") - begin " + OtelUtils.toDebugString(nodeSpan));
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + nodeLabel + ") - begin " + OtelUtils.toDebugString(nodeSpan));
 
             getTracerService().putSpan(run, nodeSpan, stepStartNode);
 
@@ -94,7 +94,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                         .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, "node.allocate") // FIXME verify it's the right semantic and value
                         .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, Strings.emptyToNull(nodeLabel))
                         .startSpan();
-                LOGGER.log(Level.INFO, () -> run.getFullDisplayName() + " - > node(" + nodeLabel + ") - begin " + OtelUtils.toDebugString(allocateNodeSpan));
+                LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + nodeLabel + ") - begin " + OtelUtils.toDebugString(allocateNodeSpan));
 
                 getTracerService().putSpan(run, allocateNodeSpan, stepStartNode);
             }

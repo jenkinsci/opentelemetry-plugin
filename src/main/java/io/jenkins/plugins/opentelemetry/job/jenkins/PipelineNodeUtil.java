@@ -171,11 +171,11 @@ public class PipelineNodeUtil {
         BodyInvocationAction bodyInvocationAction = node.getAction(BodyInvocationAction.class);
         if (bodyInvocationAction != null) {
             // it's the second StepStartNode of the ExecutorStep, the StepStartNode for the actual invocation
-            LOGGER.log(Level.INFO, ()-> "isStartNode(): false - " + getDetailedDebugString(node));
+            LOGGER.log(Level.FINER, ()-> "isStartNode(): false - " + getDetailedDebugString(node));
             return false;
         }
 
-        LOGGER.log(Level.INFO, ()-> "isStartNode(): true - " + getDetailedDebugString(node));
+        LOGGER.log(Level.FINE, ()-> "isStartNode(): true - " + getDetailedDebugString(node));
         return true;
     }
 
