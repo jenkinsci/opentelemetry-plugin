@@ -152,7 +152,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
     }
 
-
     public int getCollectorTimeout() {
         return collectorTimeout;
     }
