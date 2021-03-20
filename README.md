@@ -12,7 +12,7 @@ Collect Jenkins monitoring data through OpenTelemetry.
 
 ## Architecture
 
-Using the [OpenTelemetry Connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases), you can use many monitoring backends to monitor Jenkins such as Jaeger, Zipkin, Prometheus, Elastic Observability and many others listed [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter). 
+Using the [OpenTelemetry Connector](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases), you can use many monitoring backends to monitor Jenkins such as Jaeger, Zipkin, Prometheus, Elastic Observability and many others listed [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter).
 
 Here are few examples of architecture:
 
@@ -25,11 +25,11 @@ Here are few examples of architecture:
 
 * Understand where time is spent, including time spent waiting to schedule the job (time spent in the build queue)
    * The time spent in the built queue waiting for a build agent is visualised with the span "Phase : Start"
-* Detect increasing time spent in steps like 
+* Detect increasing time spent in steps like
    * Invocations of external systems (e.g. git checkout...)
-* Built in integration with [Elastic Observability](https://www.elastic.co/observability), [Jaeger](https://www.jaegertracing.io/), and [Zipkin](https://zipkin.io/). 
-   Other OpenTelemetry compatible distributed tracing solutions are also supported. 
-   
+* Built in integration with [Elastic Observability](https://www.elastic.co/observability), [Jaeger](https://www.jaegertracing.io/), and [Zipkin](https://zipkin.io/).
+   Other OpenTelemetry compatible distributed tracing solutions are also supported.
+
 ### Metrics on Jenkins health indicators
 
 | Metrics                          | Description  |
@@ -49,7 +49,7 @@ Here are few examples of architecture:
 | jenkins.agents.offline           | Number of offline agents |
 
 
-Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability) 
+Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
 
 ## Getting started
 
@@ -95,7 +95,7 @@ node {
 ![Scripted pipeline status page with Elastic Observability link](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
 
 
-#### Scripted pipeline visualized with Elastic Observability 
+#### Scripted pipeline visualized with Elastic Observability
 
 ![Scripted pipeline visualised with Elastic Observability](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
 
@@ -193,7 +193,9 @@ This plugin supports configuration as code. Add to your yaml file:
 unclassified:
   openTelemetry:
     authentication: "noAuthentication"
+    collectorTimeout: 30000
     endpoint: "otel-collector-contrib:4317"
+    exportInterval: 60000
     observabilityBackends:
       - elastic:
           kibanaBaseUrl: "http://localhost:5601"
