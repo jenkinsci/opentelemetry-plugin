@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import hudson.Extension;
+import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
@@ -16,6 +17,7 @@ import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.CheckForNull;
@@ -192,5 +194,18 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     public static JenkinsOpenTelemetryPluginConfiguration get() {
         return GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+    }
+
+    /**
+     * Validates the period duration input.
+     *
+     * @param ignoredSteps the comma-separated list of steps to ignore.
+     * @return ok if the form input was valid
+     */
+    public FormValidation doCheckIgnoredSteps(@QueryParameter String ignoredSteps) {
+        if (ignoredSteps.matches("[A-Za-z0-9,]*")) {
+            return FormValidation.ok();
+        }
+        return FormValidation.error("Invalid format: \"%s\"", ignoredSteps);
     }
 }
