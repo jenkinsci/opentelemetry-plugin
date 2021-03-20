@@ -48,6 +48,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private int exportInterval = 60_000;
 
+    private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
+
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
     /**
@@ -73,7 +75,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getCollectorTimeout(), this.getExportInterval());
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getCollectorTimeout(), this.getExportInterval(), this.getIgnoredSteps());
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
@@ -170,6 +172,14 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     public void setExportInterval(int exportInterval) {
         this.exportInterval = exportInterval;
         initializeOpenTelemetry();
+    }
+
+    public String getIgnoredSteps() {
+        return ignoredSteps;
+    }
+
+    public void setIgnoredSteps(String ignoredSteps) {
+        this.ignoredSteps = ignoredSteps;
     }
 
     /**

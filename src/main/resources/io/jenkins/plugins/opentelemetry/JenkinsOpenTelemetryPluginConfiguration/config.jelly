@@ -31,6 +31,9 @@
                 <f:entry field="exportInterval" title="Metric Timeout (ms)" description="e.g. '60000'">
                     <f:number clazz="required positive number" min="1" default="${exportInterval}"/>
                 </f:entry>
+                <f:entry field="ignoredSteps" title="Steps to be ignored (comma-separated)" description="e.g. 'dir,echo,println'">
+                    <f:textbox />
+                </f:entry>
             </f:advanced>
     </f:section>
 </j:jelly>

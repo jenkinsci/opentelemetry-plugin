@@ -20,14 +20,16 @@ public class OpenTelemetryConfiguration {
     private final OtlpAuthentication authentication;
     private final int collectorTimeout;
     private final int exportInterval;
+    private final String ignoredSteps;
 
     public OpenTelemetryConfiguration(@Nullable String endpoint, @Nullable String trustedCertificatesPem, @Nullable OtlpAuthentication authentication,
-									  @Nullable int collectorTimeout, @Nullable int exportInterval) {
+									  @Nullable int collectorTimeout, @Nullable int exportInterval, @Nullable String ignoredSteps) {
         this.endpoint = endpoint;
         this.trustedCertificatesPem = trustedCertificatesPem;
         this.authentication = authentication;
         this.collectorTimeout = collectorTimeout;
         this.exportInterval = exportInterval;
+        this.ignoredSteps = ignoredSteps;
     }
 
     @Nullable
@@ -58,6 +60,11 @@ public class OpenTelemetryConfiguration {
         return exportInterval;
     }
 
+    @Nullable
+    public String getIgnoredSteps() {
+        return ignoredSteps;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -65,7 +72,7 @@ public class OpenTelemetryConfiguration {
         OpenTelemetryConfiguration that = (OpenTelemetryConfiguration) o;
         return Objects.equals(endpoint, that.endpoint) && Objects.equals(authentication, that.authentication) &&
                 Objects.equals(trustedCertificatesPem, that.trustedCertificatesPem) && Objects.equals(collectorTimeout, that.collectorTimeout) &&
-                Objects.equals(exportInterval, that.exportInterval) ;
+                Objects.equals(exportInterval, that.exportInterval) && Objects.equals(ignoredSteps, that.ignoredSteps);
     }
 
     @Override
@@ -81,6 +88,7 @@ public class OpenTelemetryConfiguration {
                 ", authentication=" + authentication +
                 ", spanTimeout=" + collectorTimeout +
                 ", metricTimeout=" + exportInterval +
+				", ignoredSteps=" + ignoredSteps +
                 '}';
     }
 }

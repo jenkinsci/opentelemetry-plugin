@@ -60,6 +60,7 @@ public class ConfigurationAsCodeTest {
         MatcherAssert.assertThat(configuration.getCollectorTimeout(), CoreMatchers.is(30_000));
         MatcherAssert.assertThat(configuration.getExportInterval(), CoreMatchers.is(60_000));
 
+        MatcherAssert.assertThat(configuration.getIgnoredSteps(), CoreMatchers.is("dir,echo,isUnix,pwd,properties"));
     }
 
     @Test

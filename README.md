@@ -196,6 +196,7 @@ unclassified:
     collectorTimeout: 30000
     endpoint: "otel-collector-contrib:4317"
     exportInterval: 60000
+    ignoredSteps: "dir,echo,isUnix,pwd,properties"
     observabilityBackends:
       - elastic:
           kibanaBaseUrl: "http://localhost:5601"
