@@ -28,7 +28,7 @@
                 <f:entry field="collectorTimeout" title="Collector Timeout (ms)" description="e.g. '30000'">
                     <f:number clazz="required positive number" min="1" default="${collectorTimeout}"/>
                 </f:entry>
-                <f:entry field="exportInterval" title="Metric Timeout (ms)" description="e.g. '60000'">
+                <f:entry field="exportInterval" title="Export Interval (ms)" description="e.g. '60000'">
                     <f:number clazz="required positive number" min="1" default="${exportInterval}"/>
                 </f:entry>
                 <f:entry field="ignoredSteps" title="Steps to be ignored (comma-separated)" description="e.g. 'dir,echo,println'">
