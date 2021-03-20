@@ -18,16 +18,16 @@ public class OpenTelemetryConfiguration {
     private final String endpoint;
     private final String trustedCertificatesPem;
     private final OtlpAuthentication authentication;
-    private final int timeoutMillis;
-    private final int exportIntervalMillis;
+    private final int collectorTimeout;
+    private final int exportInterval;
 
     public OpenTelemetryConfiguration(@Nullable String endpoint, @Nullable String trustedCertificatesPem, @Nullable OtlpAuthentication authentication,
-                                      @Nullable int timeoutMillis, @Nullable int exportIntervalMillis) {
+									  @Nullable int collectorTimeout, @Nullable int exportInterval) {
         this.endpoint = endpoint;
         this.trustedCertificatesPem = trustedCertificatesPem;
         this.authentication = authentication;
-        this.timeoutMillis = timeoutMillis;
-        this.exportIntervalMillis = exportIntervalMillis;
+        this.collectorTimeout = collectorTimeout;
+        this.exportInterval = exportInterval;
     }
 
     @Nullable
@@ -49,13 +49,13 @@ public class OpenTelemetryConfiguration {
     }
 
     @Nonnull
-    public int getTimeoutMillis() {
-        return timeoutMillis;
+    public int getCollectorTimeout() {
+        return collectorTimeout;
     }
 
     @Nonnull
-    public int getExportIntervalMillis() {
-        return exportIntervalMillis;
+    public int getExportInterval() {
+        return exportInterval;
     }
 
     @Override
@@ -64,13 +64,13 @@ public class OpenTelemetryConfiguration {
         if (o == null || getClass() != o.getClass()) return false;
         OpenTelemetryConfiguration that = (OpenTelemetryConfiguration) o;
         return Objects.equals(endpoint, that.endpoint) && Objects.equals(authentication, that.authentication) &&
-                Objects.equals(trustedCertificatesPem, that.trustedCertificatesPem) && Objects.equals(timeoutMillis, that.timeoutMillis) &&
-                Objects.equals(exportIntervalMillis, that.exportIntervalMillis) ;
+                Objects.equals(trustedCertificatesPem, that.trustedCertificatesPem) && Objects.equals(collectorTimeout, that.collectorTimeout) &&
+                Objects.equals(exportInterval, that.exportInterval) ;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endpoint, authentication, trustedCertificatesPem, timeoutMillis, exportIntervalMillis);
+        return Objects.hash(endpoint, authentication, trustedCertificatesPem, collectorTimeout, exportInterval);
     }
 
     @Override
@@ -79,8 +79,8 @@ public class OpenTelemetryConfiguration {
                 "endpoint='" + endpoint + '\'' +
                 ", trustedCertificatesPem=" + ((!(Strings.isNullOrEmpty(trustedCertificatesPem)))) +
                 ", authentication=" + authentication +
-                ", timeoutMillis=" + timeoutMillis +
-                ", exportIntervalMillis=" + exportIntervalMillis +
+                ", spanTimeout=" + collectorTimeout +
+                ", metricTimeout=" + exportInterval +
                 '}';
     }
 }

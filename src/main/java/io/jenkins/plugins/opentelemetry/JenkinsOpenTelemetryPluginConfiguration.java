@@ -44,9 +44,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
 
-    private int timeoutMillis = 30_000;
+    private int collectorTimeout = 30_000;
 
-    private int exportIntervalMillis = 60_000;
+    private int exportInterval = 60_000;
 
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
@@ -73,7 +73,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getTimeoutMillis(), this.getExportIntervalMillis());
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getCollectorTimeout(), this.getExportInterval());
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
@@ -153,23 +153,23 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
 
-    public int getTimeoutMillis() {
-        return timeoutMillis;
+    public int getCollectorTimeout() {
+        return collectorTimeout;
     }
 
     @DataBoundSetter
-    public void setTimeoutMillis(int timeoutMillis) {
-        this.timeoutMillis = timeoutMillis;
+    public void setCollectorTimeout(int collectorTimeout) {
+        this.collectorTimeout = collectorTimeout;
         initializeOpenTelemetry();
     }
 
-    public int getExportIntervalMillis() {
-        return exportIntervalMillis;
+    public int getExportInterval() {
+        return exportInterval;
     }
 
     @DataBoundSetter
-    public void setExportIntervalMillis(int exportIntervalMillis) {
-        this.exportIntervalMillis = exportIntervalMillis;
+    public void setExportInterval(int exportInterval) {
+        this.exportInterval = exportInterval;
         initializeOpenTelemetry();
     }
 

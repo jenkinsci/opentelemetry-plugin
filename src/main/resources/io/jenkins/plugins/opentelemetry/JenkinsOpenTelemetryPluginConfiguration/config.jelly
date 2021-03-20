@@ -25,11 +25,11 @@
                 <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format). Metrics exporter get disabled for the moment when feature is used. Aka OTEL_EXPORTER_OTLP_CERTIFICATE">
                     <f:textarea />
                 </f:entry>
-                <f:entry field="timeoutMillis" title="Span Timeout (ms)" description="e.g. '30000'">
-                    <f:number clazz="required positive number" min="1" default="${timeoutMillis}"/>
+                <f:entry field="collectorTimeout" title="Collector Timeout (ms)" description="e.g. '30000'">
+                    <f:number clazz="required positive number" min="1" default="${collectorTimeout}"/>
                 </f:entry>
-                <f:entry field="exportIntervalMillis" title="Metric Timeout (ms)" description="e.g. '60000'">
-                    <f:number clazz="required positive number" min="1" default="${exportIntervalMillis}"/>
+                <f:entry field="exportInterval" title="Metric Timeout (ms)" description="e.g. '60000'">
+                    <f:number clazz="required positive number" min="1" default="${exportInterval}"/>
                 </f:entry>
             </f:advanced>
     </f:section>

@@ -117,8 +117,7 @@ public class OpenTelemetrySdkProvider {
 
         preDestroy();
 
-        int timeoutMillis = JenkinsOpenTelemetryPluginConfiguration.get().getTimeoutMillis();
-        int exportIntervalMillis = JenkinsOpenTelemetryPluginConfiguration.get().getExportIntervalMillis();
+        int timeoutMillis = JenkinsOpenTelemetryPluginConfiguration.get().getCollectorTimeout();
 
         final OtlpGrpcMetricExporterBuilder metricExporterBuilder = OtlpGrpcMetricExporter.builder();
         final OtlpGrpcSpanExporterBuilder spanExporterBuilder = OtlpGrpcSpanExporter.builder();
@@ -149,6 +148,7 @@ public class OpenTelemetrySdkProvider {
             metricExporter = new NoOpMetricExporter();
         }
 
+        int exportIntervalMillis = JenkinsOpenTelemetryPluginConfiguration.get().getExportInterval();
         initializeOpenTelemetrySdk(metricExporter, spanExporter, exportIntervalMillis);
 
         LOGGER.log(Level.INFO, () -> "OpenTelemetry initialized with GRPC endpoint " + endpoint + ", authenticationHeader: " + Objects.toString(otlpAuthentication, ""));
