@@ -25,7 +25,9 @@ import java.util.logging.Logger;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-
+/**
+ * Customization of shell steps ({@code sh}, {@code cmd}, and {@code powershell}).
+ */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class GitStepHandler implements StepHandler {
 
@@ -40,8 +42,8 @@ public class GitStepHandler implements StepHandler {
     @Override
     public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull Tracer tracer) throws Exception {
         final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
-        final String displayFunctionName = node.getDisplayFunctionName();
-        return createSpanBuilder(displayFunctionName, arguments, tracer);
+        final String stepFunctionName = node.getDisplayFunctionName();
+        return createSpanBuilder(stepFunctionName, arguments, tracer);
     }
 
     /**
@@ -50,13 +52,15 @@ public class GitStepHandler implements StepHandler {
      * https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols
      */
     @VisibleForTesting
-    public SpanBuilder createSpanBuilder(String spanName, Map<String, Object> arguments, Tracer tracer) throws URISyntaxException {
-        final SpanBuilder spanBuilder = tracer.spanBuilder(spanName);
+    public SpanBuilder createSpanBuilder(String stepFunctionName, Map<String, Object> arguments, Tracer tracer) throws URISyntaxException {
+
         String gitUrlAsString = checkNotNull(arguments.get("url")).toString();
         URIish gitUri = new URIish(gitUrlAsString);
         String host = gitUri.getHost();
         String gitRepositoryPath = normalizeGitRepositoryPath(gitUri);
 
+        String spanName = stepFunctionName + ": " + host + "/" + gitRepositoryPath;
+        final SpanBuilder spanBuilder = tracer.spanBuilder(spanName);
         if ("https".equals(gitUri.getScheme())) {
             // HTTPS URL e.g. https://github.com/open-telemetry/opentelemetry-java
 

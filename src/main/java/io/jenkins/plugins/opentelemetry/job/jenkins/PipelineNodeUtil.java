@@ -156,7 +156,7 @@ public class PipelineNodeUtil {
         return true;
     }
 
-    public static boolean isStartNode(@Nullable FlowNode node) {
+    public static boolean isStartExecutorNode(@Nullable FlowNode node) {
         if (node == null) {
             return false;
         }
@@ -168,7 +168,14 @@ public class PipelineNodeUtil {
             return false;
         }
 
-        LOGGER.log(Level.FINER, ()-> "isStartNode():" + getDetailedDebugString(node));
+        BodyInvocationAction bodyInvocationAction = node.getAction(BodyInvocationAction.class);
+        if (bodyInvocationAction != null) {
+            // it's the second StepStartNode of the ExecutorStep, the StepStartNode for the actual invocation
+            LOGGER.log(Level.FINER, ()-> "isStartNode(): false - " + getDetailedDebugString(node));
+            return false;
+        }
+
+        LOGGER.log(Level.FINE, ()-> "isStartNode(): true - " + getDetailedDebugString(node));
         return true;
     }
 
@@ -205,22 +212,20 @@ public class PipelineNodeUtil {
         return isStartParallelBlock(stepEndNode.getStartNode());
     }
 
-    public static boolean isNodeReady(@Nonnull FlowNode node) {
-        if (!isStartNode(node)) {
+    public static boolean isStartExecutorNodeExecution(@Nonnull FlowNode node) {
+        if (node == null) {
+            return false;
+        }
+        if (!(node instanceof StepStartNode)) {
+            return false;
+        }
+        StepStartNode stepStartNode = (StepStartNode) node;
+        if (!(stepStartNode.getDescriptor() instanceof ExecutorStep.DescriptorImpl)) {
             return false;
         }
 
         BodyInvocationAction bodyInvocationAction = node.getAction(BodyInvocationAction.class);
         return bodyInvocationAction != null;
-    }
-
-    public static boolean isNodeAllocate(@Nonnull FlowNode node) {
-        if (!isStartNode(node)) {
-            return false;
-        }
-
-        BodyInvocationAction bodyInvocationAction = node.getAction(BodyInvocationAction.class);
-        return bodyInvocationAction == null;
     }
 
     /**

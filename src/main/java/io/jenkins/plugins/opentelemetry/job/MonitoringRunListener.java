@@ -126,18 +126,21 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         run.addAction(monitoringAction);
 
         this.getTraceService().putSpan(run, rootSpan);
-        rootSpan.makeCurrent();
-        LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin root " + OtelUtils.toDebugString(rootSpan));
+        try (final Scope rootSpanScope = rootSpan.makeCurrent()) {
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin root " + OtelUtils.toDebugString(rootSpan));
 
 
-        // START initialize span
-        Span startSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_START_NAME).setParent(Context.current().with(rootSpan)).startSpan();
-        LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(startSpan));
+            // START initialize span
+            Span startSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_START_NAME)
+                    .setParent(Context.current().with(rootSpan))
+                    .startSpan();
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(startSpan));
 
-        this.getTraceService().putSpan(run, startSpan);
-        startSpan.makeCurrent();
-
-        this.runLaunchedCounter.add(1);
+            this.getTraceService().putSpan(run, startSpan);
+            try (final Scope startSpanScope = startSpan.makeCurrent()) {
+                this.runLaunchedCounter.add(1);
+            }
+        }
     }
 
     @Override

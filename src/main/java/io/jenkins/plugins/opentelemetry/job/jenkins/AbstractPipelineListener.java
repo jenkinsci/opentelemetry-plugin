@@ -12,6 +12,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class AbstractPipelineListener implements PipelineListener {
     @Override
@@ -20,7 +21,7 @@ public class AbstractPipelineListener implements PipelineListener {
     }
 
     @Override
-    public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
+    public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String nodeLabel, @Nonnull WorkflowRun run) {
 
     }
 
@@ -30,7 +31,7 @@ public class AbstractPipelineListener implements PipelineListener {
     }
 
     @Override
-    public void onAfterStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nonnull String stageName, @Nonnull WorkflowRun run) {
+    public void onAfterStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String nodeLabel, @Nonnull WorkflowRun run) {
 
     }
 
