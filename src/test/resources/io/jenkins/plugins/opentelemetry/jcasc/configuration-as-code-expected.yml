@@ -1,5 +1,6 @@
 authentication: "noAuthentication"
 endpoint: "http://otel-collector-contrib:4317"
+exportIntervalMillis: 60000
 observabilityBackends:
 - elastic:
     kibanaBaseUrl: "http://localhost:5601"
@@ -10,3 +11,4 @@ observabilityBackends:
     traceVisualisationUrlTemplate: "http://example.com"
 - zipkin:
     zipkinBaseUrl: "http://localhost:9411/"
+timeoutMillis: 30000
