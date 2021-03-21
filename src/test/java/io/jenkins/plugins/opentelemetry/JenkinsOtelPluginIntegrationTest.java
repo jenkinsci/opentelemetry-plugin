@@ -223,12 +223,14 @@ public class JenkinsOtelPluginIntegrationTest {
         MatcherAssert.assertThat(executorNode, CoreMatchers.is(CoreMatchers.notNullValue()));
         attributes = executorNode.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
+
+        List<SpanDataWrapper> root = spans.byDepth().get(0);
+        attributes = root.get(0).spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is("workflow"));
     }
 
     @Test
     public void testFreestyleJob() throws Exception {
-        final Node node = jenkinsRule.createOnlineSlave();
-
         final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
 
@@ -239,6 +241,10 @@ public class JenkinsOtelPluginIntegrationTest {
         checkChainOfSpans(spans, "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(4L));
+
+        List<SpanDataWrapper> root = spans.byDepth().get(0);
+        Attributes attributes = root.get(0).spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is("freestyle"));
     }
 
     @Test
