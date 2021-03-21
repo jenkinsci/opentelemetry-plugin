@@ -8,6 +8,8 @@ package io.jenkins.plugins.opentelemetry;
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.ExtensionList;
 import hudson.Functions;
+import hudson.model.FreeStyleBuild;
+import hudson.model.FreeStyleProject;
 import hudson.model.Node;
 import hudson.model.Result;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
@@ -221,6 +223,22 @@ public class JenkinsOtelPluginIntegrationTest {
         MatcherAssert.assertThat(executorNode, CoreMatchers.is(CoreMatchers.notNullValue()));
         attributes = executorNode.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
+    }
+
+    @Test
+    public void testFreestyleJob() throws Exception {
+        final Node node = jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
+        FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
+
+        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Start", jobName);
+        checkChainOfSpans(spans, "Phase: Run");
+        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(4L));
     }
 
     @Test
