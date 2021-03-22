@@ -6,9 +6,15 @@
 package io.jenkins.plugins.opentelemetry;
 
 import hudson.ExtensionList;
+import hudson.model.FreeStyleBuild;
+import hudson.model.Run;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import jenkins.branch.MultiBranchProject;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -33,6 +39,23 @@ public class OtelUtils {
                 return span.toString();
             }
         };
+    }
+
+    @Nonnull
+    public static String getProjectType(Run run) {
+        if (run == null) {
+            return "unknown";
+        }
+        if (run instanceof FreeStyleBuild) {
+            return "freestyle";
+        }
+        if (run instanceof WorkflowRun) {
+            // TODO multibranch pipeline
+            return "workflow";
+        }
+        // TODO: support for
+        // https://github.com/jenkinsci/matrix-project-plugin/blob/master/src/main/java/hudson/matrix/MatrixBuild.java#L70
+        return "unknown";
     }
 
     @Nonnull
