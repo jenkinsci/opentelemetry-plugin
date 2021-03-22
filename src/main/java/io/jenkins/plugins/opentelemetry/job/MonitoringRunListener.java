@@ -87,7 +87,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         String rootSpanName = run.getParent().getFullName();
         String runUrl = Objects.toString(Jenkins.get().getRootUrl(), "") + run.getUrl();
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(rootSpanName)
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, rootSpanName)
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, runUrl)
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
@@ -189,7 +189,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             if (runResult == null) {
                 parentSpan.setStatus(StatusCode.UNSET);
             } else {
+                String description = run.getDescription();
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMPLETED, runResult.completeBuild);
+                parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION, description);
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, runResult.toString());
                 StatusCode statusCode = Result.SUCCESS.equals(runResult) ? StatusCode.OK : StatusCode.ERROR;
                 parentSpan.setStatus(statusCode);
