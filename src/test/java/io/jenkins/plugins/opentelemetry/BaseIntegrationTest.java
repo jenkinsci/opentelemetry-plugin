@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import com.cloudbees.hudson.plugins.folder.computed.FolderComputation;
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.ExtensionList;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
@@ -20,6 +21,8 @@ import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -28,6 +31,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.jvnet.hudson.test.BuildWatcher;
 
+import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -41,6 +45,7 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verify;
+import static org.junit.Assert.fail;
 
 public class BaseIntegrationTest {
     static {
@@ -60,16 +65,16 @@ public class BaseIntegrationTest {
 
     static OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
-	@Before
-	public void before() throws Exception {
-	}
+    @Before
+    public void before() throws Exception {
+    }
 
-	@After
-	public void after() throws Exception {
-		jenkinsRule.waitUntilNoActivity();
-		((InMemorySpanExporter) OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER).reset();
-		((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).reset();
-	}
+    @After
+    public void after() throws Exception {
+        jenkinsRule.waitUntilNoActivity();
+        ((InMemorySpanExporter) OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER).reset();
+        ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).reset();
+    }
 
     @BeforeClass
     public static void beforeClass() throws Exception {
@@ -153,6 +158,32 @@ public class BaseIntegrationTest {
 
         return trees.get(0);
     }
+
+    // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java
+    @Nonnull
+    public static WorkflowJob scheduleAndFindBranchProject(@Nonnull WorkflowMultiBranchProject mp, @Nonnull String name) throws Exception {
+        mp.scheduleBuild2(0).getFuture().get();
+        return findBranchProject(mp, name);
+    }
+
+    // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java
+    public static @Nonnull WorkflowJob findBranchProject(@Nonnull WorkflowMultiBranchProject mp, @Nonnull String name) throws Exception {
+        WorkflowJob p = mp.getItem(name);
+        showIndexing(mp);
+        if (p == null) {
+            fail(name + " project not found");
+        }
+        return p;
+    }
+
+    // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java
+    static void showIndexing(@Nonnull WorkflowMultiBranchProject mp) throws Exception {
+        FolderComputation<?> indexing = mp.getIndexing();
+        System.out.println("---%<--- " + indexing.getUrl());
+        indexing.writeWholeLogTo(System.out);
+        System.out.println("---%<--- ");
+    }
+
 
     @AfterClass
     public static void afterClass() {

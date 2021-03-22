@@ -6,60 +6,66 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.github.rutledgepaulv.prune.Tree;
-import hudson.Functions;
-import hudson.model.FreeStyleBuild;
-import hudson.model.FreeStyleProject;
-import hudson.model.Node;
-import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.sdk.metrics.data.LongPointData;
-import io.opentelemetry.sdk.metrics.data.MetricData;
-import io.opentelemetry.sdk.metrics.data.MetricDataType;
-import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
-import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import jenkins.branch.BranchProperty;
+import jenkins.branch.BranchSource;
+import jenkins.branch.DefaultBranchPropertyStrategy;
+import jenkins.plugins.git.GitSCMSource;
+import jenkins.plugins.git.GitSampleRepoRule;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.After;
-import org.junit.Before;
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
 
+    @Rule
+    public GitSampleRepoRule sampleRepo = new GitSampleRepoRule();
+
     @Test
     public void testMultibranchPipelineStep() throws Exception {
-        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-                "node() {\n" +
-                "    stage('ze-parallel-stage') {\n" +
-                "        parallel parallelBranch1: {\n" +
-                "            xsh (label: 'shell-1', script: 'echo this-is-the-parallel-branch-1')\n" +
-                "        } ,parallelBranch2: {\n" +
-                "            xsh (label: 'shell-2', script: 'echo this-is-the-parallel-branch-2')\n" +
-                "        } ,parallelBranch3: {\n" +
-                "            xsh (label: 'shell-3', script: 'echo this-is-the-parallel-branch-3')\n" +
-                "        }\n" +
+        String pipelineScript = "pipeline {\n" +
+                "  agent any\n" +
+                "  stages {\n" +
+                "    stage('foo') {\n" +
+                "      steps {\n" +
+                "        echo 'hello world' \n" +
+                "        script { \n" +
+                "          currentBuild.description = 'Bar' \n" +
+                "        } \n" +
+                "      }\n" +
                 "    }\n" +
+                "  }\n" +
                 "}";
-        final Node node = jenkinsRule.createOnlineSlave();
-
-        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-parallel-step" + jobNameSuffix.incrementAndGet());
-        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
-
+        sampleRepo.init();
+        sampleRepo.write("Jenkinsfile", pipelineScript);
+        sampleRepo.write("file", "initial content");
+        sampleRepo.git("add", "Jenkinsfile");
+        sampleRepo.git("commit", "--all", "--message=flow");
+        final String mbpName = "test-pipeline-with-node-steps-" + jobNameSuffix.incrementAndGet();
+        final String branchName = "master";
+        WorkflowMultiBranchProject mp = jenkinsRule.createProject(WorkflowMultiBranchProject.class, mbpName);
+        mp.getSourcesList().add(new BranchSource(new GitSCMSource(null, sampleRepo.toString(), "", "*", "", false), new DefaultBranchPropertyStrategy(new BranchProperty[0])));
+        WorkflowJob p = scheduleAndFindBranchProject(mp, branchName);
+        jenkinsRule.waitUntilNoActivity();
+        WorkflowRun b1 = p.getLastBuild();
+        final String jobName = mbpName + "/" + branchName;
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", "Node", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", "Node", "Phase: Run");
-        checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", "Node", "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
-    }
+        checkChainOfSpans(spans, "Phase: Start", jobName);
+        // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
+        checkChainOfSpans(spans, "Stage: Declarative: Checkout SCM", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
 
+        List<SpanDataWrapper> root = spans.byDepth().get(0);
+        Attributes attributes = root.get(0).spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is("workflow"));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION), CoreMatchers.is("Bar"));
+    }
 }
