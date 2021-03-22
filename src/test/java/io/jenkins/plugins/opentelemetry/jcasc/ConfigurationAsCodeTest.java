@@ -57,8 +57,8 @@ public class ConfigurationAsCodeTest {
         OtlpAuthentication authentication = configuration.getAuthentication();
         MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
 
-        MatcherAssert.assertThat(configuration.getCollectorTimeout(), CoreMatchers.is(30_000));
-        MatcherAssert.assertThat(configuration.getExportInterval(), CoreMatchers.is(60_000));
+        MatcherAssert.assertThat(configuration.getExporterTimeoutMillis(), CoreMatchers.is(30_000));
+        MatcherAssert.assertThat(configuration.getExporterIntervalMillis(), CoreMatchers.is(60_000));
 
         MatcherAssert.assertThat(configuration.getIgnoredSteps(), CoreMatchers.is("dir,echo,isUnix,pwd,properties"));
     }

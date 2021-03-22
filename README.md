@@ -12,7 +12,7 @@ Collect Jenkins monitoring data through OpenTelemetry.
 
 ## Architecture
 
-Using the [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases), you can use many monitoring backends to monitor Jenkins such as Jaeger, Zipkin, Prometheus, Elastic Observability and many others listed [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter). 
+Using the [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases), you can use many monitoring backends to monitor Jenkins such as Jaeger, Zipkin, Prometheus, Elastic Observability and many others listed [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter).
 
 Here are few examples of architecture:
 
@@ -193,9 +193,9 @@ This plugin supports configuration as code. Add to your yaml file:
 unclassified:
   openTelemetry:
     authentication: "noAuthentication"
-    collectorTimeout: 30000
     endpoint: "otel-collector-contrib:4317"
-    exportInterval: 60000
+    exporterIntervalMillis: 60000
+    exporterTimeoutMillis: 30000
     ignoredSteps: "dir,echo,isUnix,pwd,properties"
     observabilityBackends:
       - elastic:

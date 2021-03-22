@@ -46,9 +46,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
 
-    private int collectorTimeout = 30_000;
+    private int exporterTimeoutMillis = 30_000;
 
-    private int exportInterval = 60_000;
+    private int exporterIntervalMillis = 60_000;
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
@@ -77,7 +77,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getCollectorTimeout(), this.getExportInterval(), this.getIgnoredSteps());
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getExporterTimeoutMillis(), this.getExporterIntervalMillis(), this.getIgnoredSteps());
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
@@ -156,23 +156,23 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
     }
 
-    public int getCollectorTimeout() {
-        return collectorTimeout;
+    public int getExporterTimeoutMillis() {
+        return exporterTimeoutMillis;
     }
 
     @DataBoundSetter
-    public void setCollectorTimeout(int collectorTimeout) {
-        this.collectorTimeout = collectorTimeout;
+    public void setExporterTimeoutMillis(int exporterTimeoutMillis) {
+        this.exporterTimeoutMillis = exporterTimeoutMillis;
         initializeOpenTelemetry();
     }
 
-    public int getExportInterval() {
-        return exportInterval;
+    public int getExporterIntervalMillis() {
+        return exporterIntervalMillis;
     }
 
     @DataBoundSetter
-    public void setExportInterval(int exportInterval) {
-        this.exportInterval = exportInterval;
+    public void setExporterIntervalMillis(int exporterIntervalMillis) {
+        this.exporterIntervalMillis = exporterIntervalMillis;
         initializeOpenTelemetry();
     }
 
