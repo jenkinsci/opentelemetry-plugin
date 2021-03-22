@@ -15,7 +15,6 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
-import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineNodeUtil;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.FlowNodeContextKey;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -28,7 +27,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.compress.utils.Sets;
-import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
@@ -148,9 +146,9 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             SpanBuilder spanBuilder = null;
             for (StepHandler stepHandler : ExtensionList.lookup(StepHandler.class)) {
-                if (stepHandler.canCreateSpanBuilder(node)) {
+                if (stepHandler.canCreateSpanBuilder(node, run)) {
                     try {
-                        spanBuilder = stepHandler.createSpanBuilder(node, getTracer());
+                        spanBuilder = stepHandler.createSpanBuilder(node, run, getTracer());
                     } catch (Exception e) {
                         LOGGER.log(Level.WARNING, run.getFullDisplayName() + " failure to handle step " + node + " with handler " + stepHandler, e);
                     }
