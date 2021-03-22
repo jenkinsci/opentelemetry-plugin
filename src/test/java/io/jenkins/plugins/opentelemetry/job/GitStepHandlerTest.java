@@ -145,10 +145,8 @@ public class GitStepHandlerTest {
     private SpanBuilderMock testGithubUrl(String githubUrl) throws Exception {
 
         GitStepHandler handler = new GitStepHandler();
-        Map<String, Object> arguments = Maps.newHashMap();
-        arguments.put("url", githubUrl);
 
-        SpanBuilderMock spanBuilder = (SpanBuilderMock) handler.createSpanBuilder("git", arguments, new TracerMock());
+        SpanBuilderMock spanBuilder = (SpanBuilderMock) handler.createSpanBuilder(githubUrl, null, "git", new TracerMock());
         return spanBuilder;
     }
 
