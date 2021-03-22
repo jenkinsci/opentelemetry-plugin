@@ -5,16 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import hudson.ExtensionList;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import jenkins.branch.MultiBranchProject;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -61,13 +57,5 @@ public class OtelUtils {
     @Nonnull
     public static String toDebugString(@Nullable Span span) {
         return spanToDebugString().apply(span);
-    }
-
-    public static OpenTelemetryConfiguration getOpenTelemetryConfiguration() {
-        try {
-            return ExtensionList.lookupSingleton(OpenTelemetryConfiguration.class);
-        } catch (IllegalStateException e) {
-            return null;
-        }
     }
 }

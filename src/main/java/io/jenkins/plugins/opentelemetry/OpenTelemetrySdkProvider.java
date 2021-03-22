@@ -111,13 +111,11 @@ public class OpenTelemetrySdkProvider {
      *
      * @param endpoint "http://host:port", "https://host:port"
      */
-    public void initializeForGrpc(@Nonnull String endpoint, @Nullable String trustedCertificatesPem, @Nonnull OtlpAuthentication otlpAuthentication) {
+    public void initializeForGrpc(@Nonnull String endpoint, @Nullable String trustedCertificatesPem, @Nonnull OtlpAuthentication otlpAuthentication, @Nonnull int timeoutMillis, @Nonnull int exportIntervalMillis) {
         Preconditions.checkArgument(endpoint.startsWith("http://") || endpoint.startsWith("https://"), "endpoint must be prefixed by 'http://' or 'https://': %s", endpoint);
         LOGGER.log(Level.FINE, "initializeForGrpc");
 
         preDestroy();
-
-        int timeoutMillis = JenkinsOpenTelemetryPluginConfiguration.get().getCollectorTimeout();
 
         final OtlpGrpcMetricExporterBuilder metricExporterBuilder = OtlpGrpcMetricExporter.builder();
         final OtlpGrpcSpanExporterBuilder spanExporterBuilder = OtlpGrpcSpanExporter.builder();
@@ -148,7 +146,6 @@ public class OpenTelemetrySdkProvider {
             metricExporter = new NoOpMetricExporter();
         }
 
-        int exportIntervalMillis = JenkinsOpenTelemetryPluginConfiguration.get().getExportInterval();
         initializeOpenTelemetrySdk(metricExporter, spanExporter, exportIntervalMillis);
 
         LOGGER.log(Level.INFO, () -> "OpenTelemetry initialized with GRPC endpoint " + endpoint + ", authenticationHeader: " + Objects.toString(otlpAuthentication, ""));
@@ -216,7 +213,7 @@ public class OpenTelemetrySdkProvider {
         if (configuration.getEndpoint() == null) {
             initializeNoOp();
         } else {
-            initializeForGrpc(configuration.getEndpoint(), configuration.getTrustedCertificatesPem(), configuration.getAuthentication());
+            initializeForGrpc(configuration.getEndpoint(), configuration.getTrustedCertificatesPem(), configuration.getAuthentication(), configuration.getCollectorTimeout(), configuration.getExportInterval());
         }
     }
 }
