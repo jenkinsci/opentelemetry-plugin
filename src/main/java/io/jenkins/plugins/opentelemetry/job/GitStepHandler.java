@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Customization of the {@code git} step.
+ * Customization of the span for {@code git} steps.
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class GitStepHandler extends AbstractGitStepHandler {
@@ -41,9 +41,10 @@ public class GitStepHandler extends AbstractGitStepHandler {
         final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
         final String gitUrl = checkNotNull(arguments.get("url")).toString();
         final String gitBranch = Objects.toString(arguments.get("branch"), null);
+        final String credentialsId = (String) arguments.get("credentialsId");
         final String stepFunctionName = node.getDisplayFunctionName();
 
-        return createSpanBuilder(gitUrl, gitBranch, stepFunctionName, tracer);
+        return createSpanBuilder(gitUrl, gitBranch, credentialsId, stepFunctionName, tracer, run);
     }
 
 }

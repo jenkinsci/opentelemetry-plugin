@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import hudson.Extension;
@@ -15,7 +16,6 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import jenkins.YesNoMaybe;
 import jenkins.branch.Branch;
-import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -53,6 +53,16 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
         final BranchJobProperty branchJobProperty = pipeline.getProperty(BranchJobProperty.class);
         if (branchJobProperty == null) {
             // FIXME implement generic `checkout ...` step
+            final Map<String, Object> rootArguments = ArgumentsAction.getFilteredArguments(flowNode);
+            final Map<String, ?> scm = (Map<String, ?>) rootArguments.get("scm");
+            if (scm == null) {
+                return false;
+            }
+            final Object clazz = scm.get("$class");
+            if (!(Objects.equal(GitSCM.class.getSimpleName(), clazz))) {
+                return false;
+            }
+            return true;
         } else {
             // MultiBranch Pipeline using Git
             final SCM scm = branchJobProperty.getBranch().getScm();
@@ -66,16 +76,41 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
 
     @Nonnull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, WorkflowRun run, @Nonnull Tracer tracer) throws Exception {
-        final Map<String, Object> rootArguments = ArgumentsAction.getFilteredArguments(node);
+    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer) throws Exception {
+        final Map<String, ?> rootArguments = ArgumentsAction.getFilteredArguments(node);
         final String stepFunctionName = node.getDisplayFunctionName();
         LOGGER.log(Level.FINE, () -> stepFunctionName + " - begin " + rootArguments);
 
         final BranchJobProperty branchJobProperty = run.getParent().getProperty(BranchJobProperty.class);
 
+        // TODO better handling of cases where an expected property is not found
         if (branchJobProperty == null) {
-            // FIXME implement generic `checkout ...` step
-            return tracer.spanBuilder(stepFunctionName);
+            final Map<String, ?> scm = (Map<String, ?>) rootArguments.get("scm");
+            if (scm == null) {
+                return tracer.spanBuilder(stepFunctionName);
+            }
+            final Object clazz = scm.get("$class");
+            if (!(Objects.equal(GitSCM.class.getSimpleName(), clazz))) {
+                return tracer.spanBuilder(stepFunctionName);
+            }
+            List<Map<String, ?>> userRemoteConfigs = (List<Map<String, ?>>) scm.get("userRemoteConfigs");
+            final Map<String, ?> userRemoteConfig = Iterables.getFirst(userRemoteConfigs, null);
+            if (userRemoteConfig == null) {
+                return tracer.spanBuilder(stepFunctionName);
+            }
+            String gitUrl = (String) userRemoteConfig.get("url");
+            String credentialsId = (String) userRemoteConfig.get("credentialsId");
+
+            final List<Map<String, ?>> branches = (List<Map<String, ?>>) scm.get("branches");
+            String gitBranch;
+            if (branches == null) {
+                gitBranch = null;
+            } else {
+                final Map<String, ?> branch = Iterables.getFirst(branches, null);
+                gitBranch = (String) branch.get("name");
+            }
+
+            return super.createSpanBuilder(gitUrl, gitBranch, credentialsId, stepFunctionName, tracer, run);
         } else {
             final Branch branch = branchJobProperty.getBranch();
             String gitBranch = branch.getName();
@@ -85,17 +120,17 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
                 GitSCM gitScm = (GitSCM) scm;
                 final UserRemoteConfig userRemoteConfig = Iterables.getFirst(gitScm.getUserRemoteConfigs(), null);
                 if (userRemoteConfig == null) {
-                    // FIXME better handling
                     return tracer.spanBuilder(stepFunctionName);
                 }
                 String gitUrl = userRemoteConfig.getUrl();
+                String credentialsId = userRemoteConfig.getCredentialsId();
+
                 if (Strings.isNullOrEmpty(gitUrl)) {
-                    // FIXME better handling
                     return tracer.spanBuilder(stepFunctionName);
                 }
-                return super.createSpanBuilder(gitUrl, gitBranch, stepFunctionName, tracer);
+
+                return super.createSpanBuilder(gitUrl, gitBranch, credentialsId, stepFunctionName, tracer, run);
             } else {
-                // FIXME better handling
                 return tracer.spanBuilder(stepFunctionName);
             }
         }

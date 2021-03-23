@@ -40,6 +40,7 @@ public final class JenkinsOtelSemanticAttributes {
 
     public static final AttributeKey<String>        GIT_REPOSITORY = AttributeKey.stringKey("git.repository");
     public static final AttributeKey<String>        GIT_BRANCH = AttributeKey.stringKey("git.branch");
+    public static final AttributeKey<String>        GIT_USERNAME = AttributeKey.stringKey("git.username");
 
     /**
      * @see Jenkins#getRootUrl()

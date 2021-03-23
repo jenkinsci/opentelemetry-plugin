@@ -12,6 +12,7 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.eclipse.jgit.transport.URIish;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -30,7 +31,18 @@ public abstract class AbstractGitStepHandler implements StepHandler {
      */
     @VisibleForTesting
     @Nonnull
-    public SpanBuilder createSpanBuilder(@Nonnull String gitUrl, @Nullable String gitBranch, @Nonnull String stepFunctionName, @Nonnull Tracer tracer) throws URISyntaxException {
+    public SpanBuilder createSpanBuilder(@Nonnull String gitUrl, @Nullable String gitBranch, @Nullable String credentialsId, @Nonnull String stepFunctionName, @Nonnull Tracer tracer, @Nonnull WorkflowRun run) throws URISyntaxException {
+        // FIXME retrieve the git username from the credentialsId, we need to lookup in the context of the run
+        String gitUserName = credentialsId;
+
+        return createSpanBuilderFromGitDetails(gitUrl, gitBranch, gitUserName, stepFunctionName, tracer);
+    }
+
+    /**
+     * Visible for testing. User {@link #createSpanBuilder(String, String, String, String, Tracer, WorkflowRun)} instead of this method
+     */
+    @VisibleForTesting
+    protected SpanBuilder createSpanBuilderFromGitDetails(@Nullable String gitUrl, @Nullable String gitBranch, @Nullable String gitUserName, @Nonnull String stepFunctionName, @Nonnull Tracer tracer) throws URISyntaxException {
         URIish gitUri = new URIish(gitUrl);
         String host = gitUri.getHost();
         String gitRepositoryPath = normalizeGitRepositoryPath(gitUri);
@@ -75,7 +87,6 @@ public abstract class AbstractGitStepHandler implements StepHandler {
             spanBuilder = tracer.spanBuilder(spanName);
         } else {
             // TODO document which case it is?
-
             String spanName = stepFunctionName + ": " + host + "/" + gitRepositoryPath;
             spanBuilder = tracer.spanBuilder(spanName);
         }
@@ -84,7 +95,9 @@ public abstract class AbstractGitStepHandler implements StepHandler {
         if (!Strings.isNullOrEmpty(gitBranch)) {
             spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.GIT_BRANCH, gitBranch);
         }
-        // TODO could we indicate the git user?
+        if (!Strings.isNullOrEmpty(gitUserName)) {
+            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.GIT_USERNAME, gitUserName);
+        }
 
         return spanBuilder;
     }
