@@ -189,9 +189,11 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             if (runResult == null) {
                 parentSpan.setStatus(StatusCode.UNSET);
             } else {
-                String description = run.getDescription();
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMPLETED, runResult.completeBuild);
-                parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION, description);
+                String description = run.getDescription();
+                if (description != null) {
+                    parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION, description);
+                }
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, runResult.toString());
                 StatusCode statusCode = Result.SUCCESS.equals(runResult) ? StatusCode.OK : StatusCode.ERROR;
                 parentSpan.setStatus(statusCode);
