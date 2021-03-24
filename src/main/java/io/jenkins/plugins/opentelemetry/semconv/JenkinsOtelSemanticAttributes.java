@@ -31,7 +31,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<Boolean>       CI_PIPELINE_RUN_COMPLETED = AttributeKey.booleanKey("ci.pipeline.run.completed");
     public static final AttributeKey<Long>          CI_PIPELINE_RUN_DURATION_MILLIS = AttributeKey.longKey("ci.pipeline.run.durationMillis");
     public static final AttributeKey<String>        CI_PIPELINE_RUN_DESCRIPTION = AttributeKey.stringKey("ci.pipeline.run.description");
-    public static final AttributeKey<Long>          CI_PIPELINE_RUN_NUMBER = AttributeKey.longKey("ci.pipeline.number");
+    public static final AttributeKey<Long>          CI_PIPELINE_RUN_NUMBER = AttributeKey.longKey("ci.pipeline.run.number");
     public static final AttributeKey<List<Boolean>> CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE = AttributeKey.booleanArrayKey("ci.pipeline.parameter.sensitive");
     public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_PARAMETER_NAME = AttributeKey.stringArrayKey("ci.pipeline.parameter.name");
     public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_PARAMETER_VALUE = AttributeKey.stringArrayKey("ci.pipeline.parameter.value");
