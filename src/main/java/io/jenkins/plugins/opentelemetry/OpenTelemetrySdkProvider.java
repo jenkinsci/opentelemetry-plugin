@@ -26,7 +26,6 @@ import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporterBuilder;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.autoconfigure.ConfigProperties;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.IntervalMetricReader;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
@@ -48,7 +47,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 
 @Extension
 public class OpenTelemetrySdkProvider {
@@ -113,15 +111,11 @@ public class OpenTelemetrySdkProvider {
      *
      * @param endpoint "http://host:port", "https://host:port"
      */
-    public void initializeForGrpc(@Nonnull String endpoint, @Nullable String trustedCertificatesPem, @Nonnull OtlpAuthentication otlpAuthentication) {
+    public void initializeForGrpc(@Nonnull String endpoint, @Nullable String trustedCertificatesPem, @Nonnull OtlpAuthentication otlpAuthentication, @Nonnull int exporterTimeoutMillis, @Nonnull int exporterIntervalMillis) {
         Preconditions.checkArgument(endpoint.startsWith("http://") || endpoint.startsWith("https://"), "endpoint must be prefixed by 'http://' or 'https://': %s", endpoint);
         LOGGER.log(Level.FINE, "initializeForGrpc");
 
         preDestroy();
-
-        // TODO variabilize
-        int timeoutMillis = 30_000;
-        int exportIntervalMillis = 60_000;
 
         final OtlpGrpcMetricExporterBuilder metricExporterBuilder = OtlpGrpcMetricExporter.builder();
         final OtlpGrpcSpanExporterBuilder spanExporterBuilder = OtlpGrpcSpanExporter.builder();
@@ -129,8 +123,8 @@ public class OpenTelemetrySdkProvider {
         spanExporterBuilder.setEndpoint(endpoint);
         metricExporterBuilder.setEndpoint(endpoint);
 
-        spanExporterBuilder.setTimeout(timeoutMillis, TimeUnit.MILLISECONDS);
-        metricExporterBuilder.setTimeout(timeoutMillis, TimeUnit.MILLISECONDS);
+        spanExporterBuilder.setTimeout(exporterTimeoutMillis, TimeUnit.MILLISECONDS);
+        metricExporterBuilder.setTimeout(exporterTimeoutMillis, TimeUnit.MILLISECONDS);
 
         otlpAuthentication.configure(spanExporterBuilder);
         otlpAuthentication.configure(metricExporterBuilder);
@@ -152,7 +146,7 @@ public class OpenTelemetrySdkProvider {
             metricExporter = new NoOpMetricExporter();
         }
 
-        initializeOpenTelemetrySdk(metricExporter, spanExporter, exportIntervalMillis);
+        initializeOpenTelemetrySdk(metricExporter, spanExporter, exporterIntervalMillis);
 
         LOGGER.log(Level.INFO, () -> "OpenTelemetry initialized with GRPC endpoint " + endpoint + ", authenticationHeader: " + Objects.toString(otlpAuthentication, ""));
     }
@@ -219,7 +213,7 @@ public class OpenTelemetrySdkProvider {
         if (configuration.getEndpoint() == null) {
             initializeNoOp();
         } else {
-            initializeForGrpc(configuration.getEndpoint(), configuration.getTrustedCertificatesPem(), configuration.getAuthentication());
+            initializeForGrpc(configuration.getEndpoint(), configuration.getTrustedCertificatesPem(), configuration.getAuthentication(), configuration.getExporterTimeoutMillis(), configuration.getExporterIntervalMillis());
         }
     }
 }

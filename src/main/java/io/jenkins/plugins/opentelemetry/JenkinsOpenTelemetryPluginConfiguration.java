@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import hudson.Extension;
+import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
@@ -16,6 +17,7 @@ import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.CheckForNull;
@@ -44,6 +46,12 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
 
+    private int exporterTimeoutMillis = 30_000;
+
+    private int exporterIntervalMillis = 60_000;
+
+    private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
+
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
     /**
@@ -69,7 +77,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication());
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getExporterTimeoutMillis(), this.getExporterIntervalMillis(), this.getIgnoredSteps());
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
@@ -148,11 +156,56 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
     }
 
+    public int getExporterTimeoutMillis() {
+        return exporterTimeoutMillis;
+    }
+
+    @DataBoundSetter
+    public void setExporterTimeoutMillis(int exporterTimeoutMillis) {
+        this.exporterTimeoutMillis = exporterTimeoutMillis;
+        initializeOpenTelemetry();
+    }
+
+    public int getExporterIntervalMillis() {
+        return exporterIntervalMillis;
+    }
+
+    @DataBoundSetter
+    public void setExporterIntervalMillis(int exporterIntervalMillis) {
+        this.exporterIntervalMillis = exporterIntervalMillis;
+        initializeOpenTelemetry();
+    }
+
+    public String getIgnoredSteps() {
+        return ignoredSteps;
+    }
+
+    public void setIgnoredSteps(String ignoredSteps) {
+        this.ignoredSteps = ignoredSteps;
+    }
+
     /**
      * For visualisation in config.jelly
      */
     @Nonnull
     public String getVisualisationObservabilityBackendsString(){
         return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(d-> d.getDisplayName()).collect(Collectors.joining(", "));
+    }
+
+    public static JenkinsOpenTelemetryPluginConfiguration get() {
+        return GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+    }
+
+    /**
+     * Validates the period duration input.
+     *
+     * @param ignoredSteps the comma-separated list of steps to ignore.
+     * @return ok if the form input was valid
+     */
+    public FormValidation doCheckIgnoredSteps(@QueryParameter String ignoredSteps) {
+        if (ignoredSteps.matches("[A-Za-z0-9,]*")) {
+            return FormValidation.ok();
+        }
+        return FormValidation.error("Invalid format: \"%s\"", ignoredSteps);
     }
 }

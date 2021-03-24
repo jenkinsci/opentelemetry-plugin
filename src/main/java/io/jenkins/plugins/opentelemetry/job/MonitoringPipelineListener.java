@@ -11,6 +11,7 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Computer;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
@@ -63,8 +64,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
     @PostConstruct
     public void postConstruct() {
-        // TODO make this list configurable
-        this.ignoredSteps = Sets.newHashSet("dir", "echo", "isUnix", "pwd", "properties");
+        this.ignoredSteps = Sets.newHashSet(JenkinsOpenTelemetryPluginConfiguration.get().getIgnoredSteps().split(","));
     }
 
     @Override
