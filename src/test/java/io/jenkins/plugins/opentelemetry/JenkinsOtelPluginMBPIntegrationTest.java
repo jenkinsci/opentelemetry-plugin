@@ -12,21 +12,16 @@ import jenkins.branch.BranchProperty;
 import jenkins.branch.BranchSource;
 import jenkins.branch.DefaultBranchPropertyStrategy;
 import jenkins.plugins.git.GitSCMSource;
-import jenkins.plugins.git.GitSampleRepoRule;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
 
 public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
-
-    @Rule
-    public GitSampleRepoRule sampleRepo = new GitSampleRepoRule();
 
     @Test
     public void testMultibranchPipelineStep() throws Exception {

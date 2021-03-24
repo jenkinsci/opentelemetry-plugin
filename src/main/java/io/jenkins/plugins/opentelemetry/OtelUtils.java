@@ -40,22 +40,42 @@ public class OtelUtils {
 
     @Nonnull
     public static String getProjectType(Run run) {
-        if (run == null) {
-            return "unknown";
-        }
-        if (run instanceof FreeStyleBuild) {
+        if (isFreestyle(run)) {
             return "freestyle";
         }
-        if (run instanceof WorkflowRun) {
-            if (run.getParent().getParent() instanceof WorkflowMultiBranchProject) {
-                return "multibranch";
-            } else {
-                return "workflow";
-            }
+        if (isMultibranch(run)) {
+            return "multibranch";
+        }
+        if (isWorkflow(run)) {
+            return "workflow";
         }
         // TODO: support for
         // https://github.com/jenkinsci/matrix-project-plugin/blob/master/src/main/java/hudson/matrix/MatrixBuild.java#L70
         return "unknown";
+    }
+
+    @Nonnull
+    public static boolean isMultibranch(Run run) {
+        if (run == null) {
+            return false;
+        }
+        return (run instanceof WorkflowRun && run.getParent().getParent() instanceof WorkflowMultiBranchProject);
+    }
+
+    @Nonnull
+    public static boolean isWorkflow(Run run) {
+        if (run == null) {
+            return false;
+        }
+        return (run instanceof WorkflowRun && !(run.getParent().getParent() instanceof WorkflowMultiBranchProject));
+    }
+
+    @Nonnull
+    public static boolean isFreestyle(Run run) {
+        if (run == null) {
+            return false;
+        }
+        return (run instanceof FreeStyleBuild);
     }
 
     @Nonnull
