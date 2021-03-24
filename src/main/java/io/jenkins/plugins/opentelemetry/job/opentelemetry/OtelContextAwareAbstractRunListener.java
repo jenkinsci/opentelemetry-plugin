@@ -21,6 +21,7 @@ import io.opentelemetry.context.Scope;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -44,8 +45,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     @Override
     public final void onCompleted(Run run, @NonNull TaskListener listener) {
-        try (Scope ignored = getTraceService().setupContext(run)) {
-            verifyNotNull(ignored, "No span found for %s", run);
+        try (Scope scope = getTraceService().setupContext(run)) {
             this._onCompleted(run, listener);
         }
     }
@@ -55,8 +55,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     @Override
     public final void onFinalized(Run run) {
-        try (Scope ignored = getTraceService().setupContext(run)) {
-            verifyNotNull(ignored, "No span found for %s", run);
+        try (Scope scope = getTraceService().setupContext(run)) {
             this._onFinalized(run);
         }
     }
@@ -67,8 +66,6 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     @Override
     public final void onInitialize(Run run) {
-        Scope ignored = getTraceService().setupContext(run);
-        verify(ignored == null, "No span should be defined for %s");
         this._onInitialize(run);
     }
 
@@ -77,8 +74,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     @Override
     public final void onStarted(Run run, TaskListener listener) {
-        try (Scope ignored = getTraceService().setupContext(run)) {
-            verifyNotNull(ignored, "No span found for %s", run);
+        try (Scope scope = getTraceService().setupContext(run)) {
             this._onStarted(run, listener);
         }
     }
@@ -89,7 +85,6 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     @Override
     public final Environment setUpEnvironment(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
         try (Scope ignored = getTraceService().setupContext(build)) {
-            verifyNotNull(ignored, "No span found for %s", build);
             return this._setUpEnvironment(build, launcher, listener);
         }
     }
@@ -102,7 +97,6 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     @Override
     public final void onDeleted(Run run) {
         try (Scope ignored = getTraceService().setupContext(run)) {
-            verifyNotNull(ignored, "No span found for %s", run);
             this._onDeleted(run);
         }
     }

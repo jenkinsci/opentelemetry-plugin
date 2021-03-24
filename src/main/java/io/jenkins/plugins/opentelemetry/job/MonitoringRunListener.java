@@ -82,9 +82,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     @Override
     public void _onInitialize(Run run) {
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - onInitialize");
-        if (this.getTraceService().getSpan(run) != null) {
-            LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + " - Unexpected existing span: " + this.getTraceService().getSpan(run));
-        }
+
         activeRun.incrementAndGet();
 
         String rootSpanName = this.spanNamingStrategy.getRootSpanName(run);
@@ -176,7 +174,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - end " + OtelUtils.toDebugString(pipelinePhaseSpan));
 
         this.getTraceService().removeJobPhaseSpan(run, pipelinePhaseSpan);
-        Span newCurrentSpan = verifyNotNull(this.getTraceService().getSpan(run), "Failure to find pipeline root span for %s", run);
+        Span newCurrentSpan = this.getTraceService().getSpan(run);
         Scope newScope = newCurrentSpan.makeCurrent();
         Context.current().with(RunContextKey.KEY, run);
         return newScope;

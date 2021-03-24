@@ -15,10 +15,9 @@ import hudson.Extension;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
@@ -27,11 +26,13 @@ import org.jenkinsci.plugins.workflow.graph.AtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -39,7 +40,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verify;
-import static com.google.common.base.Verify.verifyNotNull;
 
 @Extension
 public class OtelTraceService {
@@ -50,7 +50,7 @@ public class OtelTraceService {
 
     private Tracer tracer;
 
-    private SpanNamingStrategy spanNamingStrategy;
+    private Tracer noOpTracer;
 
     public OtelTraceService() {
         initialize();
@@ -65,40 +65,26 @@ public class OtelTraceService {
         spansByRun = new ConcurrentHashMap();
     }
 
-    @CheckForNull
+    @Nonnull
     public Span getSpan(@Nonnull Run run) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        RunSpans runSpans = this.spansByRun.get(runIdentifier);
-        if (runSpans == null) {
-            return null;
-        }
+        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
+
         verify(runSpans.pipelineStepSpansByFlowNodeId.isEmpty(), run.getFullDisplayName() + " - Can't access run phase span while there are remaining pipeline step spans: " + runSpans);
         LOGGER.log(Level.FINEST, () -> "getSpan(" + run.getFullDisplayName() + ") - " + runSpans);
-        return Iterables.getLast(runSpans.runPhasesSpans, null);
+        final Span span = Iterables.getLast(runSpans.runPhasesSpans, null);
+        if (span == null) {
+            LOGGER.log(Level.FINE, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
+            return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
+        }
+        return span;
     }
 
     @Nonnull
     public Span getSpan(@Nonnull Run run, FlowNode flowNode) {
 
         RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromRun(run);
-        RunSpans runSpans = this.spansByRun.get(runIdentifier);
-        if (runSpans == null) {
-            LOGGER.log(Level.INFO, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
-            RunSpans newRunSpans = new RunSpans();
-            final String spanName = this.spanNamingStrategy.getRootSpanNameForRecoveredSpan(run);
-            SpanBuilder rootSpanBuilder = getTracer().spanBuilder(spanName)
-                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
-                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
-                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber());
-
-            Span rootSpan = rootSpanBuilder.startSpan();
-            newRunSpans.runPhasesSpans.add(rootSpan);
-            this.spansByRun.put(runIdentifier, newRunSpans);
-
-            Span runSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME + "_recovered-after-restart").setParent(Context.current().with(rootSpan)).startSpan();
-
-            return runSpan;
-        }
+        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
         LOGGER.log(Level.FINEST, () -> "getSpan(" + run.getFullDisplayName() + ", FlowNode[name" + flowNode.getDisplayName() + ", function:" + flowNode.getDisplayFunctionName() + ", id=" + flowNode.getId() + "]) -  " + runSpans);
         LOGGER.log(Level.FINEST, () -> "parentFlowNodes: " + flowNode.getParents().stream().map(node -> node.getDisplayName() + ", id: " + node.getId()).collect(Collectors.toList()));
 
@@ -111,9 +97,13 @@ public class OtelTraceService {
                 return pipelineSpanContext.getSpan();
             }
         }
-        final Span last = Iterables.getLast(runSpans.runPhasesSpans);
-        LOGGER.log(Level.FINEST, () -> "span: " + last.getSpanContext().getSpanId());
-        return last;
+        final Span span = Iterables.getLast(runSpans.runPhasesSpans, null);
+        if (span == null) {
+            LOGGER.log(Level.FINE, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
+            return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
+        }
+        LOGGER.log(Level.FINEST, () -> "span: " + span.getSpanContext().getSpanId());
+        return span;
     }
 
     @Nonnull
@@ -123,7 +113,7 @@ public class OtelTraceService {
         return ancestors;
     }
 
-    public void buildListOfAncestors(@Nonnull FlowNode flowNode, List<FlowNode> parents) {
+    public void buildListOfAncestors(@Nonnull FlowNode flowNode, @Nonnull List<FlowNode> parents) {
         parents.add(flowNode);
         if (flowNode instanceof StepEndNode) {
             StepEndNode endNode = (StepEndNode) flowNode;
@@ -138,7 +128,7 @@ public class OtelTraceService {
 
     public void removePipelineStepSpan(@Nonnull Run run, @Nonnull FlowNode flowNode, @Nonnull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        RunSpans runSpans = this.spansByRun.get(runIdentifier);
+        RunSpans runSpans = this.spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
 
         FlowNode startSpanNode;
         if (flowNode instanceof AtomNode) {
@@ -155,7 +145,10 @@ public class OtelTraceService {
         }
         final Collection<PipelineSpanContext> pipelineSpanContexts = runSpans.pipelineStepSpansByFlowNodeId.get(startSpanNode.getId());
         PipelineSpanContext pipelineSpanContext = Iterables.getLast(pipelineSpanContexts, null);
-        verifyNotNull(pipelineSpanContext, "%s - No span found for node %s: %s", run, startSpanNode, span, runSpans);
+        if (pipelineSpanContext == null) {
+            LOGGER.log(Level.FINE, () -> "Silently ignore removing missing span context for node [id=" + flowNode.getId() + ", function: " + flowNode.getDisplayFunctionName() + "] of run " + run.getFullDisplayName() + ". Jenkins may have restarted");
+            return;
+        }
         final boolean removed = pipelineSpanContexts.remove(pipelineSpanContext);
         verify(removed == true, "%s - Failure to remove span %s for node %s: %s", run, pipelineSpanContext, startSpanNode, span, runSpans);
 
@@ -163,11 +156,16 @@ public class OtelTraceService {
 
     public void removeJobPhaseSpan(@Nonnull Run run, @Nonnull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        RunSpans runSpans = this.spansByRun.get(runIdentifier);
+        RunSpans runSpans = this.spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
 
         verify(runSpans.pipelineStepSpansByFlowNodeId.isEmpty(), "%s - Try to remove span associated with a run phase even though there are remain spans associated with flow nodes: %s", run, runSpans);
 
         Span lastSpan = Iterables.getLast(runSpans.runPhasesSpans, null);
+        if (lastSpan == null) {
+            LOGGER.log(Level.FINE, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
+            return;
+        }
+
         if (Objects.equals(span, lastSpan)) {
             boolean removed = runSpans.runPhasesSpans.remove(span);
             verify(removed, run.getFullDisplayName() + "Failure to remove span from runPhasesSpans: " + span);
@@ -208,23 +206,20 @@ public class OtelTraceService {
     @Inject
     public void setJenkinsOtelPlugin(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.tracer = openTelemetrySdkProvider.getTracer();
+        this.noOpTracer = TracerProvider.noop().get("jenkins");
     }
 
     /**
      * @param run
-     * @return {@code null} if no {@link Span} has been created for the given {@link Run}
+     * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
      */
-    @CheckForNull
+    @Nonnull
     @MustBeClosed
     public Scope setupContext(@Nonnull Run run) {
         Span span = getSpan(run);
-        if (span == null) {
-            return null;
-        } else {
-            Scope scope = span.makeCurrent();
-            Context.current().with(RunContextKey.KEY, run);
-            return scope;
-        }
+        Scope scope = span.makeCurrent();
+        Context.current().with(RunContextKey.KEY, run);
+        return scope;
     }
 
     public Tracer getTracer() {
@@ -349,10 +344,5 @@ public class OtelTraceService {
         public int compareTo(RunIdentifier o) {
             return ComparisonChain.start().compare(this.jobName, o.jobName).compare(this.runNumber, o.runNumber).result();
         }
-    }
-
-    @Inject
-    public void setSpanNamingStrategy(SpanNamingStrategy spanNamingStrategy) {
-        this.spanNamingStrategy = spanNamingStrategy;
     }
 }
