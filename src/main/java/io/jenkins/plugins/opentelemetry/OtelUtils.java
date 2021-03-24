@@ -55,6 +55,34 @@ public class OtelUtils {
     }
 
     @Nonnull
+    public static String getMultibranchType(Run run) {
+        if (isMultibranch(run)) {
+            if (isMultibranchPullRequest(run)) {
+                return "pr";
+            }
+            if (isMultibranchBranch(run)) {
+                return "branch";
+            }
+            // TODO: discover tag type.
+        }
+        return "unknown";
+    }
+
+    public static boolean isMultibranchPullRequest(Run run) {
+        if (isMultibranch(run)) {
+            return run.getParent().getName().startsWith("PR-");
+        }
+        return false;
+    }
+
+    public static boolean isMultibranchBranch(Run run) {
+        if (isMultibranch(run)) {
+            return !run.getParent().getName().startsWith("PR-");
+        }
+        return false;
+    }
+
+    @Nonnull
     public static boolean isMultibranch(Run run) {
         if (run == null) {
             return false;
