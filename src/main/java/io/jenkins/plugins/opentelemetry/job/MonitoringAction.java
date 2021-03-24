@@ -15,7 +15,6 @@ import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.*;
@@ -26,7 +25,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
 
     final String traceId;
     final String spanId;
-    String rootSpanName;
+    SpanNamingStrategy spanNamingStrategy;
     transient Run run;
     transient JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
 
@@ -38,15 +37,15 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
     @Override
     public void onAttached(Run<?, ?> r) {
         this.run = r;
-        this.rootSpanName = OtelTraceService.getRootSpanName(r);
         this.pluginConfiguration = ExtensionList.lookupSingleton(JenkinsOpenTelemetryPluginConfiguration.class);
+        this.spanNamingStrategy = this.pluginConfiguration.getSpanNamingStrategy();
     }
 
     @Override
     public void onLoad(Run<?, ?> r) {
         this.run = r;
-        this.rootSpanName = OtelTraceService.getRootSpanName(r);
         this.pluginConfiguration = ExtensionList.lookupSingleton(JenkinsOpenTelemetryPluginConfiguration.class);
+        this.spanNamingStrategy = this.pluginConfiguration.getSpanNamingStrategy();
     }
 
     @Override
@@ -90,7 +89,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         }
         Map<String, Object> binding = new HashMap<>();
         binding.put("serviceName", JenkinsOtelSemanticAttributes.SERVICE_NAME_JENKINS);
-        binding.put("rootSpanName", this.rootSpanName);
+        binding.put("rootSpanName", spanNamingStrategy.getRootSpanName(run));
         binding.put("traceId", this.traceId);
         binding.put("spanId", this.spanId);
         binding.put("startTime", Instant.ofEpochMilli(run.getStartTimeInMillis()));

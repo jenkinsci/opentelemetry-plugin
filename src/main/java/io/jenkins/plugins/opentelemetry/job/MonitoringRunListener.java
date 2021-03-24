@@ -5,16 +5,14 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import static com.google.common.base.Verify.*;
-
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.*;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongValueObserver;
@@ -27,12 +25,15 @@ import jenkins.model.Jenkins;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static com.google.common.base.Verify.verifyNotNull;
 
 @Extension
 public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
@@ -45,6 +46,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     private LongCounter runStartedCounter;
     private LongCounter runCompletedCounter;
     private LongCounter runAbortedCounter;
+
+    private SpanNamingStrategy spanNamingStrategy;
 
     @PostConstruct
     public void postConstruct() {
@@ -84,7 +87,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         }
         activeRun.incrementAndGet();
 
-        String rootSpanName = run.getParent().getFullName();
+        String rootSpanName = this.spanNamingStrategy.getRootSpanName(run);
         String runUrl = Objects.toString(Jenkins.get().getRootUrl(), "") + run.getUrl();
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(rootSpanName)
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, rootSpanName)
@@ -240,4 +243,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         if (buf.length() == 0) buf.append("Started");
     }
 
+    @Inject
+    public void setSpanNamingStrategy(SpanNamingStrategy spanNamingStrategy) {
+        this.spanNamingStrategy = spanNamingStrategy;
+    }
 }

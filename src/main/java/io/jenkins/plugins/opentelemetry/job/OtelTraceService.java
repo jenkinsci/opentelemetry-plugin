@@ -50,6 +50,8 @@ public class OtelTraceService {
 
     private Tracer tracer;
 
+    private SpanNamingStrategy spanNamingStrategy;
+
     public OtelTraceService() {
         initialize();
     }
@@ -83,7 +85,8 @@ public class OtelTraceService {
         if (runSpans == null) {
             LOGGER.log(Level.INFO, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
             RunSpans newRunSpans = new RunSpans();
-            SpanBuilder rootSpanBuilder = getTracer().spanBuilder(run.getParent().getFullName() + "_recovered-after-restart")
+            final String spanName = this.spanNamingStrategy.getRootSpanNameForRecoveredSpan(run);
+            SpanBuilder rootSpanBuilder = getTracer().spanBuilder(spanName)
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber());
@@ -348,8 +351,8 @@ public class OtelTraceService {
         }
     }
 
-    @Nonnull
-    public static String getRootSpanName(@Nonnull Run run) {
-        return run.getParent().getFullName();
+    @Inject
+    public void setSpanNamingStrategy(SpanNamingStrategy spanNamingStrategy) {
+        this.spanNamingStrategy = spanNamingStrategy;
     }
 }

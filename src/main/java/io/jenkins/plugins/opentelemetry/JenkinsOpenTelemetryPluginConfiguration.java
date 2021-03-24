@@ -12,6 +12,7 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
@@ -53,6 +54,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
+
+    private transient SpanNamingStrategy spanNamingStrategy;
 
     /**
      * The previously used configuration. Kept in memory to prevent unneeded reconfigurations.
@@ -190,6 +193,15 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Nonnull
     public String getVisualisationObservabilityBackendsString(){
         return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(d-> d.getDisplayName()).collect(Collectors.joining(", "));
+    }
+
+    @Inject
+    public void setSpanNamingStrategy(SpanNamingStrategy spanNamingStrategy) {
+        this.spanNamingStrategy = spanNamingStrategy;
+    }
+
+    public SpanNamingStrategy getSpanNamingStrategy() {
+        return spanNamingStrategy;
     }
 
     public static JenkinsOpenTelemetryPluginConfiguration get() {
