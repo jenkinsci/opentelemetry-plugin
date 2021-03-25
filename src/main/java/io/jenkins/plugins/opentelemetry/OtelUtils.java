@@ -10,6 +10,8 @@ import hudson.model.Run;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import jenkins.scm.api.SCMHead;
+import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
@@ -78,14 +80,14 @@ public class OtelUtils {
 
     public static boolean isMultibranchChangeRequest(Run run) {
         if (isMultibranch(run)) {
-            return run.getParent().getName().startsWith("PR-");
+            return (SCMHead.HeadByItem.findHead(run.getParent()) instanceof ChangeRequestSCMHead);
         }
         return false;
     }
 
     public static boolean isMultibranchBranch(Run run) {
         if (isMultibranch(run)) {
-            return !run.getParent().getName().startsWith("PR-");
+            return !isMultibranchChangeRequest(run);
         }
         return false;
     }
