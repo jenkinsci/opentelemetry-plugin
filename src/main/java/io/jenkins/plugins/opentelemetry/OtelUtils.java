@@ -18,6 +18,14 @@ import javax.annotation.Nullable;
 import java.util.function.Function;
 
 public class OtelUtils {
+
+    public static final String FREESTYLE = "freestyle";
+    public static final String MULTIBRANCH = "multibranch";
+    public static final String WORKFLOW = "workflow";
+    public static final String UNKNOWN = "unknown";
+    public static final String BRANCH = "branch";
+    public static final String CHANGE_REQUEST = "change_request";
+
     @Nonnull
     public static Function<Span, String> spanToDebugString() {
         return span -> {
@@ -41,34 +49,34 @@ public class OtelUtils {
     @Nonnull
     public static String getProjectType(Run run) {
         if (isFreestyle(run)) {
-            return "freestyle";
+            return FREESTYLE;
         }
         if (isMultibranch(run)) {
-            return "multibranch";
+            return MULTIBRANCH;
         }
         if (isWorkflow(run)) {
-            return "workflow";
+            return WORKFLOW;
         }
         // TODO: support for
         // https://github.com/jenkinsci/matrix-project-plugin/blob/master/src/main/java/hudson/matrix/MatrixBuild.java#L70
-        return "unknown";
+        return UNKNOWN;
     }
 
     @Nonnull
     public static String getMultibranchType(Run run) {
         if (isMultibranch(run)) {
-            if (isMultibranchPullRequest(run)) {
-                return "pr";
+            if (isMultibranchChangeRequest(run)) {
+                return CHANGE_REQUEST;
             }
             if (isMultibranchBranch(run)) {
-                return "branch";
+                return BRANCH;
             }
             // TODO: discover tag type.
         }
-        return "unknown";
+        return UNKNOWN;
     }
 
-    public static boolean isMultibranchPullRequest(Run run) {
+    public static boolean isMultibranchChangeRequest(Run run) {
         if (isMultibranch(run)) {
             return run.getParent().getName().startsWith("PR-");
         }
