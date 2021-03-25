@@ -43,10 +43,6 @@ public class OtelEnvironmentContributor extends EnvironmentContributor {
             return;
         }
         Span span = otelTraceService.getSpan(run);
-        if (span == null) {
-            LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + "buildEnvironmentFor() NO span found");
-            return;
-        }
         String spanId = span.getSpanContext().getSpanId();
         String traceId = span.getSpanContext().getTraceId();
         try (Scope ignored = span.makeCurrent()) {

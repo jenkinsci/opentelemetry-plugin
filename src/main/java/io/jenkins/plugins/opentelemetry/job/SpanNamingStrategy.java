@@ -49,11 +49,6 @@ public class SpanNamingStrategy {
         }
     }
 
-    @Nonnull
-    public String getRootSpanNameForRecoveredSpan(@Nonnull Run run) {
-        return getRootSpanName(run) + "_recovered-after-restart";
-    }
-
     @VisibleForTesting
     @Nonnull
     protected String getChangeRequestRootSpanName(@Nonnull String jobFullName) {
