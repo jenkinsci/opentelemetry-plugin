@@ -51,10 +51,6 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
             span = otelTraceService.getSpan(run, flowNode);
         }
 
-        if (span == null) {
-            LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + "buildEnvironmentFor() NO span found for context " + stepContext);
-            return;
-        }
         String spanId = span.getSpanContext().getSpanId();
         String traceId = span.getSpanContext().getTraceId();
         try (Scope ignored = span.makeCurrent()) {
