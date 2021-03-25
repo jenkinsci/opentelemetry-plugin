@@ -12,6 +12,7 @@ import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
+import jenkins.scm.api.mixin.TagSCMHead;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
@@ -27,6 +28,7 @@ public class OtelUtils {
     public static final String UNKNOWN = "unknown";
     public static final String BRANCH = "branch";
     public static final String CHANGE_REQUEST = "change_request";
+    public static final String TAG = "tag";
 
     @Nonnull
     public static Function<Span, String> spanToDebugString() {
@@ -73,9 +75,18 @@ public class OtelUtils {
             if (isMultibranchBranch(run)) {
                 return BRANCH;
             }
-            // TODO: discover tag type.
+            if (isMultibranchTag(run)) {
+                return TAG;
+            }
         }
         return UNKNOWN;
+    }
+
+    public static boolean isMultibranchTag(Run run) {
+        if (isMultibranch(run)) {
+            return (SCMHead.HeadByItem.findHead(run.getParent()) instanceof TagSCMHead);
+        }
+        return false;
     }
 
     public static boolean isMultibranchChangeRequest(Run run) {
@@ -87,7 +98,7 @@ public class OtelUtils {
 
     public static boolean isMultibranchBranch(Run run) {
         if (isMultibranch(run)) {
-            return !isMultibranchChangeRequest(run);
+            return !(isMultibranchChangeRequest(run) || isMultibranchTag(run));
         }
         return false;
     }

@@ -36,6 +36,7 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
     }
 
     @Test
@@ -51,6 +52,7 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
     }
 
     @Test
@@ -75,6 +77,7 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.BRANCH));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(true));
+        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
     }
 
     @Test
@@ -86,5 +89,6 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(OtelUtils.getMultibranchType(null), CoreMatchers.is(OtelUtils.UNKNOWN));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(null), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(null), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(null), CoreMatchers.is(false));
     }
 }
