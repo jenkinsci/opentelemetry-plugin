@@ -39,7 +39,7 @@ public class ElasticBackend extends ObservabilityBackend {
                 "?rangeFrom=${startTime.minusSeconds(600)}" +
                 "&rangeTo=${startTime.plusSeconds(600)}" +
                 "&transactionName=${rootSpanName}" +
-                "&transactionType=unknown" +
+                "&transactionType=custom" +
                 "&latencyAggregationType=avg" +
                 "&traceId=${traceId}" +
                 "&transactionId=${spanId}";
