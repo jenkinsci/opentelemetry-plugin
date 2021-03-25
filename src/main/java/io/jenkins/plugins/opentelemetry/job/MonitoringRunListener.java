@@ -190,6 +190,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             if (runResult == null) {
                 parentSpan.setStatus(StatusCode.UNSET);
             } else {
+                if (OtelUtils.isMultibranch(run)) {
+                    parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE, OtelUtils.getMultibranchType(run));
+                }
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMPLETED, runResult.completeBuild);
                 String description = run.getDescription();
                 if (description != null) {

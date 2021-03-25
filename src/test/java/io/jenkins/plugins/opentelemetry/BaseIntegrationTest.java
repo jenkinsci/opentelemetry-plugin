@@ -19,6 +19,7 @@ import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import jenkins.plugins.git.GitSampleRepoRule;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -29,6 +30,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.jvnet.hudson.test.BuildWatcher;
 
 import javax.annotation.Nonnull;
@@ -62,6 +64,9 @@ public class BaseIntegrationTest {
     @ClassRule
     @ConfiguredWithCode("jcasc-elastic-backend.yml")
     public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
+
+    @Rule
+    public GitSampleRepoRule sampleRepo = new GitSampleRepoRule();
 
     static OpenTelemetrySdkProvider openTelemetrySdkProvider;
 

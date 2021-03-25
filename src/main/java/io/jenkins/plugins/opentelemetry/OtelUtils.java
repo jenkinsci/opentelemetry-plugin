@@ -10,6 +10,8 @@ import hudson.model.Run;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import jenkins.scm.api.SCMHead;
+import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
@@ -18,6 +20,14 @@ import javax.annotation.Nullable;
 import java.util.function.Function;
 
 public class OtelUtils {
+
+    public static final String FREESTYLE = "freestyle";
+    public static final String MULTIBRANCH = "multibranch";
+    public static final String WORKFLOW = "workflow";
+    public static final String UNKNOWN = "unknown";
+    public static final String BRANCH = "branch";
+    public static final String CHANGE_REQUEST = "change_request";
+
     @Nonnull
     public static Function<Span, String> spanToDebugString() {
         return span -> {
@@ -40,22 +50,70 @@ public class OtelUtils {
 
     @Nonnull
     public static String getProjectType(Run run) {
-        if (run == null) {
-            return "unknown";
+        if (isFreestyle(run)) {
+            return FREESTYLE;
         }
-        if (run instanceof FreeStyleBuild) {
-            return "freestyle";
+        if (isMultibranch(run)) {
+            return MULTIBRANCH;
         }
-        if (run instanceof WorkflowRun) {
-            if (run.getParent().getParent() instanceof WorkflowMultiBranchProject) {
-                return "multibranch";
-            } else {
-                return "workflow";
-            }
+        if (isWorkflow(run)) {
+            return WORKFLOW;
         }
         // TODO: support for
         // https://github.com/jenkinsci/matrix-project-plugin/blob/master/src/main/java/hudson/matrix/MatrixBuild.java#L70
-        return "unknown";
+        return UNKNOWN;
+    }
+
+    @Nonnull
+    public static String getMultibranchType(Run run) {
+        if (isMultibranch(run)) {
+            if (isMultibranchChangeRequest(run)) {
+                return CHANGE_REQUEST;
+            }
+            if (isMultibranchBranch(run)) {
+                return BRANCH;
+            }
+            // TODO: discover tag type.
+        }
+        return UNKNOWN;
+    }
+
+    public static boolean isMultibranchChangeRequest(Run run) {
+        if (isMultibranch(run)) {
+            return (SCMHead.HeadByItem.findHead(run.getParent()) instanceof ChangeRequestSCMHead);
+        }
+        return false;
+    }
+
+    public static boolean isMultibranchBranch(Run run) {
+        if (isMultibranch(run)) {
+            return !isMultibranchChangeRequest(run);
+        }
+        return false;
+    }
+
+    @Nonnull
+    public static boolean isMultibranch(Run run) {
+        if (run == null) {
+            return false;
+        }
+        return (run instanceof WorkflowRun && run.getParent().getParent() instanceof WorkflowMultiBranchProject);
+    }
+
+    @Nonnull
+    public static boolean isWorkflow(Run run) {
+        if (run == null) {
+            return false;
+        }
+        return (run instanceof WorkflowRun && !(run.getParent().getParent() instanceof WorkflowMultiBranchProject));
+    }
+
+    @Nonnull
+    public static boolean isFreestyle(Run run) {
+        if (run == null) {
+            return false;
+        }
+        return (run instanceof FreeStyleBuild);
     }
 
     @Nonnull
