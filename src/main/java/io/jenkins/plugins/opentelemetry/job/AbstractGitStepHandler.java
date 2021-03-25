@@ -9,6 +9,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.eclipse.jgit.transport.URIish;
@@ -61,6 +62,7 @@ public abstract class AbstractGitStepHandler implements StepHandler {
                     .setAttribute(SemanticAttributes.PEER_SERVICE, "git")
                     .setAttribute(SemanticAttributes.HTTP_URL, sanitizeUrl(gitUri))
                     .setAttribute(SemanticAttributes.HTTP_METHOD, "POST")
+                    .setSpanKind(SpanKind.CLIENT)
             ;
 
         } else if ("ssh".equals(gitUri.getScheme())
@@ -77,6 +79,7 @@ public abstract class AbstractGitStepHandler implements StepHandler {
                     .setAttribute(SemanticAttributes.NET_PEER_NAME, host)
                     .setAttribute(SemanticAttributes.PEER_SERVICE, "git")
                     .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP.getValue())
+                    .setSpanKind(SpanKind.CLIENT)
             ;
         } else if (("file".equals(gitUri.getScheme())
                 || (gitUri.getScheme() == null && gitUri.getHost() == null))) {
