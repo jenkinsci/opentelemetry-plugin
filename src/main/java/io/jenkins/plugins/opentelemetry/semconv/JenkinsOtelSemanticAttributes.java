@@ -87,4 +87,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final String JENKINS_JOB_SPAN_PHASE_RUN_NAME = "Phase: Run";
     public static final String JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME = "Phase: Finalise";
 
+    public static final AttributeKey<String>        ELASTIC_TRANSACTION_TYPE = AttributeKey.stringKey("type");
+
+
 }
