@@ -36,8 +36,8 @@ Here are few examples of architecture:
 
 | Attribute                        | Description  | Type |
 |----------------------------------|--------------|------|
-| ci.pipeline.id                   | Job Name | String |
-| ci.pipeline.name                 | Job Name (user friendly) | String |
+| ci.pipeline.id                   | Job name | String |
+| ci.pipeline.name                 | Job name (user friendly) | String |
 | ci.pipeline.type                 | Job type | Enum (`freestyle`, `workflow`, `multibranch`, `unknown`) |
 | ci.pipeline.multibranch.type     | Multibranch type | Enum (`branch`, `tag`, `change_request`) |
 | ci.pipeline.node.id              | Name of the node | String |
@@ -51,6 +51,20 @@ Here are few examples of architecture:
 | ci.pipeline.parameter.sensitive  | Whether the information contained in this parameter is sensitive or security related. | Boolean |
 | ci.pipeline.parameter.name       | Name of the parameter | String |
 | ci.pipeline.parameter.value      | Value of the parameter | String |
+
+##### Spans
+
+| Attribute                        | Description  | Type |
+|----------------------------------|--------------|------|
+| jenkins.pipeline.step.name       | Step name (user friendly) | String |
+| jenkins.pipeline.step.type       | Step name | String |
+| jenkins.pipeline.step.id         | Step id   | String |
+| jenkins.pipeline.step.node.label | Labels attached to the node | String |
+| git.branch                       | Git branch name | String |
+| git.repository                   | Git repository | String |
+| git.username                     | Git user | String |
+| jenkins.url                      | Jenkins URL | String |
+| jenkins.computer.name            | Name of the node | String |
 
 ### Metrics on Jenkins health indicators
 
