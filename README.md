@@ -39,7 +39,7 @@ Here are few examples of architecture:
 * Built in integration with [Elastic Observability](https://www.elastic.co/observability), [Jaeger](https://www.jaegertracing.io/), and [Zipkin](https://zipkin.io/).
    Other OpenTelemetry compatible distributed tracing solutions are also supported.
 
-#### Attributes
+#### Attributes
 
 ##### Transactions
 
