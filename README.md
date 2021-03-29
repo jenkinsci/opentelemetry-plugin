@@ -94,10 +94,9 @@ Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solu
 * Configure the Jenkins OpenTelemetry plugin navigating to the "Manage Jenkins / Configure System" screen
 * In the OpenTelemetry section define
   * "OTLP GRPC Endpoint": the hostname and port of the OpenTelemetry GRPC Protocol (OTLP GRPC) endpoint, typically an OpenTelemetry Collector or directly an Observability backend that supports the OTLP GRPC protocol
-  * "Use TLS": check if your OTLP GRPC uses TLS
-  * "GRPC Authentication Token Header" : name of the authentication header if header based authentication is used
-  * "GRPC Authentication Token": token when using header based authentication
-  * Visualization backend: the backend used to visualize job executions as traces.
+  * "Header Authentication" : name of the authentication header if header based authentication is used.
+  * "Bearer Token Authentication": Bearer token when using header based authentication.
+  * Visualization: the backend used to visualize job executions as traces.
     * Elastic Observability
     * Jaeger
     * Zipkin
@@ -244,6 +243,8 @@ unclassified:
       - zipkin:
           zipkinBaseUrl: "http://localhost:9411/"
 ```
+
+See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folder with various samples.
 
 For more details see the configuration as code plugin documentation:
 <https://github.com/jenkinsci/configuration-as-code-plugin#getting-started>
