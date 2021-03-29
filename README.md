@@ -6,6 +6,15 @@
 [![GitHub release](https://img.shields.io/github/release/jenkinsci/opentelemetry-plugin.svg?label=changelog)](https://github.com/jenkinsci/opentelemetry-plugin/releases/latest)
 [![Jenkins Plugin Installs](https://img.shields.io/jenkins/plugin/i/opentelemetry.svg?color=blue)](https://plugins.jenkins.io/opentelemetry)
 
+
+- [Introduction](#introduction)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [Examples](#screenshots)
+- [Configuration as Code](#configuration-as-code)
+- [Contributing](#contributing)
+
 ## Introduction
 
 Collect Jenkins monitoring data through OpenTelemetry.
