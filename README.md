@@ -30,6 +30,28 @@ Here are few examples of architecture:
 * Built in integration with [Elastic Observability](https://www.elastic.co/observability), [Jaeger](https://www.jaegertracing.io/), and [Zipkin](https://zipkin.io/).
    Other OpenTelemetry compatible distributed tracing solutions are also supported.
 
+#### Attributes
+
+##### Transactions
+
+| Attribute                        | Description  | Type |
+|----------------------------------|--------------|------|
+| ci.pipeline.id                   | Job Name | String |
+| ci.pipeline.name                 | Job Name (user friendly) | String |
+| ci.pipeline.type                 | Job type | Enum (`freestyle`, `workflow`, `multibranch`, `unknown`) |
+| ci.pipeline.multibranch.type     | Multibranch type | Enum (`branch`, `tag`, `change_request`) |
+| ci.pipeline.node.id              | Name of the node | String |
+| ci.pipeline.run.completed        | Is this a complete build? | Boolean |
+| ci.pipeline.run.durationMillis   | Build duration | Long |
+| ci.pipeline.run.description      | Build description | String |
+| ci.pipeline.run.number           | Build number | Long |
+| ci.pipeline.run.result           | Build result | Enum (`aborted`, `success`, `failure`, `not_build` and `unstable`) |
+| ci.pipeline.run.url              | Build URL | String |
+| ci.pipeline.run.user             | Who triggered the build | String |
+| ci.pipeline.parameter.sensitive  | Whether the information contained in this parameter is sensitive or security related. | Boolean |
+| ci.pipeline.parameter.name       | Name of the parameter | String |
+| ci.pipeline.parameter.value      | Value of the parameter | String |
+
 ### Metrics on Jenkins health indicators
 
 | Metrics                          | Description  |
