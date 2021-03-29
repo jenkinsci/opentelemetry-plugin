@@ -6,6 +6,15 @@
 [![GitHub release](https://img.shields.io/github/release/jenkinsci/opentelemetry-plugin.svg?label=changelog)](https://github.com/jenkinsci/opentelemetry-plugin/releases/latest)
 [![Jenkins Plugin Installs](https://img.shields.io/jenkins/plugin/i/opentelemetry.svg?color=blue)](https://plugins.jenkins.io/opentelemetry)
 
+
+- [Introduction](#introduction)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [Examples](#screenshots)
+- [Configuration as Code](#configuration-as-code)
+- [Contributing](#contributing)
+
 ## Introduction
 
 Collect Jenkins monitoring data through OpenTelemetry.
@@ -29,6 +38,42 @@ Here are few examples of architecture:
    * Invocations of external systems (e.g. git checkout...)
 * Built in integration with [Elastic Observability](https://www.elastic.co/observability), [Jaeger](https://www.jaegertracing.io/), and [Zipkin](https://zipkin.io/).
    Other OpenTelemetry compatible distributed tracing solutions are also supported.
+
+#### Attributes
+
+##### Transactions
+
+| Attribute                        | Description  | Type |
+|----------------------------------|--------------|------|
+| ci.pipeline.id                   | Job name | String |
+| ci.pipeline.name                 | Job name (user friendly) | String |
+| ci.pipeline.type                 | Job type | Enum (`freestyle`, `workflow`, `multibranch`, `unknown`) |
+| ci.pipeline.multibranch.type     | Multibranch type | Enum (`branch`, `tag`, `change_request`) |
+| ci.pipeline.node.id              | Name of the node | String |
+| ci.pipeline.run.completed        | Is this a complete build? | Boolean |
+| ci.pipeline.run.durationMillis   | Build duration | Long |
+| ci.pipeline.run.description      | Build description | String |
+| ci.pipeline.run.number           | Build number | Long |
+| ci.pipeline.run.result           | Build result | Enum (`aborted`, `success`, `failure`, `not_build` and `unstable`) |
+| ci.pipeline.run.url              | Build URL | String |
+| ci.pipeline.run.user             | Who triggered the build | String |
+| ci.pipeline.parameter.sensitive  | Whether the information contained in this parameter is sensitive or security related. | Boolean |
+| ci.pipeline.parameter.name       | Name of the parameter | String |
+| ci.pipeline.parameter.value      | Value of the parameter | String |
+
+##### Spans
+
+| Attribute                        | Description  | Type |
+|----------------------------------|--------------|------|
+| jenkins.pipeline.step.name       | Step name (user friendly) | String |
+| jenkins.pipeline.step.type       | Step name | String |
+| jenkins.pipeline.step.id         | Step id   | String |
+| jenkins.pipeline.step.node.label | Labels attached to the node | String |
+| git.branch                       | Git branch name | String |
+| git.repository                   | Git repository | String |
+| git.username                     | Git user | String |
+| jenkins.url                      | Jenkins URL | String |
+| jenkins.computer.name            | Name of the node | String |
 
 ### Metrics on Jenkins health indicators
 
@@ -58,10 +103,9 @@ Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solu
 * Configure the Jenkins OpenTelemetry plugin navigating to the "Manage Jenkins / Configure System" screen
 * In the OpenTelemetry section define
   * "OTLP GRPC Endpoint": the hostname and port of the OpenTelemetry GRPC Protocol (OTLP GRPC) endpoint, typically an OpenTelemetry Collector or directly an Observability backend that supports the OTLP GRPC protocol
-  * "Use TLS": check if your OTLP GRPC uses TLS
-  * "GRPC Authentication Token Header" : name of the authentication header if header based authentication is used
-  * "GRPC Authentication Token": token when using header based authentication
-  * Visualization backend: the backend used to visualize job executions as traces.
+  * "Header Authentication" : name of the authentication header if header based authentication is used.
+  * "Bearer Token Authentication": Bearer token when using header based authentication.
+  * Visualization: the backend used to visualize job executions as traces.
     * Elastic Observability
     * Jaeger
     * Zipkin
@@ -208,6 +252,8 @@ unclassified:
       - zipkin:
           zipkinBaseUrl: "http://localhost:9411/"
 ```
+
+See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folder with various samples.
 
 For more details see the configuration as code plugin documentation:
 <https://github.com/jenkinsci/configuration-as-code-plugin#getting-started>
