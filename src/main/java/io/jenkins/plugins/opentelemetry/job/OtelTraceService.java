@@ -24,6 +24,7 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.graph.AtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 
 import javax.annotation.Nonnull;
@@ -68,14 +69,14 @@ public class OtelTraceService {
     @Nonnull
     public Span getSpan(@Nonnull Run run) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
+        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans(noOpTracer)); // absent when Jenkins restarts during build
 
         verify(runSpans.pipelineStepSpansByFlowNodeId.isEmpty(), run.getFullDisplayName() + " - Can't access run phase span while there are remaining pipeline step spans: " + runSpans);
         LOGGER.log(Level.FINEST, () -> "getSpan(" + run.getFullDisplayName() + ") - " + runSpans);
-        final Span span = Iterables.getLast(runSpans.runPhasesSpans, null);
+        Span span = Iterables.getLast(runSpans.runPhasesSpans, null);
         if (span == null) {
             LOGGER.log(Level.FINE, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
-            return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
+            span = runSpans.getTracer().spanBuilder("recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
         }
         return span;
     }
@@ -84,7 +85,7 @@ public class OtelTraceService {
     public Span getSpan(@Nonnull Run run, FlowNode flowNode) {
 
         RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromRun(run);
-        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
+        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans(noOpTracer)); // absent when Jenkins restarts during build
         LOGGER.log(Level.FINEST, () -> "getSpan(" + run.getFullDisplayName() + ", FlowNode[name" + flowNode.getDisplayName() + ", function:" + flowNode.getDisplayFunctionName() + ", id=" + flowNode.getId() + "]) -  " + runSpans);
         LOGGER.log(Level.FINEST, () -> "parentFlowNodes: " + flowNode.getParents().stream().map(node -> node.getDisplayName() + ", id: " + node.getId()).collect(Collectors.toList()));
 
@@ -97,12 +98,11 @@ public class OtelTraceService {
                 return pipelineSpanContext.getSpan();
             }
         }
-        final Span span = Iterables.getLast(runSpans.runPhasesSpans, null);
+        Span span = Iterables.getLast(runSpans.runPhasesSpans, null);
         if (span == null) {
             LOGGER.log(Level.FINE, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
-            return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
+            span = runSpans.getTracer().spanBuilder("recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
         }
-        LOGGER.log(Level.FINEST, () -> "span: " + span.getSpanContext().getSpanId());
         return span;
     }
 
@@ -128,7 +128,7 @@ public class OtelTraceService {
 
     public void removePipelineStepSpan(@Nonnull Run run, @Nonnull FlowNode flowNode, @Nonnull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        RunSpans runSpans = this.spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
+        RunSpans runSpans = this.spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans(noOpTracer)); // absent when Jenkins restarts during build
 
         FlowNode startSpanNode;
         if (flowNode instanceof AtomNode) {
@@ -156,7 +156,7 @@ public class OtelTraceService {
 
     public void removeJobPhaseSpan(@Nonnull Run run, @Nonnull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        RunSpans runSpans = this.spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
+        RunSpans runSpans = this.spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans(noOpTracer)); // absent when Jenkins restarts during build
 
         verify(runSpans.pipelineStepSpansByFlowNodeId.isEmpty(), "%s - Try to remove span associated with a run phase even though there are remain spans associated with flow nodes: %s", run, runSpans);
 
@@ -187,17 +187,26 @@ public class OtelTraceService {
         }
     }
 
-    public void putSpan(@Nonnull Run run, @Nonnull Span span) {
+    public void putRunRootSpan(@Nonnull Run run, @Nonnull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans());
+        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans(tracer));
+        runSpans.rootSpan = span;
         runSpans.runPhasesSpans.add(span);
 
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") - new stack: " + runSpans);
     }
 
-    public void putSpan(@Nonnull Run run, @Nonnull Span span, @Nonnull FlowNode flowNode) {
+    public void putRunPhaseSpan(@Nonnull Run run, @Nonnull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
-        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans());
+        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans(noOpTracer));
+        runSpans.runPhasesSpans.add(span);
+
+        LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") - new stack: " + runSpans);
+    }
+
+    public void putPipelineRunFlowNodeSpan(@Nonnull WorkflowRun run, @Nonnull FlowNode flowNode, @Nonnull Span span) {
+        RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
+        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans(tracer));
         runSpans.pipelineStepSpansByFlowNodeId.put(flowNode.getId(), new PipelineSpanContext(span, flowNode));
 
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + " FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], Span[id: " + span.getSpanContext().getSpanId() + "]" + ") -  " + runSpans);
@@ -222,15 +231,29 @@ public class OtelTraceService {
         return scope;
     }
 
-    public Tracer getTracer() {
-        return tracer;
+    public Tracer getTracer(@Nonnull Run run) {
+        final RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
+        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans(tracer));
+        return runSpans.getTracer();
     }
 
 
     @Immutable
     public static class RunSpans {
         final Multimap<String, PipelineSpanContext> pipelineStepSpansByFlowNodeId = ArrayListMultimap.create();
+        Span rootSpan;
         final List<Span> runPhasesSpans = new ArrayList<>();
+        private final Tracer tracer;
+
+        RunSpans(@Nonnull Tracer tracer){
+            this.tracer = tracer;
+
+        }
+
+        @Nonnull
+        public Tracer getTracer() {
+            return tracer;
+        }
 
         @Override
         public String toString() {
