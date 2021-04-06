@@ -10,6 +10,8 @@
 - [Introduction](#introduction)
 - [Architecture](#architecture)
 - [Features](#features)
+  - [Monitoring and troubleshooting Jenkins jobs using distributed tracing](#monitoring-and-troubleshooting-jenkins-jobs-using-distributed-tracing)
+  - [Metrics on Jenkins health indicators](#metrics-on-jenkins-health-indicators)
 - [Getting Started](#getting-started)
 - [Examples](#screenshots)
 - [Configuration as Code](#configuration-as-code)
@@ -30,7 +32,7 @@ Here are few examples of architecture:
 
 ## Features
 
-### Monitoring of Jenkins jobs execution using distributed tracing principles
+### Monitoring and troubleshooting Jenkins jobs using distributed tracing
 
 * Understand where time is spent, including time spent waiting to schedule the job (time spent in the build queue)
    * The time spent in the built queue waiting for a build agent is visualised with the span "Phase : Start"
