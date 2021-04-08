@@ -1,4 +1,4 @@
 <?jelly escape-by-default='true'?>
 <div>
-    TODO
+    Publish Jenkins metrics to an OpenTelemetry endpoint, including distributed traces of job executions and health metrics of the controller.
 </div>
