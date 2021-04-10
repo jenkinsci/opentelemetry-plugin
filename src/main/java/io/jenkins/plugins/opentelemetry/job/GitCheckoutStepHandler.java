@@ -17,20 +17,15 @@ import io.opentelemetry.api.trace.Tracer;
 import jenkins.YesNoMaybe;
 import jenkins.branch.Branch;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.BranchJobProperty;
-import org.jenkinsci.plugins.workflow.steps.scm.GenericSCMStep;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Customization of the {@code checkout ...} step when configured to access a Git repository.
@@ -41,37 +36,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
 
     @Override
     public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
-        if (!(flowNode instanceof StepAtomNode)) {
-            return false;
-        }
-        StepAtomNode stepAtomNode = (StepAtomNode) flowNode;
-        if (!(stepAtomNode.getDescriptor() instanceof GenericSCMStep.DescriptorImpl)) {
-            return false;
-        }
-
-        final WorkflowJob pipeline = run.getParent();
-        final BranchJobProperty branchJobProperty = pipeline.getProperty(BranchJobProperty.class);
-        if (branchJobProperty == null) {
-            // FIXME implement generic `checkout ...` step
-            final Map<String, Object> rootArguments = ArgumentsAction.getFilteredArguments(flowNode);
-            final Map<String, ?> scm = (Map<String, ?>) rootArguments.get("scm");
-            if (scm == null) {
-                return false;
-            }
-            final Object clazz = scm.get("$class");
-            if (!(Objects.equal(GitSCM.class.getSimpleName(), clazz))) {
-                return false;
-            }
-            return true;
-        } else {
-            // MultiBranch Pipeline using Git
-            final SCM scm = branchJobProperty.getBranch().getScm();
-            if (scm instanceof GitSCM) {
-                return true;
-            }
-        }
-
-        return false;
+        return super.isGitCheckoutTask(flowNode, run);
     }
 
     @Nonnull

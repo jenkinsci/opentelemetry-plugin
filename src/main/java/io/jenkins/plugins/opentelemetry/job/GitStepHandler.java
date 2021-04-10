@@ -9,9 +9,7 @@ import hudson.Extension;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import jenkins.YesNoMaybe;
-import jenkins.plugins.git.GitStep;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
@@ -32,7 +30,7 @@ public class GitStepHandler extends AbstractGitStepHandler {
 
     @Override
     public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
-        return flowNode instanceof StepAtomNode && ((StepAtomNode) flowNode).getDescriptor() instanceof GitStep.DescriptorImpl;
+        return super.isGitTask(flowNode, run);
     }
 
     @Nonnull

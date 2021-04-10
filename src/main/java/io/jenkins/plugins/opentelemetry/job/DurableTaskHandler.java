@@ -11,10 +11,8 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import jenkins.YesNoMaybe;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
@@ -25,9 +23,10 @@ import java.util.Objects;
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class DurableTaskHandler extends CommonStepHandler {
+
     @Override
     public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
-        return flowNode instanceof StepAtomNode && ((StepAtomNode) flowNode).getDescriptor() instanceof DurableTaskStep.DurableTaskStepDescriptor;
+        return super.isDurableTask(flowNode, run);
     }
 
     @Nonnull
