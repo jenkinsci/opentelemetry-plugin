@@ -286,45 +286,29 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 new DummyIdCredentials(
                         globalCredentialId, CredentialsScope.GLOBAL, userName, "my-pass", "root"));
 
-        String pipelineScript = "node() {\n" +
-                "  stage('foo') {\n" +
-                "    git credentialsId: '" + globalCredentialId + "', url: 'https://github.com/jenkinsci/opentelemetry-plugin' \n" +
-                "  }\n" +
-                "}";
-
-        final Node agent = jenkinsRule.createOnlineSlave();
-
         final String jobName = "test-pipeline-with-git-credentials-" + jobNameSuffix.incrementAndGet();
 
-        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
-        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
-
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "git: github.com/jenkinsci/opentelemetry-plugin", "Stage: foo", "Node", "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
-
-        Optional<Tree.Node<SpanDataWrapper>> gitNode = spans.breadthFirstSearchNodes(node -> "git: github.com/jenkinsci/opentelemetry-plugin".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(gitNode, CoreMatchers.is(CoreMatchers.notNullValue()));
-
-        Attributes attributes = gitNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_USERNAME), CoreMatchers.is(userName));
+        // Then the git username should be the one set in the credentials.
+        assertGitCredentials(jobName, globalCredentialId, userName);
     }
 
     @Test
     public void testPipelineWithoutGitCredentialsSteps() throws Exception {
-        String globalCredentialId = "foo";
+        String credentialId = "foo";
 
+        final String jobName = "test-pipeline-with-git-credentials-" + jobNameSuffix.incrementAndGet();
+
+        // Then the git username should be the credentialsId since there is no entry in the credentials provider.
+        assertGitCredentials(jobName, credentialId, credentialId);
+    }
+
+    private void assertGitCredentials(String jobName, String globalCredentialId, String gitUserName) throws Exception {
         String pipelineScript = "node() {\n" +
                 "  stage('foo') {\n" +
                 "    git credentialsId: '" + globalCredentialId + "', url: 'https://github.com/jenkinsci/opentelemetry-plugin' \n" +
                 "  }\n" +
                 "}";
-
         final Node agent = jenkinsRule.createOnlineSlave();
-
-        final String jobName = "test-pipeline-with-git-credentials-" + jobNameSuffix.incrementAndGet();
-
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
@@ -337,7 +321,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(gitNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = gitNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_USERNAME), CoreMatchers.is(globalCredentialId));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_USERNAME), CoreMatchers.is(gitUserName));
     }
 
 }
