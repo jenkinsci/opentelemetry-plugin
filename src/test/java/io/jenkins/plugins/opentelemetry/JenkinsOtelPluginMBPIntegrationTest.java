@@ -19,6 +19,7 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -68,6 +69,7 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @Ignore("Requires releases from the dependent plugins")
     public void testPipelineWithMetadata() throws Exception {
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
                 "node() {\n" +
