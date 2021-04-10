@@ -280,10 +280,11 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testPipelineWithGitCredentialsSteps() throws Exception {
-        String globalCredentialId = "foo";
+        final String userName = "my-user";
+        final String globalCredentialId = "foo";
         CredentialsProvider.lookupStores(jenkinsRule.jenkins).iterator().next().addCredentials(Domain.global(),
                 new DummyIdCredentials(
-                        globalCredentialId, CredentialsScope.GLOBAL, "my-user", "my-pass", "root"));
+                        globalCredentialId, CredentialsScope.GLOBAL, userName, "my-pass", "root"));
 
         String pipelineScript = "node() {\n" +
                 "  stage('foo') {\n" +
@@ -300,13 +301,43 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "git", "Stage: foo", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "git: github.com/jenkinsci/opentelemetry-plugin", "Stage: foo", "Node", "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
-        Optional<Tree.Node<SpanDataWrapper>> gitNode = spans.breadthFirstSearchNodes(node -> "git".equals(node.getData().spanData.getName()));
+        Optional<Tree.Node<SpanDataWrapper>> gitNode = spans.breadthFirstSearchNodes(node -> "git: github.com/jenkinsci/opentelemetry-plugin".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(gitNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+
+        Attributes attributes = gitNode.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_USERNAME), CoreMatchers.is(userName));
+    }
+
+    @Test
+    public void testPipelineWithoutGitCredentialsSteps() throws Exception {
+        String globalCredentialId = "foo";
+
+        String pipelineScript = "node() {\n" +
+                "  stage('foo') {\n" +
+                "    git credentialsId: '" + globalCredentialId + "', url: 'https://github.com/jenkinsci/opentelemetry-plugin' \n" +
+                "  }\n" +
+                "}";
+
+        final Node agent = jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-pipeline-with-git-credentials-" + jobNameSuffix.incrementAndGet();
+
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "git: github.com/jenkinsci/opentelemetry-plugin", "Stage: foo", "Node", "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+
+        Optional<Tree.Node<SpanDataWrapper>> gitNode = spans.breadthFirstSearchNodes(node -> "git: github.com/jenkinsci/opentelemetry-plugin".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(gitNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = gitNode.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_USERNAME), CoreMatchers.is(globalCredentialId));
     }
+
 }
