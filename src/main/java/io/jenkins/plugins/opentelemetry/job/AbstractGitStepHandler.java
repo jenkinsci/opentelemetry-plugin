@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -25,6 +27,22 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public abstract class AbstractGitStepHandler implements StepHandler {
     private final static Logger LOGGER = Logger.getLogger(AbstractGitStepHandler.class.getName());
 
+    public String searchGitUserName(@Nullable String credentialsId, @Nonnull WorkflowRun run) {
+        String gitUserName = credentialsId;
+        if (credentialsId == null) {
+            return gitUserName;
+        }
+
+        StandardUsernameCredentials credentials = CredentialsProvider.findCredentialById(credentialsId,
+                StandardUsernameCredentials.class,
+                run);
+        if (credentials != null && credentials.getUsername() != null) {
+            gitUserName = credentials.getUsername();
+        }
+
+        return gitUserName;
+    }
+
     /**
      * See:
      * https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/rpc.md
@@ -33,9 +51,7 @@ public abstract class AbstractGitStepHandler implements StepHandler {
     @VisibleForTesting
     @Nonnull
     public SpanBuilder createSpanBuilder(@Nonnull String gitUrl, @Nullable String gitBranch, @Nullable String credentialsId, @Nonnull String stepFunctionName, @Nonnull Tracer tracer, @Nonnull WorkflowRun run) throws URISyntaxException {
-        // FIXME retrieve the git username from the credentialsId, we need to lookup in the context of the run
-        String gitUserName = credentialsId;
-
+        String gitUserName = searchGitUserName(credentialsId, run);
         return createSpanBuilderFromGitDetails(gitUrl, gitBranch, gitUserName, stepFunctionName, tracer);
     }
 

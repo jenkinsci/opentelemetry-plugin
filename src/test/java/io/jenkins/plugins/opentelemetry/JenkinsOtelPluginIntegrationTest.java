@@ -5,12 +5,16 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.domains.Domain;
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.Functions;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
 import hudson.model.Result;
+import io.jenkins.plugins.opentelemetry.job.DummyIdCredentials;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
@@ -272,5 +276,37 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", "Node", "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
 
+    }
+
+    @Test
+    public void testPipelineWithGitCredentialsSteps() throws Exception {
+        String globalCredentialId = "foo";
+        CredentialsProvider.lookupStores(jenkinsRule.jenkins).iterator().next().addCredentials(Domain.global(),
+                new DummyIdCredentials(
+                        globalCredentialId, CredentialsScope.GLOBAL, "my-user", "my-pass", "root"));
+
+        String pipelineScript = "node() {\n" +
+                "  stage('foo') {\n" +
+                "    git credentialsId: '" + globalCredentialId + "', url: 'https://github.com/jenkinsci/opentelemetry-plugin' \n" +
+                "  }\n" +
+                "}";
+
+        final Node agent = jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-pipeline-with-git-credentials-" + jobNameSuffix.incrementAndGet();
+
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "git", "Stage: foo", "Node", "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+
+        Optional<Tree.Node<SpanDataWrapper>> gitNode = spans.breadthFirstSearchNodes(node -> "git".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(gitNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+
+        Attributes attributes = gitNode.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_USERNAME), CoreMatchers.is(globalCredentialId));
     }
 }
