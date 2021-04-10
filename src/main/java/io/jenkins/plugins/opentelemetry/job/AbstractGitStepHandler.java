@@ -26,11 +26,11 @@ public abstract class AbstractGitStepHandler implements StepHandler {
     private final static Logger LOGGER = Logger.getLogger(AbstractGitStepHandler.class.getName());
 
     public String searchGitUserName(@Nullable String credentialsId, @Nonnull WorkflowRun run) {
-        String gitUserName = credentialsId;
         if (credentialsId == null) {
-            return gitUserName;
+            return null;
         }
 
+        String gitUserName = credentialsId;
         StandardUsernameCredentials credentials = CredentialsProvider.findCredentialById(credentialsId,
                 StandardUsernameCredentials.class,
                 run);
