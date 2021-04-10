@@ -5,16 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.domains.Domain;
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.Functions;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
 import hudson.model.Result;
-import io.jenkins.plugins.opentelemetry.job.DummyIdCredentials;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
@@ -280,12 +276,9 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testPipelineWithGitCredentialsSteps() throws Exception {
-        final String userName = "my-user";
-        final String globalCredentialId = "foo";
-        CredentialsProvider.lookupStores(jenkinsRule.jenkins).iterator().next().addCredentials(Domain.global(),
-                new DummyIdCredentials(
-                        globalCredentialId, CredentialsScope.GLOBAL, userName, "my-pass", "root"));
-
+        // Details defined in the JCasC file -> io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
+        final String userName = "my-user-2";
+        final String globalCredentialId = "user-and-password";
         final String jobName = "test-pipeline-with-git-credentials-" + jobNameSuffix.incrementAndGet();
 
         // Then the git username should be the one set in the credentials.
@@ -293,9 +286,19 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    public void testPipelineWithoutGitCredentialsSteps() throws Exception {
-        String credentialId = "foo";
+    public void testPipelineWithSshCredentialsSteps() throws Exception {
+        // Details defined in the JCasC file -> io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
+        final String userName = "my-user-1";
+        final String globalCredentialId = "ssh-private-key";
+        final String jobName = "test-pipeline-with-git-ssh-credentials-" + jobNameSuffix.incrementAndGet();
 
+        // Then the git username should be the one set in the credentials.
+        assertGitCredentials(jobName, globalCredentialId, userName);
+    }
+
+    @Test
+    public void testPipelineWithoutGitCredentialsSteps() throws Exception {
+        String credentialId = "unknown";
         final String jobName = "test-pipeline-with-git-credentials-" + jobNameSuffix.incrementAndGet();
 
         // Then the git username should be the credentialsId since there is no entry in the credentials provider.

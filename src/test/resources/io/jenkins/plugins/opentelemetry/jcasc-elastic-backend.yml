@@ -5,3 +5,24 @@ unclassified:
     observabilityBackends:
       - elasticBackend:
           kibanaBaseUrl: "http://localhost:5601"
+
+## Credentials for the git username lookup Integration Tests
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - basicSSHUserPrivateKey:
+              description: SSH key
+              id: ssh-private-key
+              passphrase: foo
+              privateKeySource:
+                directEntry:
+                  privateKey: bar
+              scope: GLOBAL
+              username: my-user-1
+          - usernamePassword:
+              description: User and Password
+              id: user-and-password
+              password: password
+              scope: GLOBAL
+              username: my-user-2
