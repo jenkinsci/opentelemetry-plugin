@@ -22,8 +22,6 @@ import javax.annotation.Nullable;
 import java.net.URISyntaxException;
 import java.util.logging.Logger;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 public abstract class AbstractGitStepHandler implements StepHandler {
     private final static Logger LOGGER = Logger.getLogger(AbstractGitStepHandler.class.getName());
 
