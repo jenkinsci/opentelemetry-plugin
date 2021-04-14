@@ -2,6 +2,7 @@ package io.jenkins.plugins.opentelemetry.job;
 
 import hudson.EnvVars;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
@@ -12,15 +13,12 @@ import javax.annotation.Nonnull;
 
 public class EnvironmentContributorUtils {
 
-    public static final String SPAN_ID = "SPAN_ID";
-    public static final String TRACE_ID = "TRACE_ID";
-
     public static void setEnvironmentVariables(@Nonnull Run run, @Nonnull EnvVars envs, @Nonnull Span span) {
         String spanId = span.getSpanContext().getSpanId();
         String traceId = span.getSpanContext().getTraceId();
         try (Scope ignored = span.makeCurrent()) {
-            envs.putIfAbsent(TRACE_ID, traceId);
-            envs.put(SPAN_ID, spanId);
+            envs.putIfAbsent(JenkinsOtelSemanticAttributes.TRACE_ID, traceId);
+            envs.put(JenkinsOtelSemanticAttributes.SPAN_ID, spanId);
             TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
             W3CTraceContextPropagator.getInstance().inject(Context.current(), envs, setter);
         }
