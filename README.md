@@ -41,6 +41,20 @@ Here are few examples of architecture:
 * Built in integration with [Elastic Observability](https://www.elastic.co/observability), [Jaeger](https://www.jaegertracing.io/), and [Zipkin](https://zipkin.io/).
    Other OpenTelemetry compatible distributed tracing solutions are also supported.
 
+### Environment variables
+
+The current span and trace IDs are exposed as environment variables.
+
+* SPAN_ID
+* TRACE_ID
+
+In addition, if the backends were configured then there will be an environment variable for each of them pointing to the URL with the span/transactions:
+
+* OTEL_CUSTOM_URL
+* OTEL_ELASTIC_URL
+* OTEL_JAEGER_URL
+* OTEL_ZIPKIN_URL
+
 #### Attributes
 
 ##### Transactions
