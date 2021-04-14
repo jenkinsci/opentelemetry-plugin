@@ -67,10 +67,17 @@ public class OtelTraceService {
 
     @Nonnull
     public Span getSpan(@Nonnull Run run) {
+        return getSpan(run, true);
+    }
+
+    @Nonnull
+    public Span getSpan(@Nonnull Run run, boolean verifyIfRemainingSteps) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
 
-        verify(runSpans.pipelineStepSpansByFlowNodeId.isEmpty(), run.getFullDisplayName() + " - Can't access run phase span while there are remaining pipeline step spans: " + runSpans);
+        if (verifyIfRemainingSteps) {
+            verify(runSpans.pipelineStepSpansByFlowNodeId.isEmpty(), run.getFullDisplayName() + " - Can't access run phase span while there are remaining pipeline step spans: " + runSpans);
+        }
         LOGGER.log(Level.FINEST, () -> "getSpan(" + run.getFullDisplayName() + ") - " + runSpans);
         final Span span = Iterables.getLast(runSpans.runPhasesSpans, null);
         if (span == null) {
