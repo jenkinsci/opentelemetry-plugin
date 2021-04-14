@@ -33,8 +33,6 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
         Run run = stepContext.get(Run.class);
         FlowNode flowNode = stepContext.get(FlowNode.class);
 
-        EnvironmentContributorUtils.setEnvironmentVariables(run, envs, otelTraceService.getSpan(run, false));
-
         Span span;
         if (flowNode == null) {
             LOGGER.log(Level.WARNING, () -> run.getFullDisplayName() + "buildEnvironmentFor() NO flowNode found for context " + stepContext);
