@@ -6,6 +6,9 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.github.rutledgepaulv.prune.Tree;
+import hudson.EnvVars;
+import hudson.model.Run;
+import hudson.util.LogTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import jenkins.branch.BranchProperty;
@@ -20,8 +23,11 @@ import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
+    private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     @Test
     public void testMultibranchPipelineStep() throws Exception {
@@ -63,5 +69,10 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.is(OtelUtils.BRANCH));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.MULTIBRANCH));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION), CoreMatchers.is("Bar"));
+
+        // Environment variables are populated
+        EnvVars environment = b1.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
+        MatcherAssert.assertThat(environment.get("SPAN_ID"), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(environment.get("TRACE_ID"), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 }

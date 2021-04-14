@@ -6,11 +6,14 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.github.rutledgepaulv.prune.Tree;
+import hudson.EnvVars;
 import hudson.Functions;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
 import hudson.model.Result;
+import hudson.model.Run;
+import hudson.util.LogTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
@@ -29,12 +32,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Note usage of `def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}}` is inspired by
  * https://github.com/jenkinsci/workflow-basic-steps-plugin/blob/474cea2a53753e1fb9b166fa1ca0f6184b5cee4a/src/test/java/org/jenkinsci/plugins/workflow/steps/IsUnixStepTest.java#L39
  */
 public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
+    private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     @Test
     public void testSimplePipeline() throws Exception {
@@ -168,6 +174,11 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         Attributes attributes = root.get(0).spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.FREESTYLE));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
+
+        // Environment variables are populated
+        EnvVars environment = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
+        MatcherAssert.assertThat(environment.get("SPAN_ID"), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(environment.get("TRACE_ID"), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
