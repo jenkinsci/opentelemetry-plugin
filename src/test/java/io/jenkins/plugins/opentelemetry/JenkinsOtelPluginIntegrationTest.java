@@ -209,7 +209,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "    }\n" +
                 "}";
-        final Node node = jenkinsRule.createOnlineSlave();
+        final Node agent = jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-wrapping-step-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
@@ -219,6 +219,13 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node", "Phase: Run");
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node", "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
+
+        Optional<Tree.Node<SpanDataWrapper>> shellNode = spans.breadthFirstSearchNodes(node -> "shell-1".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(shellNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+
+        Attributes attributes = shellNode.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
@@ -325,7 +332,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         Attributes attributes = gitNode.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_USERNAME), CoreMatchers.is(gitUserName));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is("git"));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
