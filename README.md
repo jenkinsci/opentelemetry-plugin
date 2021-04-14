@@ -70,6 +70,8 @@ Here are few examples of architecture:
 | jenkins.pipeline.step.name       | Step name (user friendly) | String |
 | jenkins.pipeline.step.type       | Step name | String |
 | jenkins.pipeline.step.id         | Step id   | String |
+| jenkins.pipeline.step.plugin.name | Jenkins plugin for that particular step | String |
+| jenkins.pipeline.step.plugin.version| Jenkins plugin version | String |
 | jenkins.pipeline.step.node.label | Labels attached to the node | String |
 | git.branch                       | Git branch name | String |
 | git.repository                   | Git repository | String |
