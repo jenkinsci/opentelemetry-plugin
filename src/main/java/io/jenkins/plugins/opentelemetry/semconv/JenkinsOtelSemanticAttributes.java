@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.semconv;
 
+import hudson.PluginWrapper;
 import hudson.model.Computer;
 import io.opentelemetry.api.common.AttributeKey;
 import jenkins.model.Jenkins;
@@ -60,6 +61,14 @@ public final class JenkinsOtelSemanticAttributes {
      * @see org.jenkinsci.plugins.workflow.graph.FlowNode#getId()
      */
     public static final AttributeKey<String>        JENKINS_STEP_ID = AttributeKey.stringKey("jenkins.pipeline.step.id");
+    /**
+     * @see PluginWrapper#getShortName()
+     */
+    public static final AttributeKey<String>        JENKINS_STEP_PLUGIN_NAME = AttributeKey.stringKey("jenkins.pipeline.step.plugin.name");
+    /**
+     * @see PluginWrapper#getVersion()
+     */
+    public static final AttributeKey<String>        JENKINS_STEP_PLUGIN_VERSION = AttributeKey.stringKey("jenkins.pipeline.step.plugin.version");
     /**
      * @see Computer#getName()
      */

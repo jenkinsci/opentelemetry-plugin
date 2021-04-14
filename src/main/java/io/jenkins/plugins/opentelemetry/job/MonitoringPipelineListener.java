@@ -9,6 +9,8 @@ import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.ExtensionList;
+import hudson.PluginManager;
+import hudson.PluginWrapper;
 import hudson.model.Computer;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
@@ -27,6 +29,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import jenkins.model.Jenkins;
 import org.apache.commons.compress.utils.Sets;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
@@ -159,12 +162,27 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName());
             }
 
+            String pluginName = "unknown";
+            String pluginVersion = "unknown";
+            try {
+                Jenkins jenkins = Jenkins.getInstanceOrNull();
+                if (jenkins != null) {
+                    PluginWrapper wrapper = jenkins.getPluginManager().whichPlugin(Objects.requireNonNull(((StepAtomNode) node).getDescriptor()).clazz);
+                    pluginName = wrapper.getShortName();
+                    pluginVersion = wrapper.getVersion();
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, () -> " Plugin name and version could not be discovered");
+            }
+
             spanBuilder
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(node.getDescriptor(), "step"))
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node.getDescriptor(), "step"))
-                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal);
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, pluginName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, pluginVersion);
 
             Span atomicStepSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
