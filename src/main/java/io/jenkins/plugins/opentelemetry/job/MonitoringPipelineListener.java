@@ -168,7 +168,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             try {
                 Jenkins jenkins = Jenkins.getInstanceOrNull();
                 if (jenkins != null) {
-                    PluginWrapper wrapper = jenkins.getPluginManager().whichPlugin(((StepAtomNode) node).getDescriptor().clazz);
+                    PluginWrapper wrapper = jenkins.getPluginManager().whichPlugin(node.getDescriptor().clazz);
                     pluginName = wrapper.getShortName();
                     pluginVersion = wrapper.getVersion();
                 }
