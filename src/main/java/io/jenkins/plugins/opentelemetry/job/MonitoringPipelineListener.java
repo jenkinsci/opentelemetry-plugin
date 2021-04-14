@@ -162,17 +162,18 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName());
             }
 
+            String stepName = getStepName(node.getDescriptor(), "step");
             String pluginName = "unknown";
             String pluginVersion = "unknown";
             try {
                 Jenkins jenkins = Jenkins.getInstanceOrNull();
                 if (jenkins != null) {
-                    PluginWrapper wrapper = jenkins.getPluginManager().whichPlugin(Objects.requireNonNull(((StepAtomNode) node).getDescriptor()).clazz);
+                    PluginWrapper wrapper = jenkins.getPluginManager().whichPlugin(((StepAtomNode) node).getDescriptor().clazz);
                     pluginName = wrapper.getShortName();
                     pluginVersion = wrapper.getVersion();
                 }
             } catch (Exception e) {
-                LOGGER.log(Level.FINE, () -> " Plugin name and version could not be discovered");
+                LOGGER.log(Level.FINE, () -> " Plugin name and version could not be discovered for the step " + stepName);
             }
 
             spanBuilder
