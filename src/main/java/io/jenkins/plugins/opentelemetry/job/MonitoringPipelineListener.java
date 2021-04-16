@@ -68,12 +68,6 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void onStartPipeline(@Nonnull FlowNode node, @Nonnull WorkflowRun run) {
-        OpenTelemetryAttributesAction openTelemetryAttributesAction = new OpenTelemetryAttributesAction();
-        run.addAction(openTelemetryAttributesAction);
-    }
-
-    @Override
     public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String nodeLabel, @Nonnull WorkflowRun run) {
         try (Scope nodeSpanScope = setupContext(run, stepStartNode)) {
             verifyNotNull(nodeSpanScope, "%s - No span found for node %s", run, stepStartNode);
@@ -165,11 +159,10 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName());
             }
 
-            OpenTelemetryAttributesAction openTelemetryAttributesAction = run.getAction(OpenTelemetryAttributesAction.class);
             String stepName = getStepName(node.getDescriptor(), "step");
-            OpenTelemetryAttributesAction.StepPlugin stepPlugin = new OpenTelemetryAttributesAction.StepPlugin();
+            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = new JenkinsOpenTelemetryPluginConfiguration.StepPlugin();
             try {
-                stepPlugin = openTelemetryAttributesAction.findStepPlugin(stepName, node.getDescriptor().clazz);
+                stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPlugin(stepName, node.getDescriptor().clazz);
             } catch (Exception e) {
                 LOGGER.log(Level.FINE, () -> " Plugin name and version could not be discovered for the step " + stepName);
             }
