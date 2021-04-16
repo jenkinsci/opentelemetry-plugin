@@ -8,12 +8,14 @@ package io.jenkins.plugins.opentelemetry;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import hudson.Extension;
+import hudson.PluginWrapper;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -25,11 +27,14 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
+import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -56,6 +61,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
     private transient SpanNamingStrategy spanNamingStrategy;
+
+    private ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
 
     /**
      * The previously used configuration. Kept in memory to prevent unneeded reconfigurations.
@@ -204,6 +211,35 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return spanNamingStrategy;
     }
 
+    @Nonnull
+    public ConcurrentMap<String, StepPlugin> getLoadedStepsPlugins() {
+        return loadedStepsPlugins;
+    }
+
+    public void addStepPlugin(String stepName, StepPlugin c) {
+        loadedStepsPlugins.put(stepName, c);
+    }
+
+    @Nonnull
+    public StepPlugin findStepPlugin(String stepName, Class c) {
+        StepPlugin data = loadedStepsPlugins.get(stepName);
+        if (data!=null) {
+            LOGGER.log(Level.FINEST, " found the plugin for the step '" + stepName + "' - " + data);
+            return data;
+        }
+
+        data = new StepPlugin();
+        Jenkins jenkins = Jenkins.getInstanceOrNull();
+        if (jenkins!=null) {
+            PluginWrapper wrapper = jenkins.getPluginManager().whichPlugin(c);
+            if (wrapper!=null) {
+                data = new StepPlugin(wrapper.getShortName(), wrapper.getVersion());
+                addStepPlugin(stepName, data);
+            }
+        }
+        return data;
+    }
+
     public static JenkinsOpenTelemetryPluginConfiguration get() {
         return GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
     }
@@ -219,5 +255,37 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             return FormValidation.ok();
         }
         return FormValidation.error("Invalid format: \"%s\"", ignoredSteps);
+    }
+
+    @Immutable
+    public static class StepPlugin {
+        final String name;
+        final String version;
+
+        public StepPlugin(String name, String version) {
+            this.name = name;
+            this.version = version;
+        }
+
+        public StepPlugin() {
+            this.name = "unknown";
+            this.version = "unknown";
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+
+        @Override
+        public String toString() {
+            return "StepPlugin{" +
+                    "name=" + name +
+                    ", version=" + version +
+                    '}';
+        }
     }
 }
