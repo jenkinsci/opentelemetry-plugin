@@ -18,6 +18,7 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -221,7 +222,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nonnull
-    public StepPlugin findStepPlugin(String stepName, Class c) {
+    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepAtomNode node) {
         StepPlugin data = loadedStepsPlugins.get(stepName);
         if (data!=null) {
             LOGGER.log(Level.FINEST, " found the plugin for the step '" + stepName + "' - " + data);
@@ -231,7 +232,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         data = new StepPlugin();
         Jenkins jenkins = Jenkins.getInstanceOrNull();
         if (jenkins!=null) {
-            PluginWrapper wrapper = jenkins.getPluginManager().whichPlugin(c);
+            PluginWrapper wrapper = jenkins.getPluginManager().whichPlugin(node.getDescriptor().clazz);
             if (wrapper!=null) {
                 data = new StepPlugin(wrapper.getShortName(), wrapper.getVersion());
                 addStepPlugin(stepName, data);

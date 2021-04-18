@@ -160,12 +160,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             }
 
             String stepName = getStepName(node.getDescriptor(), "step");
-            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = new JenkinsOpenTelemetryPluginConfiguration.StepPlugin();
-            try {
-                stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPlugin(stepName, node.getDescriptor().clazz);
-            } catch (Exception e) {
-                LOGGER.log(Level.FINE, () -> " Plugin name and version could not be discovered for the step " + stepName);
-            }
+            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepName, node);
 
             spanBuilder
                     .setParent(Context.current())
