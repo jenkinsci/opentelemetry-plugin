@@ -139,11 +139,15 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         Attributes attributes = executorNodeAllocation.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Optional<Tree.Node<SpanDataWrapper>> executorNode = spans.breadthFirstSearchNodes(node -> "Node: linux".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(executorNode, CoreMatchers.is(CoreMatchers.notNullValue()));
         attributes = executorNode.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         attributes = root.get(0).spanData.getAttributes();
@@ -183,7 +187,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "    }\n" +
                 "}";
 
-        final Node node = jenkinsRule.createOnlineSlave();
+        final Node agent = jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-skipped-tests-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
@@ -193,6 +197,13 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node", "Phase: Run");
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node", "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
+
+        Optional<Tree.Node<SpanDataWrapper>> stageNode = spans.breadthFirstSearchNodes(node -> "Stage: ze-stage1".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(stageNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+
+        Attributes attributes = stageNode.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
@@ -267,7 +278,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "        }\n" +
                 "    }\n" +
                 "}";
-        final Node node = jenkinsRule.createOnlineSlave();
+        final Node agent = jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-parallel-step" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
@@ -279,6 +290,12 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", "Node", "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
 
+        Optional<Tree.Node<SpanDataWrapper>> branchNode = spans.breadthFirstSearchNodes(node -> "Parallel branch: parallelBranch1".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(branchNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+
+        Attributes attributes = branchNode.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
