@@ -234,7 +234,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nonnull
-    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepDescriptor descriptor) {
+    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nullable StepDescriptor descriptor) {
         StepPlugin data = loadedStepsPlugins.get(stepName);
         if (data!=null) {
             LOGGER.log(Level.FINEST, " found the plugin for the step '" + stepName + "' - " + data);
@@ -243,7 +243,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
         data = new StepPlugin();
         Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins!=null) {
+        if (jenkins!=null && descriptor!=null) {
             PluginWrapper wrapper = jenkins.getPluginManager().whichPlugin(descriptor.clazz);
             if (wrapper!=null) {
                 data = new StepPlugin(wrapper.getShortName(), wrapper.getVersion());
