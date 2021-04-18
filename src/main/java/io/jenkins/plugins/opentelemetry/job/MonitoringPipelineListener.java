@@ -72,12 +72,17 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         try (Scope nodeSpanScope = setupContext(run, stepStartNode)) {
             verifyNotNull(nodeSpanScope, "%s - No span found for node %s", run, stepStartNode);
             String nodeSpanName = Strings.isNullOrEmpty(nodeLabel) ? "Node" : "Node: " + nodeLabel;
+            String stepType = getStepType(stepStartNode.getDescriptor(), "node");
+            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
+
             Span nodeSpan = getTracer().spanBuilder(nodeSpanName)
                     .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "node"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, "node") // FIXME verify it's the right semantic and value
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, Strings.emptyToNull(nodeLabel))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + nodeLabel + ") - begin " + OtelUtils.toDebugString(nodeSpan));
 
@@ -91,6 +96,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                         .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                         .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, "node.allocate") // FIXME verify it's the right semantic and value
                         .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL, Strings.emptyToNull(nodeLabel))
+                        .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                        .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
                         .startSpan();
                 LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > node(" + nodeLabel + ") - begin " + OtelUtils.toDebugString(allocateNodeSpan));
 
@@ -111,11 +118,16 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
             String spanStageName = "Stage: " + stageName;
 
+            String stepType = getStepType(stepStartNode.getDescriptor(), "stage");
+            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
+
             Span stageSpan = getTracer().spanBuilder(spanStageName)
                     .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "stage"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stageName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
@@ -215,11 +227,17 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     public void onStartParallelStepBranch(@Nonnull StepStartNode stepStartNode, @Nonnull String branchName, @Nonnull WorkflowRun run) {
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
+
+            String stepType = getStepType(stepStartNode.getDescriptor(), "branch");
+            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
+
             Span atomicStepSpan = getTracer().spanBuilder("Parallel branch: " + branchName)
                     .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), "branch"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, branchName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > parallel branch(" + branchName + ") - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
