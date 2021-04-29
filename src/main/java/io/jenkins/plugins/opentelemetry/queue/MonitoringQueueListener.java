@@ -5,15 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry.queue;
 
-import com.cloudbees.simplediskusage.DiskItem;
-import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.LongValueObserver;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.common.Labels;
 import jenkins.model.Jenkins;
@@ -21,7 +18,6 @@ import jenkins.model.Jenkins;
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,7 +37,6 @@ public class MonitoringQueueListener extends QueueListener {
     private final AtomicInteger buildableItemGauge = new AtomicInteger();
     private LongCounter leftItemCounter;
     private LongCounter timeInQueueInMillisCounter;
-    private LongValueObserver diskObserver;
 
     @PostConstruct
     public void postConstruct() {
@@ -68,33 +63,6 @@ public class MonitoringQueueListener extends QueueListener {
                 .setDescription("Total time spent in queue by items")
                 .setUnit("ms")
                 .build();
-        Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins != null) {
-            QuickDiskUsagePlugin diskUsagePlugin = jenkins.getPlugin(QuickDiskUsagePlugin.class);
-            if (diskUsagePlugin != null) {
-                diskObserver = meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE)
-                        .setDescription("Disk usage of first level folder in JENKINS_HOME.")
-                        .setUnit("byte")
-                        .setUpdater(result -> result.observe(calculateDiskUsage(diskUsagePlugin), Labels.empty()))
-                        .build();
-            }
-        }
-    }
-
-    private long calculateDiskUsage(QuickDiskUsagePlugin diskUsagePlugin) {
-        try {
-            DiskItem disk = diskUsagePlugin.getDirectoriesUsages()
-                    .stream()
-                    .filter(x -> x.getDisplayName().equals("JENKINS_HOME"))
-                    .findFirst()
-                    .orElse(null);
-            if (disk != null) {
-                return disk.getUsage() * 1024;
-            }
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, e, () -> "Exception invoking `diskUsagePlugin.getDirectoriesUsages()`");
-        }
-        return 0;
     }
 
     private long getUnblockedItemsSize() {
