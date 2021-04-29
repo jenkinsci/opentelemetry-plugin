@@ -5,21 +5,19 @@
 
 package io.jenkins.plugins.opentelemetry.computer;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import com.cloudbees.simplediskusage.DiskItem;
+import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Computer;
 import hudson.model.TaskListener;
 import hudson.remoting.Channel;
 import hudson.slaves.ComputerListener;
-import hudson.slaves.OfflineCause;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.metrics.LongValueRecorder;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.common.Labels;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
@@ -81,6 +79,33 @@ public class MonitoringComputerListener extends ComputerListener {
                 .setDescription("Number of agents")
                 .setUnit("1")
                 .build();
+        Jenkins jenkins = Jenkins.getInstanceOrNull();
+        if (jenkins != null) {
+            QuickDiskUsagePlugin diskUsagePlugin = jenkins.getPlugin(QuickDiskUsagePlugin.class);
+            if (diskUsagePlugin != null) {
+                meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE)
+                        .setDescription("Disk usage of first level folder in JENKINS_HOME.")
+                        .setUnit("byte")
+                        .setUpdater(result -> result.observe(calculateDiskUsage(diskUsagePlugin), Labels.empty()))
+                        .build();
+            }
+        }
+    }
+
+    private long calculateDiskUsage(QuickDiskUsagePlugin diskUsagePlugin) {
+        try {
+            DiskItem disk = diskUsagePlugin.getDirectoriesUsages()
+                    .stream()
+                    .filter(x -> x.getDisplayName().equals("JENKINS_HOME"))
+                    .findFirst()
+                    .orElse(null);
+            if (disk != null) {
+                return disk.getUsage() * 1024;
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, e, () -> "Exception invoking `diskUsagePlugin.getDirectoriesUsages()`");
+        }
+        return 0;
     }
 
     private long getOfflineAgentsCount() {

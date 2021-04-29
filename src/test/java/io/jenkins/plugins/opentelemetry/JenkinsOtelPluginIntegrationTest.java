@@ -85,9 +85,6 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testMetricsWithoutDiskUsagePlugin() throws Exception {
-        FreeStyleProject project = jenkinsRule.createFreeStyleProject();
-
-        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
         Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
