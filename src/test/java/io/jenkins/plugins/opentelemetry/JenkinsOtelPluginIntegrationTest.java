@@ -81,7 +81,18 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(runCompletedCounterData.getType(), CoreMatchers.is(MetricDataType.LONG_SUM));
         Collection<LongPointData> metricPoints = runCompletedCounterData.getLongSumData().getPoints();
         //MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.is(1L));
+    }
 
+    @Test
+    public void testMetricsWithoutDiskUsagePlugin() throws Exception {
+        FreeStyleProject project = jenkinsRule.createFreeStyleProject();
+
+        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
+        // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
+        Thread.sleep(600);
+        Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
+        dumpMetrics(exportedMetrics);
+        MatcherAssert.assertThat(exportedMetrics.get(JenkinsSemanticMetrics.JENKINS_DISK_USAGE), CoreMatchers.nullValue());
     }
 
     @Test
