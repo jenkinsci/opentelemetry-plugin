@@ -65,7 +65,7 @@ In addition, if the backends were configured then there will be an environment v
 | ci.pipeline.name                 | Job name (user friendly) | String |
 | ci.pipeline.type                 | Job type | Enum (`freestyle`, `workflow`, `multibranch`, `unknown`) |
 | ci.pipeline.multibranch.type     | Multibranch type | Enum (`branch`, `tag`, `change_request`) |
-| ci.pipeline.node.id              | Name of the node | String |
+| ci.pipeline.agent.id             | Name of the agent | String |
 | ci.pipeline.run.completed        | Is this a complete build? | Boolean |
 | ci.pipeline.run.durationMillis   | Build duration | Long |
 | ci.pipeline.run.description      | Build description | String |
@@ -86,12 +86,12 @@ In addition, if the backends were configured then there will be an environment v
 | jenkins.pipeline.step.id         | Step id   | String |
 | jenkins.pipeline.step.plugin.name | Jenkins plugin for that particular step | String |
 | jenkins.pipeline.step.plugin.version| Jenkins plugin version | String |
-| jenkins.pipeline.step.node.label | Labels attached to the node | String |
+| jenkins.pipeline.step.agent.label | Labels attached to the agent | String |
 | git.branch                       | Git branch name | String |
 | git.repository                   | Git repository | String |
 | git.username                     | Git user | String |
 | jenkins.url                      | Jenkins URL | String |
-| jenkins.computer.name            | Name of the node | String |
+| jenkins.computer.name            | Name of the agent | String |
 
 ### Metrics on Jenkins health indicators
 
@@ -113,6 +113,14 @@ In addition, if the backends were configured then there will be an environment v
 
 
 Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
+
+
+### Standardisation
+
+:WIP:
+
+`Node` steps will be transformed to `Agent` spans to be the more agnostic to any platform. Therefore the `jenkins.pipeline.step.type` attribute will report the jenkins pipeline step `node` but
+the span name will refer to `Agent` in the distributed traces.
 
 ## Getting started
 
