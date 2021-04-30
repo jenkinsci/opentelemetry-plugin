@@ -65,9 +65,9 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "Node Allocation", "Node", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node", "Phase: Run", jobName);
+        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
@@ -136,22 +136,22 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "Node Allocation: linux", "Node: linux", "Stage: foo", "Phase: Run");
+        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI + ": linux", JenkinsOtelSemanticAttributes.AGENT_UI + ": linux", "Stage: foo", "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
 
-        Optional<Tree.Node<SpanDataWrapper>> executorNodeAllocation = spans.breadthFirstSearchNodes(node -> "Node Allocation: linux".equals(node.getData().spanData.getName()));
+        Optional<Tree.Node<SpanDataWrapper>> executorNodeAllocation = spans.breadthFirstSearchNodes(node -> (JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI + ": linux").equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(executorNodeAllocation, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = executorNodeAllocation.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
 
-        Optional<Tree.Node<SpanDataWrapper>> executorNode = spans.breadthFirstSearchNodes(node -> "Node: linux".equals(node.getData().spanData.getName()));
+        Optional<Tree.Node<SpanDataWrapper>> executorNode = spans.breadthFirstSearchNodes(node -> (JenkinsOtelSemanticAttributes.AGENT_UI + ": linux").equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(executorNode, CoreMatchers.is(CoreMatchers.notNullValue()));
         attributes = executorNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NODE_LABEL), CoreMatchers.is("linux"));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
 
@@ -205,8 +205,8 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
         Optional<Tree.Node<SpanDataWrapper>> stageNode = spans.breadthFirstSearchNodes(node -> "Stage: ze-stage1".equals(node.getData().spanData.getName()));
@@ -238,8 +238,8 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
 
         Optional<Tree.Node<SpanDataWrapper>> shellNode = spans.breadthFirstSearchNodes(node -> "shell-1".equals(node.getData().spanData.getName()));
@@ -269,9 +269,9 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", "Node", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", "Node", "Phase: Run");
-        checkChainOfSpans(spans, "error", "Stage: ze-stage2", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "error", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
     }
 
@@ -296,9 +296,9 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", "Node", "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", "Node", "Phase: Run");
-        checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
 
         Optional<Tree.Node<SpanDataWrapper>> branchNode = spans.breadthFirstSearchNodes(node -> "Parallel branch: parallelBranch1".equals(node.getData().spanData.getName()));
@@ -352,7 +352,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "git: github.com/jenkinsci/opentelemetry-plugin", "Stage: foo", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "git: github.com/jenkinsci/opentelemetry-plugin", "Stage: foo", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         Optional<Tree.Node<SpanDataWrapper>> gitNode = spans.breadthFirstSearchNodes(node -> "git: github.com/jenkinsci/opentelemetry-plugin".equals(node.getData().spanData.getName()));
