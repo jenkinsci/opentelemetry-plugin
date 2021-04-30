@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.github.rutledgepaulv.prune.Tree;
+import com.google.common.collect.Iterables;
 import hudson.EnvVars;
 import hudson.Functions;
 import hudson.model.FreeStyleBuild;
@@ -27,6 +28,7 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Test;
+import org.jvnet.hudson.test.recipes.WithPlugin;
 
 import java.util.Collection;
 import java.util.List;
@@ -84,12 +86,18 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    public void testMetricsWithoutDiskUsagePlugin() throws Exception {
+    @WithPlugin("cloudbees-disk-usage-simple")
+    public void testMetricsWithDiskUsagePlugin() throws Exception {
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(600);
         Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
         dumpMetrics(exportedMetrics);
-        MatcherAssert.assertThat(exportedMetrics.get(JenkinsSemanticMetrics.JENKINS_DISK_USAGE), CoreMatchers.nullValue());
+        MetricData diskUsageData = exportedMetrics.get(JenkinsSemanticMetrics.JENKINS_DISK_USAGE);
+        MatcherAssert.assertThat(diskUsageData, CoreMatchers.notNullValue());
+        // TODO TEST METRICS WITH PROPER RESET BETWEEN TESTS
+        MatcherAssert.assertThat(diskUsageData.getType(), CoreMatchers.is(MetricDataType.LONG_GAUGE));
+        Collection<LongPointData> metricPoints = diskUsageData.getLongGaugeData().getPoints();
+        MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.notNullValue());
     }
 
     @Test
