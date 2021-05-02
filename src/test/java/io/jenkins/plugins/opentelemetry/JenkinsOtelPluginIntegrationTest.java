@@ -92,7 +92,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         Thread.sleep(600);
         Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
         dumpMetrics(exportedMetrics);
-        MetricData diskUsageData = exportedMetrics.get(JenkinsSemanticMetrics.JENKINS_DISK_USAGE);
+        MetricData diskUsageData = exportedMetrics.get(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES);
         MatcherAssert.assertThat(diskUsageData, CoreMatchers.notNullValue());
         // TODO TEST METRICS WITH PROPER RESET BETWEEN TESTS
         MatcherAssert.assertThat(diskUsageData.getType(), CoreMatchers.is(MetricDataType.LONG_GAUGE));
