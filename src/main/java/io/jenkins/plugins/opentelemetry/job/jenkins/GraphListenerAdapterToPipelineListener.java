@@ -62,6 +62,8 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
                 StepStartNode beginParallelBranch = endParallelBranchNode.getStartNode();
                 ThreadNameAction persistentAction = verifyNotNull(beginParallelBranch.getPersistentAction(ThreadNameAction.class), "Null ThreadNameAction on %s", beginParallelBranch);
                 fireOnAfterEndParallelStepBranch(endParallelBranchNode, persistentAction.getThreadName(), run);
+            } else if (isBeforeEndCreateSpanStep(previousNode)) {
+                fireOnAfterEndCreateSpanStep((StepEndNode) previousNode, run);
             } else {
                 log(Level.FINE, () -> "Ignore previous node " + PipelineNodeUtil.getDetailedDebugString(previousNode));
             }
@@ -91,6 +93,8 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
             String label = Objects.toString(arguments.get("label"), null);
             fireOnAfterStartNodeStep((StepStartNode) node, label, run);
+        } else if (PipelineNodeUtil.isStartCreateSpan(node)) {
+            fireOnBeforeCreateSpanStep((StepStartNode) node, run);
         } else {
             logFlowNodeDetails(node, run);
         }
@@ -183,6 +187,28 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    public void fireOnAfterEndCreateSpanStep(@Nonnull StepEndNode node, @Nonnull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(() -> "onAfterEndCreateSpanStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError().toString()) : ""));
+            try {
+                pipelineListener.onEndCreateSpanStep(node, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onAfterEndCreateSpanStep` on " + pipelineListener);
+            }
+        }
+    }
+
+    public void fireOnBeforeCreateSpanStep(@Nonnull StepStartNode node, @Nonnull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(() -> "onBeforeStartCreateSpanStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onStartCreateSpanStep(node, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onBeforeStartCreateSpanStep` on " + pipelineListener);
+            }
+        }
+    }
+
     public void fireOnAfterEndNodeStep(@Nonnull StepEndNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onAfterEndNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError().toString()) : ""));
@@ -251,6 +277,10 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
 
     private boolean isBeforeEndExecutorNodeStep(@Nonnull FlowNode node) {
         return (node instanceof StepEndNode) && PipelineNodeUtil.isStartExecutorNode(((StepEndNode) node).getStartNode());
+    }
+
+    private boolean isBeforeEndCreateSpanStep(@Nonnull FlowNode node) {
+        return (node instanceof StepEndNode) && PipelineNodeUtil.isStartCreateSpan(((StepEndNode) node).getStartNode());
     }
 
     private boolean isBeforeEndStageStep(@Nonnull FlowNode node) {

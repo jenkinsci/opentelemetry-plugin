@@ -74,6 +74,16 @@ public interface PipelineListener {
     void onAfterAtomicStep(@Nonnull StepAtomNode stepAtomNode, @Nonnull WorkflowRun run);
 
     /**
+     * Just before the `createSpan` step starts
+     */
+    void onStartCreateSpanStep(@Nonnull StepStartNode stepStartNode, @Nonnull WorkflowRun run);
+
+    /**
+     * Just after the `createSpan` step ends
+     */
+    void onEndCreateSpanStep(@Nonnull StepEndNode stageStepEndNode, @Nonnull WorkflowRun run);
+
+    /**
      * Just after the pipeline ends
      */
     void onEndPipeline(@Nonnull FlowNode node, @Nonnull WorkflowRun run);

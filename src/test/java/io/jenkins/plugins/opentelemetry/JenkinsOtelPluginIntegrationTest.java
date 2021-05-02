@@ -16,6 +16,7 @@ import hudson.model.Run;
 import hudson.util.LogTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
@@ -362,6 +363,44 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_USERNAME), CoreMatchers.is(gitUserName));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+    }
+
+    @Test
+    public void testPipelineWithCreateSpanSteps() throws Exception {
+        String pipelineScript = "node() {\n" +
+                "    stage('ze-stage1') {\n" +
+                "       createSpan(['abc=123']) { \n" +
+                "          sh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
+                "       }\n" +
+                "    }\n" +
+                "    stage('ze-stage2') {\n" +
+                "       createSpan(['abc=123']) { \n" +
+                "          sh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
+                "       }\n" +
+                "    }\n" +
+                "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-pipeline-with-create-span-steps-" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Start", jobName);
+        checkChainOfSpans(spans, "Node Allocation", "Node", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-1", "Create a Span", "Create a Span", "Stage: ze-stage1", "Node", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-2", "Create a Span", "Create a Span", "Stage: ze-stage2", "Node", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(14L));
+
+        Optional<Tree.Node<SpanDataWrapper>> createSpan = spans.breadthFirstSearchNodes(node -> "Create a Span".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
+
+        Attributes attributes = createSpan.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("foo")), CoreMatchers.is("bar"));
     }
 
 }
