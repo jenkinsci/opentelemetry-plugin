@@ -110,7 +110,7 @@ In addition, if the backends were configured then there will be an environment v
 | jenkins.agents.total             | Number of agents|
 | jenkins.agents.online            | Number of online agents |
 | jenkins.agents.offline           | Number of offline agents |
-| jenkins.disk.usage               | Disk Usage size in bytes |
+| jenkins.disk.usage.bytes         | Disk Usage size |
 
 
 Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)

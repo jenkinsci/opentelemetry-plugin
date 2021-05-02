@@ -83,16 +83,16 @@ public class MonitoringComputerListener extends ComputerListener {
         if (jenkins != null) {
             QuickDiskUsagePlugin diskUsagePlugin = jenkins.getPlugin(QuickDiskUsagePlugin.class);
             if (diskUsagePlugin != null) {
-                meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE)
+                meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
                         .setDescription("Disk usage of first level folder in JENKINS_HOME.")
                         .setUnit("byte")
-                        .setUpdater(result -> result.observe(calculateDiskUsage(diskUsagePlugin), Labels.empty()))
+                        .setUpdater(result -> result.observe(calculateDiskUsageInBytes(diskUsagePlugin), Labels.empty()))
                         .build();
             }
         }
     }
 
-    private long calculateDiskUsage(QuickDiskUsagePlugin diskUsagePlugin) {
+    private long calculateDiskUsageInBytes(QuickDiskUsagePlugin diskUsagePlugin) {
         try {
             DiskItem disk = diskUsagePlugin.getDirectoriesUsages()
                     .stream()
