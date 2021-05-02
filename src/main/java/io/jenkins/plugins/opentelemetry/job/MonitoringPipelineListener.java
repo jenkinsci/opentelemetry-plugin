@@ -149,8 +149,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
             final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
-            final String spanName = (String) arguments.getOrDefault("name", createSpanName);
-
+            final String spanAttribute = (String) arguments.getOrDefault("name", createSpanName);
+            final String spanName = Strings.isNullOrEmpty(spanAttribute) ? createSpanName : spanAttribute;
             SpanBuilder createSpanBuilder = getTracer().spanBuilder(spanName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)

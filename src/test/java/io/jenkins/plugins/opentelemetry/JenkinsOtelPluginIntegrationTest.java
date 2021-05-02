@@ -380,6 +380,12 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "          sh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "       }\n" +
                 "    }\n" +
+                "    stage('ze-stage3') {\n" +
+                "       createSpan(name: '', " +
+                "                  attributes: ['attribute.user': 'alice']) { \n" +
+                "          sh (label: 'shell-3', script: 'echo ze-echo-3') \n" +
+                "       }\n" +
+                "    }\n" +
                 "}";
         jenkinsRule.createOnlineSlave();
 
@@ -393,8 +399,9 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "Node Allocation", "Node", "Phase: Run", jobName);
         checkChainOfSpans(spans, "shell-1", "my-acme-span1", "Stage: ze-stage1", "Node", "Phase: Run", jobName);
         checkChainOfSpans(spans, "shell-2", "my-acme-span2", "Stage: ze-stage2", "Node", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-3", "Create a Span", "Stage: ze-stage3", "Node", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(12L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(15L));
 
         Optional<Tree.Node<SpanDataWrapper>> createSpan = spans.breadthFirstSearchNodes(node -> "my-acme-span1".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
@@ -408,5 +415,11 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         createSpan = spans.breadthFirstSearchNodes(node -> "my-acme-span2".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
 
+        createSpan = spans.breadthFirstSearchNodes(node -> "Create a Span".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
+        attributes = createSpan.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("attribute.user")), CoreMatchers.is("alice"));
     }
 }
