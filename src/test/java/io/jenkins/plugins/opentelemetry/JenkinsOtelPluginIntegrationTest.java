@@ -367,23 +367,24 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testPipelineWithCreateSpanSteps() throws Exception {
-        String pipelineScript = "node() {\n" +
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+                "node() {\n" +
                 "    stage('ze-stage1') {\n" +
                 "       createSpan(name: 'my-acme-span1', " +
                 "                  attributes: ['attribute.service': 'acme', 'attribute.user': 'bob']) { \n" +
-                "          sh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
+                "          xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
                 "       }\n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
                 "       createSpan(name: 'my-acme-span2', " +
                 "                  attributes: [:]) { \n" +
-                "          sh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
+                "          xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "       }\n" +
                 "    }\n" +
                 "    stage('ze-stage3') {\n" +
                 "       createSpan(name: '', " +
                 "                  attributes: ['attribute.user': 'alice']) { \n" +
-                "          sh (label: 'shell-3', script: 'echo ze-echo-3') \n" +
+                "          xsh (label: 'shell-3', script: 'echo ze-echo-3') \n" +
                 "       }\n" +
                 "    }\n" +
                 "}";
