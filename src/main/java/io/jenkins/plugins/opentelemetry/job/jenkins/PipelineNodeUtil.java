@@ -13,6 +13,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.pipeline.StageStatus;
 import org.jenkinsci.plugins.pipeline.SyntheticStage;
 import org.jenkinsci.plugins.workflow.actions.*;
+import org.jenkinsci.plugins.workflow.cps.actions.ArgumentsActionImpl;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.cps.steps.ParallelStep;
@@ -45,7 +46,10 @@ public class PipelineNodeUtil {
             return false;
         }
         StepStartNode stepStartNode = (StepStartNode) node;
-        return stepStartNode.getDescriptor() instanceof CreateSpanStep.DescriptorImpl;
+        if (!(stepStartNode.getDescriptor() instanceof CreateSpanStep.DescriptorImpl)) {
+            return false;
+        }
+        return node.getAction(ArgumentsActionImpl.class) != null;
     }
 
     /**

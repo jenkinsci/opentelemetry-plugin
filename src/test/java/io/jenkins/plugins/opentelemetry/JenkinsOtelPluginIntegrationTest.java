@@ -385,9 +385,9 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", jobName);
         checkChainOfSpans(spans, "Node Allocation", "Node", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "shell-1", "Create a Span", "my-acme-span", "Stage: ze-stage1", "Node", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-1", "my-acme-span", "Stage: ze-stage1", "Node", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
 
         Optional<Tree.Node<SpanDataWrapper>> createSpan = spans.breadthFirstSearchNodes(node -> "my-acme-span".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
