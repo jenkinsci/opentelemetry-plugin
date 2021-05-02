@@ -299,6 +299,8 @@ pipeline {
 }
 ```
 
+![Sample Advanced Feature](./docs/images/advanced-features.png)
+
 ## Contributing
 
 Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md)
