@@ -46,6 +46,7 @@ import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -154,10 +155,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
 
-            // add new attributes
             final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
-            if (arguments != null) {
-                createSpanBuilder.setAttribute("foo", "bar");
+            if (arguments.size() > 0) {
+                final Map<String, String> attributes = (Map<String, String>) arguments.get("attributes");
+                if (attributes != null) {
+                    attributes.forEach((key, value) -> {
+                        createSpanBuilder.setAttribute(AttributeKey.stringKey(key), value);
+                    });
+                }
             }
 
             Span createSpan = createSpanBuilder.startSpan();

@@ -13,30 +13,20 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class CreateSpanStep extends Step {
 
-    /**
-     * Attributes
-     * The format is {@code attribute=value}.
-     */
-    private final List<String> attributes;
+    private final Map<String, String> attributes;
 
     @DataBoundConstructor
-    public CreateSpanStep(List<String> attributes) {
-        for (String pair : attributes) {
-            if (pair.indexOf('=') == -1) {
-                throw new IllegalArgumentException(pair);
-            }
-        }
-        this.attributes = new ArrayList<>(attributes);
+    public CreateSpanStep(Map<String, String> attributes) {
+        this.attributes = attributes;
     }
 
-    public List<String> getAttributes() {
+    public Map<String, String> getAttributes() {
         return attributes;
     }
 

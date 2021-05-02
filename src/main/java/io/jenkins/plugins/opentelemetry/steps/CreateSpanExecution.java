@@ -10,14 +10,14 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
-import java.util.List;
+import java.util.Map;
 
 public class CreateSpanExecution extends AbstractStepExecutionImpl {
 
     @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-    private transient final List<String> attributes;
+    private transient final Map<String, String> attributes;
 
-    CreateSpanExecution(List<String> attributes, StepContext context) {
+    CreateSpanExecution(Map<String, String> attributes, StepContext context) {
         super(context);
         this.attributes = attributes;
     }
