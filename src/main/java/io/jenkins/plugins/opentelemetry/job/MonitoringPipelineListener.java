@@ -46,6 +46,7 @@ import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -147,7 +148,10 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             String stepType = getStepType(stepStartNode.getDescriptor(), "step");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
-            SpanBuilder createSpanBuilder = getTracer().spanBuilder(createSpanName)
+            final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
+            final String spanName = (String) arguments.getOrDefault("name", createSpanName);
+
+            SpanBuilder createSpanBuilder = getTracer().spanBuilder(spanName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
@@ -155,16 +159,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
 
-            final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
-            if (arguments.size() > 0) {
-                final Map<String, String> attributes = (Map<String, String>) arguments.get("attributes");
-                if (attributes != null) {
-                    attributes.forEach((key, value) -> {
-                        createSpanBuilder.setAttribute(AttributeKey.stringKey(key), value);
-                    });
-                }
-            }
-
+            final Map<String, String> attributes = (Map<String, String>) arguments.getOrDefault("attributes", Collections.emptyMap());
+            attributes.forEach((key, value) -> { createSpanBuilder.setAttribute(AttributeKey.stringKey(key), value); });
             Span createSpan = createSpanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + stepStartNode.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(createSpan));
             getTracerService().putSpan(run, createSpan, stepStartNode);

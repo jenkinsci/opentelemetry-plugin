@@ -282,16 +282,17 @@ For more details see the configuration as code plugin documentation:
 You can now instrument your [Jenkins shared library](https://www.jenkins.io/doc/book/pipeline/shared-libraries/) or
 your Jenkins pipelines with the below step:
 
-* createSpan(attribute)
+* createSpan(String name, Map<String, String> attributes)
 
 For instance, let's say you would like to create a span for the docker login details
 
 ```groovy
 pipeline {
   ...
-      createSpan(['net.peer.name': 'my.docker.registry',
-                  'rpc.service': 'docker',
-                  'rpc.method': 'login']) {
+      createSpan(name: 'my-docker-login',
+                 attributes: ['net.peer.name': 'my.docker.registry',
+                              'rpc.service': 'docker',
+                              'rpc.method': 'login']) {
         sh 'docker login -u $user -p $pass $OTEL_STEP_SERVICE'
       }
   ...

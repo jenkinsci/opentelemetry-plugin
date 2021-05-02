@@ -19,16 +19,21 @@ import java.util.Set;
 
 public class CreateSpanStep extends Step {
 
+    private final String name;
     private final Map<String, String> attributes;
 
     @DataBoundConstructor
-    public CreateSpanStep(Map<String, String> attributes) {
+    public CreateSpanStep(String name, Map<String, String> attributes) {
+        this.name = name;
         this.attributes = attributes;
     }
 
     public Map<String, String> getAttributes() {
         return attributes;
     }
+    public String getName() {
+		return name;
+	}
 
     @Override
     public DescriptorImpl getDescriptor() {
@@ -37,7 +42,7 @@ public class CreateSpanStep extends Step {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        return new CreateSpanExecution(attributes, context);
+        return new CreateSpanExecution(name, attributes, context);
     }
 
     @Extension

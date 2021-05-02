@@ -15,10 +15,14 @@ import java.util.Map;
 public class CreateSpanExecution extends AbstractStepExecutionImpl {
 
     @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
+    private transient final String name;
+
+    @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
     private transient final Map<String, String> attributes;
 
-    CreateSpanExecution(Map<String, String> attributes, StepContext context) {
+    CreateSpanExecution(String name, Map<String, String> attributes, StepContext context) {
         super(context);
+        this.name = name;
         this.attributes = attributes;
     }
 
