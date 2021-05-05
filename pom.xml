@@ -174,7 +174,8 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>cloudbees-disk-usage-simple</artifactId>
             <version>0.10</version>
-            <optional>true</optional>
+            <!-- Don't mark plugin optional waiting to clarify https://github.com/jenkinsci/opentelemetry-plugin/pull/81#issuecomment-832546459 -->
+            <optional>false</optional>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
