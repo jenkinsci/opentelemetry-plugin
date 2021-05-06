@@ -25,6 +25,12 @@
                 <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format). Metrics exporter get disabled for the moment when feature is used. Aka OTEL_EXPORTER_OTLP_CERTIFICATE">
                     <f:textarea />
                 </f:entry>
+                <f:entry title="Service name" field="serviceName" description="e.g. 'my-jenkins.example.com', the Logical name of the service">
+                    <f:textbox />
+                </f:entry>
+                <f:entry title="Service namespace" field="serviceNamespace" description="e.g. 'ci', a namespace for service name">
+                    <f:textbox />
+                </f:entry>
                 <f:entry field="exporterTimeoutMillis" title="Exporter Timeout (ms)" description="e.g. '30000'">
                     <f:number clazz="required positive number" min="1" default="${exporterTimeoutMillis}"/>
                 </f:entry>

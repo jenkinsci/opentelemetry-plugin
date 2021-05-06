@@ -14,6 +14,7 @@ import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -67,6 +68,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
 
+    private String serviceName;
+
+    private String serviceNamespace;
+
     /**
      * The previously used configuration. Kept in memory to prevent unneeded reconfigurations.
      */
@@ -90,7 +95,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getExporterTimeoutMillis(), this.getExporterIntervalMillis(), this.getIgnoredSteps());
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getExporterTimeoutMillis(), this.getExporterIntervalMillis(), this.getIgnoredSteps(), this.getServiceName(), this.getServiceNamespace());
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
@@ -251,6 +256,34 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             }
         }
         return data;
+    }
+
+    /**
+     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAME
+     */
+    @CheckForNull
+    public String getServiceName() {
+        return this.serviceName;
+    }
+
+    @DataBoundSetter
+    public void setServiceName(String serviceName) {
+        this.serviceName = (Strings.isNullOrEmpty(serviceName)) ? JenkinsOtelSemanticAttributes.JENKINS : serviceName;
+        initializeOpenTelemetry();
+    }
+
+    /**
+     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAMESPACE
+     */
+    @CheckForNull
+    public String getServiceNamespace() {
+        return this.serviceNamespace;
+    }
+
+    @DataBoundSetter
+    public void setServiceNamespace(String serviceNamespace) {
+        this.serviceNamespace = (Strings.isNullOrEmpty(serviceNamespace)) ? JenkinsOtelSemanticAttributes.JENKINS : serviceNamespace;
+        initializeOpenTelemetry();
     }
 
     public static JenkinsOpenTelemetryPluginConfiguration get() {

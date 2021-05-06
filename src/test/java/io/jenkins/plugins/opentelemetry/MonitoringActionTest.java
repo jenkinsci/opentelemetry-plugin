@@ -32,7 +32,7 @@ public class MonitoringActionTest {
 
         Map<String, Object> binding = new HashMap<>();
         binding.put("baseUrl", "https://localhost:9200");
-        binding.put("serviceName", JenkinsOtelSemanticAttributes.SERVICE_NAME_JENKINS);
+        binding.put("serviceName", JenkinsOtelSemanticAttributes.JENKINS);
         binding.put("rootSpanName", "my-pipeline");
         binding.put("traceId", "ef7e4138d38d9e24c494ce123ccbad5d");
         binding.put("spanId", "a3bab980d6a51ba9");

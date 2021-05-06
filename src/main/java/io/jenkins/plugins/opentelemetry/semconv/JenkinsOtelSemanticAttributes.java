@@ -76,15 +76,7 @@ public final class JenkinsOtelSemanticAttributes {
 
     public static final AttributeKey<String>        JENKINS_STEP_AGENT_LABEL = AttributeKey.stringKey("jenkins.pipeline.step.agent.label");
 
-    /**
-     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAME
-     */
-    public static final String SERVICE_NAME_JENKINS = "jenkins";
-
-    /**
-     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAMESPACE
-     */
-    public static final String SERVICE_NAMESPACE_JENKINS = "jenkins";
+    public static final String JENKINS = "jenkins";
 
     /**
      * As {@link Jenkins.MasterComputer#getName()} return "", choose another name
