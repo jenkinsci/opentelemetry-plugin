@@ -13,25 +13,24 @@ import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
-import io.jenkins.plugins.opentelemetry.backend.CustomObservabilityBackend;
-import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
-import io.jenkins.plugins.opentelemetry.backend.JaegerBackend;
-import io.jenkins.plugins.opentelemetry.backend.ZipkinBackend;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
 import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
 import static io.jenkins.plugins.casc.misc.Util.toYamlString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 
-public class ConfigurationAsCodeTest {
+public class ConfigurationAsCodeDefaultTest {
 
     @ClassRule
-    @ConfiguredWithCode("configuration-as-code.yml")
+    @ConfiguredWithCode("configuration-as-code-default.yml")
     public static JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
 
     @Test
@@ -39,26 +38,17 @@ public class ConfigurationAsCodeTest {
         final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
-        MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(4));
-
-        ElasticBackend elastic = (ElasticBackend) configuration.getObservabilityBackends().get(0);
-        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("http://localhost:5601"));
-
-        JaegerBackend jaeger = (JaegerBackend) configuration.getObservabilityBackends().get(1);
-        MatcherAssert.assertThat(jaeger.getJaegerBaseUrl(), CoreMatchers.is("http://localhost:16686"));
-
-        CustomObservabilityBackend custom = (CustomObservabilityBackend) configuration.getObservabilityBackends().get(2);
-        MatcherAssert.assertThat(custom.getMetricsVisualisationUrlTemplate(), CoreMatchers.is("foo"));
-        MatcherAssert.assertThat(custom.getTraceVisualisationUrlTemplate(), CoreMatchers.is("http://example.com"));
-
-        ZipkinBackend zipkin = (ZipkinBackend) configuration.getObservabilityBackends().get(3);
-        MatcherAssert.assertThat(zipkin.getZipkinBaseUrl(), CoreMatchers.is("http://localhost:9411/"));
 
         OtlpAuthentication authentication = configuration.getAuthentication();
         MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
 
-        MatcherAssert.assertThat(configuration.getServiceName(), CoreMatchers.is("my-jenkins"));
-        MatcherAssert.assertThat(configuration.getServiceNamespace(), CoreMatchers.is("ci"));
+        MatcherAssert.assertThat(configuration.getExporterTimeoutMillis(), CoreMatchers.is(30_000));
+        MatcherAssert.assertThat(configuration.getExporterIntervalMillis(), CoreMatchers.is(60_000));
+
+        MatcherAssert.assertThat(configuration.getIgnoredSteps(), CoreMatchers.is("dir,echo,isUnix,pwd,properties"));
+
+        MatcherAssert.assertThat(configuration.getServiceName(), CoreMatchers.is("jenkins"));
+        MatcherAssert.assertThat(configuration.getServiceNamespace(), CoreMatchers.is("jenkins"));
     }
 
     @Test
@@ -69,7 +59,7 @@ public class ConfigurationAsCodeTest {
 
         String exported = toYamlString(yourAttribute);
 
-        String expected = toStringFromYamlFile(this, "configuration-as-code-expected.yml");
+        String expected = toStringFromYamlFile(this, "configuration-as-code-default-expected.yml");
 
         MatcherAssert.assertThat(exported, CoreMatchers.is(expected));
     }

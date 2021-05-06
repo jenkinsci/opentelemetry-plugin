@@ -1,0 +1,3 @@
+unclassified:
+  openTelemetry:
+    endpoint: "http://otel-collector-contrib:4317"

@@ -11,3 +11,5 @@ unclassified:
           traceVisualisationUrlTemplate: "http://example.com"
       - zipkin:
           zipkinBaseUrl: "http://localhost:9411/"
+    serviceName: "my-jenkins"
+    serviceNamespace: "ci"

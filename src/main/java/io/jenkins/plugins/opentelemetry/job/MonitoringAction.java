@@ -88,7 +88,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
                     null));
         }
         Map<String, Object> binding = new HashMap<>();
-        binding.put("serviceName", JenkinsOtelSemanticAttributes.SERVICE_NAME_JENKINS);
+        binding.put("serviceName", Objects.requireNonNull(JenkinsOpenTelemetryPluginConfiguration.get().getServiceName()));
         binding.put("rootSpanName", spanNamingStrategy.getRootSpanName(run));
         binding.put("traceId", this.traceId);
         binding.put("spanId", this.spanId);

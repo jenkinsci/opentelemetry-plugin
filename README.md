@@ -278,6 +278,8 @@ unclassified:
           traceVisualisationUrlTemplate: "http://example.com"
       - zipkin:
           zipkinBaseUrl: "http://localhost:9411/"
+    serviceName: "jenkins"
+    serviceNamespace: "jenkins"
 ```
 
 See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folder with various samples.
