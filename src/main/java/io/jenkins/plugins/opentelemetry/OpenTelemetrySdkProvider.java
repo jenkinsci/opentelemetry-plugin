@@ -16,7 +16,7 @@ import io.jenkins.plugins.opentelemetry.opentelemetry.resource.JenkinsResourcePr
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.metrics.GlobalMetricsProvider;
+import io.opentelemetry.api.metrics.GlobalMeterProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
@@ -50,6 +50,9 @@ import java.util.stream.Collectors;
 
 @Extension
 public class OpenTelemetrySdkProvider {
+
+    protected final static long TESTING_METRIC_EXPORTER_INTERVAL_MILLIS = 200;
+
     @SuppressFBWarnings
     protected static boolean TESTING_INMEMORY_MODE = false;
     @SuppressFBWarnings
@@ -79,14 +82,14 @@ public class OpenTelemetrySdkProvider {
         this.tracer = new TracerDelegate(OpenTelemetry.noop().getTracer("jenkins"));
         Resource resource = buildResource();
         this.sdkMeterProvider = SdkMeterProvider.builder().setResource(resource).buildAndRegisterGlobal();
-        this.meter = GlobalMetricsProvider.getMeter("jenkins");
+        this.meter = GlobalMeterProvider.getMeter("jenkins");
     }
 
     public void initializeForTesting() {
         LOGGER.log(Level.FINE, "initializeForTesting");
         preDestroy();
 
-        initializeOpenTelemetrySdk(TESTING_METRICS_EXPORTER, TESTING_SPAN_EXPORTER, 500);
+        initializeOpenTelemetrySdk(TESTING_METRICS_EXPORTER, TESTING_SPAN_EXPORTER, TESTING_METRIC_EXPORTER_INTERVAL_MILLIS);
         LOGGER.log(Level.INFO, "OpenTelemetry initialized for TESTING");
     }
 
@@ -151,7 +154,7 @@ public class OpenTelemetrySdkProvider {
         LOGGER.log(Level.INFO, () -> "OpenTelemetry initialized with GRPC endpoint " + endpoint + ", authenticationHeader: " + Objects.toString(otlpAuthentication, ""));
     }
 
-    protected void initializeOpenTelemetrySdk(MetricExporter metricExporter, SpanExporter spanExporter, int metricsExportIntervalMillis) {
+    protected void initializeOpenTelemetrySdk(MetricExporter metricExporter, SpanExporter spanExporter, long metricsExportIntervalMillis) {
         // METRICS
         // See https://github.com/open-telemetry/opentelemetry-java/blob/v0.14.1/examples/otlp/src/main/java/io/opentelemetry/example/otlp/OtlpExporterExample.java
         this.intervalMetricReader =
@@ -159,7 +162,7 @@ public class OpenTelemetrySdkProvider {
                         .setMetricExporter(metricExporter)
                         .setMetricProducers(Collections.singleton(sdkMeterProvider))
                         .setExportIntervalMillis(metricsExportIntervalMillis)
-                        .build();
+                        .buildAndStart();
 
         // TRACES
         Resource resource = buildResource();
