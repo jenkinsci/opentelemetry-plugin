@@ -263,12 +263,12 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      */
     @CheckForNull
     public String getServiceName() {
-        return this.serviceName;
+        return (Strings.isNullOrEmpty(this.serviceName)) ? JenkinsOtelSemanticAttributes.JENKINS : this.serviceName;
     }
 
     @DataBoundSetter
     public void setServiceName(String serviceName) {
-        this.serviceName = (Strings.isNullOrEmpty(serviceName)) ? JenkinsOtelSemanticAttributes.JENKINS : serviceName;
+        this.serviceName = serviceName;
         initializeOpenTelemetry();
     }
 
@@ -277,12 +277,12 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      */
     @CheckForNull
     public String getServiceNamespace() {
-        return this.serviceNamespace;
+        return (Strings.isNullOrEmpty(this.serviceNamespace)) ? JenkinsOtelSemanticAttributes.JENKINS : this.serviceNamespace;
     }
 
     @DataBoundSetter
     public void setServiceNamespace(String serviceNamespace) {
-        this.serviceNamespace = (Strings.isNullOrEmpty(serviceNamespace)) ? JenkinsOtelSemanticAttributes.JENKINS : serviceNamespace;
+        this.serviceNamespace = serviceNamespace;
         initializeOpenTelemetry();
     }
 
