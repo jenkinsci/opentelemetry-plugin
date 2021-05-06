@@ -43,7 +43,8 @@ public class MonitoringComputerListener extends ComputerListener {
 
     @PostConstruct
     public void postConstruct() {
-        Computer controllerComputer = Jenkins.get().getComputer("");
+        final Jenkins jenkins = Jenkins.get();
+        Computer controllerComputer = jenkins.getComputer("");
         if (controllerComputer == null) {
             LOGGER.log(Level.FINE, () -> "IllegalState Jenkins Controller computer not found");
         } else if (controllerComputer.getAction(OpenTelemetryAttributesAction.class) != null) {
@@ -79,33 +80,6 @@ public class MonitoringComputerListener extends ComputerListener {
                 .setDescription("Number of agents")
                 .setUnit("1")
                 .build();
-        Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins != null) {
-            QuickDiskUsagePlugin diskUsagePlugin = jenkins.getPlugin(QuickDiskUsagePlugin.class);
-            if (diskUsagePlugin != null) {
-                meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
-                        .setDescription("Disk usage of first level folder in JENKINS_HOME.")
-                        .setUnit("byte")
-                        .setUpdater(result -> result.observe(calculateDiskUsageInBytes(diskUsagePlugin), Labels.empty()))
-                        .build();
-            }
-        }
-    }
-
-    private long calculateDiskUsageInBytes(QuickDiskUsagePlugin diskUsagePlugin) {
-        try {
-            DiskItem disk = diskUsagePlugin.getDirectoriesUsages()
-                    .stream()
-                    .filter(x -> x.getDisplayName().equals("JENKINS_HOME"))
-                    .findFirst()
-                    .orElse(null);
-            if (disk != null) {
-                return disk.getUsage() * 1024;
-            }
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, e, () -> "Exception invoking `diskUsagePlugin.getDirectoriesUsages()`");
-        }
-        return 0;
     }
 
     private long getOfflineAgentsCount() {
