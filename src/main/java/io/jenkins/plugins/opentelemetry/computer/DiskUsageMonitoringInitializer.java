@@ -40,7 +40,7 @@ public class DiskUsageMonitoringInitializer extends ComputerListener {
 
     @PostConstruct
     public void postConstruct() {
-        final Jenkins jenkins = Jenkins.getInstanceOrNull();
+        final Jenkins jenkins = Jenkins.get();
         QuickDiskUsagePlugin diskUsagePlugin = jenkins.getPlugin(QuickDiskUsagePlugin.class);
         if (diskUsagePlugin == null) {
             LOGGER.log(Level.WARNING, () -> "Plugin 'disk-usage' not loaded, don't start monitoring Jenkins controller disk usage");
