@@ -89,7 +89,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     @WithPlugin("cloudbees-disk-usage-simple")
     public void testMetricsWithDiskUsagePlugin() throws Exception {
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
-        Thread.sleep(600);
+        Thread.sleep(OpenTelemetrySdkProvider.TESTING_METRIC_EXPORTER_INTERVAL_MILLIS * 3);
         Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
         dumpMetrics(exportedMetrics);
         MetricData diskUsageData = exportedMetrics.get(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES);
