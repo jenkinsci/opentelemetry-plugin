@@ -111,6 +111,8 @@ In addition, if the backends were configured then there will be an environment v
 | jenkins.agents.online            | Number of online agents |
 | jenkins.agents.offline           | Number of offline agents |
 | jenkins.agents.launch.failure    | Number of failed launched agents |
+| jenkins.cloud.agents.completed   | Number of provisioned cloud agents |
+| jenkins.cloud.agents.launch.failures | Number of computer launcher failures |
 | jenkins.disk.usage.bytes         | Disk Usage size |
 
 
