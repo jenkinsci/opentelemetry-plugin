@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.computer;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Node;
 import hudson.slaves.CloudProvisioningListener;
@@ -48,7 +49,13 @@ public class MonitoringCloudListener extends CloudProvisioningListener {
     public void onFailure(NodeProvisioner.PlannedNode plannedNode, Throwable t) {
         failureCloudGauge.incrementAndGet();
         LOGGER.log(Level.FINE, () -> "onFailure(" + plannedNode + ")");
+    }
 
+    @Override
+    public void onRollback(@NonNull NodeProvisioner.PlannedNode plannedNode, @NonNull Node node,
+                           @NonNull Throwable t) {
+        failureCloudGauge.incrementAndGet();
+        LOGGER.log(Level.FINE, () -> "onRollback(" + plannedNode + ")");
     }
 
     @Override
