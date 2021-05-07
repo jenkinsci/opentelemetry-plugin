@@ -271,13 +271,17 @@ unclassified:
     observabilityBackends:
       - elastic:
           kibanaBaseUrl: "http://localhost:5601"
+          name: "Elastic Observability"
       - jaeger:
           jaegerBaseUrl: "http://localhost:16686"
+          name: "Jaeger"
       - customObservabilityBackend:
           metricsVisualisationUrlTemplate: "foo"
           traceVisualisationUrlTemplate: "http://example.com"
+          name: "Custom Observability"
       - zipkin:
           zipkinBaseUrl: "http://localhost:9411/"
+          name: "Zipkin"
     serviceName: "jenkins"
     serviceNamespace: "jenkins"
 ```

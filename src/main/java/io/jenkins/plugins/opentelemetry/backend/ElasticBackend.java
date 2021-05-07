@@ -68,6 +68,12 @@ public class ElasticBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
+    public String getDefaultName() {
+        return "Elastic Observability";
+    }
+
+    @CheckForNull
+    @Override
     public String getMetricsVisualisationUrlTemplate() {
         return null;
     }

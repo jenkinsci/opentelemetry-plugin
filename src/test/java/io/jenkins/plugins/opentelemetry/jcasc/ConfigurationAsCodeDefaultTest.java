@@ -13,6 +13,7 @@ import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.jenkins.plugins.opentelemetry.backend.CustomObservabilityBackend;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
 import org.hamcrest.CoreMatchers;
@@ -38,6 +39,11 @@ public class ConfigurationAsCodeDefaultTest {
         final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
+
+        CustomObservabilityBackend custom = (CustomObservabilityBackend) configuration.getObservabilityBackends().get(0);
+        MatcherAssert.assertThat(custom.getMetricsVisualisationUrlTemplate(), CoreMatchers.is("foo"));
+        MatcherAssert.assertThat(custom.getTraceVisualisationUrlTemplate(), CoreMatchers.is("http://example.com"));
+        MatcherAssert.assertThat(custom.getName(), CoreMatchers.is("Custom Observability Backend"));
 
         OtlpAuthentication authentication = configuration.getAuthentication();
         MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
