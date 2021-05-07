@@ -3,13 +3,17 @@ unclassified:
     endpoint: "http://otel-collector-contrib:4317"
     observabilityBackends:
       - elastic:
+          name: "My Elastic"
           kibanaBaseUrl: "http://localhost:5601"
       - jaeger:
           jaegerBaseUrl: "http://localhost:16686"
+          name: "My Jaeger"
       - customObservabilityBackend:
           metricsVisualisationUrlTemplate: "foo"
+          name: "My Custom"
           traceVisualisationUrlTemplate: "http://example.com"
       - zipkin:
+          name: "My Zipkin"
           zipkinBaseUrl: "http://localhost:9411/"
     serviceName: "my-jenkins"
     serviceNamespace: "ci"

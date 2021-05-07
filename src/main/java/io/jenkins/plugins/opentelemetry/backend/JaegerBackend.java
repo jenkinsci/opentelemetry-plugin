@@ -61,6 +61,12 @@ public class JaegerBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
+    public String getDefaultName() {
+        return "Jaeger";
+    }
+
+    @CheckForNull
+    @Override
     public String getMetricsVisualisationUrlTemplate() {
         return null;
     }

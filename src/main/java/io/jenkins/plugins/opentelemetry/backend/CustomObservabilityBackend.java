@@ -65,6 +65,12 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
         return OTEL_CUSTOM_URL;
     }
 
+    @CheckForNull
+    @Override
+    public String getDefaultName() {
+        return "Custom Observability Backend";
+    }
+
     @Override
     public String toString() {
         return "CustomBackend{" +

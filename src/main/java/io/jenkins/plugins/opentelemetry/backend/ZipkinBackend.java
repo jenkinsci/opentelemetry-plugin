@@ -65,6 +65,12 @@ public class ZipkinBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
+    public String getDefaultName() {
+        return "Zipkin";
+    }
+
+    @CheckForNull
+    @Override
     public String getMetricsVisualisationUrlTemplate() {
         return null;
     }
