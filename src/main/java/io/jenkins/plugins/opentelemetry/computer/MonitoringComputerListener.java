@@ -5,8 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.computer;
 
-import com.cloudbees.simplediskusage.DiskItem;
-import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Computer;
@@ -32,6 +30,7 @@ import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,6 +39,8 @@ public class MonitoringComputerListener extends ComputerListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
     protected Meter meter;
+
+    private final AtomicInteger failureAgentGauge = new AtomicInteger();
 
     @PostConstruct
     public void postConstruct() {
@@ -80,6 +81,11 @@ public class MonitoringComputerListener extends ComputerListener {
                 .setDescription("Number of agents")
                 .setUnit("1")
                 .build();
+        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
+                .setUpdater(longResult -> longResult.observe(this.failureAgentGauge.longValue(), Labels.empty()))
+                .setDescription("Number of ComputerLauncher failures")
+                .setUnit("1")
+                .build();
     }
 
     private long getOfflineAgentsCount() {
@@ -116,6 +122,12 @@ public class MonitoringComputerListener extends ComputerListener {
 
         LOGGER.log(Level.FINE, () -> "preOnline(" + computer + "): " + openTelemetryAttributesAction);
         computer.addAction(openTelemetryAttributesAction);
+    }
+
+    @Override
+    public void onLaunchFailure(Computer computer, TaskListener taskListener) throws IOException, InterruptedException {
+        failureAgentGauge.incrementAndGet();
+        LOGGER.log(Level.FINE, () -> "onLaunchFailure(" + computer + "): ");
     }
 
     private static class GetComputerAttributes extends MasterToSlaveCallable<Map<String, String>, IOException> {

@@ -110,6 +110,7 @@ In addition, if the backends were configured then there will be an environment v
 | jenkins.agents.total             | Number of agents|
 | jenkins.agents.online            | Number of online agents |
 | jenkins.agents.offline           | Number of offline agents |
+| jenkins.agents.launch.failure    | Number of failed launched agents |
 | jenkins.disk.usage.bytes         | Disk Usage size |
 
 
