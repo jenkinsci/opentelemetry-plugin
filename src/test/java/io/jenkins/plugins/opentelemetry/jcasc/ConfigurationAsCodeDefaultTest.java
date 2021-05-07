@@ -43,7 +43,7 @@ public class ConfigurationAsCodeDefaultTest {
         CustomObservabilityBackend custom = (CustomObservabilityBackend) configuration.getObservabilityBackends().get(0);
         MatcherAssert.assertThat(custom.getMetricsVisualisationUrlTemplate(), CoreMatchers.is("foo"));
         MatcherAssert.assertThat(custom.getTraceVisualisationUrlTemplate(), CoreMatchers.is("http://example.com"));
-        MatcherAssert.assertThat(custom.getName(), CoreMatchers.is("Custom Observability Backend"));
+        MatcherAssert.assertThat(custom.getName(), CoreMatchers.is(CustomObservabilityBackend.DEFAULT_NAME));
 
         OtlpAuthentication authentication = configuration.getAuthentication();
         MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
