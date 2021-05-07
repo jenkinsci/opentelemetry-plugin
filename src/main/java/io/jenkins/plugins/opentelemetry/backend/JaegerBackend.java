@@ -18,6 +18,8 @@ import java.util.Map;
 public class JaegerBackend extends ObservabilityBackend {
 
     public static final String OTEL_JAEGER_URL = "OTEL_JAEGER_URL";
+    public static final String DEFAULT_NAME = "Jaeger";
+
 	private String jaegerBaseUrl;
 
     @DataBoundConstructor
@@ -62,7 +64,7 @@ public class JaegerBackend extends ObservabilityBackend {
     @CheckForNull
     @Override
     public String getDefaultName() {
-        return "Jaeger";
+        return DEFAULT_NAME;
     }
 
     @CheckForNull
@@ -86,7 +88,7 @@ public class JaegerBackend extends ObservabilityBackend {
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {
-            return "Jaeger";
+            return DEFAULT_NAME;
         }
     }
 }

@@ -18,6 +18,7 @@ import java.util.Objects;
 public class CustomObservabilityBackend extends ObservabilityBackend {
 
     public static final String OTEL_CUSTOM_URL = "OTEL_CUSTOM_URL";
+    public static final String DEFAULT_NAME = "Custom Observability Backend";
     private String traceVisualisationUrlTemplate;
     private String metricsVisualisationUrlTemplate;
 
@@ -68,7 +69,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     @CheckForNull
     @Override
     public String getDefaultName() {
-        return "Custom Observability Backend";
+        return DEFAULT_NAME;
     }
 
     @Override
@@ -97,7 +98,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {
-            return "Custom Observability Backend";
+            return DEFAULT_NAME;
         }
 
         /**
