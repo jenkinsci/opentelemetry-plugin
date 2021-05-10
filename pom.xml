@@ -14,10 +14,10 @@
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>opentelemetry</artifactId>
-    <version>0.12-beta</version>
+    <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
     <properties>
-        <revision>0.12-beta</revision>
+        <revision>0.13-beta</revision>
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.235.5</jenkins.version>
         <java.level>8</java.level>
@@ -313,7 +313,7 @@
         <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
         <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
         <url>https://github.com/${gitHubRepo}</url>
-        <tag>opentelemetry-0.12-beta</tag>
+        <tag>${scmTag}</tag>
     </scm>
     <contributors>
         <contributor>
