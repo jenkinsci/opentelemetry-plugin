@@ -118,7 +118,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 if (parameter.isSensitive()) {
                     nonNullParameterValues.add("#REDACTED#");
                 } else {
-                    nonNullParameterValues.add(Objects.toString(parameter.getValue(), "#NULL"));
+                    nonNullParameterValues.add(Objects.toString(parameter.getValue(), "#NULL#"));
                 }
             }
             rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_NAME, parameterNames);
