@@ -21,5 +21,4 @@ Import [cicd_overview_dashboard.ndjson](./dashboards/elastic/cicd_overview_dashb
 
 Import [provisioner_dashboard.ndjson](./dashboards/elastic/provisioner_dashboard.ndjson) and you will get something like:
 
-![Provisioner](./provisioner_dashboard.png)
-
+![Provisioner](./images/provisioner_dashboard.png)
