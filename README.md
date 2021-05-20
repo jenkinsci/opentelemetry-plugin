@@ -140,6 +140,13 @@ the span name will refer to `Agent` in the distributed traces.
 
 ![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
+
+### Dashboards
+
+You can now import some of the existing dashboards that have been created to provide further insights about your CI/CD Jenkins platform
+
+See the details in the [dashboard docs](docs/DASHBOARDS.md).
+
 ## Screenshots
 
 Sample of traces collected for various flavors of pipelines
@@ -249,12 +256,6 @@ node {
 ### Freestyle Job
 
 ![freestyle-job](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
-
-
-### Ideas
-
-* Collect labels of build agents
-* Detect outages caused by upgrades. Report on the version of the plugin of each plugin being used as a step
 
 ## Configuration as code
 
