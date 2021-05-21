@@ -42,6 +42,9 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     @CheckForNull
     public abstract String getEnvVariableName();
 
+    @CheckForNull
+    public abstract String getDefaultName();
+
     @Override
     public abstract boolean equals(Object obj);
 
@@ -51,7 +54,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     public abstract Map<String, Object> mergeBindings(Map<String, Object> bindings);
 
     public String getName() {
-        return name;
+        return Strings.isNullOrEmpty(name) ? getDefaultName() : name;
     }
 
     @DataBoundSetter

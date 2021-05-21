@@ -66,7 +66,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private transient SpanNamingStrategy spanNamingStrategy;
 
-    private ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
+    private transient ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
 
     private String serviceName;
 

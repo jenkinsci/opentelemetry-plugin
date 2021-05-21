@@ -143,6 +143,13 @@ the span name will refer to `Agent` in the distributed traces.
 
 ![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
+
+### Dashboards
+
+You can now import some of the existing dashboards that have been created to provide further insights about your CI/CD Jenkins platform
+
+See the details in the [dashboard docs](docs/DASHBOARDS.md).
+
 ## Screenshots
 
 Sample of traces collected for various flavors of pipelines
@@ -253,12 +260,6 @@ node {
 
 ![freestyle-job](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
 
-
-### Ideas
-
-* Collect labels of build agents
-* Detect outages caused by upgrades. Report on the version of the plugin of each plugin being used as a step
-
 ## Configuration as code
 
 This plugin supports configuration as code. Add to your yaml file:
@@ -274,13 +275,17 @@ unclassified:
     observabilityBackends:
       - elastic:
           kibanaBaseUrl: "http://localhost:5601"
+          name: "Elastic Observability"
       - jaeger:
           jaegerBaseUrl: "http://localhost:16686"
+          name: "Jaeger"
       - customObservabilityBackend:
           metricsVisualisationUrlTemplate: "foo"
           traceVisualisationUrlTemplate: "http://example.com"
+          name: "Custom Observability"
       - zipkin:
           zipkinBaseUrl: "http://localhost:9411/"
+          name: "Zipkin"
     serviceName: "jenkins"
     serviceNamespace: "jenkins"
 ```

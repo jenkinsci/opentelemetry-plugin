@@ -43,16 +43,20 @@ public class ConfigurationAsCodeTest {
 
         ElasticBackend elastic = (ElasticBackend) configuration.getObservabilityBackends().get(0);
         MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("http://localhost:5601"));
+        MatcherAssert.assertThat(elastic.getName(), CoreMatchers.is("My Elastic"));
 
         JaegerBackend jaeger = (JaegerBackend) configuration.getObservabilityBackends().get(1);
         MatcherAssert.assertThat(jaeger.getJaegerBaseUrl(), CoreMatchers.is("http://localhost:16686"));
+        MatcherAssert.assertThat(jaeger.getName(), CoreMatchers.is("My Jaeger"));
 
         CustomObservabilityBackend custom = (CustomObservabilityBackend) configuration.getObservabilityBackends().get(2);
         MatcherAssert.assertThat(custom.getMetricsVisualisationUrlTemplate(), CoreMatchers.is("foo"));
         MatcherAssert.assertThat(custom.getTraceVisualisationUrlTemplate(), CoreMatchers.is("http://example.com"));
+        MatcherAssert.assertThat(custom.getName(), CoreMatchers.is("My Custom"));
 
         ZipkinBackend zipkin = (ZipkinBackend) configuration.getObservabilityBackends().get(3);
         MatcherAssert.assertThat(zipkin.getZipkinBaseUrl(), CoreMatchers.is("http://localhost:9411/"));
+        MatcherAssert.assertThat(zipkin.getName(), CoreMatchers.is("My Zipkin"));
 
         OtlpAuthentication authentication = configuration.getAuthentication();
         MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));

@@ -108,20 +108,22 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         if (parameters != null) {
             List<String> parameterNames = new ArrayList<>();
             List<Boolean> parameterIsSensitive = new ArrayList<>();
-            List<String> parameterValues = new ArrayList<>();
+            // Span Attribute Values can NOT be null
+            // https://github.com/open-telemetry/opentelemetry-specification/blob/v1.3.0/specification/common/common.md
+            List<String> nonNullParameterValues = new ArrayList<>();
 
             for (ParameterValue parameter : parameters.getParameters()) {
-                parameterNames.add(parameter.getName());
+                parameterNames.add(Objects.toString(parameter.getName(), "#NULL#"));
                 parameterIsSensitive.add(parameter.isSensitive());
                 if (parameter.isSensitive()) {
-                    parameterValues.add(null);
+                    nonNullParameterValues.add("#REDACTED#");
                 } else {
-                    parameterValues.add(Objects.toString(parameter.getValue(), null));
+                    nonNullParameterValues.add(Objects.toString(parameter.getValue(), "#NULL#"));
                 }
             }
             rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_NAME, parameterNames);
             rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE, parameterIsSensitive);
-            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_VALUE, parameterValues);
+            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_VALUE, nonNullParameterValues);
         }
 
         if (!run.getCauses().isEmpty()) {
@@ -240,7 +242,6 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
     @Override
     public void _onDeleted(Run run) {
-        super.onDeleted(run);
     }
 
     private void dumpCauses(Run<?, ?> run, StringBuilder buf) {
