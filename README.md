@@ -114,8 +114,8 @@ In addition, if the backends were configured then there will be an environment v
 | runtime.jvm.gc.time{gc="${gc}"} | in milliseconds, `gc: G1 Young Generation, G1 Old Generation...`, see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html) |
 | runtime.jvm.gc.count{gc="G1 Young Generation"} | `gc: G1 Young Generation, G1 Old Generation...`, see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html) |
 | runtime.jvm.memory.area{type="${type}"} | in bytes, `type: used, committed`, see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
-| runtime.jvm.memory.area{type="committed",area="non_heap"} | in bytes,  `type: used, committed, max`, `area: heap, non_heap`, see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
-| runtime.jvm.memory.area{type="used",pool="PS Eden Space"} | in bytes,   `type: used, committed, max`, `pool: PS Eden Space, G1 Old Gen...`, see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
+| runtime.jvm.memory.area{type="${type}",area="${area}"} | in bytes, `type: used, committed, max`, `area: heap, non_heap`, see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
+| runtime.jvm.memory.area{type="${type}",pool="${pool}"} | in bytes, `type: used, committed, max`, `pool: PS Eden Space, G1 Old Gen...`, see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
 
 
 Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
