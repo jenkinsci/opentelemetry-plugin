@@ -3,32 +3,37 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.computer;
+package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
-import hudson.ExtensionPoint;
-import hudson.slaves.ComputerListener;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics.GarbageCollector;
 import io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics.MemoryPools;
 import jenkins.YesNoMaybe;
 
-import javax.annotation.PostConstruct;
+import javax.annotation.Nonnull;
+import javax.inject.Inject;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Note: we extend {@link ComputerListener} instead of a plain {@link ExtensionPoint} because simple ExtensionPoint don't get automatically loaded by Jenkins
- * There may be a better API to do this.
- */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class JvmMonitoringInitializer extends ComputerListener {
+public class JvmMonitoringInitializer extends OpenTelemetryPluginAbstractInitializer {
 
     private final static Logger LOGGER = Logger.getLogger(JvmMonitoringInitializer.class.getName());
 
     public JvmMonitoringInitializer() {
+
     }
 
-    @PostConstruct
-    public void postConstruct() {
+    /**
+     * TODO better dependency handling
+     * Don't start just after `PLUGINS_STARTED` because it creates an initialization problem
+     */
+    @Initializer(after = InitMilestone.JOB_LOADED)
+    public void initialize() {
+        LOGGER.log(Level.INFO, "Start monitoring the JVM...");
         GarbageCollector.registerObservers();
         MemoryPools.registerObservers();
     }
