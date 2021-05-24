@@ -95,27 +95,34 @@ In addition, if the backends were configured then there will be an environment v
 
 ### Metrics on Jenkins health indicators
 
-| Metrics                          | Description  |
-|----------------------------------|--------------|
-| ci.pipeline.run.active           | Gauge of active jobs |
-| ci.pipeline.run.launched         | Job launched |
-| ci.pipeline.run.started          | Job started |
-| ci.pipeline.run.completed        | Job completed |
-| ci.pipeline.run.aborted          | Job aborted |
-| jenkins.queue.waiting            | Number of waiting items in queue |
-| jenkins.queue.blocked            | Number of blocked items in queue |
-| jenkins.queue.buildable          | Number of buildable items in queue |
-| jenkins.queue.left               | Total count of left items |
-| jenkins.queue.time_spent_millis  | Total time spent in queue by items |
-| jenkins.agents.total             | Number of agents|
-| jenkins.agents.online            | Number of online agents |
-| jenkins.agents.offline           | Number of offline agents |
-| jenkins.disk.usage.bytes         | Disk Usage size |
-| runtime.jvm.gc.time{gc="${gc}"} | in milliseconds, `gc: G1 Young Generation, G1 Old Generation...`, see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html) |
-| runtime.jvm.gc.count{gc="G1 Young Generation"} | `gc: G1 Young Generation, G1 Old Generation...`, see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html) |
-| runtime.jvm.memory.area{type="${type}"} | in bytes, `type: used, committed`, see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
-| runtime.jvm.memory.area{type="${type}",area="${area}"} | in bytes, `type: used, committed, max`, `area: heap, non_heap`, see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
-| runtime.jvm.memory.area{type="${type}",pool="${pool}"} | in bytes, `type: used, committed, max`, `pool: PS Eden Space, G1 Old Gen...`, see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
+| Metrics                          | Unit  | Label key  | Label Value       |            Description  |
+|----------------------------------|-------|------------|-------------------|-------------|
+| ci.pipeline.run.active           | 1     |            |                   | Gauge of active jobs |
+| ci.pipeline.run.launched         | 1     |            |                   | Job launched |
+| ci.pipeline.run.started          | 1     |            |                   | Job started |
+| ci.pipeline.run.completed        | 1     |            |                   | Job completed |
+| ci.pipeline.run.aborted          | 1     |            |                   | Job aborted |
+| jenkins.queue.waiting            | 1     |            |                   | Number of waiting items in queue |
+| jenkins.queue.blocked            | 1     |            |                   | Number of blocked items in queue |
+| jenkins.queue.buildable          | 1     |            |                   | Number of buildable items in queue |
+| jenkins.queue.left               | 1     |            |                   | Total count of left items |
+| jenkins.queue.time_spent_millis  | ms    |            |                   | Total time spent in queue by items |
+| jenkins.agents.total             | 1     |            |                   | Number of agents|
+| jenkins.agents.online            | 1     |            |                   | Number of online agents |
+| jenkins.agents.offline           | 1     |            |                   | Number of offline agents |
+| jenkins.disk.usage.bytes         | By    |            |                   | Disk Usage size |
+| runtime.jvm.gc.time              | ms    |  gc        | `G1 Young Generation`, `G1 Old Generation...` | see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html) |
+| runtime.jvm.gc.count             | 1     |  gc        | `G1 Young Generation`, `G1 Old Generation...` | see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html) |
+| runtime.jvm.memory.area          | bytes | type, area | `used`, `committed`, `max` <br/> `heap`, `non_heap` | see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
+| runtime.jvm.memory.pool          | bytes | type, pool | `used`, `committed`, `max` <br/> `PS Eden Space`, `G1 Old Gen...` | see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
+| system.cpu.load                  | 1     |            |                  | System CPU load. See `com.sun.management.OperatingSystemMXBean.getSystemCpuLoad` |
+| system.cpu.load.average.1m       | 1     |            |                  | System CPU load average 1 minute See `java.lang.management.OperatingSystemMXBean.getSystemLoadAverage` |
+| system.memory.usage              | By    | state      | `used`, `free`   | see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize` |  
+| system.memory.utilization        | 1     |            |                  | System memory utilization, see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize` | 
+| system.paging.usage              | By    | state      | `used`, `free`   | see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize` |
+| system.paging.utilization        | 1     |            |                  | see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize` |
+| process.cpu.load                 | 1     |            |                  | Process CPU load. See `com.sun.management.OperatingSystemMXBean.getProcessCpuLoad` |
+| process.cpu.time                 | ns    |            |                  | Process CPU time. See `com.sun.management.OperatingSystemMXBean.getProcessCpuTime` |
 
 
 Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
