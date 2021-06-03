@@ -127,7 +127,7 @@ In addition, if the backends were configured then there will be an environment v
 
 Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
 
-The ``untime.*`metrics are the same as the one collected by the `
+The `runtime.*` metrics are the same as the one collected by the `
 
 ### Standardisation
 
