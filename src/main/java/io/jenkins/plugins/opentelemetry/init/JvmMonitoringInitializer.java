@@ -116,7 +116,12 @@ public class JvmMonitoringInitializer extends OpenTelemetryPluginAbstractInitial
                         final long totalSize = osBean.getTotalPhysicalMemorySize();
                         final long freeSize = osBean.getFreePhysicalMemorySize();
                         final long usedSize = totalSize - freeSize;
-                        final BigDecimal utilization = new BigDecimal(usedSize).divide(new BigDecimal(totalSize), MathContext.DECIMAL64);
+                        final BigDecimal utilization;
+                        if (totalSize == 0) {
+                            utilization = new BigDecimal(0);  // unexpected no physical reported, report 0% utilization
+                        } else {
+                            utilization = new BigDecimal(usedSize).divide(new BigDecimal(totalSize), MathContext.DECIMAL64);
+                        }
                         LOGGER.log(Level.FINER, () -> "Memory utilization: " + utilization + ", used: " + usedSize + " bytes, free: " + freeSize + " bytes, total: " + totalSize + " bytes");
                         valueObserver.observe(utilization.doubleValue(), Labels.empty());
                     }
@@ -142,10 +147,15 @@ public class JvmMonitoringInitializer extends OpenTelemetryPluginAbstractInitial
                 .setUnit("bytes")
                 .setUpdater(valueObserver ->
                     {
-                        final long totalSize = osBean.getTotalSwapSpaceSize();
                         final long freeSize = osBean.getFreeSwapSpaceSize();
+                        final long totalSize = osBean.getTotalSwapSpaceSize();
                         final long usedSize = totalSize - freeSize;
-                        final BigDecimal utilization = new BigDecimal(usedSize).divide(new BigDecimal(totalSize), MathContext.DECIMAL64);
+                        final BigDecimal utilization;
+                        if (totalSize == 0) {
+                            utilization = new BigDecimal(0); // if no swap is allocated, report 0% utilization. Can happen in unit tests...
+                        } else {
+                            utilization = new BigDecimal(usedSize).divide(new BigDecimal(totalSize), MathContext.DECIMAL64);
+                        }
                         LOGGER.log(Level.FINER, () -> "Swap utilization: " + utilization + ", used: " + usedSize + " bytes, free: " + freeSize + " bytes, total: " + totalSize + " bytes");
                         valueObserver.observe(utilization.doubleValue(), Labels.empty());
                     }
