@@ -43,9 +43,10 @@ Configure the Jenkins Controller to send OpenTelemetry data to an OpenTelemetry 
 ```yaml
 exporters:
   prometheus:
-    endpoint: 0.0.0.0:8889
+    endpoint: 0.0.0.0:1234
     resource_to_telemetry_conversion:
       enabled: true
+  ...
 service:
   pipelines:
     metrics:
