@@ -241,9 +241,11 @@ public class OtelTraceService {
 
         @Override
         public String toString() {
+            // clone the Multimap to prevent a ConcurrentModificationException
+            // see https://github.com/jenkinsci/opentelemetry-plugin/issues/129
             return "RunSpans{" +
-                    "runPhasesSpans=" + runPhasesSpans +
-                    ", pipelineStepSpansByFlowNodeId=" + pipelineStepSpansByFlowNodeId +
+                    "runPhasesSpans=" + new ArrayList(runPhasesSpans) +
+                    ", pipelineStepSpansByFlowNodeId=" + ArrayListMultimap.create(pipelineStepSpansByFlowNodeId) +
                     '}';
         }
     }
