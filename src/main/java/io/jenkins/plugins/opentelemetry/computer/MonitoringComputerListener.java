@@ -16,6 +16,7 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.common.Labels;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
@@ -30,7 +31,6 @@ import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,7 +40,7 @@ public class MonitoringComputerListener extends ComputerListener {
 
     protected Meter meter;
 
-    private final AtomicInteger failureAgentGauge = new AtomicInteger();
+    private LongCounter failureAgentCounter;
 
     @PostConstruct
     public void postConstruct() {
@@ -81,11 +81,10 @@ public class MonitoringComputerListener extends ComputerListener {
                 .setDescription("Number of agents")
                 .setUnit("1")
                 .build();
-        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
-                .setUpdater(longResult -> longResult.observe(this.failureAgentGauge.longValue(), Labels.empty()))
-                .setDescription("Number of ComputerLauncher failures")
-                .setUnit("1")
-                .build();
+        failureAgentCounter = meter.longCounterBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
+            .setDescription("Number of ComputerLauncher failures")
+            .setUnit("1")
+            .build();
     }
 
     private long getOfflineAgentsCount() {
@@ -126,7 +125,7 @@ public class MonitoringComputerListener extends ComputerListener {
 
     @Override
     public void onLaunchFailure(Computer computer, TaskListener taskListener) throws IOException, InterruptedException {
-        failureAgentGauge.incrementAndGet();
+        failureAgentCounter.add(1);
         LOGGER.log(Level.FINE, () -> "onLaunchFailure(" + computer + "): ");
     }
 
