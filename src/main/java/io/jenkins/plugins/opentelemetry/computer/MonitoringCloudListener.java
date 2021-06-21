@@ -35,7 +35,7 @@ public class MonitoringCloudListener extends CloudProvisioningListener {
     public void postConstruct() {
         meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_FAILURE)
                 .setUpdater(longResult -> longResult.observe(this.failureCloudGauge.longValue(), Labels.empty()))
-                .setDescription("Number of failed when provisioning cloud agents")
+                .setDescription("Number of failed cloud agents when provisioning")
                 .setUnit("1")
                 .build();
         meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_COMPLETED)
