@@ -81,6 +81,7 @@ public class OpenTelemetrySdkProvider {
     public void postConstruct() {
         this.tracer = new TracerDelegate(OpenTelemetry.noop().getTracer("jenkins"));
         Resource resource = buildResource();
+        LOGGER.log(Level.INFO, () ->"OpenTelemetry SdkMeterProvider resources: " + resource.getAttributes().asMap().entrySet().stream().map( e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
         this.sdkMeterProvider = SdkMeterProvider.builder().setResource(resource).buildAndRegisterGlobal();
         this.meter = GlobalMeterProvider.getMeter("jenkins");
     }
@@ -166,7 +167,7 @@ public class OpenTelemetrySdkProvider {
 
         // TRACES
         Resource resource = buildResource();
-        LOGGER.log(Level.FINE, () ->"OpenTelemetry SDK resources: " + resource.getAttributes().asMap().entrySet().stream().map( e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
+        LOGGER.log(Level.FINE, () ->"OpenTelemetry SdkTracerProvider resources: " + resource.getAttributes().asMap().entrySet().stream().map( e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
         SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder().setResource(resource).addSpanProcessor(SimpleSpanProcessor.create(spanExporter)).build();
 
         this.openTelemetry = OpenTelemetrySdk.builder()

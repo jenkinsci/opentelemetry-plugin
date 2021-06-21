@@ -74,7 +74,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
-        Thread.sleep(600);
+        Thread.sleep(OpenTelemetrySdkProvider.TESTING_METRIC_EXPORTER_INTERVAL_MILLIS * 3);
         Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
         dumpMetrics(exportedMetrics);
         MetricData runCompletedCounterData = exportedMetrics.get(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED);

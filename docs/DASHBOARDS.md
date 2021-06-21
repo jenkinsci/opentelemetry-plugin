@@ -4,7 +4,7 @@ CICD dashboards to be imported.
 
 ## Elastic
 
-Specific dashboards to be imported in you Kibana instance once the plugin has been configured.
+Specific dashboards to be imported in you Kibana instance once the plugin has been configured. Supported version >= `7.12`
 
 There are different ways to import a Kibana dashboard:
 
