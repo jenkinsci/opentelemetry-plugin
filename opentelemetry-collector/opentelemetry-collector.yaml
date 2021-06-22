@@ -31,6 +31,8 @@ exporters:
     loglevel: warn
   prometheus:
     endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+        enabled: true
   zipkin:
     endpoint: "http://localhost:9411/api/v2/spans"
     insecure: true
@@ -39,7 +41,7 @@ service:
     metrics:
       receivers:
         - otlp
-        - hostmetrics
+        #- hostmetrics
       exporters:
         - logging
         - prometheus
@@ -51,6 +53,6 @@ service:
         - batch
       exporters:
         - otlp/elastic
-        - jaeger
+        #- jaeger
         #- zipkin
   extensions: [zpages]
