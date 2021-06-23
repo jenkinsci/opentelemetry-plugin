@@ -9,19 +9,24 @@ import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import hudson.Extension;
 import hudson.PluginWrapper;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
-import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.structs.SymbolLookup;
+import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
-import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.CoreStep;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -36,6 +41,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -230,16 +236,38 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @Nonnull
     public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepAtomNode node) {
-        return findStepPluginOrDefault(stepName, node.getDescriptor());
+        Descriptor<? extends Describable> descriptor = node.getDescriptor();
+
+        // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
+        if (descriptor instanceof CoreStep.DescriptorImpl) {
+            Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
+            UninstantiatedDescribable describable = (UninstantiatedDescribable) arguments.get("delegate");
+            if (describable != null) {
+                descriptor = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
+            }
+        }
+
+        return findStepPluginOrDefault(stepName, descriptor);
     }
 
     @Nonnull
     public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepStartNode node) {
-        return findStepPluginOrDefault(stepName, node.getDescriptor());
+        Descriptor<? extends Describable> descriptor = node.getDescriptor();
+
+        // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
+        if (descriptor instanceof CoreStep.DescriptorImpl) {
+            Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
+            UninstantiatedDescribable describable = (UninstantiatedDescribable) arguments.get("delegate");
+            if (describable != null) {
+                descriptor = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
+            }
+        }
+
+        return findStepPluginOrDefault(stepName, descriptor);
     }
 
     @Nonnull
-    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nullable StepDescriptor descriptor) {
+    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nullable Descriptor<? extends Describable> descriptor) {
         StepPlugin data = loadedStepsPlugins.get(stepName);
         if (data!=null) {
             LOGGER.log(Level.FINEST, " found the plugin for the step '" + stepName + "' - " + data);
