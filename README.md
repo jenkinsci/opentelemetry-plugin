@@ -119,6 +119,9 @@ In addition, if the backends were configured then there will be an environment v
 | git.branch                       | Git branch name | String |
 | git.repository                   | Git repository | String |
 | git.username                     | Git user | String |
+| git.clone.shallow                | Git shallow clone | Boolean |
+| git.clone.depth                  | Git shallow clone depth | Long |
+| git.username                     | Git user | String |
 | jenkins.url                      | Jenkins URL | String |
 | jenkins.computer.name            | Name of the agent | String |
 
