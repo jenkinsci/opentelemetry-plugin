@@ -21,6 +21,16 @@ public class AbstractPipelineListener implements PipelineListener {
     }
 
     @Override
+    public void onStartCreateSpanStep(@Nonnull StepStartNode stepStartNode, @Nonnull WorkflowRun run) {
+
+    }
+
+    @Override
+    public void onEndCreateSpanStep(@Nonnull StepEndNode stageStepEndNode, @Nonnull WorkflowRun run){
+
+    }
+
+    @Override
     public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String nodeLabel, @Nonnull WorkflowRun run) {
 
     }

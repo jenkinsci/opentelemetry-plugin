@@ -28,6 +28,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.compress.utils.Sets;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
@@ -45,12 +46,15 @@ import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verifyNotNull;
 
 
@@ -133,6 +137,39 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             getTracerService().putSpan(run, stageSpan, stepStartNode);
         }
+    }
+
+    @Override
+    public void onStartCreateSpanStep(@Nonnull StepStartNode stepStartNode, @Nonnull WorkflowRun run) {
+        try (Scope ignored = setupContext(run, stepStartNode)) {
+            verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
+
+            String createSpanName = getStepName(stepStartNode.getDescriptor(), "createSpan");
+            String stepType = getStepType(stepStartNode.getDescriptor(), "step");
+            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
+
+            final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
+            final String spanAttribute = (String) arguments.getOrDefault("name", createSpanName);
+            final String spanName = Strings.isNullOrEmpty(spanAttribute) ? createSpanName : spanAttribute;
+            SpanBuilder createSpanBuilder = getTracer().spanBuilder(spanName)
+                    .setParent(Context.current())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, createSpanName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+
+            final Map<String, String> attributes = (Map<String, String>) arguments.getOrDefault("attributes", Collections.emptyMap());
+            attributes.forEach((key, value) -> { createSpanBuilder.setAttribute(AttributeKey.stringKey(key), value); });
+            Span createSpan = createSpanBuilder.startSpan();
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + stepStartNode.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(createSpan));
+            getTracerService().putSpan(run, createSpan, stepStartNode);
+        }
+    }
+
+    @Override
+    public void onEndCreateSpanStep(@Nonnull StepEndNode node, @Nonnull WorkflowRun run) {
+        endCurrentSpan(node, run);
     }
 
     @Override
