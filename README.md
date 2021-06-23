@@ -124,7 +124,7 @@ In addition, if the backends were configured then there will be an environment v
 
 ### Metrics on Jenkins health indicators
 
-| Metrics                          | Unit  | Label key  | Label Value       |            Description  |
+| Metrics                          | Unit  | Label key  | Label Value       | Description |
 |----------------------------------|-------|------------|-------------------|-------------|
 | ci.pipeline.run.active           | 1     |            |                   | Gauge of active jobs |
 | ci.pipeline.run.launched         | 1     |            |                   | Job launched |
@@ -139,6 +139,9 @@ In addition, if the backends were configured then there will be an environment v
 | jenkins.agents.total             | 1     |            |                   | Number of agents|
 | jenkins.agents.online            | 1     |            |                   | Number of online agents |
 | jenkins.agents.offline           | 1     |            |                   | Number of offline agents |
+| jenkins.agents.launch.failure    | 1     |            |                   | Number of failed launched agents |
+| jenkins.cloud.agents.completed   | 1     |            |                   | Number of provisioned cloud agents |
+| jenkins.cloud.agents.launch.failure | 1  |            |                   | Number of failed cloud agents |
 | jenkins.disk.usage.bytes         | By    |            |                   | Disk Usage size |
 | runtime.jvm.gc.time              | ms    |  gc        | `G1 Young Generation`, `G1 Old Generation...` | see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html) |
 | runtime.jvm.gc.count             | 1     |  gc        | `G1 Young Generation`, `G1 Old Generation...` | see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html) |
@@ -146,8 +149,8 @@ In addition, if the backends were configured then there will be an environment v
 | runtime.jvm.memory.pool          | bytes | type, pool | `used`, `committed`, `max`. <br/> `PS Eden Space`, `G1 Old Gen...` | see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
 | system.cpu.load                  | 1     |            |                  | System CPU load. See `com.sun.management.OperatingSystemMXBean.getSystemCpuLoad` |
 | system.cpu.load.average.1m       | 1     |            |                  | System CPU load average 1 minute See `java.lang.management.OperatingSystemMXBean.getSystemLoadAverage` |
-| system.memory.usage              | By    | state      | `used`, `free`   | see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize` |  
-| system.memory.utilization        | 1     |            |                  | System memory utilization, see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize`. Report `0%` if no physical memory is discovered by the JVM.| 
+| system.memory.usage              | By    | state      | `used`, `free`   | see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize` |
+| system.memory.utilization        | 1     |            |                  | System memory utilization, see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize`. Report `0%` if no physical memory is discovered by the JVM.|
 | system.paging.usage              | By    | state      | `used`, `free`   | see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize` |
 | system.paging.utilization        | 1     |            |                  | see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize`. Report `0%` if no swap memory is discovered by the JVM.|
 | process.cpu.load                 | 1     |            |                  | Process CPU load. See `com.sun.management.OperatingSystemMXBean.getProcessCpuLoad` |
