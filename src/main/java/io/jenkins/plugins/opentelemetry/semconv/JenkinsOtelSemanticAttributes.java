@@ -44,6 +44,8 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String>        GIT_REPOSITORY = AttributeKey.stringKey("git.repository");
     public static final AttributeKey<String>        GIT_BRANCH = AttributeKey.stringKey("git.branch");
     public static final AttributeKey<String>        GIT_USERNAME = AttributeKey.stringKey("git.username");
+    public static final AttributeKey<Long>          GIT_CLONE_DEPTH = AttributeKey.longKey("git.clone.depth");
+    public static final AttributeKey<Boolean>       GIT_CLONE_SHALLOW = AttributeKey.booleanKey("git.clone.shallow");
 
     /**
      * @see Jenkins#getRootUrl()
