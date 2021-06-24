@@ -178,14 +178,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName());
             }
 
-            String stepType = getStepType(node, node.getDescriptor(), "step");
+            String stepType = getStepType(node, node.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NAME);
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, node);
 
             spanBuilder
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node, node.getDescriptor(), "step"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node, JenkinsOtelSemanticAttributes.STEP_NAME))
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
@@ -215,13 +215,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         return ignoreStep;
     }
 
-    private String getStepName(@Nonnull FlowNode node, @Nullable StepDescriptor stepDescriptor, @Nonnull String name) {
+    private String getStepName(@Nonnull StepAtomNode node, @Nonnull String name) {
+        StepDescriptor stepDescriptor = node.getDescriptor();
         if (stepDescriptor == null) {
             return name;
         }
         UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
         if (describable != null) {
-            Descriptor<? extends Describable> d  = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
+            Descriptor<? extends Describable> d = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
             return d.getDisplayName();
         }
         return stepDescriptor.getDisplayName();
