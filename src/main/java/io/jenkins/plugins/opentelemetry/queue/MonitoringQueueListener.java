@@ -32,9 +32,7 @@ public class MonitoringQueueListener extends QueueListener {
 
     protected Meter meter;
 
-    private final AtomicInteger waitingItemGauge = new AtomicInteger();
     private final AtomicInteger blockedItemGauge = new AtomicInteger();
-    private final AtomicInteger buildableItemGauge = new AtomicInteger();
     private LongCounter leftItemCounter;
     private LongCounter timeInQueueInMillisCounter;
 
@@ -90,16 +88,6 @@ public class MonitoringQueueListener extends QueueListener {
     }
 
     @Override
-    public void onEnterWaiting(Queue.WaitingItem wi) {
-        this.waitingItemGauge.incrementAndGet();
-    }
-
-    @Override
-    public void onLeaveWaiting(Queue.WaitingItem wi) {
-        this.waitingItemGauge.decrementAndGet();
-    }
-
-    @Override
     public void onEnterBlocked(Queue.BlockedItem bi) {
         this.blockedItemGauge.incrementAndGet();
     }
@@ -107,16 +95,6 @@ public class MonitoringQueueListener extends QueueListener {
     @Override
     public void onLeaveBlocked(Queue.BlockedItem bi) {
         this.blockedItemGauge.decrementAndGet();
-    }
-
-    @Override
-    public void onEnterBuildable(Queue.BuildableItem bi) {
-        this.buildableItemGauge.incrementAndGet();
-    }
-
-    @Override
-    public void onLeaveBuildable(Queue.BuildableItem bi) {
-        this.buildableItemGauge.decrementAndGet();
     }
 
     @Override
