@@ -12,6 +12,7 @@ import hudson.model.Label;
 import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.computer.opentelemetry.OtelContextAwareAbstractCloudProvisioningListener;
 import io.jenkins.plugins.opentelemetry.computer.opentelemetry.context.PlannedNodeContextKey;
@@ -60,21 +61,36 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
         }
         NodeProvisioner.PlannedNode plannedNode = plannedNodes.iterator().next();
 
-        String rootSpanName = plannedNode.displayName;
+        String rootSpanName = cloud.getUrl();
+        JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault("cloud", cloud.getDescriptor());
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(rootSpanName).setSpanKind(SpanKind.SERVER);
 
         // TODO move this to a pluggable span enrichment API with implementations for different observability backends
         // Regarding the value `unknown`, see https://github.com/jenkinsci/opentelemetry-plugin/issues/51
         rootSpanBuilder
             .setAttribute(JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE, "unknown")
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_CLOUD_LABEL, label.getExpression());
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_CLOUD_LABEL, label.getExpression())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
 
-        // START ROOT SPAN
+        // ENRICH attributes with every Cloud specifics
+
+        // START root span
         Span rootSpan = rootSpanBuilder.startSpan();
 
         this.getTraceService().putSpan(plannedNode, rootSpan);
-        rootSpan.makeCurrent();
-        LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin root " + OtelUtils.toDebugString(rootSpan));
+        try (final Scope rootSpanScope = rootSpan.makeCurrent()) {
+            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin root " + OtelUtils.toDebugString(rootSpan));
+
+            // START started span
+            Span startSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_STARTED_NAME)
+                .setParent(Context.current().with(rootSpan))
+                .startSpan();
+            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin started " + OtelUtils.toDebugString(startSpan));
+
+            this.getTraceService().putSpan(plannedNode, startSpan);
+            startSpan.makeCurrent();
+        }
     }
 
     @Override

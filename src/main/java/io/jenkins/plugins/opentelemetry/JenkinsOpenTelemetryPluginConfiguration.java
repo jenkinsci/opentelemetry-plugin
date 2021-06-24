@@ -9,6 +9,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import hudson.Extension;
 import hudson.PluginWrapper;
+import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
@@ -239,7 +240,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nonnull
-    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nullable StepDescriptor descriptor) {
+    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nullable Descriptor descriptor) {
         StepPlugin data = loadedStepsPlugins.get(stepName);
         if (data!=null) {
             LOGGER.log(Level.FINEST, " found the plugin for the step '" + stepName + "' - " + data);
