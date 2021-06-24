@@ -244,7 +244,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
         if (stepDescriptor instanceof CoreStep.DescriptorImpl) {
             Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
-            if(arguments.get("delegate") instanceOf UninstantiatedDescribable){
+            if (arguments.get("delegate") instanceof UninstantiatedDescribable) {
               return (UninstantiatedDescribable) arguments.get("delegate");
             }
         }

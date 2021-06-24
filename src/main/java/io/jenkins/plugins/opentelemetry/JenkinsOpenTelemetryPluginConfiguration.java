@@ -240,7 +240,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
         if (descriptor instanceof CoreStep.DescriptorImpl) {
             Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
-            if (arguments.get("delegate") instanceOf UninstantiatedDescribable) {
+            if (arguments.get("delegate") instanceof UninstantiatedDescribable) {
               UninstantiatedDescribable describable = (UninstantiatedDescribable) arguments.get("delegate");
               if (describable != null) {
                   return SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
