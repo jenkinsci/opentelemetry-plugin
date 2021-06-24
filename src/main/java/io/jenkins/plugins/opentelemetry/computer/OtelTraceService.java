@@ -130,8 +130,7 @@ public class OtelTraceService {
         if (plannedNodes.size() == 1) {
             return setupContext(plannedNodes.iterator().next());
         }
-        // NOOP span . TODO
-        return null;
+        return noOpTracer.spanBuilder("noop-multiple-planned-nodes-span").startSpan().makeCurrent();
     }
 
     /**
@@ -147,8 +146,7 @@ public class OtelTraceService {
             Context.current().with(PlannedNodeContextKey.KEY, plannedNode);
             return scope;
         }
-        // NOOP span . TODO
-        return null;
+        return noOpTracer.spanBuilder("noop-existing-planned-nodes-span").startSpan().makeCurrent();
     }
 
     public Tracer getTracer() {
