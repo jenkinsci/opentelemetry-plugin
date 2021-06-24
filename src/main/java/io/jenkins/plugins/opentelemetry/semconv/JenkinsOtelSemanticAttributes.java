@@ -110,4 +110,9 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String>        ELASTIC_TRANSACTION_TYPE = AttributeKey.stringKey("type");
 
 
+    public static final AttributeKey<String>        CI_CLOUD_LABEL = AttributeKey.stringKey("ci.cloud.label");
+    public static final String                      CLOUD_SPAN_PHASE_STARTED_NAME = "Phase: Started";
+    public static final String                      CLOUD_SPAN_PHASE_COMMIT_NAME = "Phase: Commit";
+    public static final String                      CLOUD_SPAN_PHASE_FAILURE_NAME = "Phase: Failure";
+    public static final String                      CLOUD_SPAN_PHASE_COMPLETE_NAME = "Phase: Complete";
 }
