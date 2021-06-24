@@ -26,6 +26,7 @@ import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.CoreStep;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -234,36 +235,27 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         loadedStepsPlugins.put(stepName, c);
     }
 
-    @Nonnull
-    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepAtomNode node) {
-        Descriptor<? extends Describable> descriptor = node.getDescriptor();
-
+    @Nullable
+    private Descriptor<? extends Describable> getStepDescriptor(@Nonnull FlowNode node, @Nullable Descriptor<? extends Describable> descriptor) {
         // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
         if (descriptor instanceof CoreStep.DescriptorImpl) {
             Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
             UninstantiatedDescribable describable = (UninstantiatedDescribable) arguments.get("delegate");
             if (describable != null) {
-                descriptor = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
+                return SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
             }
         }
+        return descriptor;
+    }
 
-        return findStepPluginOrDefault(stepName, descriptor);
+    @Nonnull
+    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepAtomNode node) {
+        return findStepPluginOrDefault(stepName, getStepDescriptor(node, node.getDescriptor()));
     }
 
     @Nonnull
     public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepStartNode node) {
-        Descriptor<? extends Describable> descriptor = node.getDescriptor();
-
-        // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
-        if (descriptor instanceof CoreStep.DescriptorImpl) {
-            Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
-            UninstantiatedDescribable describable = (UninstantiatedDescribable) arguments.get("delegate");
-            if (describable != null) {
-                descriptor = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
-            }
-        }
-
-        return findStepPluginOrDefault(stepName, descriptor);
+        return findStepPluginOrDefault(stepName, getStepDescriptor(node, node.getDescriptor()));
     }
 
     @Nonnull

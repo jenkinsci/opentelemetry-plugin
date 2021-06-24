@@ -219,15 +219,10 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         if (stepDescriptor == null) {
             return name;
         }
-
-        // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
-        if (stepDescriptor instanceof CoreStep.DescriptorImpl) {
-            Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
-            UninstantiatedDescribable describable = (UninstantiatedDescribable) arguments.get("delegate");
-            if (describable != null) {
-                Descriptor<? extends Describable> d  = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
-                return d.getDisplayName();
-            }
+        UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
+        if (describable != null) {
+            Descriptor<? extends Describable> d  = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
+            return d.getDisplayName();
         }
         return stepDescriptor.getDisplayName();
     }
@@ -236,16 +231,21 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         if (stepDescriptor == null) {
             return type;
         }
+        UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
+        if (describable != null) {
+            return describable.getSymbol();
+        }
+        return stepDescriptor.getFunctionName();
+    }
 
+    @Nullable
+    private UninstantiatedDescribable getUninstantiatedDescribableOrNull(@Nonnull FlowNode node, @Nullable StepDescriptor stepDescriptor) {
         // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
         if (stepDescriptor instanceof CoreStep.DescriptorImpl) {
             Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
-            UninstantiatedDescribable describable = (UninstantiatedDescribable) arguments.get("delegate");
-            if (describable != null) {
-                return describable.getSymbol();
-            }
+            return (UninstantiatedDescribable) arguments.get("delegate");
         }
-        return stepDescriptor.getFunctionName();
+        return null;
     }
 
     @Override
