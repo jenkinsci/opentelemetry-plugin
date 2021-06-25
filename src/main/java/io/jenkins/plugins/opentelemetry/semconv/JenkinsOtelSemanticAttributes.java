@@ -105,6 +105,10 @@ public final class JenkinsOtelSemanticAttributes {
      * The pipeline step node
      */
     public static final String STEP_NODE = "node";
+    /**
+     * The pipeline step name
+     */
+    public static final String STEP_NAME = "step";
 
 
     public static final AttributeKey<String>        ELASTIC_TRANSACTION_TYPE = AttributeKey.stringKey("type");

@@ -10,6 +10,8 @@ import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Computer;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
@@ -28,6 +30,9 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.compress.utils.Sets;
+import org.jenkinsci.plugins.structs.SymbolLookup;
+import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
@@ -35,6 +40,7 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.StepListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.steps.CoreStep;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -72,7 +78,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         try (Scope nodeSpanScope = setupContext(run, stepStartNode)) {
             verifyNotNull(nodeSpanScope, "%s - No span found for node %s", run, stepStartNode);
             String agentSpanName = Strings.isNullOrEmpty(agentLabel) ? JenkinsOtelSemanticAttributes.AGENT_UI : JenkinsOtelSemanticAttributes.AGENT_UI + ": " + agentLabel;
-            String stepType = getStepType(stepStartNode.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NODE);
+            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NODE);
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
             Span agentSpan = getTracer().spanBuilder(agentSpanName)
@@ -92,7 +98,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 String allocateAgentSpanName = Strings.isNullOrEmpty(agentLabel) ? JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI : JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI + ": " + agentLabel;
                 Span allocateAgentSpan = getTracer().spanBuilder(allocateAgentSpanName)
                         .setParent(Context.current())
-                        .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NODE))
+                        .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode, stepStartNode.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NODE))
                         .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                         .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, JenkinsOtelSemanticAttributes.AGENT_ALLOCATE) // FIXME verify it's the right semantic and value
                         .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL, Strings.emptyToNull(agentLabel))
@@ -118,7 +124,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
             String spanStageName = "Stage: " + stageName;
 
-            String stepType = getStepType(stepStartNode.getDescriptor(), "stage");
+            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(),"stage");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
             Span stageSpan = getTracer().spanBuilder(spanStageName)
@@ -172,14 +178,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 spanBuilder = getTracer().spanBuilder(node.getDisplayFunctionName());
             }
 
-            String stepType = getStepType(node.getDescriptor(), "step");
+            String stepType = getStepType(node, node.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NAME);
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, node);
 
             spanBuilder
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node.getDescriptor(), "step"))
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node, JenkinsOtelSemanticAttributes.STEP_NAME))
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
@@ -209,18 +215,40 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         return ignoreStep;
     }
 
-    private String getStepName(@Nullable StepDescriptor stepDescriptor, @Nonnull String name) {
+    private String getStepName(@Nonnull StepAtomNode node, @Nonnull String name) {
+        StepDescriptor stepDescriptor = node.getDescriptor();
         if (stepDescriptor == null) {
             return name;
+        }
+        UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
+        if (describable != null) {
+            Descriptor<? extends Describable> d = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
+            return d.getDisplayName();
         }
         return stepDescriptor.getDisplayName();
     }
 
-    private String getStepType(@Nullable StepDescriptor stepDescriptor, @Nonnull String type) {
+    private String getStepType(@Nonnull FlowNode node, @Nullable StepDescriptor stepDescriptor, @Nonnull String type) {
         if (stepDescriptor == null) {
             return type;
         }
+        UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
+        if (describable != null) {
+            return describable.getSymbol();
+        }
         return stepDescriptor.getFunctionName();
+    }
+
+    @Nullable
+    private UninstantiatedDescribable getUninstantiatedDescribableOrNull(@Nonnull FlowNode node, @Nullable StepDescriptor stepDescriptor) {
+        // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
+        if (stepDescriptor instanceof CoreStep.DescriptorImpl) {
+            Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
+            if (arguments.get("delegate") instanceof UninstantiatedDescribable) {
+              return (UninstantiatedDescribable) arguments.get("delegate");
+            }
+        }
+        return null;
     }
 
     @Override
@@ -228,7 +256,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
 
-            String stepType = getStepType(stepStartNode.getDescriptor(), "branch");
+            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(),"branch");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
             Span atomicStepSpan = getTracer().spanBuilder("Parallel branch: " + branchName)
