@@ -9,10 +9,11 @@ import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import hudson.Extension;
 import hudson.PluginWrapper;
+import hudson.model.Descriptor;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
-import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.computer.CloudSpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -22,7 +23,6 @@ import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
-import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -251,7 +251,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nonnull
-    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nullable StepDescriptor descriptor) {
+    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nullable Descriptor descriptor) {
         StepPlugin data = loadedStepsPlugins.get(stepName);
         if (data!=null) {
             LOGGER.log(Level.FINEST, " found the plugin for the step '" + stepName + "' - " + data);

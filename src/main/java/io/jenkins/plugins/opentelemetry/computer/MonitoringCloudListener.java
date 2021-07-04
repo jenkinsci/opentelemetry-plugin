@@ -13,6 +13,7 @@ import hudson.model.Label;
 import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.computer.opentelemetry.OtelContextAwareAbstractCloudProvisioningListener;
 import io.jenkins.plugins.opentelemetry.computer.opentelemetry.context.PlannedNodeContextKey;
@@ -25,12 +26,10 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import jenkins.model.Jenkins;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -66,6 +65,7 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
         NodeProvisioner.PlannedNode plannedNode = plannedNodes.iterator().next();
 
         String rootSpanName = this.cloudSpanNamingStrategy.getRootSpanName(plannedNode);
+        JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault("cloud", cloud.getDescriptor());
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(rootSpanName).setSpanKind(SpanKind.SERVER);
 
         // TODO move this to a pluggable span enrichment API with implementations for different observability backends
@@ -73,7 +73,11 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
         rootSpanBuilder
             .setAttribute(JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE, "unknown")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_CLOUD_NAME, plannedNode.displayName)
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_CLOUD_LABEL, label.getExpression());
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_CLOUD_LABEL, label.getExpression())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+
+        // ENRICH attributes with every Cloud specifics
 
         // START ROOT SPAN
         Span rootSpan = rootSpanBuilder.startSpan();
