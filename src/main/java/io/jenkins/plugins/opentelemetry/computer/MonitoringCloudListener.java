@@ -9,6 +9,7 @@ import com.google.errorprone.annotations.MustBeClosed;
 import com.google.inject.Inject;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.slaves.Cloud;
@@ -78,6 +79,16 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
 
         // ENRICH attributes with every Cloud specifics
+        for (CloudHandler cloudHandler : ExtensionList.lookup(CloudHandler.class)) {
+            if (cloudHandler.canAddAttributes(cloud)) {
+                try {
+                    cloudHandler.addCloudAttributes(cloud, label, rootSpanBuilder);
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, cloud.name + " failure to handle cloud provider with handler " + cloudHandler, e);
+                }
+                break;
+            }
+        }
 
         // START ROOT SPAN
         Span rootSpan = rootSpanBuilder.startSpan();

@@ -1,0 +1,73 @@
+/*
+ * Copyright The Original Author or Authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+package io.jenkins.plugins.opentelemetry.computer;
+
+import com.google.jenkins.plugins.computeengine.ComputeEngineCloud;
+import com.google.jenkins.plugins.computeengine.ComputeEngineInstance;
+import hudson.Extension;
+import hudson.model.Label;
+import hudson.model.Node;
+import hudson.slaves.Cloud;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.trace.SpanBuilder;
+import jenkins.YesNoMaybe;
+
+import javax.annotation.Nonnull;
+import java.util.Optional;
+
+/**
+ * Customization of spans for google cloud attributes.
+ */
+@Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
+public class GoogleCloudHandler implements CloudHandler {
+
+    @Nonnull
+    @Override
+    public boolean canAddAttributes(@Nonnull Cloud cloud) {
+        return cloud.getDescriptor() instanceof ComputeEngineCloud.GoogleCloudDescriptor;
+    }
+
+    @Nonnull
+    @Override
+    public void addCloudAttributes(@Nonnull Cloud cloud, @Nonnull Label label, @Nonnull SpanBuilder rootSpanBuilder) throws Exception {
+        ComputeEngineCloud ceCloud = (ComputeEngineCloud) cloud;
+        rootSpanBuilder
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, "gcp")
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROJECT_ID, ((ComputeEngineCloud) cloud).getProjectId())
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PLATFORM, "gcp_compute_engine");
+        if (label.getNodes().size() == 1) {
+            Optional<Node> node = label.getNodes().stream().findFirst();
+            if (node.isPresent()) {
+                ComputeEngineInstance instance = (ComputeEngineInstance) node.get();
+                rootSpanBuilder
+                    .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_MACHINE_TYPE, transformRegion(instance.getZone()))
+                    .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_REGION, transformRegion(instance.getZone()));
+            }
+        }
+    }
+
+    protected String transformRegion(String region) {
+        // f.e: "https://www.googleapis.com/compute/v1/projects/project-name/zones/us-central1-a"
+        return transform(region);
+    }
+
+    protected String transformMachineType(String machineType) {
+        // f.e: "https://www.googleapis.com/compute/v1/projects/project-name/zones/us-central1-a/machineTypes/n2-standard-2"
+        return transform(machineType);
+    }
+
+    protected String transformZone(String zone) {
+        // f.e: "https://www.googleapis.com/compute/v1/projects/project-name/zones/us-central1-a"
+        return transform(zone);
+    }
+
+    private String transform(String value) {
+        if (value.contains("/")) {
+            return value.substring(value.lastIndexOf("/") + 1, value.length());
+        }
+        return value;
+    }
+}

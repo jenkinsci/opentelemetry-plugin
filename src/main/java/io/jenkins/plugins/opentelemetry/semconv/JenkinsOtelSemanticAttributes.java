@@ -112,6 +112,16 @@ public final class JenkinsOtelSemanticAttributes {
 
     public static final AttributeKey<String>        CI_CLOUD_LABEL = AttributeKey.stringKey("ci.cloud.label");
     public static final AttributeKey<String>        CI_CLOUD_NAME = AttributeKey.stringKey("ci.cloud.name");
+    /**
+     * @see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
+     */
+    public static final AttributeKey<String>        CLOUD_ACCOUNT_ID = AttributeKey.stringKey("cloud.account.id");
+    public static final AttributeKey<String>        CLOUD_PROVIDER = AttributeKey.stringKey("cloud.provider");
+    public static final AttributeKey<String>        CLOUD_PROJECT_ID = AttributeKey.stringKey("cloud.project.id");
+    public static final AttributeKey<String>        CLOUD_MACHINE_TYPE = AttributeKey.stringKey("cloud.machine.type");
+    public static final AttributeKey<String>        CLOUD_REGION = AttributeKey.stringKey("cloud.region");
+    public static final AttributeKey<String>        CLOUD_ZONE = AttributeKey.stringKey("cloud.availability_zone");
+    public static final AttributeKey<String>        CLOUD_PLATFORM = AttributeKey.stringKey("cloud.platform");
     public static final String                      CLOUD_SPAN_PHASE_STARTED_NAME = "Phase: Started";
     public static final String                      CLOUD_SPAN_PHASE_COMMIT_NAME = "Phase: Commit";
     public static final String                      CLOUD_SPAN_PHASE_FAILURE_NAME = "Phase: Failure";
