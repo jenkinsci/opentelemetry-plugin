@@ -111,6 +111,7 @@ public final class JenkinsOtelSemanticAttributes {
 
 
     public static final AttributeKey<String>        CI_CLOUD_LABEL = AttributeKey.stringKey("ci.cloud.label");
+    public static final AttributeKey<String>        CI_CLOUD_NAME = AttributeKey.stringKey("ci.cloud.name");
     public static final String                      CLOUD_SPAN_PHASE_STARTED_NAME = "Phase: Started";
     public static final String                      CLOUD_SPAN_PHASE_COMMIT_NAME = "Phase: Commit";
     public static final String                      CLOUD_SPAN_PHASE_FAILURE_NAME = "Phase: Failure";

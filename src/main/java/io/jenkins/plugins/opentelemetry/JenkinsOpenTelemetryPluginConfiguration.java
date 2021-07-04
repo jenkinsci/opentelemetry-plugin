@@ -13,6 +13,7 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.jenkins.plugins.opentelemetry.computer.CloudSpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import jenkins.model.GlobalConfiguration;
@@ -65,6 +66,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
     private transient SpanNamingStrategy spanNamingStrategy;
+
+    private transient CloudSpanNamingStrategy cloudSpanNamingStrategy;
 
     private transient ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
 
@@ -217,6 +220,15 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     public SpanNamingStrategy getSpanNamingStrategy() {
         return spanNamingStrategy;
+    }
+
+    @Inject
+    public void setCloudSpanNamingStrategy(CloudSpanNamingStrategy cloudSpanNamingStrategy) {
+        this.cloudSpanNamingStrategy = cloudSpanNamingStrategy;
+    }
+
+    public CloudSpanNamingStrategy getCloudSpanNamingStrategy() {
+        return cloudSpanNamingStrategy;
     }
 
     @Nonnull

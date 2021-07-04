@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.computer;
 
 import com.google.errorprone.annotations.MustBeClosed;
+import com.google.inject.Inject;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Label;
@@ -24,10 +25,12 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import jenkins.model.Jenkins;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,6 +42,8 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
 
     private LongCounter failureCloudCounter;
     private LongCounter totalCloudCount;
+
+    private CloudSpanNamingStrategy cloudSpanNamingStrategy;
 
     @PostConstruct
     public void postConstruct() {
@@ -60,13 +65,14 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
         }
         NodeProvisioner.PlannedNode plannedNode = plannedNodes.iterator().next();
 
-        String rootSpanName = plannedNode.displayName;
+        String rootSpanName = this.cloudSpanNamingStrategy.getRootSpanName(plannedNode);
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(rootSpanName).setSpanKind(SpanKind.SERVER);
 
         // TODO move this to a pluggable span enrichment API with implementations for different observability backends
         // Regarding the value `unknown`, see https://github.com/jenkinsci/opentelemetry-plugin/issues/51
         rootSpanBuilder
             .setAttribute(JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE, "unknown")
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_CLOUD_NAME, plannedNode.displayName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_CLOUD_LABEL, label.getExpression());
 
         // START ROOT SPAN
@@ -132,5 +138,10 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
         Scope newScope = newCurrentSpan.makeCurrent();
         Context.current().with(PlannedNodeContextKey.KEY, plannedNode);
         return newScope;
+    }
+
+    @Inject
+    public void setCloudSpanNamingStrategy(CloudSpanNamingStrategy cloudSpanNamingStrategy) {
+        this.cloudSpanNamingStrategy = cloudSpanNamingStrategy;
     }
 }
