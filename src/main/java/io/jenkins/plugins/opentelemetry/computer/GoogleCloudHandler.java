@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.computer;
 
 import com.google.jenkins.plugins.computeengine.ComputeEngineCloud;
 import com.google.jenkins.plugins.computeengine.ComputeEngineInstance;
+import com.google.jenkins.plugins.computeengine.InstanceConfiguration;
 import hudson.Extension;
 import hudson.model.Label;
 import hudson.model.Node;
@@ -43,8 +44,16 @@ public class GoogleCloudHandler implements CloudHandler {
             if (node.isPresent()) {
                 ComputeEngineInstance instance = (ComputeEngineInstance) node.get();
                 rootSpanBuilder
-                    .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_MACHINE_TYPE, transformRegion(instance.getZone()))
                     .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_REGION, transformRegion(instance.getZone()));
+
+                InstanceConfiguration configuration = ceCloud.getInstanceConfigurationByDescription(instance.getNodeDescription());
+                if (configuration != null) {
+                    rootSpanBuilder
+                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_ACCOUNT_ID, configuration.getServiceAccountEmail())
+                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_RUN_AS_USER, configuration.getRunAsUser())
+                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_ZONE, configuration.getZone())
+                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_MACHINE_TYPE, configuration.getMachineType());
+                }
             }
         }
     }

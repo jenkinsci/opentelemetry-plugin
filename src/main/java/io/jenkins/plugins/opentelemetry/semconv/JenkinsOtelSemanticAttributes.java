@@ -120,6 +120,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String>        CLOUD_PROJECT_ID = AttributeKey.stringKey("cloud.project.id");
     public static final AttributeKey<String>        CLOUD_MACHINE_TYPE = AttributeKey.stringKey("cloud.machine.type");
     public static final AttributeKey<String>        CLOUD_REGION = AttributeKey.stringKey("cloud.region");
+    public static final AttributeKey<String>        CLOUD_RUN_AS_USER = AttributeKey.stringKey("cloud.runAsUser");
     public static final AttributeKey<String>        CLOUD_ZONE = AttributeKey.stringKey("cloud.availability_zone");
     public static final AttributeKey<String>        CLOUD_PLATFORM = AttributeKey.stringKey("cloud.platform");
     public static final String                      CLOUD_SPAN_PHASE_STARTED_NAME = "Phase: Started";
