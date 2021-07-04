@@ -36,9 +36,10 @@ public class GoogleCloudHandler implements CloudHandler {
     public void addCloudAttributes(@Nonnull Cloud cloud, @Nonnull Label label, @Nonnull SpanBuilder rootSpanBuilder) throws Exception {
         ComputeEngineCloud ceCloud = (ComputeEngineCloud) cloud;
         rootSpanBuilder
-            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, "gcp")
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_NAME, ceCloud.getCloudName())
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PLATFORM, "gcp_compute_engine")
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROJECT_ID, ((ComputeEngineCloud) cloud).getProjectId())
-            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PLATFORM, "gcp_compute_engine");
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, "gcp");
         if (label.getNodes().size() == 1) {
             Optional<Node> node = label.getNodes().stream().findFirst();
             if (node.isPresent()) {

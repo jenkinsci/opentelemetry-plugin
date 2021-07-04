@@ -117,6 +117,7 @@ public final class JenkinsOtelSemanticAttributes {
      */
     public static final AttributeKey<String>        CLOUD_ACCOUNT_ID = AttributeKey.stringKey("cloud.account.id");
     public static final AttributeKey<String>        CLOUD_PROVIDER = AttributeKey.stringKey("cloud.provider");
+    public static final AttributeKey<String>        CLOUD_NAME = AttributeKey.stringKey("cloud.name");
     public static final AttributeKey<String>        CLOUD_PROJECT_ID = AttributeKey.stringKey("cloud.project.id");
     public static final AttributeKey<String>        CLOUD_MACHINE_TYPE = AttributeKey.stringKey("cloud.machine.type");
     public static final AttributeKey<String>        CLOUD_REGION = AttributeKey.stringKey("cloud.region");
