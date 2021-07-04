@@ -128,4 +128,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final String                      CLOUD_SPAN_PHASE_COMMIT_NAME = "Phase: Commit";
     public static final String                      CLOUD_SPAN_PHASE_FAILURE_NAME = "Phase: Failure";
     public static final String                      CLOUD_SPAN_PHASE_COMPLETE_NAME = "Phase: Complete";
+
+    public static final String                      GOOGLE_CLOUD_PROVIDER = "gcp";
+    public static final String                      GOOGLE_CLOUD_COMPUTE_ENGINE_PLATFORM = "gcp_compute_engine";
 }

@@ -37,23 +37,21 @@ public class GoogleCloudHandler implements CloudHandler {
         ComputeEngineCloud ceCloud = (ComputeEngineCloud) cloud;
         rootSpanBuilder
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_NAME, ceCloud.getCloudName())
-            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PLATFORM, "gcp_compute_engine")
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PLATFORM, JenkinsOtelSemanticAttributes.GOOGLE_CLOUD_COMPUTE_ENGINE_PLATFORM)
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROJECT_ID, ((ComputeEngineCloud) cloud).getProjectId())
-            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, "gcp");
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, JenkinsOtelSemanticAttributes.GOOGLE_CLOUD_PROVIDER);
         if (label.getNodes().size() == 1) {
             Optional<Node> node = label.getNodes().stream().findFirst();
             if (node.isPresent()) {
                 ComputeEngineInstance instance = (ComputeEngineInstance) node.get();
-                rootSpanBuilder
-                    .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_REGION, transformRegion(instance.getZone()));
-
                 InstanceConfiguration configuration = ceCloud.getInstanceConfigurationByDescription(instance.getNodeDescription());
                 if (configuration != null) {
                     rootSpanBuilder
                         .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_ACCOUNT_ID, configuration.getServiceAccountEmail())
+                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_MACHINE_TYPE, transformMachineType(configuration.getMachineType()))
+                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_REGION, transformRegion(configuration.getRegion()))
                         .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_RUN_AS_USER, configuration.getRunAsUser())
-                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_ZONE, configuration.getZone())
-                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_MACHINE_TYPE, configuration.getMachineType());
+                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_ZONE, transformZone(configuration.getZone()));
                 }
             }
         }
