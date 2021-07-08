@@ -121,7 +121,7 @@ public class OtelTraceService {
     }
 
     /**
-     * @param plannedNodes
+     * @param plannedNodes the planned nodes
      * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
      */
     @Nonnull
@@ -134,7 +134,7 @@ public class OtelTraceService {
     }
 
     /**
-     * @param plannedNode
+     * @param plannedNode the planned node
      * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
      */
     @Nonnull

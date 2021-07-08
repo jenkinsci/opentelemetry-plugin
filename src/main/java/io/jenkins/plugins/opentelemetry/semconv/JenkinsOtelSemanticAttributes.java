@@ -117,7 +117,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String>        CI_CLOUD_LABEL = AttributeKey.stringKey("ci.cloud.label");
     public static final AttributeKey<String>        CI_CLOUD_NAME = AttributeKey.stringKey("ci.cloud.name");
     /**
-     * @see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
+     * @see <a href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md">cloud semantic conventions</a>
      */
     public static final AttributeKey<String>        CLOUD_ACCOUNT_ID = AttributeKey.stringKey("cloud.account.id");
     public static final AttributeKey<String>        CLOUD_PROVIDER = AttributeKey.stringKey("cloud.provider");
