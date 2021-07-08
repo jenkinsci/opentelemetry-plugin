@@ -19,6 +19,7 @@ import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import jenkins.plugins.git.ExtendedGitSampleRepoRule;
 import jenkins.plugins.git.GitSampleRepoRule;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -66,7 +67,7 @@ public class BaseIntegrationTest {
     public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
 
     @Rule
-    public GitSampleRepoRule sampleRepo = new GitSampleRepoRule();
+    public ExtendedGitSampleRepoRule sampleRepo = new ExtendedGitSampleRepoRule();
 
     static OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
