@@ -104,8 +104,7 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
 
     @Override
     public void _onCommit(@NonNull NodeProvisioner.PlannedNode plannedNode, @NonNull Node node) {
-        LOGGER.log(Level.FINE, () -> "_onCommit(node: " + node + ")");
-        LOGGER.log(Level.FINEST, () -> "_onCommit(plannedNode: " + plannedNode.toString() + ")");
+        LOGGER.log(Level.FINE, () -> "_onCommit(plannedNode: " + plannedNode + "node: " + node + ")");
         try (Scope parentScope = endCloudPhaseSpan(plannedNode)) {
             Span span = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_COMMIT_NAME).setParent(Context.current()).startSpan();
             addCloudSpanAttributes(node, span);
@@ -131,8 +130,7 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
     @Override
     public void _onRollback(@NonNull NodeProvisioner.PlannedNode plannedNode, @NonNull Node node,
                             @NonNull Throwable t){
-        LOGGER.log(Level.FINE, () -> "_onRollback(plannedNode" + plannedNode + ")");
-        LOGGER.log(Level.FINEST, () -> "_onRollback(node: " + node.toString() + ")");
+        LOGGER.log(Level.FINE, () -> "_onRollback(plannedNode" + plannedNode + ", node: " + node + ")");
         failureCloudCounter.add(1);
         try (Scope parentScope = endCloudPhaseSpan(plannedNode)) {
             Span span = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_FAILURE_NAME).setParent(Context.current()).startSpan();
@@ -146,8 +144,7 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
 
     @Override
     public void _onComplete(NodeProvisioner.PlannedNode plannedNode, Node node) {
-        LOGGER.log(Level.FINE, () -> "_onComplete(plannedNode: " + plannedNode + ")");
-        LOGGER.log(Level.FINEST, () -> "_onComplete(node: " + node.toString() + ")");
+        LOGGER.log(Level.FINE, () -> "_onComplete(plannedNode: " + plannedNode + ", node: " + node + ")");
         totalCloudCount.add(1);
         try (Scope parentScope = endCloudPhaseSpan(plannedNode)) {
             Span span = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_COMPLETE_NAME).setParent(Context.current()).startSpan();
