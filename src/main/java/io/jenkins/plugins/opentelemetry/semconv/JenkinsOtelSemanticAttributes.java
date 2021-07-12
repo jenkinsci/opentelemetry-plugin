@@ -135,4 +135,19 @@ public final class JenkinsOtelSemanticAttributes {
 
     public static final String                      GOOGLE_CLOUD_PROVIDER = "gcp";
     public static final String                      GOOGLE_CLOUD_COMPUTE_ENGINE_PLATFORM = "gcp_compute_engine";
+
+    /**
+     * @see <a href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md">kubernetes semantic conventions</a>
+     */
+    public static final AttributeKey<String>        K8S_NAMESPACE_NAME = AttributeKey.stringKey("k8s.namespace.name");
+    public static final AttributeKey<String>        K8S_POD_NAME = AttributeKey.stringKey("k8s.pod.name");
+
+    /**
+     * @see <a href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/container.md">container semantic conventions</a>
+     */
+    public static final AttributeKey<String>        CONTAINER_IMAGE_NAME = AttributeKey.stringKey("container.image.name");
+    public static final AttributeKey<String>        CONTAINER_IMAGE_TAG = AttributeKey.stringKey("container.image.tag");
+    public static final AttributeKey<String>        CONTAINER_NAME = AttributeKey.stringKey("container.name");
+
+    public static final String                      K8S_CLOUD_PROVIDER = "k8s";
 }

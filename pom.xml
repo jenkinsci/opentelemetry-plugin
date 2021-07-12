@@ -67,6 +67,17 @@
                 <artifactId>commons-io</artifactId>
                 <version>2.8.0</version>
             </dependency>
+            <!-- fix RequireUpperBoundDeps caused when using the Kubernetes Jenkins plugin which it's optional -->
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>3.14.9</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>logging-interceptor</artifactId>
+                <version>3.14.9</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <dependencies>
@@ -226,6 +237,12 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>google-compute-engine</artifactId>
             <version>4.3.8</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.csanchez.jenkins.plugins</groupId>
+            <artifactId>kubernetes</artifactId>
+            <version>1.27.7</version>
             <optional>true</optional>
         </dependency>
         <dependency>
