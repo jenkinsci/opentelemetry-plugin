@@ -18,12 +18,16 @@ import org.csanchez.jenkins.plugins.kubernetes.PodTemplate;
 
 import javax.annotation.Nonnull;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Customization of spans for kubernetes cloud attributes.
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class KubernetesCloudHandler implements CloudHandler {
+
+    private final static Logger LOGGER = Logger.getLogger(KubernetesCloudHandler.class.getName());
 
     @Nonnull
     @Override
@@ -45,7 +49,6 @@ public class KubernetesCloudHandler implements CloudHandler {
         if (label.getNodes().size() == 1) {
             Optional<Node> node = label.getNodes().stream().findFirst();
             if (node.isPresent()) {
-
                 KubernetesSlave instance = (KubernetesSlave) node.get();
                 rootSpanBuilder
                     .setAttribute(JenkinsOtelSemanticAttributes.K8S_POD_NAME, instance.getPodName());
@@ -57,8 +60,14 @@ public class KubernetesCloudHandler implements CloudHandler {
                         .setAttribute(JenkinsOtelSemanticAttributes.CONTAINER_IMAGE_NAME, getImageName(podTemplate.getImage()))
                         .setAttribute(JenkinsOtelSemanticAttributes.CONTAINER_IMAGE_TAG, getImageTag(podTemplate.getImage()))
                         .setAttribute(JenkinsOtelSemanticAttributes.CONTAINER_NAME, podTemplate.getName());
+                } else {
+                    LOGGER.log(Level.FINE, () -> "There is no podTemplate for the existing node.");
                 }
+            } else {
+                LOGGER.log(Level.FINE, () -> "There is no present node.");
             }
+        } else {
+            LOGGER.log(Level.FINE, () -> "There are more nodes assigned for the same label (total: " + label.getNodes().size() + ")");
         }
     }
 
