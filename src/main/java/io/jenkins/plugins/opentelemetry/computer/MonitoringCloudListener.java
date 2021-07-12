@@ -60,11 +60,15 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
     @Override
     public void _onStarted(Cloud cloud, Label label, Collection<NodeProvisioner.PlannedNode> plannedNodes) {
         LOGGER.log(Level.FINE, () -> "_onStarted(" + label + ")");
-        if (plannedNodes.size() != 1) {
-            LOGGER.log(Level.FINE, "There are more plannedNodes, let's skip it");
-            return;
+        for (NodeProvisioner.PlannedNode plannedNode  : plannedNodes) {
+            _onStarted(cloud, label, plannedNode);
         }
-        NodeProvisioner.PlannedNode plannedNode = plannedNodes.iterator().next();
+    }
+
+    public void _onStarted(Cloud cloud, Label label, NodeProvisioner.PlannedNode plannedNode) {
+        LOGGER.log(Level.FINE, () -> "_onStarted(label: " + label + ")");
+        LOGGER.log(Level.FINEST, () -> "_onStarted(label.nodes: " + label.getNodes().toString() + ")");
+        LOGGER.log(Level.FINEST, () -> "_onStarted(plannedNode: " + plannedNode.toString() + ")");
 
         String rootSpanName = this.cloudSpanNamingStrategy.getRootSpanName(plannedNode);
         JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault("cloud", cloud.getDescriptor());
@@ -93,7 +97,6 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
 
         // START ROOT SPAN
         Span rootSpan = rootSpanBuilder.startSpan();
-
         this.getTraceService().putSpan(plannedNode, rootSpan);
         rootSpan.makeCurrent();
         LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin root " + OtelUtils.toDebugString(rootSpan));
@@ -101,45 +104,48 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
 
     @Override
     public void _onCommit(@NonNull NodeProvisioner.PlannedNode plannedNode, @NonNull Node node) {
-        LOGGER.log(Level.FINE, () -> "_onCommit(" + node + ")");
+        LOGGER.log(Level.FINE, () -> "_onCommit(node: " + node + ")");
+        LOGGER.log(Level.FINEST, () -> "_onCommit(plannedNode: " + plannedNode.toString() + ")");
         try (Scope parentScope = endCloudPhaseSpan(plannedNode)) {
-            Span runSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_COMMIT_NAME).setParent(Context.current()).startSpan();
-            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin _onCommit " + OtelUtils.toDebugString(runSpan));
-            runSpan.makeCurrent();
-            this.getTraceService().putSpan(plannedNode, runSpan);
+            Span span = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_COMMIT_NAME).setParent(Context.current()).startSpan();
+            span.setStatus(StatusCode.OK);
+            span.end();
+            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - end _onCommit " + OtelUtils.toDebugString(span));
         }
     }
 
     @Override
     public void _onFailure(NodeProvisioner.PlannedNode plannedNode, Throwable t) {
-        LOGGER.log(Level.FINE, () -> "_onFailure(" + plannedNode + ")");
+        LOGGER.log(Level.FINE, () -> "_onFailure(plannedNode: " + plannedNode + ")");
         failureCloudCounter.add(1);
         try (Scope parentScope = endCloudPhaseSpan(plannedNode)) {
             Span span = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_FAILURE_NAME).setParent(Context.current()).startSpan();
             span.recordException(t);
             span.setStatus(StatusCode.ERROR, t.getMessage());
             span.end();
-            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin _onFailure " + OtelUtils.toDebugString(span));
+            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - end _onFailure " + OtelUtils.toDebugString(span));
         }
     }
 
     @Override
     public void _onRollback(@NonNull NodeProvisioner.PlannedNode plannedNode, @NonNull Node node,
                             @NonNull Throwable t){
-        LOGGER.log(Level.FINE, () -> "_onRollback(" + plannedNode + ")");
+        LOGGER.log(Level.FINE, () -> "_onRollback(plannedNode" + plannedNode + ")");
+        LOGGER.log(Level.FINEST, () -> "_onRollback(node: " + node.toString() + ")");
         failureCloudCounter.add(1);
         try (Scope parentScope = endCloudPhaseSpan(plannedNode)) {
             Span span = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_FAILURE_NAME).setParent(Context.current()).startSpan();
             span.recordException(t);
             span.setStatus(StatusCode.ERROR, t.getMessage());
             span.end();
-            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin _onRollback " + OtelUtils.toDebugString(span));
+            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - end _onRollback " + OtelUtils.toDebugString(span));
         }
     }
 
     @Override
     public void _onComplete(NodeProvisioner.PlannedNode plannedNode, Node node) {
-        LOGGER.log(Level.FINE, () -> "_onComplete(" + plannedNode + ")");
+        LOGGER.log(Level.FINE, () -> "_onComplete(plannedNode: " + plannedNode + ")");
+        LOGGER.log(Level.FINEST, () -> "_onComplete(node: " + node.toString() + ")");
         totalCloudCount.add(1);
         try (Scope parentScope = endCloudPhaseSpan(plannedNode)) {
             Span span = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_COMPLETE_NAME).setParent(Context.current()).startSpan();
