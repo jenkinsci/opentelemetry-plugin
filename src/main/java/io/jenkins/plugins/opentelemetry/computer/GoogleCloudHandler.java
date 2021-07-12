@@ -38,7 +38,7 @@ public class GoogleCloudHandler implements CloudHandler {
         rootSpanBuilder
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_NAME, ceCloud.getCloudName())
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PLATFORM, JenkinsOtelSemanticAttributes.GOOGLE_CLOUD_COMPUTE_ENGINE_PLATFORM)
-            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROJECT_ID, ((ComputeEngineCloud) cloud).getProjectId())
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROJECT_ID, ceCloud.getProjectId())
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, JenkinsOtelSemanticAttributes.GOOGLE_CLOUD_PROVIDER);
         if (label.getNodes().size() == 1) {
             Optional<Node> node = label.getNodes().stream().findFirst();
