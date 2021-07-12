@@ -25,13 +25,11 @@ import java.util.Optional;
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class GoogleCloudHandler implements CloudHandler {
 
-    @Nonnull
     @Override
     public boolean canAddAttributes(@Nonnull Cloud cloud) {
         return cloud.getDescriptor() instanceof ComputeEngineCloud.GoogleCloudDescriptor;
     }
 
-    @Nonnull
     @Override
     public void addCloudAttributes(@Nonnull Cloud cloud, @Nonnull Label label, @Nonnull SpanBuilder rootSpanBuilder) throws Exception {
         ComputeEngineCloud ceCloud = (ComputeEngineCloud) cloud;

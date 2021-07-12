@@ -15,6 +15,6 @@ public interface CloudHandler {
 
     boolean canAddAttributes(@Nonnull Cloud cloud);
 
-    @Nonnull
     void addCloudAttributes(@Nonnull Cloud cloud, @Nonnull Label label, @Nonnull SpanBuilder rootSpanBuilder) throws Exception;
+
 }

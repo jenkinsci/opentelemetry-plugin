@@ -108,6 +108,7 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
         LOGGER.log(Level.FINEST, () -> "_onCommit(plannedNode: " + plannedNode.toString() + ")");
         try (Scope parentScope = endCloudPhaseSpan(plannedNode)) {
             Span span = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_COMMIT_NAME).setParent(Context.current()).startSpan();
+            addCloudSpanAttributes(node, span);
             span.setStatus(StatusCode.OK);
             span.end();
             LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - end _onCommit " + OtelUtils.toDebugString(span));
@@ -135,6 +136,7 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
         failureCloudCounter.add(1);
         try (Scope parentScope = endCloudPhaseSpan(plannedNode)) {
             Span span = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_FAILURE_NAME).setParent(Context.current()).startSpan();
+            addCloudSpanAttributes(node, span);
             span.recordException(t);
             span.setStatus(StatusCode.ERROR, t.getMessage());
             span.end();
@@ -149,6 +151,7 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
         totalCloudCount.add(1);
         try (Scope parentScope = endCloudPhaseSpan(plannedNode)) {
             Span span = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_COMPLETE_NAME).setParent(Context.current()).startSpan();
+            addCloudSpanAttributes(node, span);
             span.setStatus(StatusCode.OK);
             span.end();
             LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin _onComplete " + OtelUtils.toDebugString(span));
@@ -166,6 +169,20 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
         Scope newScope = newCurrentSpan.makeCurrent();
         Context.current().with(PlannedNodeContextKey.KEY, plannedNode);
         return newScope;
+    }
+
+    private void addCloudSpanAttributes(@NonNull Node node, @NonNull Span span) {
+        // ENRICH attributes with every Cloud Node specifics
+        for (CloudNodeHandler cloudNodeHandler : ExtensionList.lookup(CloudNodeHandler.class)) {
+            if (cloudNodeHandler.canAddAttributes(node)) {
+                try {
+                    cloudNodeHandler.addCloudSpanAttributes(node, span);
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, node.getNodeName() + " failure to handle node provider with handler " + cloudNodeHandler, e);
+                }
+                break;
+            }
+        }
     }
 
     @Inject
