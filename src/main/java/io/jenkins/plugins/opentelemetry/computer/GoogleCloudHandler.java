@@ -19,6 +19,8 @@ import jenkins.YesNoMaybe;
 import javax.annotation.Nonnull;
 import java.util.Optional;
 
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.GOOGLE_CLOUD_PROVIDER;
+
 /**
  * Customization of spans for google cloud attributes.
  */
@@ -37,7 +39,7 @@ public class GoogleCloudHandler implements CloudHandler {
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_NAME, ceCloud.getCloudName())
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PLATFORM, JenkinsOtelSemanticAttributes.GOOGLE_CLOUD_COMPUTE_ENGINE_PLATFORM)
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROJECT_ID, ceCloud.getProjectId())
-            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, JenkinsOtelSemanticAttributes.GOOGLE_CLOUD_PROVIDER);
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, GOOGLE_CLOUD_PROVIDER);
         if (label.getNodes().size() == 1) {
             Optional<Node> node = label.getNodes().stream().findFirst();
             if (node.isPresent()) {
@@ -53,6 +55,11 @@ public class GoogleCloudHandler implements CloudHandler {
                 }
             }
         }
+    }
+
+    @Override
+    public String getCloudName() {
+        return GOOGLE_CLOUD_PROVIDER;
     }
 
     protected String transformRegion(String region) {

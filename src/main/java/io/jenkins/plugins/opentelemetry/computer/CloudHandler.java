@@ -17,4 +17,5 @@ public interface CloudHandler {
 
     void addCloudAttributes(@Nonnull Cloud cloud, @Nonnull Label label, @Nonnull SpanBuilder rootSpanBuilder) throws Exception;
 
+    String getCloudName();
 }

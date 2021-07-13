@@ -15,6 +15,8 @@ import org.csanchez.jenkins.plugins.kubernetes.KubernetesCloud;
 
 import javax.annotation.Nonnull;
 
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.K8S_CLOUD_PROVIDER;
+
 /**
  * Customization of spans for kubernetes cloud attributes.
  */
@@ -33,7 +35,12 @@ public class KubernetesCloudHandler implements CloudHandler {
         rootSpanBuilder
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_NAME, k8sCloud.getDisplayName())
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROJECT_ID, k8sCloud.getDisplayName())
-            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, JenkinsOtelSemanticAttributes.K8S_CLOUD_PROVIDER)
+            .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, K8S_CLOUD_PROVIDER)
             .setAttribute(JenkinsOtelSemanticAttributes.K8S_NAMESPACE_NAME, k8sCloud.getNamespace());
+    }
+
+    @Override
+    public String getCloudName() {
+        return K8S_CLOUD_PROVIDER;
     }
 }

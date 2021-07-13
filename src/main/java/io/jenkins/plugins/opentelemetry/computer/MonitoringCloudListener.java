@@ -68,7 +68,11 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
     public void _onStarted(Cloud cloud, Label label, NodeProvisioner.PlannedNode plannedNode) {
         LOGGER.log(Level.FINE, () -> "_onStarted(label: " + label + ", label.nodes: " + label.getNodes().toString() + ", plannedNode: " + plannedNode + ")");
 
-        String rootSpanName = this.cloudSpanNamingStrategy.getRootSpanName(plannedNode);
+        // Span name format: "(<cloud>-)?<template-name>-{id}"
+        //    cloud is optional
+        //    template-name is defined in the cloud configuration
+        //    {id} is the low cardinality
+        String rootSpanName = getCloudNamePrefix(cloud) + this.cloudSpanNamingStrategy.getRootSpanName(plannedNode);
         JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault("cloud", cloud.getDescriptor());
         SpanBuilder rootSpanBuilder = getTracer().spanBuilder(rootSpanName).setSpanKind(SpanKind.SERVER);
 
@@ -178,6 +182,15 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
                 break;
             }
         }
+    }
+
+    private String getCloudNamePrefix(@NonNull Cloud cloud) {
+        for (CloudHandler cloudHandler : ExtensionList.lookup(CloudHandler.class)) {
+            if (cloudHandler.canAddAttributes(cloud)) {
+                return cloudHandler.getCloudName() + "-";
+            }
+        }
+        return "";
     }
 
     @Inject
