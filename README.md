@@ -106,6 +106,23 @@ In addition, if the backends were configured then there will be an environment v
 | ci.pipeline.parameter.name       | Name of the parameter | String |
 | ci.pipeline.parameter.value      | Value of the parameter. "Sensitive" values are redacted | String |
 
+Cloud specific:
+
+| Attribute                        | Description  | Type |
+|----------------------------------|--------------|------|
+| ci.cloud.label                   | Labels attached to the agent | String |
+| ci.cloud.name                    | The agent name | String |
+| cloud.account.id                 | The cloud account ID the resource is assigned to | String |
+| cloud.provider                   | Name of the cloud provider | String |
+| cloud.name                       | Step id   | String |
+| cloud.project.id                 | Jenkins plugin for that particular step | String |
+| cloud.machine.type               | Jenkins plugin version | String |
+| cloud.region                     | The geographical region the resource is running | String |
+| cloud.availability_zone          | The zone where the resource is running | String |
+| cloud.runAsUser                  | The user | String |
+| cloud.platform                   | The cloud platform in use. | String |
+
+
 ##### Spans
 
 | Attribute                        | Description  | Type |
@@ -124,6 +141,16 @@ In addition, if the backends were configured then there will be an environment v
 | git.username                     | Git user | String |
 | jenkins.url                      | Jenkins URL | String |
 | jenkins.computer.name            | Name of the agent | String |
+
+Containers/Kubernetes specific:
+
+| Attribute                        | Description  | Type |
+|----------------------------------|--------------|------|
+| k8s.pod.name                     | The name of the Pod | String |
+| container.image.name             | The name of the image the container was built on | String |
+| container.image.tag              | Container image tag | String |
+| container.name                   | The Container name | String |
+
 
 ### Metrics on Jenkins health indicators
 
