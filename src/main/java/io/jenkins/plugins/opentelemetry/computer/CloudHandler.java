@@ -5,8 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry.computer;
 
-import hudson.model.Label;
+import hudson.model.Node;
 import hudson.slaves.Cloud;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 
 import javax.annotation.Nonnull;
@@ -14,8 +15,8 @@ import javax.annotation.Nonnull;
 public interface CloudHandler {
 
     boolean canAddAttributes(@Nonnull Cloud cloud);
-
-    void addCloudAttributes(@Nonnull Cloud cloud, @Nonnull Label label, @Nonnull SpanBuilder rootSpanBuilder) throws Exception;
-
+    boolean canAddAttributes(@Nonnull Node node);
+    void addCloudSpanAttributes(@Nonnull Node node, @Nonnull Span rootSpanBuilder) throws Exception;
+    void addCloudAttributes(@Nonnull Cloud cloud, @Nonnull SpanBuilder rootSpanBuilder) throws Exception;
     String getCloudName();
 }

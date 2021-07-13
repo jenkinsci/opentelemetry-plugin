@@ -8,9 +8,9 @@ package io.jenkins.plugins.opentelemetry.computer;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class KubernetesCloudNodeHandlerTest {
+public class KubernetesCloudHandlerTest {
 
-    KubernetesCloudNodeHandler handler = new KubernetesCloudNodeHandler();
+    KubernetesCloudHandler handler = new KubernetesCloudHandler();
 
     @Test
     public void test_default_image() {

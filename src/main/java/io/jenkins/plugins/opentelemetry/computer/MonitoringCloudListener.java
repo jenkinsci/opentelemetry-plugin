@@ -89,7 +89,7 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
         for (CloudHandler cloudHandler : ExtensionList.lookup(CloudHandler.class)) {
             if (cloudHandler.canAddAttributes(cloud)) {
                 try {
-                    cloudHandler.addCloudAttributes(cloud, label, rootSpanBuilder);
+                    cloudHandler.addCloudAttributes(cloud, rootSpanBuilder);
                 } catch (Exception e) {
                     LOGGER.log(Level.WARNING, cloud.name + " failure to handle cloud provider with handler " + cloudHandler, e);
                 }
@@ -172,12 +172,12 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
 
     private void addCloudSpanAttributes(@NonNull Node node, @NonNull Span span) {
         // ENRICH attributes with every Cloud Node specifics
-        for (CloudNodeHandler cloudNodeHandler : ExtensionList.lookup(CloudNodeHandler.class)) {
-            if (cloudNodeHandler.canAddAttributes(node)) {
+        for (CloudHandler cloudHandler : ExtensionList.lookup(CloudHandler.class)) {
+            if (cloudHandler.canAddAttributes(node)) {
                 try {
-                    cloudNodeHandler.addCloudSpanAttributes(node, span);
+                    cloudHandler.addCloudSpanAttributes(node, span);
                 } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, node.getNodeName() + " failure to handle node provider with handler " + cloudNodeHandler, e);
+                    LOGGER.log(Level.WARNING, node.getNodeName() + " failure to handle node provider with handler " + cloudHandler, e);
                 }
                 break;
             }

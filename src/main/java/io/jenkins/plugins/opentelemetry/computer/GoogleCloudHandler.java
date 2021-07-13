@@ -9,15 +9,15 @@ import com.google.jenkins.plugins.computeengine.ComputeEngineCloud;
 import com.google.jenkins.plugins.computeengine.ComputeEngineInstance;
 import com.google.jenkins.plugins.computeengine.InstanceConfiguration;
 import hudson.Extension;
-import hudson.model.Label;
 import hudson.model.Node;
 import hudson.slaves.Cloud;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import jenkins.YesNoMaybe;
 
 import javax.annotation.Nonnull;
-import java.util.Optional;
+import java.util.logging.Logger;
 
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.GOOGLE_CLOUD_PROVIDER;
 
@@ -26,6 +26,7 @@ import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttrib
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class GoogleCloudHandler implements CloudHandler {
+    private final static Logger LOGGER = Logger.getLogger(GoogleCloudHandler.class.getName());
 
     @Override
     public boolean canAddAttributes(@Nonnull Cloud cloud) {
@@ -33,27 +34,31 @@ public class GoogleCloudHandler implements CloudHandler {
     }
 
     @Override
-    public void addCloudAttributes(@Nonnull Cloud cloud, @Nonnull Label label, @Nonnull SpanBuilder rootSpanBuilder) throws Exception {
+    public boolean canAddAttributes(@Nonnull Node node) {
+        return node instanceof ComputeEngineInstance;
+    }
+
+    @Override
+    public void addCloudAttributes(@Nonnull Cloud cloud, @Nonnull SpanBuilder rootSpanBuilder) throws Exception {
         ComputeEngineCloud ceCloud = (ComputeEngineCloud) cloud;
         rootSpanBuilder
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_NAME, ceCloud.getCloudName())
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PLATFORM, JenkinsOtelSemanticAttributes.GOOGLE_CLOUD_COMPUTE_ENGINE_PLATFORM)
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROJECT_ID, ceCloud.getProjectId())
             .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_PROVIDER, GOOGLE_CLOUD_PROVIDER);
-        if (label.getNodes().size() == 1) {
-            Optional<Node> node = label.getNodes().stream().findFirst();
-            if (node.isPresent()) {
-                ComputeEngineInstance instance = (ComputeEngineInstance) node.get();
-                InstanceConfiguration configuration = ceCloud.getInstanceConfigurationByDescription(instance.getNodeDescription());
-                if (configuration != null) {
-                    rootSpanBuilder
-                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_ACCOUNT_ID, configuration.getServiceAccountEmail())
-                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_MACHINE_TYPE, transformMachineType(configuration.getMachineType()))
-                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_REGION, transformRegion(configuration.getRegion()))
-                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_RUN_AS_USER, configuration.getRunAsUser())
-                        .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_ZONE, transformZone(configuration.getZone()));
-                }
-            }
+    }
+
+    @Override
+    public void addCloudSpanAttributes(@Nonnull Node node, @Nonnull Span span) throws Exception {
+        ComputeEngineInstance instance = (ComputeEngineInstance) node;
+        InstanceConfiguration configuration = instance.getCloud().getInstanceConfigurationByDescription(instance.getNodeDescription());
+        if (configuration != null) {
+            span
+                .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_ACCOUNT_ID, configuration.getServiceAccountEmail())
+                .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_MACHINE_TYPE, transformMachineType(configuration.getMachineType()))
+                .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_REGION, transformRegion(configuration.getRegion()))
+                .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_RUN_AS_USER, configuration.getRunAsUser())
+                .setAttribute(JenkinsOtelSemanticAttributes.CLOUD_ZONE, transformZone(configuration.getZone()));
         }
     }
 
