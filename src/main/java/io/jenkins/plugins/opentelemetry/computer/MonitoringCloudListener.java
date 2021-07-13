@@ -97,21 +97,11 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
             }
         }
 
-        // START root span
+        // START ROOT SPAN
         Span rootSpan = rootSpanBuilder.startSpan();
         this.getTraceService().putSpan(plannedNode, rootSpan);
-        try (final Scope rootSpanScope = rootSpan.makeCurrent()) {
-            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin root " + OtelUtils.toDebugString(rootSpan));
-
-            // START started span
-            Span startSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.CLOUD_SPAN_PHASE_STARTED_NAME)
-                .setParent(Context.current().with(rootSpan))
-                .startSpan();
-            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin " + OtelUtils.toDebugString(startSpan));
-
-            this.getTraceService().putSpan(plannedNode, startSpan);
-            startSpan.makeCurrent();
-        }
+        rootSpan.makeCurrent();
+        LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin root " + OtelUtils.toDebugString(rootSpan));
     }
 
     @Override
