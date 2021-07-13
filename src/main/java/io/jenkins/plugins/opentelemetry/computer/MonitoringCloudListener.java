@@ -153,7 +153,7 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
             addCloudSpanAttributes(node, span);
             span.setStatus(StatusCode.OK);
             span.end();
-            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - begin _onComplete " + OtelUtils.toDebugString(span));
+            LOGGER.log(Level.FINE, () -> plannedNode.displayName + " - end _onComplete " + OtelUtils.toDebugString(span));
         }
     }
 
