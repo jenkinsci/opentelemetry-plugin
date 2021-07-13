@@ -66,9 +66,7 @@ public class MonitoringCloudListener extends OtelContextAwareAbstractCloudProvis
     }
 
     public void _onStarted(Cloud cloud, Label label, NodeProvisioner.PlannedNode plannedNode) {
-        LOGGER.log(Level.FINE, () -> "_onStarted(label: " + label + ")");
-        LOGGER.log(Level.FINEST, () -> "_onStarted(label.nodes: " + label.getNodes().toString() + ")");
-        LOGGER.log(Level.FINEST, () -> "_onStarted(plannedNode: " + plannedNode.toString() + ")");
+        LOGGER.log(Level.FINE, () -> "_onStarted(label: " + label + ", label.nodes: " + label.getNodes().toString() + ", plannedNode: " + plannedNode + ")");
 
         String rootSpanName = this.cloudSpanNamingStrategy.getRootSpanName(plannedNode);
         JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault("cloud", cloud.getDescriptor());
