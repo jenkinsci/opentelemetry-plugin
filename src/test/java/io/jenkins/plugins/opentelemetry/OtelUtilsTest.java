@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import hudson.maven.MavenModuleSet;
+import hudson.maven.MavenModuleSetBuild;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
@@ -30,6 +32,7 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         MatcherAssert.assertThat(OtelUtils.isFreestyle(build), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(true));
         MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.WORKFLOW));
@@ -46,9 +49,29 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
         MatcherAssert.assertThat(OtelUtils.isFreestyle(build), CoreMatchers.is(true));
+        MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.FREESTYLE));
+        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
+        MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
+    }
+
+    @Test
+    public void test_maven() throws Exception {
+        final String jobName = "test-maven-" + jobNameSuffix.incrementAndGet();
+        MavenModuleSet project = jenkinsRule.createProject(MavenModuleSet.class, jobName);
+        // Maven installation has not been done so it will fail, but the test should only validate
+        // the methods.
+        MavenModuleSetBuild build = jenkinsRule.buildAndAssertStatus(Result.FAILURE, project);
+
+        MatcherAssert.assertThat(OtelUtils.isFreestyle(build), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(true));
+        MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.MAVEN));
         MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
@@ -71,6 +94,7 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         WorkflowRun build = p.getLastBuild();
 
         MatcherAssert.assertThat(OtelUtils.isFreestyle(build), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(true));
         MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.MULTIBRANCH));
@@ -83,6 +107,7 @@ public class OtelUtilsTest extends BaseIntegrationTest {
     @Test
     public void test_null() throws Exception {
         MatcherAssert.assertThat(OtelUtils.isFreestyle(null), CoreMatchers.is(false));
+        MatcherAssert.assertThat(OtelUtils.isMaven(null), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranch(null), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isWorkflow(null), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.getProjectType(null), CoreMatchers.is(OtelUtils.UNKNOWN));

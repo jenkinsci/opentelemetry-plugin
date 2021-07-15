@@ -23,6 +23,7 @@ import java.util.function.Function;
 public class OtelUtils {
 
     public static final String FREESTYLE = "freestyle";
+    public static final String MAVEN = "maven";
     public static final String MULTIBRANCH = "multibranch";
     public static final String WORKFLOW = "workflow";
     public static final String UNKNOWN = "unknown";
@@ -54,6 +55,9 @@ public class OtelUtils {
     public static String getProjectType(Run run) {
         if (isFreestyle(run)) {
             return FREESTYLE;
+        }
+        if (isMaven(run)) {
+            return MAVEN;
         }
         if (isMultibranch(run)) {
             return MULTIBRANCH;
@@ -125,6 +129,23 @@ public class OtelUtils {
             return false;
         }
         return (run instanceof FreeStyleBuild);
+    }
+
+    @Nonnull
+    public static boolean isMaven(Run run) {
+        if (run == null) {
+            return false;
+        }
+        return isInstance(run, "hudson.maven.AbstractMavenBuild") ||
+            isInstance(run, "hudson.maven.MavenModuleSetBuild") ||
+            isInstance(run, "hudson.maven.MavenBuild");
+    }
+
+    private static boolean isInstance(Object o, String clazz) {
+        if (o != null && o.getClass().getName().equals(clazz)) {
+            return true;
+        }
+        return false;
     }
 
     @Nonnull

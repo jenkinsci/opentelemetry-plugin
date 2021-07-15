@@ -92,7 +92,7 @@ In addition, if the backends were configured then there will be an environment v
 |----------------------------------|--------------|------|
 | ci.pipeline.id                   | Job name | String |
 | ci.pipeline.name                 | Job name (user friendly) | String |
-| ci.pipeline.type                 | Job type | Enum (`freestyle`, `workflow`, `multibranch`, `unknown`) |
+| ci.pipeline.type                 | Job type | Enum (`freestyle`, `maven`, `workflow`, `multibranch`, `unknown`) |
 | ci.pipeline.multibranch.type     | Multibranch type | Enum (`branch`, `tag`, `change_request`) |
 | ci.pipeline.agent.id             | Name of the agent | String |
 | ci.pipeline.run.completed        | Is this a complete build? | Boolean |
