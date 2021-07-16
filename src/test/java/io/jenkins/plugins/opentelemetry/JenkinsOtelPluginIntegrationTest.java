@@ -412,12 +412,9 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "Node Allocation", "Node", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "shell-1", "my-acme-span1", "Stage: ze-stage1", "Node", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "shell-2", "my-acme-span2", "Stage: ze-stage2", "Node", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "shell-3", "Create a Span", "Stage: ze-stage3", "Node", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        checkChainOfSpans(spans, "shell-1", "my-acme-span1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-2", "my-acme-span2", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-3", "Create a Span", "Stage: ze-stage3", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(15L));
 
         Optional<Tree.Node<SpanDataWrapper>> createSpan = spans.breadthFirstSearchNodes(node -> "my-acme-span1".equals(node.getData().spanData.getName()));
@@ -428,6 +425,13 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
         MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("attribute.service")), CoreMatchers.is("acme"));
         MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("attribute.user")), CoreMatchers.is("bob"));
+
+        // Children don't have the parent's attributes
+        createSpan = spans.breadthFirstSearchNodes(node -> "shell-1".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
+        attributes = createSpan.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("attribute.service")), CoreMatchers.is(CoreMatchers.not("acme")));
+        MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("attribute.user")), CoreMatchers.is(CoreMatchers.not("bob")));
 
         createSpan = spans.breadthFirstSearchNodes(node -> "my-acme-span2".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
