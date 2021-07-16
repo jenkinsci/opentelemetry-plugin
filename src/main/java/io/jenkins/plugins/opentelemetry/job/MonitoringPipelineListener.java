@@ -149,18 +149,18 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
 
-            String createSpanName = getStepName(stepStartNode, "createSpan");
+            String stepName = getStepName(stepStartNode, "createSpan");
             String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), "step");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
             final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
-            final String spanAttribute = (String) arguments.getOrDefault("name", createSpanName);
-            final String spanName = Strings.isNullOrEmpty(spanAttribute) ? createSpanName : spanAttribute;
+            final String spanNameAttribute = (String) arguments.getOrDefault("name", stepName);
+            final String spanName = Strings.isNullOrEmpty(spanNameAttribute) ? stepName : spanNameAttribute;
             SpanBuilder createSpanBuilder = getTracer().spanBuilder(spanName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, createSpanName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stepName)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
 
