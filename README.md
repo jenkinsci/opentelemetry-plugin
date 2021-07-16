@@ -30,6 +30,35 @@ Here are few examples of architecture:
 
 <img alt="Jenkins monitoring with Elastic Observability" width="415" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-architecture-elastic.png" >  <img alt="Jenkins monitoring with Jaeger and Prometheus" width="415" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-architecture-jaeger-prometheus.png" >
 
+## Setup
+
+### Setup for Elastic
+
+You just have to configure the Jenkins Controller to send OpenTelemetry data either directly to Elastic APM Server or via an OpenTelemetry Collector. Elastic handles both traces and metrics.
+
+### Setup for Prometheus
+
+Configure the Jenkins Controller to send OpenTelemetry data to an OpenTelemetry Collector and setup a [Prometheus exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/prometheusexporter) on this collector.
+ℹ️ Enable `resource_to_telemetry_conversion` on the OpenTelemetry Collector exporter for Prometheus in order to have the OpenTelemetry metrics resource attributes converted to Prometheus labels to differentiate the different Jenkins Controllers.
+
+```yaml
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:1234
+    resource_to_telemetry_conversion:
+      enabled: true
+  ...
+service:
+  pipelines:
+    metrics:
+      receivers:
+        - otlp
+      exporters:
+        - prometheus
+    traces:
+      ...
+```
+
 
 ## Features
 
@@ -64,9 +93,9 @@ In addition, if the backends were configured then there will be an environment v
 |----------------------------------|--------------|------|
 | ci.pipeline.id                   | Job name | String |
 | ci.pipeline.name                 | Job name (user friendly) | String |
-| ci.pipeline.type                 | Job type | Enum (`freestyle`, `workflow`, `multibranch`, `unknown`) |
+| ci.pipeline.type                 | Job type | Enum (`freestyle`, `matrix`, `maven`, `workflow`, `multibranch`, `unknown`) |
 | ci.pipeline.multibranch.type     | Multibranch type | Enum (`branch`, `tag`, `change_request`) |
-| ci.pipeline.node.id              | Name of the node | String |
+| ci.pipeline.agent.id             | Name of the agent | String |
 | ci.pipeline.run.completed        | Is this a complete build? | Boolean |
 | ci.pipeline.run.durationMillis   | Build duration | Long |
 | ci.pipeline.run.description      | Build description | String |
@@ -76,7 +105,7 @@ In addition, if the backends were configured then there will be an environment v
 | ci.pipeline.run.user             | Who triggered the build | String |
 | ci.pipeline.parameter.sensitive  | Whether the information contained in this parameter is sensitive or security related. | Boolean |
 | ci.pipeline.parameter.name       | Name of the parameter | String |
-| ci.pipeline.parameter.value      | Value of the parameter | String |
+| ci.pipeline.parameter.value      | Value of the parameter. "Sensitive" values are redacted | String |
 
 ##### Spans
 
@@ -87,33 +116,61 @@ In addition, if the backends were configured then there will be an environment v
 | jenkins.pipeline.step.id         | Step id   | String |
 | jenkins.pipeline.step.plugin.name | Jenkins plugin for that particular step | String |
 | jenkins.pipeline.step.plugin.version| Jenkins plugin version | String |
-| jenkins.pipeline.step.node.label | Labels attached to the node | String |
+| jenkins.pipeline.step.agent.label | Labels attached to the agent | String |
 | git.branch                       | Git branch name | String |
 | git.repository                   | Git repository | String |
 | git.username                     | Git user | String |
+| git.clone.shallow                | Git shallow clone | Boolean |
+| git.clone.depth                  | Git shallow clone depth | Long |
+| git.username                     | Git user | String |
 | jenkins.url                      | Jenkins URL | String |
-| jenkins.computer.name            | Name of the node | String |
+| jenkins.computer.name            | Name of the agent | String |
 
 ### Metrics on Jenkins health indicators
 
-| Metrics                          | Description  |
-|----------------------------------|--------------|
-| ci.pipeline.run.active           | Gauge of active jobs |
-| ci.pipeline.run.launched         | Job launched |
-| ci.pipeline.run.started          | Job started |
-| ci.pipeline.run.completed        | Job completed |
-| ci.pipeline.run.aborted          | Job aborted |
-| jenkins.queue.waiting            | Number of waiting items in queue |
-| jenkins.queue.blocked            | Number of blocked items in queue |
-| jenkins.queue.buildable          | Number of buildable items in queue |
-| jenkins.queue.left               | Total count of left items |
-| jenkins.queue.time_spent_millis  | Total time spent in queue by items |
-| jenkins.agents.total             | Number of agents|
-| jenkins.agents.online            | Number of online agents |
-| jenkins.agents.offline           | Number of offline agents |
+| Metrics                          | Unit  | Label key  | Label Value       | Description |
+|----------------------------------|-------|------------|-------------------|-------------|
+| ci.pipeline.run.active           | 1     |            |                   | Gauge of active jobs |
+| ci.pipeline.run.launched         | 1     |            |                   | Job launched |
+| ci.pipeline.run.started          | 1     |            |                   | Job started |
+| ci.pipeline.run.completed        | 1     |            |                   | Job completed |
+| ci.pipeline.run.aborted          | 1     |            |                   | Job aborted |
+| jenkins.queue.waiting            | 1     |            |                   | Number of waiting items in queue |
+| jenkins.queue.blocked            | 1     |            |                   | Number of blocked items in queue |
+| jenkins.queue.buildable          | 1     |            |                   | Number of buildable items in queue |
+| jenkins.queue.left               | 1     |            |                   | Total count of left items |
+| jenkins.queue.time_spent_millis  | ms    |            |                   | Total time spent in queue by items |
+| jenkins.agents.total             | 1     |            |                   | Number of agents|
+| jenkins.agents.online            | 1     |            |                   | Number of online agents |
+| jenkins.agents.offline           | 1     |            |                   | Number of offline agents |
+| jenkins.agents.launch.failure    | 1     |            |                   | Number of failed launched agents |
+| jenkins.cloud.agents.completed   | 1     |            |                   | Number of provisioned cloud agents |
+| jenkins.cloud.agents.launch.failure | 1  |            |                   | Number of failed cloud agents |
+| jenkins.disk.usage.bytes         | By    |            |                   | Disk Usage size |
+| runtime.jvm.gc.time              | ms    |  gc        | `G1 Young Generation`, `G1 Old Generation...` | see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html) |
+| runtime.jvm.gc.count             | 1     |  gc        | `G1 Young Generation`, `G1 Old Generation...` | see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html) |
+| runtime.jvm.memory.area          | bytes | type, area | `used`, `committed`, `max`. <br/> `heap`, `non_heap` | see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
+| runtime.jvm.memory.pool          | bytes | type, pool | `used`, `committed`, `max`. <br/> `PS Eden Space`, `G1 Old Gen...` | see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html) |
+| system.cpu.load                  | 1     |            |                  | System CPU load. See `com.sun.management.OperatingSystemMXBean.getSystemCpuLoad` |
+| system.cpu.load.average.1m       | 1     |            |                  | System CPU load average 1 minute See `java.lang.management.OperatingSystemMXBean.getSystemLoadAverage` |
+| system.memory.usage              | By    | state      | `used`, `free`   | see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize` |
+| system.memory.utilization        | 1     |            |                  | System memory utilization, see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize`. Report `0%` if no physical memory is discovered by the JVM.|
+| system.paging.usage              | By    | state      | `used`, `free`   | see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize` |
+| system.paging.utilization        | 1     |            |                  | see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize`. Report `0%` if no swap memory is discovered by the JVM.|
+| process.cpu.load                 | 1     |            |                  | Process CPU load. See `com.sun.management.OperatingSystemMXBean.getProcessCpuLoad` |
+| process.cpu.time                 | ns    |            |                  | Process CPU time. See `com.sun.management.OperatingSystemMXBean.getProcessCpuTime` |
 
 
 Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
+
+The `runtime.*` metrics are the same as the one collected by the `
+
+### Standardisation
+
+:WIP:
+
+`Node` steps will be transformed to `Agent` spans to be the more agnostic to any platform. Therefore the `jenkins.pipeline.step.type` attribute will report the jenkins pipeline step `node` but
+the span name will refer to `Agent` in the distributed traces.
 
 ## Getting started
 
@@ -131,6 +188,13 @@ Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solu
     * Custom Observability backend for other visualisation solution
 
 ![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
+
+
+### Dashboards
+
+You can now import some of the existing dashboards that have been created to provide further insights about your CI/CD Jenkins platform
+
+See the details in the [dashboard docs](docs/DASHBOARDS.md).
 
 ## Screenshots
 
@@ -242,12 +306,6 @@ node {
 
 ![freestyle-job](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
 
-
-### Ideas
-
-* Collect labels of build agents
-* Detect outages caused by upgrades. Report on the version of the plugin of each plugin being used as a step
-
 ## Configuration as code
 
 This plugin supports configuration as code. Add to your yaml file:
@@ -263,13 +321,19 @@ unclassified:
     observabilityBackends:
       - elastic:
           kibanaBaseUrl: "http://localhost:5601"
+          name: "Elastic Observability"
       - jaeger:
           jaegerBaseUrl: "http://localhost:16686"
+          name: "Jaeger"
       - customObservabilityBackend:
           metricsVisualisationUrlTemplate: "foo"
           traceVisualisationUrlTemplate: "http://example.com"
+          name: "Custom Observability"
       - zipkin:
           zipkinBaseUrl: "http://localhost:9411/"
+          name: "Zipkin"
+    serviceName: "jenkins"
+    serviceNamespace: "jenkins"
 ```
 
 See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folder with various samples.

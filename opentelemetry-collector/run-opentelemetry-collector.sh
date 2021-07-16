@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-export OPEN_TELEMETRY_COLLECTOR_VERSION=0.23.0
+export OPEN_TELEMETRY_COLLECTOR_VERSION=0.28.0
 export OPEN_TELEMETRY_COLLECTOR_PLATFORM="darwin_amd64"
 
 
@@ -58,4 +58,4 @@ fi
 
 set -x
 
-$OPEN_TELEMETRY_COLLECTOR --config $PRGDIR/opentelemetry-collector-exporter-elastic.yaml
+$OPEN_TELEMETRY_COLLECTOR --config $PRGDIR/opentelemetry-collector.yaml

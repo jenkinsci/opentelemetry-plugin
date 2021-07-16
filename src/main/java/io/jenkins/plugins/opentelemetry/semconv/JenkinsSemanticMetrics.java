@@ -19,6 +19,10 @@ public class JenkinsSemanticMetrics {
     public static final String JENKINS_AGENTS_TOTAL =               "jenkins.agents.total";
     public static final String JENKINS_AGENTS_ONLINE =              "jenkins.agents.online";
     public static final String JENKINS_AGENTS_OFFLINE =             "jenkins.agents.offline";
+    public static final String JENKINS_AGENTS_LAUNCH_FAILURE =      "jenkins.agents.launch.failure";
+    public static final String JENKINS_CLOUD_AGENTS_FAILURE =       "jenkins.cloud.agents.failure";
+    public static final String JENKINS_CLOUD_AGENTS_COMPLETED =     "jenkins.cloud.agents.completed";
+    public static final String JENKINS_DISK_USAGE_BYTES =           "jenkins.disk.usage.bytes";
 
     private JenkinsSemanticMetrics(){}
 }

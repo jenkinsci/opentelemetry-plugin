@@ -92,7 +92,7 @@ public abstract class AbstractGitStepHandler implements StepHandler {
                     .setAttribute(SemanticAttributes.RPC_METHOD, "checkout")
                     .setAttribute(SemanticAttributes.NET_PEER_NAME, host)
                     .setAttribute(SemanticAttributes.PEER_SERVICE, "git")
-                    .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP.getValue())
+                    .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP)
                     .setSpanKind(SpanKind.CLIENT)
             ;
         } else if (("file".equals(gitUri.getScheme())

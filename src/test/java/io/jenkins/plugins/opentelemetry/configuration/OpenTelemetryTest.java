@@ -30,6 +30,7 @@ import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -41,6 +42,7 @@ import static io.grpc.Metadata.ASCII_STRING_MARSHALLER;
 
 public class OpenTelemetryTest {
 
+    @Ignore
     @Test
     public void test() throws InterruptedException {
 

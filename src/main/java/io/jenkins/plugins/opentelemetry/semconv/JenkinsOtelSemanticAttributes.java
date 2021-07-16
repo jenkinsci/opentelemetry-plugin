@@ -25,11 +25,11 @@ public final class JenkinsOtelSemanticAttributes {
     /**
      * @see hudson.model.Node#getNodeName()
      */
-    public static final AttributeKey<String>        CI_PIPELINE_NODE_ID = AttributeKey.stringKey("ci.pipeline.node.id");
+    public static final AttributeKey<String>        CI_PIPELINE_AGENT_ID = AttributeKey.stringKey("ci.pipeline.agent.id");
     /**
      * @see hudson.model.Node#getDisplayName() ()
      */
-    public static final AttributeKey<String>        CI_PIPELINE_NODE_NAME = AttributeKey.stringKey("ci.pipeline.node.name");
+    public static final AttributeKey<String>        CI_PIPELINE_AGENT_NAME = AttributeKey.stringKey("ci.pipeline.agent.name");
     public static final AttributeKey<Boolean>       CI_PIPELINE_RUN_COMPLETED = AttributeKey.booleanKey("ci.pipeline.run.completed");
     public static final AttributeKey<Long>          CI_PIPELINE_RUN_DURATION_MILLIS = AttributeKey.longKey("ci.pipeline.run.durationMillis");
     public static final AttributeKey<String>        CI_PIPELINE_RUN_DESCRIPTION = AttributeKey.stringKey("ci.pipeline.run.description");
@@ -44,6 +44,8 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String>        GIT_REPOSITORY = AttributeKey.stringKey("git.repository");
     public static final AttributeKey<String>        GIT_BRANCH = AttributeKey.stringKey("git.branch");
     public static final AttributeKey<String>        GIT_USERNAME = AttributeKey.stringKey("git.username");
+    public static final AttributeKey<Long>          GIT_CLONE_DEPTH = AttributeKey.longKey("git.clone.depth");
+    public static final AttributeKey<Boolean>       GIT_CLONE_SHALLOW = AttributeKey.booleanKey("git.clone.shallow");
 
     /**
      * @see Jenkins#getRootUrl()
@@ -74,17 +76,9 @@ public final class JenkinsOtelSemanticAttributes {
      */
     public static final AttributeKey<String>        JENKINS_COMPUTER_NAME = AttributeKey.stringKey("jenkins.computer.name");
 
-    public static final AttributeKey<String>        JENKINS_STEP_NODE_LABEL = AttributeKey.stringKey("jenkins.pipeline.step.node.label");
+    public static final AttributeKey<String>        JENKINS_STEP_AGENT_LABEL = AttributeKey.stringKey("jenkins.pipeline.step.agent.label");
 
-    /**
-     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAME
-     */
-    public static final String SERVICE_NAME_JENKINS = "jenkins";
-
-    /**
-     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAMESPACE
-     */
-    public static final String SERVICE_NAMESPACE_JENKINS = "jenkins";
+    public static final String JENKINS = "jenkins";
 
     /**
      * As {@link Jenkins.MasterComputer#getName()} return "", choose another name
@@ -98,6 +92,24 @@ public final class JenkinsOtelSemanticAttributes {
 
     public static final String SPAN_ID = "SPAN_ID";
     public static final String TRACE_ID = "TRACE_ID";
+
+    /**
+     * A machine or a container which is connected to the Jenkins coordinator and capable of executing
+     * Pipelines or Jobs.
+     */
+    public static final String AGENT = "agent";
+    public static final String AGENT_UI = "Agent";
+    public static final String AGENT_ALLOCATE = "agent.allocate";
+    public static final String AGENT_ALLOCATION_UI = "Agent Allocation";
+    /**
+     * The pipeline step node
+     */
+    public static final String STEP_NODE = "node";
+    /**
+     * The pipeline step name
+     */
+    public static final String STEP_NAME = "step";
+
 
     public static final AttributeKey<String>        ELASTIC_TRANSACTION_TYPE = AttributeKey.stringKey("type");
 

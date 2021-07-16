@@ -5,21 +5,18 @@
 
 package io.jenkins.plugins.opentelemetry.computer;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Computer;
 import hudson.model.TaskListener;
 import hudson.remoting.Channel;
 import hudson.slaves.ComputerListener;
-import hudson.slaves.OfflineCause;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.metrics.LongValueRecorder;
+import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.common.Labels;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
@@ -43,9 +40,12 @@ public class MonitoringComputerListener extends ComputerListener {
 
     protected Meter meter;
 
+    private LongCounter failureAgentCounter;
+
     @PostConstruct
     public void postConstruct() {
-        Computer controllerComputer = Jenkins.get().getComputer("");
+        final Jenkins jenkins = Jenkins.get();
+        Computer controllerComputer = jenkins.getComputer("");
         if (controllerComputer == null) {
             LOGGER.log(Level.FINE, () -> "IllegalState Jenkins Controller computer not found");
         } else if (controllerComputer.getAction(OpenTelemetryAttributesAction.class) != null) {
@@ -81,6 +81,10 @@ public class MonitoringComputerListener extends ComputerListener {
                 .setDescription("Number of agents")
                 .setUnit("1")
                 .build();
+        failureAgentCounter = meter.longCounterBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
+            .setDescription("Number of ComputerLauncher failures")
+            .setUnit("1")
+            .build();
     }
 
     private long getOfflineAgentsCount() {
@@ -117,6 +121,12 @@ public class MonitoringComputerListener extends ComputerListener {
 
         LOGGER.log(Level.FINE, () -> "preOnline(" + computer + "): " + openTelemetryAttributesAction);
         computer.addAction(openTelemetryAttributesAction);
+    }
+
+    @Override
+    public void onLaunchFailure(Computer computer, TaskListener taskListener) throws IOException, InterruptedException {
+        failureAgentCounter.add(1);
+        LOGGER.log(Level.FINE, () -> "onLaunchFailure(" + computer + "): ");
     }
 
     private static class GetComputerAttributes extends MasterToSlaveCallable<Map<String, String>, IOException> {

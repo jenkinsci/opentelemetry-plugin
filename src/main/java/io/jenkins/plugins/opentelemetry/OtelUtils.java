@@ -23,6 +23,8 @@ import java.util.function.Function;
 public class OtelUtils {
 
     public static final String FREESTYLE = "freestyle";
+    public static final String MATRIX = "matrix";
+    public static final String MAVEN = "maven";
     public static final String MULTIBRANCH = "multibranch";
     public static final String WORKFLOW = "workflow";
     public static final String UNKNOWN = "unknown";
@@ -55,14 +57,18 @@ public class OtelUtils {
         if (isFreestyle(run)) {
             return FREESTYLE;
         }
+        if (isMaven(run)) {
+            return MAVEN;
+        }
+        if (isMatrix(run)) {
+            return MATRIX;
+        }
         if (isMultibranch(run)) {
             return MULTIBRANCH;
         }
         if (isWorkflow(run)) {
             return WORKFLOW;
         }
-        // TODO: support for
-        // https://github.com/jenkinsci/matrix-project-plugin/blob/master/src/main/java/hudson/matrix/MatrixBuild.java#L70
         return UNKNOWN;
     }
 
@@ -125,6 +131,31 @@ public class OtelUtils {
             return false;
         }
         return (run instanceof FreeStyleBuild);
+    }
+
+    @Nonnull
+    public static boolean isMatrix(Run run) {
+        if (run == null) {
+            return false;
+        }
+        return isInstance(run, "hudson.matrix.MatrixBuild");
+    }
+
+    @Nonnull
+    public static boolean isMaven(Run run) {
+        if (run == null) {
+            return false;
+        }
+        return isInstance(run, "hudson.maven.AbstractMavenBuild") ||
+            isInstance(run, "hudson.maven.MavenModuleSetBuild") ||
+            isInstance(run, "hudson.maven.MavenBuild");
+    }
+
+    private static boolean isInstance(Object o, String clazz) {
+        if (o != null && o.getClass().getName().equals(clazz)) {
+            return true;
+        }
+        return false;
     }
 
     @Nonnull

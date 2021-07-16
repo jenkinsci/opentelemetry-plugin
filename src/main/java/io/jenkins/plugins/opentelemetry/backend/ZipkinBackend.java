@@ -18,6 +18,7 @@ import java.util.Map;
 public class ZipkinBackend extends ObservabilityBackend {
 
     public static final String OTEL_ZIPKIN_URL = "OTEL_ZIPKIN_URL";
+    public static final String DEFAULT_NAME = "Zipkin";
 	private String zipkinBaseUrl;
 
     @DataBoundConstructor
@@ -65,6 +66,12 @@ public class ZipkinBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
+    public String getDefaultName() {
+        return DEFAULT_NAME;
+    }
+
+    @CheckForNull
+    @Override
     public String getMetricsVisualisationUrlTemplate() {
         return null;
     }
@@ -84,7 +91,7 @@ public class ZipkinBackend extends ObservabilityBackend {
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {
-            return "Zipkin";
+            return DEFAULT_NAME;
         }
     }
 }

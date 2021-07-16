@@ -29,10 +29,7 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -241,9 +238,11 @@ public class OtelTraceService {
 
         @Override
         public String toString() {
+            // clone the Multimap to prevent a ConcurrentModificationException
+            // see https://github.com/jenkinsci/opentelemetry-plugin/issues/129
             return "RunSpans{" +
-                    "runPhasesSpans=" + runPhasesSpans +
-                    ", pipelineStepSpansByFlowNodeId=" + pipelineStepSpansByFlowNodeId +
+                    "runPhasesSpans=" + Collections.unmodifiableList(runPhasesSpans) +
+                    ", pipelineStepSpansByFlowNodeId=" + ArrayListMultimap.create(pipelineStepSpansByFlowNodeId) +
                     '}';
         }
     }
@@ -310,7 +309,19 @@ public class OtelTraceService {
         final int runNumber;
 
         static RunIdentifier fromRun(@Nonnull Run run) {
-            return new RunIdentifier(run.getParent().getFullName(), run.getNumber());
+            try {
+                return new RunIdentifier(run.getParent().getFullName(), run.getNumber());
+            } catch (StackOverflowError e) {
+                // TODO remove when https://github.com/jenkinsci/opentelemetry-plugin/issues/87 is fixed
+                try {
+                    final String jobName = run.getParent().getName();
+                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for " + jobName + "#" + run.getNumber());
+                    return new RunIdentifier("#StackOverflowError#_" + jobName, run.getNumber());
+                } catch (StackOverflowError e2) {
+                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for unknown job #" + run.getNumber());
+                    return new RunIdentifier("#StackOverflowError#", run.getNumber());
+                }
+            }
         }
 
         public RunIdentifier(@Nonnull String jobName, @Nonnull int runNumber) {

@@ -18,6 +18,7 @@ import java.util.Map;
 public class ElasticBackend extends ObservabilityBackend {
 
     public static final String OTEL_ELASTIC_URL = "OTEL_ELASTIC_URL";
+    public static final String DEFAULT_NAME = "Elastic Observability";
     private String kibanaBaseUrl;
 
     @DataBoundConstructor
@@ -68,6 +69,12 @@ public class ElasticBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
+    public String getDefaultName() {
+        return DEFAULT_NAME;
+    }
+
+    @CheckForNull
+    @Override
     public String getMetricsVisualisationUrlTemplate() {
         return null;
     }
@@ -87,8 +94,7 @@ public class ElasticBackend extends ObservabilityBackend {
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         @Override
         public String getDisplayName() {
-            return "Elastic Observability";
+            return DEFAULT_NAME;
         }
     }
-
 }

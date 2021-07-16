@@ -23,6 +23,7 @@ import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,7 +61,7 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", jobName);
         // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
-        checkChainOfSpans(spans, "Stage: Declarative: Checkout SCM", "Node", "Phase: Run");
+        checkChainOfSpans(spans, "Stage: Declarative: Checkout SCM", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
 
@@ -69,6 +70,15 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.is(OtelUtils.BRANCH));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.MULTIBRANCH));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION), CoreMatchers.is("Bar"));
+
+        // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
+        // It returns the first checkout, aka the one without any shallow cloning, depth shallow.
+        Optional<Tree.Node<SpanDataWrapper>> checkoutNode = spans.breadthFirstSearchNodes(node -> node.getData().spanData.getName().startsWith("checkout:"));
+        MatcherAssert.assertThat(checkoutNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+
+        attributes = checkoutNode.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
 
         // Environment variables are populated
         EnvVars environment = b1.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));

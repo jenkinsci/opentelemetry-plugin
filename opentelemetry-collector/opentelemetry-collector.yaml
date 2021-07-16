@@ -19,9 +19,11 @@ processors:
   batch: null
 
 exporters:
-  elastic:
-    apm_server_url: 'http://localhost:8200'
-    secret_token: 'my_secret_token'
+  otlp/elastic:
+    endpoint: "localhost:8200"
+    insecure: true
+    headers:
+      Authorization: "Bearer my_secret_token"
   jaeger:
     endpoint: localhost:14250
     insecure: true
@@ -29,6 +31,8 @@ exporters:
     loglevel: warn
   prometheus:
     endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+        enabled: true
   zipkin:
     endpoint: "http://localhost:9411/api/v2/spans"
     insecure: true
@@ -37,18 +41,18 @@ service:
     metrics:
       receivers:
         - otlp
-        - hostmetrics
+        #- hostmetrics
       exporters:
         - logging
         - prometheus
-        - elastic
+        - otlp/elastic
     traces:
       receivers:
         - otlp
       processors:
         - batch
       exporters:
-        - elastic
-        - jaeger
-        - zipkin
+        - otlp/elastic
+        #- jaeger
+        #- zipkin
   extensions: [zpages]
