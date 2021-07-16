@@ -149,8 +149,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
 
-            String createSpanName = getStepName(stepStartNode.getDescriptor(), "createSpan");
-            String stepType = getStepType(stepStartNode.getDescriptor(), "step");
+            String createSpanName = getStepName(stepStartNode, "createSpan");
+            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), "step");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
             final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
@@ -257,6 +257,19 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             return name;
         }
         UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
+        return getDisplayName(stepDescriptor, describable);
+    }
+
+    private String getStepName(@Nonnull StepStartNode node, @Nonnull String name) {
+        StepDescriptor stepDescriptor = node.getDescriptor();
+        if (stepDescriptor == null) {
+            return name;
+        }
+        UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
+        return getDisplayName(stepDescriptor, describable);
+    }
+
+    private String getDisplayName(@Nonnull StepDescriptor stepDescriptor, UninstantiatedDescribable describable) {
         if (describable != null) {
             Descriptor<? extends Describable> d = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
             return d.getDisplayName();
