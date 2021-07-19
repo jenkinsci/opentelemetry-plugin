@@ -354,9 +354,9 @@ For instance, let's say you would like to create a span for the docker login det
 pipeline {
   ...
       createSpan(name: 'my-docker-login',
-                 attributes: ['net.peer.name': 'my.docker.registry',
-                              'rpc.service': 'docker',
-                              'rpc.method': 'login']) {
+                 attributes: [[key: 'net.peer.name', value: 'my.docker.registry'],
+                              [key: 'rpc.service', value: 'docker'],
+                              [key: 'rpc.method', value: 'login']]) {
         sh 'docker login -u $user -p $pass $OTEL_STEP_SERVICE'
       }
   ...

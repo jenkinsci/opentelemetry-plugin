@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.steps;
 
 import hudson.Extension;
 import hudson.model.TaskListener;
+import io.jenkins.plugins.opentelemetry.steps.model.SpanAttribute;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -14,21 +15,33 @@ import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class CreateSpanStep extends Step {
 
     private final String name;
-    private final Map<String, String> attributes;
+    private final List<SpanAttribute> attributes;
 
     @DataBoundConstructor
-    public CreateSpanStep(String name, Map<String, String> attributes) {
+    public CreateSpanStep(String name, List<SpanAttribute> attributes) {
         this.name = name;
         this.attributes = attributes;
     }
 
-    public Map<String, String> getAttributes() {
+    public CreateSpanStep(String name, Map<String, String> attributeMap) {
+        this.name = name;
+        this.attributes = transformMap(attributeMap);
+    }
+
+    private List<SpanAttribute> transformMap(Map<String, String> attributeMap) {
+        List <SpanAttribute> list = new java.util.ArrayList<>(Collections.emptyList());
+        attributeMap.forEach((key, value) -> { list.add(new SpanAttribute(key, value)); });
+        return list;
+    }
+
+    public List<SpanAttribute> getAttributes() {
         return attributes;
     }
     public String getName() {

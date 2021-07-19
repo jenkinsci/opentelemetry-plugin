@@ -387,19 +387,18 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "node() {\n" +
                 "    stage('ze-stage1') {\n" +
                 "       createSpan(name: 'my-acme-span1', " +
-                "                  attributes: ['attribute.service': 'acme', 'attribute.user': 'bob']) { \n" +
+                "                  attributes: [[key: 'attribute.service', value: 'acme'], [key: 'attribute.user', value: 'bob']]) { \n" +
                 "          xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
                 "       }\n" +
                 "    }\n" +
                 "    stage('ze-stage2') {\n" +
-                "       createSpan(name: 'my-acme-span2', " +
-                "                  attributes: [:]) { \n" +
+                "       createSpan(name: 'my-acme-span2') { \n" +
                 "          xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "       }\n" +
                 "    }\n" +
                 "    stage('ze-stage3') {\n" +
                 "       createSpan(name: '', " +
-                "                  attributes: ['attribute.user': 'alice']) { \n" +
+                "                  attributes: [[key: 'attribute.user', value: 'alice']]) { \n" +
                 "          xsh (label: 'shell-3', script: 'echo ze-echo-3') \n" +
                 "       }\n" +
                 "    }\n" +

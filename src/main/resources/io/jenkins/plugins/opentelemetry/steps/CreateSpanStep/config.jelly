@@ -1,6 +1,9 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-    <f:entry field="attribute" title="${%Attribute}">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:entry field="name" title="${%Name}">
         <f:textbox/>
+    </f:entry>
+    <f:entry>
+        <f:repeatableProperty field="attributes" minimum="0" header="Attributes" add="Add a span attribute"/>
     </f:entry>
 </j:jelly>

@@ -6,11 +6,12 @@
 package io.jenkins.plugins.opentelemetry.steps;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import io.jenkins.plugins.opentelemetry.steps.model.SpanAttribute;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
 import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
-import java.util.Map;
+import java.util.List;
 
 public class CreateSpanExecution extends AbstractStepExecutionImpl {
 
@@ -18,9 +19,9 @@ public class CreateSpanExecution extends AbstractStepExecutionImpl {
     private transient final String name;
 
     @SuppressFBWarnings(value="SE_TRANSIENT_FIELD_NOT_RESTORED", justification="Only used when starting.")
-    private transient final Map<String, String> attributes;
+    private transient final List<SpanAttribute> attributes;
 
-    CreateSpanExecution(String name, Map<String, String> attributes, StepContext context) {
+    CreateSpanExecution(String name, List<SpanAttribute> attributes, StepContext context) {
         super(context);
         this.name = name;
         this.attributes = attributes;

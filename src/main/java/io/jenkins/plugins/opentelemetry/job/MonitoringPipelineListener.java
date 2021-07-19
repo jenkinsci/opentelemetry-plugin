@@ -52,6 +52,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,7 +60,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Verify.verifyNotNull;
 
 
@@ -164,8 +164,26 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
 
-            final Map<String, String> attributes = (Map<String, String>) arguments.getOrDefault("attributes", Collections.emptyMap());
-            attributes.forEach((key, value) -> { createSpanBuilder.setAttribute(AttributeKey.stringKey(key), value); });
+            // Populate the attributes if any attributes parameter was passed to the createSpan step.
+            try {
+                final List<LinkedHashMap> attributes = (List<LinkedHashMap>) arguments.getOrDefault("attributes", Collections.emptyMap());
+                for (LinkedHashMap map : attributes) {
+                    final String[] key = new String[1];
+                    final String[] value = new String[1];
+                    map.forEach((k, v) -> {
+                        if (k.equals("key")) {
+                            key[0] = v.toString();
+                        }
+                        if (k.equals("value")) {
+                            value[0] = v.toString();
+                        }
+                    });
+                    createSpanBuilder.setAttribute(AttributeKey.stringKey(key[0]), value[0]);
+                }
+            } catch (ClassCastException cce) {
+                LOGGER.log(Level.WARNING, run.getFullDisplayName() + " failure to gather the attributes for the createStep.", cce);
+            }
+
             Span createSpan = createSpanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + stepStartNode.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(createSpan));
             getTracerService().putSpan(run, createSpan, stepStartNode);

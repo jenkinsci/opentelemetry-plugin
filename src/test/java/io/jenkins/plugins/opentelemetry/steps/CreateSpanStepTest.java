@@ -16,13 +16,27 @@ public class CreateSpanStepTest {
     public RestartableJenkinsRule story = new RestartableJenkinsRule();
 
     @Test
-    public void basic() {
+    public void test_with_attributes_in_a_string_map() {
         story.addStep(new Statement() {
             @Override
             public void evaluate() throws Throwable {
                 WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
                 p.setDefinition(new CpsFlowDefinition(
-                        "node { createSpan(name: 'my-span', attributes: ['attribute.foo' : 'bar']) { echo 'here' } }", true));
+                        "node { createSpan(name: 'my-span') { echo 'here' } }", true));
+                WorkflowRun b = story.j.assertBuildStatus(Result.SUCCESS, p.scheduleBuild2(0).get());
+                story.j.assertLogContains("here", b);
+            }
+        });
+    }
+
+    @Test
+    public void test_with_attributes_in_a_attributesValue_structure() {
+        story.addStep(new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                WorkflowJob p = story.j.jenkins.createProject(WorkflowJob.class, "p");
+                p.setDefinition(new CpsFlowDefinition(
+                    "node { createSpan(name: 'my-span', attributes: [[key: 'attribute.foo', value: 'foo'], [key: 'attribute.bar', value: 'bar']]) { echo 'here' } }", true));
                 WorkflowRun b = story.j.assertBuildStatus(Result.SUCCESS, p.scheduleBuild2(0).get());
                 story.j.assertLogContains("here", b);
             }
