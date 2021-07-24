@@ -70,19 +70,21 @@ service:
 * Built in integration with [Elastic Observability](https://www.elastic.co/observability), [Jaeger](https://www.jaegertracing.io/), and [Zipkin](https://zipkin.io/).
    Other OpenTelemetry compatible distributed tracing solutions are also supported.
 
-### Environment variables
+### Environment variables for trace context propagation and integrations
 
-The current span and trace IDs are exposed as environment variables.
+The context of the current span is exposed as environment variables to ease integration with third party tools.
 
-* SPAN_ID
-* TRACE_ID
+* `TRACEPARENT`: the [W3C Trace Context header `traceparent`](https://www.w3.org/TR/trace-context-1/#traceparent-header)
+* `TRACESTATE`: the [W3C Trace Context header `tracestate`](https://www.w3.org/TR/trace-context-1/#tracestate-header)
+* `TRACE_ID`: the trace id of the job / pipeline
+* `SPAN_ID`: the id of the pipeline shell step span 
 
 In addition, if the backends were configured then there will be an environment variable for each of them pointing to the URL with the span/transactions:
 
-* OTEL_CUSTOM_URL
-* OTEL_ELASTIC_URL
-* OTEL_JAEGER_URL
-* OTEL_ZIPKIN_URL
+* `OTEL_CUSTOM_URL`
+* `OTEL_ELASTIC_URL`
+* `OTEL_JAEGER_URL`
+* `OTEL_ZIPKIN_URL`
 
 #### Attributes
 
