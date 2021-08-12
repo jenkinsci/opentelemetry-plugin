@@ -40,6 +40,11 @@
                 <f:entry field="ignoredSteps" title="Steps to be ignored (comma-separated)" description="e.g. 'dir,echo,println'">
                     <f:textbox />
                 </f:entry>
+                <f:entry
+                    title="Don't export OpenTelemetry configuration as environment variables"
+                    field="dontExportOtelConfigurationAsEnvironmentVariables">
+                    <f:checkbox />
+                </f:entry>
             </f:advanced>
     </f:section>
 </j:jelly>

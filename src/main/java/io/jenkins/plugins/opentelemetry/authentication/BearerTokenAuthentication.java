@@ -23,6 +23,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -68,6 +69,12 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
     @Override
     public void configure(@Nonnull OtlpGrpcSpanExporterBuilder spanExporterBuilder) {
         spanExporterBuilder.addHeader("Authorization", "Bearer " + this.getAuthenticationHeaderValue());
+    }
+
+    @Override
+    public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
+        // TODO don't overwrite OTEL_EXPORTER_OTLP_HEADERS if already defined, just append to it
+        environmentVariables.put("OTEL_EXPORTER_OTLP_HEADERS", "Authorization=Bearer " + this.getAuthenticationHeaderValue());
     }
 
     public String getTokenId() {

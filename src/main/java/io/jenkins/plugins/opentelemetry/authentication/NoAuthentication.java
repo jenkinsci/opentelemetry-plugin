@@ -12,6 +12,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
+import java.util.Map;
 import java.util.logging.Logger;
 
 @Extension
@@ -28,6 +29,10 @@ public class NoAuthentication extends OtlpAuthentication {
 
     @Override
     public void configure(@Nonnull OtlpGrpcSpanExporterBuilder spanExporterBuilder) {
+    }
+
+    @Override
+    public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
     }
 
     @Override
