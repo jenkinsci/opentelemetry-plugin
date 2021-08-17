@@ -74,7 +74,7 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
     @Override
     public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
         // TODO don't overwrite OTEL_EXPORTER_OTLP_HEADERS if already defined, just append to it
-        environmentVariables.put("OTEL_EXPORTER_OTLP_HEADERS", "Authorization=Bearer " + this.getAuthenticationHeaderValue());
+        environmentVariables.put("OTEL_EXPORTER_OTLP_HEADERS", "authorization=Bearer " + this.getAuthenticationHeaderValue());
     }
 
     public String getTokenId() {
