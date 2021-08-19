@@ -50,9 +50,7 @@ public class OtelEnvironmentContributorService {
             }
         }
 
-        if (this.jenkinsOpenTelemetryPluginConfiguration.isDontExportOtelConfigurationAsEnvironmentVariables()) {
-            // skip
-        } else {
+        if (this.jenkinsOpenTelemetryPluginConfiguration.isExportOtelConfigurationAsEnvironmentVariables()) {
             Map<String, String> otelConfiguration = jenkinsOpenTelemetryPluginConfiguration.getOtelConfigurationAsEnvironmentVariables();
             for (Map.Entry<String, String> otelEnvironmentVariable : otelConfiguration.entrySet()) {
                 String previousValue = envs.put(otelEnvironmentVariable.getKey(), otelEnvironmentVariable.getValue());
@@ -60,6 +58,8 @@ public class OtelEnvironmentContributorService {
                     LOGGER.log(Level.FINE, "Overwrite environment variable '" + otelEnvironmentVariable.getKey() + "'");
                 }
             }
+        } else {
+            // skip
         }
     }
 

@@ -1,7 +1,7 @@
 unclassified:
   openTelemetry:
-    dontExportOtelConfigurationAsEnvironmentVariables: false
     endpoint: "http://otel-collector-contrib:4317"
+    exportOtelConfigurationAsEnvironmentVariables: false
     observabilityBackends:
       - elastic:
           name: "My Elastic"

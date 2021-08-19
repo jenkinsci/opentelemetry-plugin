@@ -75,7 +75,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
-    private boolean dontExportOtelConfigurationAsEnvironmentVariables;
+    private boolean exportOtelConfigurationAsEnvironmentVariables;
 
     private transient SpanNamingStrategy spanNamingStrategy;
 
@@ -215,13 +215,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.ignoredSteps = ignoredSteps;
     }
 
-    public boolean isDontExportOtelConfigurationAsEnvironmentVariables() {
-        return dontExportOtelConfigurationAsEnvironmentVariables;
+    public boolean isExportOtelConfigurationAsEnvironmentVariables() {
+        return exportOtelConfigurationAsEnvironmentVariables;
     }
 
     @DataBoundSetter
-    public void setDontExportOtelConfigurationAsEnvironmentVariables(boolean dontExportOtelConfigurationAsEnvironmentVariables) {
-        this.dontExportOtelConfigurationAsEnvironmentVariables = dontExportOtelConfigurationAsEnvironmentVariables;
+    public void setExportOtelConfigurationAsEnvironmentVariables(boolean exportOtelConfigurationAsEnvironmentVariables) {
+        this.exportOtelConfigurationAsEnvironmentVariables = exportOtelConfigurationAsEnvironmentVariables;
     }
 
     @Nonnull
