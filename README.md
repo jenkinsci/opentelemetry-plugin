@@ -79,6 +79,13 @@ The context of the current span is exposed as environment variables to ease inte
 * `TRACE_ID`: the trace id of the job / pipeline
 * `SPAN_ID`: the id of the pipeline shell step span 
 
+When the configuration options "Export OpenTelemetry configuration as environment variables", the following [OpenTelemetry environment variables](https://github.com/open-telemetry/opentelemetry-specification/blob/v1.6.0/specification/protocol/exporter.md) will be exported according to the settings of the plugin:
+* `OTEL_EXPORTER_OTLP_ENDPOINT`: Target to which the exporter is going to send spans or metrics.
+* `OTEL_EXPORTER_OTLP_INSECURE`: Whether to enable client transport security for the exporter's gRPC connection
+* `OTEL_EXPORTER_OTLP_HEADERS`: Key-value pairs to be used as headers associated with gRPC or HTTP requests. Typically used to pass credentials.
+* `OTEL_EXPORTER_OTLP_TIMEOUT`: Maximum time the OTLP exporter will wait for each batch export.
+* `OTEL_EXPORTER_OTLP_CERTIFICATE`: The trusted certificate to use when verifying a server's TLS credentials.
+
 In addition, if the backends were configured then there will be an environment variable for each of them pointing to the URL with the span/transactions:
 
 * `OTEL_CUSTOM_URL`
@@ -316,6 +323,7 @@ unclassified:
   openTelemetry:
     authentication: "noAuthentication"
     endpoint: "otel-collector-contrib:4317"
+    exportOtelConfigurationAsEnvironmentVariables: true
     exporterIntervalMillis: 60000
     exporterTimeoutMillis: 30000
     ignoredSteps: "dir,echo,isUnix,pwd,properties"
