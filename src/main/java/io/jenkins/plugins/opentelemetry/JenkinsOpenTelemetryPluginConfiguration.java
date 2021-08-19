@@ -41,6 +41,7 @@ import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,6 +56,9 @@ import java.util.stream.Collectors;
 public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration {
     private final static Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());
 
+    /**
+     * OTLP endpoint prefixed by "http://" or "https://"
+     */
     private String endpoint;
 
     private String trustedCertificatesPem;
@@ -70,6 +74,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
+
+    private boolean exportOtelConfigurationAsEnvironmentVariables;
 
     private transient SpanNamingStrategy spanNamingStrategy;
 
@@ -207,6 +213,34 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     public void setIgnoredSteps(String ignoredSteps) {
         this.ignoredSteps = ignoredSteps;
+    }
+
+    public boolean isExportOtelConfigurationAsEnvironmentVariables() {
+        return exportOtelConfigurationAsEnvironmentVariables;
+    }
+
+    @DataBoundSetter
+    public void setExportOtelConfigurationAsEnvironmentVariables(boolean exportOtelConfigurationAsEnvironmentVariables) {
+        this.exportOtelConfigurationAsEnvironmentVariables = exportOtelConfigurationAsEnvironmentVariables;
+    }
+
+    @Nonnull
+    public Map<String, String> getOtelConfigurationAsEnvironmentVariables() {
+        Map<String, String> environmentVariables = new HashMap<>();
+        environmentVariables.put("OTEL_EXPORTER_OTLP_ENDPOINT", this.endpoint);
+        String sanitizeOtlpEndpoint = sanitizeOtlpEndpoint(this.endpoint);
+        if (sanitizeOtlpEndpoint != null && sanitizeOtlpEndpoint.startsWith("http://")) {
+            environmentVariables.put("OTEL_EXPORTER_OTLP_INSECURE", Boolean.TRUE.toString());
+        }
+        this.authentication.enrichOtelEnvironmentVariables(environmentVariables);
+        String trustedCertificatesPem = this.getTrustedCertificatesPem();
+        if (trustedCertificatesPem != null && !trustedCertificatesPem.isEmpty()) {
+            environmentVariables.put("OTEL_EXPORTER_OTLP_CERTIFICATE", trustedCertificatesPem);
+        }
+        if (this.exporterTimeoutMillis != 0) {
+            environmentVariables.put("OTEL_EXPORTER_OTLP_TIMEOUT", this.exporterTimeoutMillis + "ms");
+        }
+        return environmentVariables;
     }
 
     /**

@@ -25,6 +25,8 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
 
     private final static Logger LOGGER = Logger.getLogger(OtelStepEnvironmentContributor.class.getName());
 
+    private OtelEnvironmentContributorService otelEnvironmentContributorService;
+
     private OtelTraceService otelTraceService;
 
     @Override
@@ -42,7 +44,12 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
             span = otelTraceService.getSpan(run, flowNode);
         }
 
-        EnvironmentContributorUtils.setEnvironmentVariables(run, envs, span);
+        otelEnvironmentContributorService.addEnvironmentVariables(run, envs, span);
+    }
+
+    @Inject
+    public void setEnvironmentContributorService(OtelEnvironmentContributorService otelEnvironmentContributorService) {
+        this.otelEnvironmentContributorService = otelEnvironmentContributorService;
     }
 
     @Inject
