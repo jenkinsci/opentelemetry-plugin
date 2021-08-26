@@ -28,6 +28,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -133,13 +134,21 @@ public class MonitoringComputerListener extends ComputerListener {
         @Override
         public Map<String, String> call() throws IOException {
             Map<String, String> attributes = new HashMap<>();
-
-            InetAddress localHost = InetAddress.getLocalHost();
-            if (localHost.isLoopbackAddress()) {
-                // we have a problem, we want another network interface
+            try {
+                InetAddress localHost = InetAddress.getLocalHost();
+                if (localHost.isLoopbackAddress()) {
+                    // we have a problem, we want another network interface
+                }
+                attributes.put(ResourceAttributes.HOST_NAME.getKey(), localHost.getHostName());
+                attributes.put("host.ip", localHost.getHostAddress());
+            } catch (IOException e) {
+                // as this code will go through Jenkins remoting, test isLoggable before transferring data
+                if (LOGGER.isLoggable(Level.FINER)) {
+                    MonitoringComputerListener.LOGGER.log(Level.FINER, "Exception retrieving the build agent host details", e);
+                } else if (LOGGER.isLoggable(Level.FINE)) {
+                    MonitoringComputerListener.LOGGER.log(Level.FINE, () -> "Exception retrieving the build agent host details " + e.getMessage());
+                }
             }
-            attributes.put(ResourceAttributes.HOST_NAME.getKey(), localHost.getHostName());
-            attributes.put("host.ip", localHost.getHostAddress());
             return attributes;
         }
     }
