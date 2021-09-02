@@ -180,6 +180,11 @@ The `runtime.*` metrics are the same as the one collected by the `
 `Node` steps will be transformed to `Agent` spans to be the more agnostic to any platform. Therefore the `jenkins.pipeline.step.type` attribute will report the jenkins pipeline step `node` but
 the span name will refer to `Agent` in the distributed traces.
 
+## Getting started with a video tutorial
+
+[![Tracing Your Jenkins Pipelines With OpenTelemetry and Jaeger](https://img.youtube.com/vi/3XzVOxvNpGM/0.jpg)](https://www.youtube.com/watch?v=3XzVOxvNpGM)
+
+
 ## Getting started
 
 * Setup an OpenTelemetry endpoint such as the [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib)
