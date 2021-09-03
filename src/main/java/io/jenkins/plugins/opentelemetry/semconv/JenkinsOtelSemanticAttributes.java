@@ -92,6 +92,7 @@ public final class JenkinsOtelSemanticAttributes {
 
     public static final String SPAN_ID = "SPAN_ID";
     public static final String TRACE_ID = "TRACE_ID";
+    public static final String OTEL_EXPORTER_OTLP_TIMEOUT = "OTEL_EXPORTER_OTLP_TIMEOUT";
 
     /**
      * A machine or a container which is connected to the Jenkins coordinator and capable of executing
