@@ -238,7 +238,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             environmentVariables.put("OTEL_EXPORTER_OTLP_CERTIFICATE", trustedCertificatesPem);
         }
         if (this.exporterTimeoutMillis != 0) {
-            environmentVariables.put("OTEL_EXPORTER_OTLP_TIMEOUT", this.exporterTimeoutMillis + "ms");
+            environmentVariables.put("OTEL_EXPORTER_OTLP_TIMEOUT", this.exporterTimeoutMillis);
         }
         return environmentVariables;
     }
