@@ -7,10 +7,12 @@ package io.jenkins.plugins.opentelemetry;
 
 import com.cloudbees.hudson.plugins.folder.computed.FolderComputation;
 import com.github.rutledgepaulv.prune.Tree;
+import hudson.EnvVars;
 import hudson.ExtensionList;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryEnvironmentVariablesConventions;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -20,7 +22,6 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import jenkins.plugins.git.ExtendedGitSampleRepoRule;
-import jenkins.plugins.git.GitSampleRepoRule;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -163,6 +164,15 @@ public class BaseIntegrationTest {
         }
 
         return trees.get(0);
+    }
+
+    protected void assertEnvironmentVariables(EnvVars environment) {
+        MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.SPAN_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.TRACE_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
+        // See src/test/resources/io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
+        MatcherAssert.assertThat(environment.get(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_ENDPOINT), CoreMatchers.is("http://otel-collector-contrib:4317"));
+        MatcherAssert.assertThat(environment.get(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_INSECURE), CoreMatchers.is("true"));
+        MatcherAssert.assertThat(environment.get(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT), CoreMatchers.is("3000"));
     }
 
     // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java

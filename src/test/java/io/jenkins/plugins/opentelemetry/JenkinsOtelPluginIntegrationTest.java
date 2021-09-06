@@ -17,7 +17,6 @@ import hudson.model.Run;
 import hudson.util.LogTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryEnvironmentVariablesConventions;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
@@ -198,12 +197,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         // Environment variables are populated
         EnvVars environment = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
-        MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.SPAN_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.TRACE_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
-        // See src/test/resources/io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
-        MatcherAssert.assertThat(environment.get(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_ENDPOINT), CoreMatchers.is("http://otel-collector-contrib:4317"));
-        MatcherAssert.assertThat(environment.get(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_INSECURE), CoreMatchers.is("true"));
-        MatcherAssert.assertThat(environment.get(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT), CoreMatchers.is("3000"));
+        assertEnvironmentVariables(environment);
     }
 
     @Test
