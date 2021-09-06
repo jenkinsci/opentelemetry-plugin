@@ -10,6 +10,7 @@ import hudson.EnvVars;
 import hudson.model.Run;
 import hudson.util.LogTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryEnvironmentVariablesConventions;
 import io.opentelemetry.api.common.Attributes;
 import jenkins.branch.BranchProperty;
 import jenkins.branch.BranchSource;
@@ -85,6 +86,6 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.SPAN_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
         MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.TRACE_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
         // See src/test/resources/io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
-        MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.OTEL_EXPORTER_OTLP_TIMEOUT), CoreMatchers.is("3000"));
+        MatcherAssert.assertThat(environment.get(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT), CoreMatchers.is("3000"));
     }
 }

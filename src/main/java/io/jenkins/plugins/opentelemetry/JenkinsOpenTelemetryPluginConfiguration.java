@@ -17,6 +17,7 @@ import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryEnvironmentVariablesConventions;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -238,7 +239,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             environmentVariables.put("OTEL_EXPORTER_OTLP_CERTIFICATE", trustedCertificatesPem);
         }
         if (this.exporterTimeoutMillis != 0) {
-            environmentVariables.put(JenkinsOtelSemanticAttributes.OTEL_EXPORTER_OTLP_TIMEOUT, Integer.toString(this.exporterTimeoutMillis));
+            environmentVariables.put(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT, Integer.toString(this.exporterTimeoutMillis));
         }
         return environmentVariables;
     }
