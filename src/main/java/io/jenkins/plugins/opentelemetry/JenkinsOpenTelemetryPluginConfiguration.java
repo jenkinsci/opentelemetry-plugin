@@ -17,6 +17,7 @@ import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryEnvironmentVariablesConventions;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -227,18 +228,18 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Nonnull
     public Map<String, String> getOtelConfigurationAsEnvironmentVariables() {
         Map<String, String> environmentVariables = new HashMap<>();
-        environmentVariables.put("OTEL_EXPORTER_OTLP_ENDPOINT", this.endpoint);
+        environmentVariables.put(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_ENDPOINT, this.endpoint);
         String sanitizeOtlpEndpoint = sanitizeOtlpEndpoint(this.endpoint);
         if (sanitizeOtlpEndpoint != null && sanitizeOtlpEndpoint.startsWith("http://")) {
-            environmentVariables.put("OTEL_EXPORTER_OTLP_INSECURE", Boolean.TRUE.toString());
+            environmentVariables.put(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_INSECURE, Boolean.TRUE.toString());
         }
         this.authentication.enrichOtelEnvironmentVariables(environmentVariables);
         String trustedCertificatesPem = this.getTrustedCertificatesPem();
         if (trustedCertificatesPem != null && !trustedCertificatesPem.isEmpty()) {
-            environmentVariables.put("OTEL_EXPORTER_OTLP_CERTIFICATE", trustedCertificatesPem);
+            environmentVariables.put(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_CERTIFICATE, trustedCertificatesPem);
         }
         if (this.exporterTimeoutMillis != 0) {
-            environmentVariables.put("OTEL_EXPORTER_OTLP_TIMEOUT", this.exporterTimeoutMillis + "ms");
+            environmentVariables.put(OpenTelemetryEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT, Integer.toString(this.exporterTimeoutMillis));
         }
         return environmentVariables;
     }

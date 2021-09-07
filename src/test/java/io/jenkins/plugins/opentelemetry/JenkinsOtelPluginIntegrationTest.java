@@ -197,8 +197,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         // Environment variables are populated
         EnvVars environment = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
-        MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.SPAN_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.TRACE_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertEnvironmentVariables(environment);
     }
 
     @Test

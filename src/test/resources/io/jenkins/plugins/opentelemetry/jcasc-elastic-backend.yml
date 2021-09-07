@@ -2,6 +2,8 @@ unclassified:
   openTelemetry:
     authentication: "noAuthentication"
     endpoint: "http://otel-collector-contrib:4317"
+    exporterTimeoutMillis: 3000
+    exportOtelConfigurationAsEnvironmentVariables: true
     observabilityBackends:
       - elasticBackend:
           kibanaBaseUrl: "http://localhost:5601"
