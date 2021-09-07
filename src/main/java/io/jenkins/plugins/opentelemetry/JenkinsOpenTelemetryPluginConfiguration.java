@@ -358,6 +358,19 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return FormValidation.error("Invalid format: \"%s\"", ignoredSteps);
     }
 
+    /**
+     * A warning if it's selected.
+     *
+     * @param value the exportOtelConfigurationAsEnvironmentVariables flag
+     * @return ok if the form input was valid
+     */
+    public FormValidation doCheckExportOtelConfigurationAsEnvironmentVariables(@QueryParameter String value) {
+        if(value.equals("false")) {
+            return FormValidation.ok();
+        }
+        return FormValidation.warning("Note that OpenTelemetry credentials, if configured, will be exposed as environment variables (likely in OTEL_EXPORTER_OTLP_HEADERS)");
+    }
+
     @Immutable
     public static class StepPlugin {
         final String name;
