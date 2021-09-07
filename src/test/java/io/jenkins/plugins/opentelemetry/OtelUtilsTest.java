@@ -115,7 +115,7 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         sampleRepo.write("file", "initial content");
         sampleRepo.git("add", "Jenkinsfile");
         sampleRepo.git("commit", "--all", "--message=flow");
-        final String mbpName = "test-pipeline-with-node-steps-" + jobNameSuffix.incrementAndGet();
+        final String mbpName = "node-steps-" + jobNameSuffix.incrementAndGet();
         final String branchName = "master";
         WorkflowMultiBranchProject mp = jenkinsRule.createProject(WorkflowMultiBranchProject.class, mbpName);
         mp.getSourcesList().add(new BranchSource(new GitSCMSource(null, sampleRepo.toString(), "", "*", "", false), new DefaultBranchPropertyStrategy(new BranchProperty[0])));
