@@ -11,6 +11,7 @@ import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
@@ -89,7 +90,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         }
         Map<String, Object> binding = new HashMap<>();
         binding.put("serviceName", Objects.requireNonNull(JenkinsOpenTelemetryPluginConfiguration.get().getServiceName()));
-        binding.put("rootSpanName", spanNamingStrategy.getRootSpanName(run));
+        binding.put("rootSpanName", OtelUtils.urlEncode(spanNamingStrategy.getRootSpanName(run)));
         binding.put("traceId", this.traceId);
         binding.put("spanId", this.spanId);
         binding.put("startTime", Instant.ofEpochMilli(run.getStartTimeInMillis()));
