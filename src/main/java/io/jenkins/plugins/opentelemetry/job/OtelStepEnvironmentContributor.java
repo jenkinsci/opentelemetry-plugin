@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Inject OpenTelemetry environment variables in shell steps: {@code TRACEPARENT}, {@code OTEL_EXPORTER_OTLP_ENDPOINT}...
+ */
 @Extension
 public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
 

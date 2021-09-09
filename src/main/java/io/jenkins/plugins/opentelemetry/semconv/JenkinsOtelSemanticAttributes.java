@@ -90,8 +90,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final String JENKINS_JOB_SPAN_PHASE_RUN_NAME = "Phase: Run";
     public static final String JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME = "Phase: Finalise";
 
-    public static final String SPAN_ID = "SPAN_ID";
-    public static final String TRACE_ID = "TRACE_ID";
+
 
     /**
      * A machine or a container which is connected to the Jenkins coordinator and capable of executing

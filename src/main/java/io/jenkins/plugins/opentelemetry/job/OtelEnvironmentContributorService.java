@@ -4,13 +4,12 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapSetter;
-import org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -19,9 +18,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Inject environment variables in shell steps
+ * Inject OpenTelemetry environment variables in shell steps: {@code TRACEPARENT}, {@code OTEL_EXPORTER_OTLP_ENDPOINT}...
  *
- * @see StepEnvironmentContributor
+ * @see org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor
  * @see hudson.model.EnvironmentContributor
  */
 @Extension
@@ -35,8 +34,8 @@ public class OtelEnvironmentContributorService {
         String spanId = span.getSpanContext().getSpanId();
         String traceId = span.getSpanContext().getTraceId();
         try (Scope ignored = span.makeCurrent()) {
-            envs.putIfAbsent(JenkinsOtelSemanticAttributes.TRACE_ID, traceId);
-            envs.put(JenkinsOtelSemanticAttributes.SPAN_ID, spanId);
+            envs.putIfAbsent(OTelEnvironmentVariablesConventions.TRACE_ID, traceId);
+            envs.put(OTelEnvironmentVariablesConventions.SPAN_ID, spanId);
             TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
             W3CTraceContextPropagator.getInstance().inject(Context.current(), envs, setter);
         }
