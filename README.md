@@ -15,6 +15,7 @@
 - [Getting Started](#getting-started)
 - [Examples](#screenshots)
 - [Configuration as Code](#configuration-as-code)
+- [Demos](#demos)
 - [Contributing](#contributing)
 
 ## Introduction
@@ -77,7 +78,7 @@ The context of the current span is exposed as environment variables to ease inte
 * `TRACEPARENT`: the [W3C Trace Context header `traceparent`](https://www.w3.org/TR/trace-context-1/#traceparent-header)
 * `TRACESTATE`: the [W3C Trace Context header `tracestate`](https://www.w3.org/TR/trace-context-1/#tracestate-header)
 * `TRACE_ID`: the trace id of the job / pipeline
-* `SPAN_ID`: the id of the pipeline shell step span 
+* `SPAN_ID`: the id of the pipeline shell step span
 
 When the configuration options "Export OpenTelemetry configuration as environment variables", the following [OpenTelemetry environment variables](https://github.com/open-telemetry/opentelemetry-specification/blob/v1.6.0/specification/protocol/exporter.md) will be exported according to the settings of the plugin:
 * `OTEL_EXPORTER_OTLP_ENDPOINT`: Target to which the exporter is going to send spans or metrics.
@@ -355,6 +356,10 @@ See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folde
 For more details see the configuration as code plugin documentation:
 <https://github.com/jenkinsci/configuration-as-code-plugin#getting-started>
 
+
+## Demos
+
+If you'd like to see this plugin in action with some other integrations then refer to the [demos](demos/README.md).
 
 ## Contributing
 
