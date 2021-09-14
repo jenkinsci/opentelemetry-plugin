@@ -51,5 +51,5 @@ private/
 
 # For demos
 agent.jar
-
+local.pid
 
