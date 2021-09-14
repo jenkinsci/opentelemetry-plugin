@@ -10,15 +10,16 @@ This is an example of distributed tracing with Jenkins based on:
 - [JobDSL](https://github.com/jenkinsci/job-dsl-plugin/wiki) to configure the pipelines to test the steps.
 - [OpenTelemetry](https://github.com/jenkinsci/job-dsl-plugin/wiki) plugin to send traces :)
 - [Maven](https://github.com/elastic/opentelemetry-maven-extension) to send traces for each maven goal.
-- [Ansible](https://github.com/ansible-collections/community.general/pull/3091)
-- [Gradle](https://github.com/jkwatson/gradle-otel-tracing)
+- [Ansible](https://github.com/ansible-collections/community.general/pull/3091) to send traces for each ansible task.
+- [Gradle](https://github.com/jkwatson/gradle-otel-tracing) to send traces for each gradle task.
+- [OtelCli](https://github.com/equinix-labs/otel-cli) to send traces for command.
 
 ## System Requirements
 
 - Docker >= 19.x.x
 - Docker Compose >= 1.25.0
 - Java >= 8
-- *nix based
+- *nix based (preferably x86_64)
 - Python >=3.6
 - Ansible
 
