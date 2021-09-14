@@ -1,5 +1,5 @@
 NAME = 'my-maven'
-DSL = """pipeline {
+DSL = '''pipeline {
   agent any
   environment {
     MAVEN_OPTS = '-Dmaven.ext.class.path=otel.jar'
@@ -33,7 +33,7 @@ DSL = """pipeline {
       }
     }
   }
-}"""
+}'''
 
 pipelineJob(NAME) {
   definition {
