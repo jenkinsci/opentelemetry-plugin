@@ -329,7 +329,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         // Details defined in the JCasC file -> io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
         final String userName = "my-user-2";
         final String globalCredentialId = "user-and-password";
-        final String jobName = "git-cred-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "git-" + jobNameSuffix.incrementAndGet();
 
         // Then the git username should be the one set in the credentials.
         assertGitCredentials(jobName, globalCredentialId, userName);
@@ -340,7 +340,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         // Details defined in the JCasC file -> io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
         final String userName = "my-user-1";
         final String globalCredentialId = "ssh-private-key";
-        final String jobName = "ssh-cred-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "ssh-" + jobNameSuffix.incrementAndGet();
 
         // Then the git username should be the one set in the credentials.
         assertGitCredentials(jobName, globalCredentialId, userName);
@@ -349,7 +349,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testPipelineWithoutGitCredentialsSteps() throws Exception {
         String credentialId = "unknown";
-        final String jobName = "git-cred-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "cred-" + jobNameSuffix.incrementAndGet();
 
         // Then the git username should be the credentialsId since there is no entry in the credentials provider.
         assertGitCredentials(jobName, credentialId, credentialId);
