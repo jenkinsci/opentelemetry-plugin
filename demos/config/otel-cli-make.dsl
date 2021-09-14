@@ -9,17 +9,23 @@ DSL = """pipeline {
     stage('checkout') {
       steps {
         writeFile(file: 'Makefile', text: '''.DEFAULT_GOAL := build
+ifdef OTEL_EXPORTER_OTLP_ENDPOINT
+export WRAPPER=otel-cli exec --name 'make-subcommand' --tp-print
+else
+export WRAPPER=
+endif
+
 .PHONY: build
 build:
-	otel-cli exec --name 'prepare-build' --tp-print echo build
-	otel-cli exec --name 'build-run-sleep' --tp-print sleep 4
-	otel-cli exec --name 'build-run' --tp-print echo 'mock a build'
+	\$(WRAPPER) echo build
+	\$(WRAPPER) sleep 4
+	\$(WRAPPER) echo 'mock a build'
 
 .PHONY: test
 test:
-	otel-cli exec --name 'prepare-test' --tp-print echo test
-	otel-cli exec --name 'prepare-test' --tp-print sleep 1
-	otel-cli exec --name 'test-run' --tp-print echo 'mock a test' ''')
+	\$(WRAPPER) echo test
+	\$(WRAPPER) sleep 1
+	\$(WRAPPER) echo 'mock a test' ''')
       }
     }
     stage('prepare') {
@@ -51,7 +57,7 @@ def installOtelCli() {
   }
   dir("\${OTEL_LOCATION}") {
     sh(label: 'fetch otel-cli',
-       script: "wget 'https://github.com/equinix-labs/otel-cli/releases/download/v0.0.18/otel-cli-0.0.18-\${os}-x86_64.tar.gz' -O otel-cli.tar.gz && tar -xf otel-cli.tar.gz")
+       script: "wget -q 'https://github.com/equinix-labs/otel-cli/releases/download/v0.0.18/otel-cli-0.0.18-\${os}-x86_64.tar.gz' -O otel-cli.tar.gz && tar -xf otel-cli.tar.gz")
   }
 }
 """
