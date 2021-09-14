@@ -37,3 +37,4 @@ jobs:
   - file: "/var/jenkins_home/config/gradle.dsl"
   - file: "/var/jenkins_home/config/maven.dsl"
   - file: "/var/jenkins_home/config/otel-cli.dsl"
+  - file: "/var/jenkins_home/config/otel-cli-make.dsl"
