@@ -381,7 +381,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testPipelineWithCheckoutShallowSteps() throws Exception {
-        final String jobName = "checkout-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "co-" + jobNameSuffix.incrementAndGet();
 
         String pipelineScript = "node() {\n" +
             "  stage('foo') {\n" +
