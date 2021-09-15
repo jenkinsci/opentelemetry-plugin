@@ -2,6 +2,14 @@
 
 This folder contains out of the boxes examples to illustrate how to use this plugin in conjunction with some other integrations.
 
+The demo exposes the following backends:
+
+- Elastic at http://0.0.0.0:5601
+- Jenkins at http://0.0.0.0:8080
+- Jaeger at http://0.0.0.0:16686
+- Zipkin at http://0.0.0.0:9411
+- Prometheus at http://0.0.0.0:9090
+
 ## Context
 
 This is an example of distributed tracing with Jenkins based on:
@@ -25,11 +33,6 @@ This is an example of distributed tracing with Jenkins based on:
 
 ## Run this demo
 
-0. Add entry in your etc/hosts
-
-    ```
-    echo '127.0.0.1 apm-server' | sudo tee -a /etc/hosts
-    ```
 
 1. Build docker image by running:
 
@@ -50,3 +53,7 @@ This is an example of distributed tracing with Jenkins based on:
 
 1. Decouple builds from the local agent, then the requirements can be simplify with only docker and java.
 2. Support gradle integration with this plugin.
+
+## Further details
+
+It uses the OpenTelemetry Collector to send traces and metrics to different vendors, see https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/examples/demo

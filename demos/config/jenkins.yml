@@ -26,7 +26,7 @@ jenkins:
 unclassified:
   openTelemetry:
     authentication: "noAuthentication"
-    endpoint: "http://apm-server:8200"
+    endpoint: "http://otel-collector:4317"
     exportOtelConfigurationAsEnvironmentVariables: true  # Note that OpenTelemetry credentials, if configured, will be exposed as environment variables
     observabilityBackends:
     - elastic:

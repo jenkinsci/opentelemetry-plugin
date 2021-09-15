@@ -28,7 +28,6 @@ services:
 
   apm-server:
     image: docker.elastic.co/apm/apm-server:${ELASTIC_STACK_VERSION:-7.14.1}
-    hostname: apm-server
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -55,7 +54,6 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-7.14.1}
-    hostname: elasticsearch
     environment:
       - bootstrap.memory_lock=true
       - cluster.name=docker-cluster
@@ -79,7 +77,6 @@ services:
 
   kibana:
     image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-7.14.1}
-    hostname: kibana
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -94,6 +91,50 @@ services:
       interval: 10s
       retries: 20
       test: curl --write-out 'HTTP %{http_code}' --fail --silent --output /dev/null http://localhost:5601/api/status
+
+  jaeger-all-in-one:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "14268"
+      - "14250"
+    networks:
+      - jenkins
+
+  zipkin-all-in-one:
+    image: openzipkin/zipkin:latest
+    ports:
+      - "9411:9411"
+    networks:
+      - jenkins
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - jenkins
+
+  otel-collector:
+    image: ${OTELCOL_IMG}
+    command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
+    volumes:
+      - ./config/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "1888:1888"   # pprof extension
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "13133:13133" # health_check extension
+      - "4317"        # OTLP gRPC receiver
+      - "55670:55679" # zpages extension
+    depends_on:
+      - jaeger-all-in-one
+      - zipkin-all-in-one
+      - apm-server
+    networks:
+      - jenkins
 
 volumes:
   jenkins:

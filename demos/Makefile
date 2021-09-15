@@ -1,5 +1,8 @@
 .DEFAULT_GOAL := start
 
+export OTELCOL_IMG?=otel/opentelemetry-collector-contrib-dev:latest
+export ELASTIC_STACK_VERSION?=7.14.1
+
 .PHONY: build
 build:
 	@env docker-compose --file docker-compose.yml build
