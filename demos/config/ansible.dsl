@@ -26,7 +26,7 @@ callback_whitelist = opentelemetry
 '''
         dir('callback_plugins') {
           sh (label: 'fetch ansible-plugin',
-              script: 'curl -s https://raw.githubusercontent.com/v1v/community.general/feature/add-context-propagation-opentelemetry/plugins/callback/opentelemetry.py > opentelemetry.py')
+              script: 'curl -s https://raw.githubusercontent.com/ansible-collections/community.general/main/plugins/callback/opentelemetry.py > opentelemetry.py')
         }
       }
     }
