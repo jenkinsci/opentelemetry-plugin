@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static org.junit.Assume.assumeFalse;
+
 import com.github.rutledgepaulv.prune.Tree;
 import com.google.common.collect.Iterables;
 import hudson.EnvVars;
@@ -22,6 +24,7 @@ import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
+import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -46,6 +49,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testSimplePipeline() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // BEFORE
 
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
@@ -202,6 +206,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testPipelineWithSkippedSteps() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
                 "node() {\n" +
                 "    stage('ze-stage1') {\n" +
@@ -292,6 +297,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testPipelineWithParallelStep() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
                 "node() {\n" +
                 "    stage('ze-parallel-stage') {\n" +
@@ -326,6 +332,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testPipelineWithGitCredentialsSteps() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // Details defined in the JCasC file -> io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
         final String userName = "my-user-2";
         final String globalCredentialId = "user-and-password";
@@ -337,6 +344,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testPipelineWithSshCredentialsSteps() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // Details defined in the JCasC file -> io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
         final String userName = "my-user-1";
         final String globalCredentialId = "ssh-private-key";
@@ -348,6 +356,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testPipelineWithoutGitCredentialsSteps() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String credentialId = "unknown";
         final String jobName = "git-credentials-" + jobNameSuffix.incrementAndGet();
 
@@ -381,6 +390,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testPipelineWithCheckoutShallowSteps() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "with-checkout-" + jobNameSuffix.incrementAndGet();
 
         String pipelineScript = "node() {\n" +
