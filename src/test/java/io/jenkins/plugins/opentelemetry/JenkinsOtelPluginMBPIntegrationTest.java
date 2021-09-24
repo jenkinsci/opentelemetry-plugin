@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static org.junit.Assume.assumeFalse;
+
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.EnvVars;
 import hudson.model.Run;
@@ -15,6 +17,7 @@ import jenkins.branch.BranchProperty;
 import jenkins.branch.BranchSource;
 import jenkins.branch.DefaultBranchPropertyStrategy;
 import jenkins.plugins.git.GitSCMSource;
+import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -32,6 +35,7 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testMultibranchPipelineStep() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String pipelineScript = "pipeline {\n" +
                 "  agent any\n" +
                 "  stages {\n" +
