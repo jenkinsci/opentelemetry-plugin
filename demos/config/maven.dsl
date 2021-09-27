@@ -19,12 +19,25 @@ DSL = '''pipeline {
     }
     stage('compile') {
       steps {
-        sh(label: 'mvn compile', script: './mvnw ${MAVEN_OPTS} clean compile')
+        script {
+          docker.image('openjdk:8-jdk-alpine').inside('--network demos_jenkins') {
+            withEnv(["HOME=${env.WORKSPACE}"]) {
+              sh(label: 'mvn compile', script: './mvnw -B ${MAVEN_OPTS} clean compile')
+            }
+          }
+        }
+
       }
     }
     stage('test') {
       steps {
-        sh(label: 'mvn compile', script: './mvnw ${MAVEN_OPTS} test')
+        script {
+          docker.image('openjdk:8-jdk-alpine').inside('--network demos_jenkins') {
+            withEnv(["HOME=${env.WORKSPACE}"]) {
+              sh(label: 'mvn test', script: './mvnw -B ${MAVEN_OPTS} test')
+            }
+          }
+        }
       }
       post {
         always {

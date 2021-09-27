@@ -28,8 +28,6 @@ This is an example of distributed tracing with Jenkins based on:
 - Docker Compose >= 1.25.0
 - Java >= 8
 - *nix based (preferably x86_64)
-- Python >=3.6
-- Ansible >= 2.9
 
 ## Run this demo
 
