@@ -133,6 +133,7 @@ services:
       - jaeger-all-in-one
       - zipkin-all-in-one
       - apm-server
+      - prometheus
     networks:
       - jenkins
 

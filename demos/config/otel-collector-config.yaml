@@ -5,7 +5,7 @@ receivers:
 
 exporters:
   prometheus:
-    endpoint: "prometheus:8889"
+    endpoint: "0.0.0.0:8889"
     namespace: promexample
     const_labels:
       label1: value1
