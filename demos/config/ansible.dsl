@@ -22,12 +22,9 @@ DSL = """pipeline {
 [defaults]
 executable = /bin/bash
 module_lang = en_US.UTF-8
-callback_whitelist = opentelemetry
+callbacks_enabled = community.general.opentelemetry
 '''
-        dir('callback_plugins') {
-          sh (label: 'fetch ansible-plugin',
-              script: 'curl -s https://raw.githubusercontent.com/ansible-collections/community.general/main/plugins/callback/opentelemetry.py > opentelemetry.py')
-        }
+        sh(label: 'fetch the community.general collection', script: 'ansible-galaxy collection install community.general')
       }
     }
     stage('prepare-python-dependencies') {

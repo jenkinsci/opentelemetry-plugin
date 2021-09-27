@@ -29,7 +29,7 @@ This is an example of distributed tracing with Jenkins based on:
 - Java >= 8
 - *nix based (preferably x86_64)
 - Python >=3.6
-- Ansible
+- Ansible >= 2.9
 
 ## Run this demo
 
