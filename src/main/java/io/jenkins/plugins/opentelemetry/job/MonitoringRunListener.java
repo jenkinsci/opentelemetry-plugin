@@ -8,14 +8,21 @@ package io.jenkins.plugins.opentelemetry.job;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.Cause;
+import hudson.model.CauseAction;
+import hudson.model.Node;
+import hudson.model.ParameterValue;
+import hudson.model.ParametersAction;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.LongValueObserver;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
@@ -42,7 +49,6 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
     private AtomicInteger activeRun;
-    private LongValueObserver activeRunObserver;
     private LongCounter runLaunchedCounter;
     private LongCounter runStartedCounter;
     private LongCounter runCompletedCounter;
@@ -53,28 +59,28 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     @PostConstruct
     public void postConstruct() {
         activeRun = new AtomicInteger();
-        activeRunObserver = getMeter().longValueObserverBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
-                .setDescription("Gauge of active jobs")
-                .setUnit("1")
-                .setUpdater(longResult -> this.activeRun.get())
-                .build();
+        getMeter().gaugeBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
+            .ofLongs()
+            .setDescription("Gauge of active jobs")
+            .setUnit("1")
+            .buildWithCallback(valueObserver -> this.activeRun.get());
         runLaunchedCounter =
-                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
+                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
                         .setDescription("Job launched")
                         .setUnit("1")
                         .build();
         runStartedCounter =
-                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED)
+                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED)
                         .setDescription("Job started")
                         .setUnit("1")
                         .build();
         runAbortedCounter =
-                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
+                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
                         .setDescription("Job aborted")
                         .setUnit("1")
                         .build();
         runCompletedCounter =
-                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED)
+                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED)
                         .setDescription("Job completed")
                         .setUnit("1")
                         .build();

@@ -214,7 +214,6 @@ public class OtelTraceService {
     }
 
     /**
-     * @param run
      * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
      */
     @Nonnull

@@ -13,7 +13,6 @@ import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.metrics.common.Labels;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
@@ -45,11 +44,11 @@ public class DiskUsageMonitoringInitializer extends ComputerListener {
         if (diskUsagePlugin == null) {
             LOGGER.log(Level.WARNING, () -> "Plugin 'disk-usage' not loaded, don't start monitoring Jenkins controller disk usage");
         } else {
-            meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
-                    .setDescription("Disk usage of first level folder in JENKINS_HOME.")
-                    .setUnit("byte")
-                    .setUpdater(result -> result.observe(calculateDiskUsageInBytes(diskUsagePlugin), Labels.empty()))
-                    .build();
+            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
+                .ofLongs()
+                .setDescription("Disk usage of first level folder in JENKINS_HOME.")
+                .setUnit("byte")
+                .buildWithCallback(valueObserver -> valueObserver.observe(calculateDiskUsageInBytes(diskUsagePlugin)));
             LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage");
         }
     }

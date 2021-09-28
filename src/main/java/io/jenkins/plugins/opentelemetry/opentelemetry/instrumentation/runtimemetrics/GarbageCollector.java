@@ -5,16 +5,18 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics;
 
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.GlobalMeterProvider;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.metrics.common.Labels;
+
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 
 /*
- * Copy of https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v1.2.0/instrumentation/runtime-metrics/library/src/main/java/io/opentelemetry/instrumentation/runtimemetrics/GarbageCollector.java
+ * Copy of https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v1.6.0/instrumentation/runtime-metrics/library/src/main/java/io/opentelemetry/instrumentation/runtimemetrics/GarbageCollector.java
  */
 /**
  * Registers observers that generate metrics about JVM garbage collectors.
@@ -33,41 +35,41 @@ import java.util.List;
  * </pre>
  */
 public final class GarbageCollector {
-    private static final String GC_LABEL_KEY = "gc";
+    private static final AttributeKey<String> GC_KEY = AttributeKey.stringKey("gc");
 
     /** Register all observers provided by this module. */
     public static void registerObservers() {
         List<GarbageCollectorMXBean> garbageCollectors = ManagementFactory.getGarbageCollectorMXBeans();
-        Meter meter = GlobalMeterProvider.getMeter(GarbageCollector.class.getName());
-        List<Labels> labelSets = new ArrayList<>(garbageCollectors.size());
-        for (final GarbageCollectorMXBean gc : garbageCollectors) {
-            labelSets.add(Labels.of(GC_LABEL_KEY, gc.getName()));
+        Meter meter = GlobalMeterProvider.get().get(GarbageCollector.class.getName());
+        List<Attributes> labelSets = new ArrayList<>(garbageCollectors.size());
+        for (GarbageCollectorMXBean gc : garbageCollectors) {
+            labelSets.add(Attributes.of(GC_KEY, gc.getName()));
         }
         meter
-            .longSumObserverBuilder("runtime.jvm.gc.time")
+            .gaugeBuilder("runtime.jvm.gc.time")
+            .ofLongs()
             .setDescription("Time spent in a given JVM garbage collector in milliseconds.")
             .setUnit("ms")
-            .setUpdater(
+            .buildWithCallback(
                 resultLongObserver -> {
                     for (int i = 0; i < garbageCollectors.size(); i++) {
                         resultLongObserver.observe(
                             garbageCollectors.get(i).getCollectionTime(), labelSets.get(i));
                     }
-                })
-            .build();
+                });
         meter
-            .longSumObserverBuilder("runtime.jvm.gc.count")
+            .gaugeBuilder("runtime.jvm.gc.count")
+            .ofLongs()
             .setDescription(
                 "The number of collections that have occurred for a given JVM garbage collector.")
             .setUnit("collections")
-            .setUpdater(
+            .buildWithCallback(
                 resultLongObserver -> {
                     for (int i = 0; i < garbageCollectors.size(); i++) {
                         resultLongObserver.observe(
                             garbageCollectors.get(i).getCollectionCount(), labelSets.get(i));
                     }
-                })
-            .build();
+                });
     }
 
     private GarbageCollector() {}
