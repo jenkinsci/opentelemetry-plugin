@@ -38,7 +38,7 @@ public class OpenTelemetrySdkProviderTest {
         Meter meter = openTelemetrySdkProvider.getMeter();
         OpenTelemetrySdk openTelemetry = openTelemetrySdkProvider.getOpenTelemetrySdk();
 
-        LongCounter myMetric = meter.longCounterBuilder("my-metric").build();
+        LongCounter myMetric = meter.counterBuilder("my-metric").build();
         myMetric.add(1);
         System.out.println("myMetric");
 

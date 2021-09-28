@@ -12,7 +12,6 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.metrics.common.Labels;
 import jenkins.model.Jenkins;
 
 import javax.annotation.Nonnull;
@@ -38,29 +37,29 @@ public class MonitoringQueueListener extends QueueListener {
 
     @PostConstruct
     public void postConstruct() {
-        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_WAITING)
-                .setUpdater(longResult -> longResult.observe(this.getUnblockedItemsSize(), Labels.empty()))
-                .setDescription("Number of waiting items in queue")
-                .setUnit("1")
-                .build();
-        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BLOCKED)
-                .setUpdater(longResult -> longResult.observe(this.blockedItemGauge.longValue(), Labels.empty()))
-                .setDescription("Number of blocked items in queue")
-                .setUnit("1")
-                .build();
-        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BUILDABLE)
-                .setUpdater(longResult -> longResult.observe(this.getBuildableItemsSize(), Labels.empty()))
-                .setDescription("Number of buildable items in queue")
-                .setUnit("1")
-                .build();
-        leftItemCounter = meter.longCounterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_LEFT)
-                .setDescription("Total count of left items")
-                .setUnit("1")
-                .build();
-        timeInQueueInMillisCounter = meter.longCounterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_TIME_SPENT_MILLIS)
-                .setDescription("Total time spent in queue by items")
-                .setUnit("ms")
-                .build();
+        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_WAITING)
+            .ofLongs()
+            .setDescription("Number of waiting items in queue")
+            .setUnit("1")
+            .buildWithCallback(valueObserver -> valueObserver.observe(this.getUnblockedItemsSize()));
+        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BLOCKED)
+            .ofLongs()
+            .setDescription("Number of blocked items in queue")
+            .setUnit("1")
+            .buildWithCallback(valueObserver -> valueObserver.observe(this.blockedItemGauge.longValue()));
+        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BUILDABLE)
+            .ofLongs()
+            .setDescription("Number of buildable items in queue")
+            .setUnit("1")
+            .buildWithCallback(valueObserver -> valueObserver.observe(this.getBuildableItemsSize()));
+        leftItemCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_LEFT)
+            .setDescription("Total count of left items")
+            .setUnit("1")
+            .build();
+        timeInQueueInMillisCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_TIME_SPENT_MILLIS)
+            .setDescription("Total time spent in queue by items")
+            .setUnit("ms")
+            .build();
     }
 
     private long getUnblockedItemsSize() {

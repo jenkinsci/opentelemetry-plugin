@@ -5,8 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.init;
 
-import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryMetricsSemanticConventions.*;
-
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
@@ -15,7 +13,6 @@ import io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemet
 import io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryMetricsSemanticConventions;
 import io.opentelemetry.api.metrics.GlobalMeterProvider;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.metrics.common.Labels;
 import jenkins.YesNoMaybe;
 
 import java.lang.management.ManagementFactory;
@@ -24,6 +21,8 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryMetricsSemanticConventions.*;
 
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
 public class JvmMonitoringInitializer extends OpenTelemetryPluginAbstractInitializer {
@@ -46,47 +45,35 @@ public class JvmMonitoringInitializer extends OpenTelemetryPluginAbstractInitial
 
         final OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
 
-        Meter meter = GlobalMeterProvider.getMeter(OperatingSystemMXBean.class.getName());
+        Meter meter = GlobalMeterProvider.get().get(OperatingSystemMXBean.class.getName());
 
         meter
-            .doubleValueObserverBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_CPU_LOAD_AVERAGE_1M)
+            .gaugeBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_CPU_LOAD_AVERAGE_1M)
             .setDescription("System CPU load average 1 minute")
             .setUnit("%")
-            .setUpdater(valueObserver ->
-                valueObserver.observe(operatingSystemMXBean.getSystemLoadAverage(), Labels.empty())
-            )
-            .build();
+            .buildWithCallback(resultObserver -> resultObserver.observe(operatingSystemMXBean.getSystemLoadAverage()));
 
         if (operatingSystemMXBean instanceof com.sun.management.OperatingSystemMXBean) {
             com.sun.management.OperatingSystemMXBean osBean = (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
 
             // PROCESS CPU
             meter
-                .doubleValueObserverBuilder(OpenTelemetryMetricsSemanticConventions.PROCESS_CPU_LOAD)
+                .gaugeBuilder(OpenTelemetryMetricsSemanticConventions.PROCESS_CPU_LOAD)
                 .setDescription("Process CPU load")
                 .setUnit("%")
-                .setUpdater(valueObserver ->
-                    valueObserver.observe(osBean.getProcessCpuLoad(), Labels.empty())
-                )
-                .build();
+                .buildWithCallback(resultObserver -> resultObserver.observe(osBean.getProcessCpuLoad()));
             meter
-                .longSumObserverBuilder(OpenTelemetryMetricsSemanticConventions.PROCESS_CPU_TIME)
+                .counterBuilder(OpenTelemetryMetricsSemanticConventions.PROCESS_CPU_TIME)
                 .setDescription("Process CPU time")
                 .setUnit("ns")
-                .setUpdater(valueObserver ->
-                    valueObserver.observe(osBean.getProcessCpuTime(), Labels.empty())
-                )
-                .build();
+                .buildWithCallback(valueObserver -> valueObserver.observe(osBean.getProcessCpuTime()));
 
             // SYSTEM CPU
             meter
-                .doubleValueObserverBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_CPU_LOAD)
+                .gaugeBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_CPU_LOAD)
                 .setDescription("System CPU load")
                 .setUnit("%")
-                .setUpdater(valueObserver ->
-                    valueObserver.observe(osBean.getSystemCpuLoad(), Labels.empty())
-                )
-                .build();
+                .buildWithCallback(valueObserver -> valueObserver.observe(osBean.getSystemCpuLoad()));
 
             // SYSTEM MEMORY
             /*
@@ -96,22 +83,22 @@ public class JvmMonitoringInitializer extends OpenTelemetryPluginAbstractInitial
             system_memory_usage{state="used"} 1.1904688128e+10
             */
             meter
-                .longUpDownSumObserverBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_MEMORY_USAGE)
+                .gaugeBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_MEMORY_USAGE)
+                .ofLongs()
                 .setDescription("System memory usage")
                 .setUnit("bytes")
-                .setUpdater(valueObserver -> {
+                .buildWithCallback(valueObserver -> {
                         final long totalSize = osBean.getTotalPhysicalMemorySize();
                         final long freeSize = osBean.getFreePhysicalMemorySize();
                         valueObserver.observe((totalSize - freeSize), STATE_USED);
                         valueObserver.observe(freeSize, STATE_FREE);
                     }
-                )
-                .build();
+                );
             meter
-                .doubleValueObserverBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_MEMORY_UTILIZATION)
+                .gaugeBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_MEMORY_UTILIZATION)
                 .setDescription("System memory utilization (0.0 to 1.0)")
                 .setUnit("1")
-                .setUpdater(valueObserver ->
+                .buildWithCallback(valueObserver ->
                     {
                         final long totalSize = osBean.getTotalPhysicalMemorySize();
                         final long freeSize = osBean.getFreePhysicalMemorySize();
@@ -123,29 +110,28 @@ public class JvmMonitoringInitializer extends OpenTelemetryPluginAbstractInitial
                             utilization = new BigDecimal(usedSize).divide(new BigDecimal(totalSize), MathContext.DECIMAL64);
                         }
                         LOGGER.log(Level.FINER, () -> "Memory utilization: " + utilization + ", used: " + usedSize + " bytes, free: " + freeSize + " bytes, total: " + totalSize + " bytes");
-                        valueObserver.observe(utilization.doubleValue(), Labels.empty());
+                        valueObserver.observe(utilization.doubleValue());
                     }
-                )
-                .build();
+                );
 
             // SYSTEM SWAP
             meter
-                .longUpDownSumObserverBuilder(SYSTEM_PAGING_USAGE)
+                .gaugeBuilder(SYSTEM_PAGING_USAGE)
+                .ofLongs()
                 .setDescription("System swap usage")
                 .setUnit("bytes")
-                .setUpdater(valueObserver -> {
+                .buildWithCallback(valueObserver -> {
                         final long freeSize = osBean.getFreeSwapSpaceSize();
                         final long totalSize = osBean.getTotalSwapSpaceSize();
                         valueObserver.observe((totalSize - freeSize), STATE_USED);
                         valueObserver.observe(freeSize, STATE_FREE);
                     }
-                )
-                .build();
+                );
             meter
-                .doubleValueObserverBuilder(SYSTEM_PAGING_UTILIZATION)
+                .gaugeBuilder(SYSTEM_PAGING_UTILIZATION)
                 .setDescription("System swap utilization (0.0 to 1.0)")
-                .setUnit("bytes")
-                .setUpdater(valueObserver ->
+                .setUnit("1")
+                .buildWithCallback(valueObserver ->
                     {
                         final long freeSize = osBean.getFreeSwapSpaceSize();
                         final long totalSize = osBean.getTotalSwapSpaceSize();
@@ -157,10 +143,9 @@ public class JvmMonitoringInitializer extends OpenTelemetryPluginAbstractInitial
                             utilization = new BigDecimal(usedSize).divide(new BigDecimal(totalSize), MathContext.DECIMAL64);
                         }
                         LOGGER.log(Level.FINER, () -> "Swap utilization: " + utilization + ", used: " + usedSize + " bytes, free: " + freeSize + " bytes, total: " + totalSize + " bytes");
-                        valueObserver.observe(utilization.doubleValue(), Labels.empty());
+                        valueObserver.observe(utilization.doubleValue());
                     }
-                )
-                .build();
+                );
         }
     }
 }

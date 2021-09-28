@@ -12,6 +12,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.opentelemetry.metrics.exporter.NoOpMetricExporter;
+import io.jenkins.plugins.opentelemetry.opentelemetry.resource.JenkinsDefaultConfigProperties;
 import io.jenkins.plugins.opentelemetry.opentelemetry.resource.JenkinsResourceProvider;
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -83,7 +84,7 @@ public class OpenTelemetrySdkProvider {
         Resource resource = buildResource();
         LOGGER.log(Level.INFO, () ->"OpenTelemetry SdkMeterProvider resources: " + resource.getAttributes().asMap().entrySet().stream().map( e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
         this.sdkMeterProvider = SdkMeterProvider.builder().setResource(resource).buildAndRegisterGlobal();
-        this.meter = GlobalMeterProvider.getMeter("jenkins");
+        this.meter = GlobalMeterProvider.get().get("jenkins");
     }
 
     public void initializeForTesting() {
@@ -182,7 +183,7 @@ public class OpenTelemetrySdkProvider {
      * TODO refresh resources when {@link Jenkins#getRootUrl()} changes
      */
     private Resource buildResource() {
-        return Resource.getDefault().merge(new JenkinsResourceProvider().createResource(null));
+        return Resource.getDefault().merge(new JenkinsResourceProvider().createResource(JenkinsDefaultConfigProperties.get()));
     }
 
     @Nonnull
