@@ -1,0 +1,14 @@
+blueocean
+cloudbees-folder
+configuration-as-code
+docker-workflow
+git
+filesystem_scm
+jdk-tool
+job-dsl
+opentelemetry
+pipeline-model-definition
+swarm
+workflow-aggregator
+workflow-cps
+workflow-cps-global-lib
