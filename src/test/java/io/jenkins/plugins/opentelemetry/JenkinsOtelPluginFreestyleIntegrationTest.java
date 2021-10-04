@@ -13,6 +13,7 @@ import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.tasks.Ant;
+import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.Shell;
 import hudson.tasks._ant.AntTargetNote;
 import hudson.util.LogTaskListener;
@@ -95,6 +96,27 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "shell", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+
+        assertFreestyleJobMetadata(build, spans);
+    }
+
+    @Test
+    public void testFreestyleJob_with_publishers() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
+        FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
+        project.getBuildersList().add(new Shell("set -u && touch \"test.txt\""));
+        ArtifactArchiver archiver = new ArtifactArchiver("test.txt");
+        archiver.setFingerprint(false);
+        project.getPublishersList().add(archiver);
+        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Start", jobName);
+        checkChainOfSpans(spans, "shell", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "archiveArtifacts", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
 
         assertFreestyleJobMetadata(build, spans);
     }
