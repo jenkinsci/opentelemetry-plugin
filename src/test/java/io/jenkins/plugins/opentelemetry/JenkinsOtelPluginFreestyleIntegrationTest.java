@@ -9,6 +9,7 @@ import com.github.rutledgepaulv.prune.Tree;
 import hudson.EnvVars;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.tasks.Ant;
@@ -30,6 +31,7 @@ import org.jvnet.hudson.test.recipes.WithPlugin;
 import org.jvnet.hudson.test.ToolInstallations;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,6 +45,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
     @Rule
     public TestRule antTargetNoteEnabled = new FlagRule<Boolean>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
+
     @Test
     public void testFreestyleJob() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
@@ -92,6 +95,33 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "shell", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+
+        assertFreestyleJobMetadata(build, spans);
+    }
+
+    @Test
+    public void testFreestyleJob_with_assigned_node() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
+        FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
+        project.getBuildersList().add(new Shell("set -u && exit 0"));
+        final Node agent = jenkinsRule.createOnlineSlave();
+        agent.setLabelString("linux");
+        project.setAssignedNode(agent);
+        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Start", jobName);
+        checkChainOfSpans(spans, "shell", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+
+        Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(node -> ("shell").equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(shell, CoreMatchers.is(CoreMatchers.notNullValue()));
+        Attributes attributes = shell.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
 
         assertFreestyleJobMetadata(build, spans);
     }

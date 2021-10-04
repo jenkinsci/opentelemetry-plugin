@@ -5,11 +5,13 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.BuildStepListener;
+import hudson.model.Node;
 import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
@@ -47,8 +49,6 @@ public class MonitoringBuildStepListener extends BuildStepListener {
         try (Scope ignored = setupContext(build, buildStep)) {
             verifyNotNull(ignored, "%s - No span found for step %s", build, buildStep);
 
-            // TODO search for the node where ran the buildStep from
-            String principal = "Unknown";
             SpanBuilder spanBuilder = getTracer().spanBuilder(stepName);
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepName, buildStep);
 
@@ -56,7 +56,6 @@ public class MonitoringBuildStepListener extends BuildStepListener {
             spanBuilder
                 .setParent(Context.current())
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stepName)
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
 
@@ -82,6 +81,13 @@ public class MonitoringBuildStepListener extends BuildStepListener {
                 // TODO: fetch the error for the given buildStep if possible
                 // then span.recordException
                 span.setStatus(StatusCode.ERROR, "Build step failed");
+            }
+
+            Node node = build.getBuiltOn();
+            if (node != null) {
+                span.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL, Strings.emptyToNull(node.getLabelString()));
+                span.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID, node.getNodeName());
+                span.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME, node.getDisplayName());
             }
             span.end();
             getTracerService().removeBuildStepSpan(build, buildStep, span);
