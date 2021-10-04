@@ -42,8 +42,7 @@ public class MonitoringBuildStepListener extends BuildStepListener {
     /** {@inheritDoc} */
     @Override
     public void started(AbstractBuild build, BuildStep buildStep, BuildListener listener) {
-        // TODO Use org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable.getSymbol
-        String stepName = buildStep.getClass().getSimpleName();
+        String stepName = JenkinsOpenTelemetryPluginConfiguration.get().findSymbolOrDefault(buildStep.getClass().getSimpleName(), buildStep);
         LOGGER.log(Level.INFO, () -> build.toString() + " STEP " + stepName + "'");
 
         try (Scope ignored = setupContext(build, buildStep)) {
@@ -71,8 +70,7 @@ public class MonitoringBuildStepListener extends BuildStepListener {
     /** {@inheritDoc} */
     @Override
     public void finished(AbstractBuild build, BuildStep buildStep, BuildListener listener, boolean canContinue) {
-        // TODO Use org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable.getSymbol
-        String stepName = buildStep.getClass().getSimpleName();
+        String stepName = JenkinsOpenTelemetryPluginConfiguration.get().findSymbolOrDefault(buildStep.getClass().getSimpleName(), buildStep);
         LOGGER.log(Level.INFO, () -> build.toString() + " STEP " + stepName + " CONTINUE " + canContinue);
         // canContinue represents this step failed!
 

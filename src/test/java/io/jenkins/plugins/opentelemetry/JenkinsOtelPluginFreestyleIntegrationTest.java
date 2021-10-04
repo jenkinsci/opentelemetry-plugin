@@ -39,7 +39,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "Shell", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
@@ -58,7 +58,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", jobName);
         // TODO: implementation should have two siblings Shell steps.
-        checkChainOfSpans(spans, "Shell", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
 
@@ -75,7 +75,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "Shell", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 

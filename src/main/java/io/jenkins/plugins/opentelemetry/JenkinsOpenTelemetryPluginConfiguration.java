@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -288,8 +289,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @Nullable
     private Descriptor<? extends Describable> getBuildStepDescriptor(@Nonnull BuildStep buildStep) {
-        // TODO: Search for the descriptor for a given BuildStep
-        return null;
+        return Jenkins.get().getDescriptor((Class<? extends Describable>) buildStep.getClass());
     }
 
     @Nonnull
@@ -325,6 +325,21 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             }
         }
         return data;
+    }
+
+    @Nonnull
+    public String findSymbolOrDefault(@Nonnull String buildStepName, @Nonnull BuildStep buildStep) {
+        return findSymbolOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
+    }
+
+    @Nonnull
+    public String findSymbolOrDefault(@Nonnull String buildStepName, @Nullable Descriptor<? extends Describable> descriptor) {
+        String value = buildStepName;
+        if (descriptor != null) {
+            Set<String> values = SymbolLookup.getSymbolValue(descriptor);
+            value = values.stream().findFirst().orElse(buildStepName);
+        }
+        return value;
     }
 
     /**
