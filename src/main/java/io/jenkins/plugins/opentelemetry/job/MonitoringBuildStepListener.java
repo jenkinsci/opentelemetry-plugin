@@ -43,7 +43,6 @@ public class MonitoringBuildStepListener extends BuildStepListener {
     @Override
     public void started(AbstractBuild build, BuildStep buildStep, BuildListener listener) {
         String stepName = JenkinsOpenTelemetryPluginConfiguration.get().findSymbolOrDefault(buildStep.getClass().getSimpleName(), buildStep);
-        LOGGER.log(Level.INFO, () -> build.toString() + " STEP " + stepName + "'");
 
         try (Scope ignored = setupContext(build, buildStep)) {
             verifyNotNull(ignored, "%s - No span found for step %s", build, buildStep);
@@ -53,6 +52,7 @@ public class MonitoringBuildStepListener extends BuildStepListener {
             SpanBuilder spanBuilder = getTracer().spanBuilder(stepName);
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepName, buildStep);
 
+            // TODO: For core buildSteps the stepPlugin is unknown, we might need to decorate those values with core and version: service-version
             spanBuilder
                 .setParent(Context.current())
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stepName)
@@ -71,8 +71,6 @@ public class MonitoringBuildStepListener extends BuildStepListener {
     @Override
     public void finished(AbstractBuild build, BuildStep buildStep, BuildListener listener, boolean canContinue) {
         String stepName = JenkinsOpenTelemetryPluginConfiguration.get().findSymbolOrDefault(buildStep.getClass().getSimpleName(), buildStep);
-        LOGGER.log(Level.INFO, () -> build.toString() + " STEP " + stepName + " CONTINUE " + canContinue);
-        // canContinue represents this step failed!
 
         try (Scope ignored = setupContext(build, buildStep)) {
             verifyNotNull(ignored, "%s - No span found for step %s", build, buildStep);
