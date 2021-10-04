@@ -62,6 +62,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
         assertFreestyleJobMetadata(build, spans);
+        assertNodeMetadata(spans, jobName, false);
     }
 
     @Test
@@ -81,6 +82,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
 
         assertFreestyleJobMetadata(build, spans);
+        assertNodeMetadata(spans, jobName, false);
     }
 
     @Test
@@ -98,6 +100,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
         assertFreestyleJobMetadata(build, spans);
+        assertNodeMetadata(spans, jobName, false);
     }
 
     @Test
@@ -119,6 +122,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
 
         assertFreestyleJobMetadata(build, spans);
+        assertNodeMetadata(spans, jobName, false);
     }
 
     @Test
@@ -138,14 +142,8 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
-        Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(node -> jobName.equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(shell, CoreMatchers.is(CoreMatchers.notNullValue()));
-        Attributes attributes = shell.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
-
         assertFreestyleJobMetadata(build, spans);
+        assertNodeMetadata(spans, jobName, true);
     }
 
     @Test
@@ -156,7 +154,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.setScm(new SingleFileSCM("build.xml", io.jenkins.plugins.opentelemetry.JenkinsOtelPluginFreestyleIntegrationTest.class.getResource("ant.xml")));
         String antName = configureDefaultAnt().getName();
-        project.getBuildersList().add(new Ant("foo",antName,null,null,null));
+        project.getBuildersList().add(new Ant("foo", antName,null,null,null));
         FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
@@ -166,6 +164,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
         assertFreestyleJobMetadata(build, spans);
+        assertNodeMetadata(spans, jobName, true);
     }
 
     // See https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
@@ -182,5 +181,19 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         // Environment variables are populated
         EnvVars environment = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
         assertEnvironmentVariables(environment);
+    }
+
+    private void assertNodeMetadata(Tree<SpanDataWrapper> spans, String jobName, boolean withNode) throws Exception {
+        Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(node -> jobName.equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(shell, CoreMatchers.is(CoreMatchers.notNullValue()));
+        Attributes attributes = shell.get().getData().spanData.getAttributes();
+
+        if (withNode) {
+            MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is(CoreMatchers.notNullValue()));
+        } else {
+            MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is(CoreMatchers.nullValue()));
+        }
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 }
