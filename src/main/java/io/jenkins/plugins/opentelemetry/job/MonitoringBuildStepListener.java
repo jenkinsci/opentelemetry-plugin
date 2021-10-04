@@ -5,13 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.BuildStepListener;
-import hudson.model.Node;
 import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
@@ -83,12 +81,6 @@ public class MonitoringBuildStepListener extends BuildStepListener {
                 span.setStatus(StatusCode.ERROR, "Build step failed");
             }
 
-            Node node = build.getBuiltOn();
-            if (node != null) {
-                span.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL, Strings.emptyToNull(node.getLabelString()));
-                span.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID, node.getNodeName());
-                span.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME, node.getDisplayName());
-            }
             span.end();
             getTracerService().removeBuildStepSpan(build, buildStep, span);
             LOGGER.log(Level.FINE, () -> build.getFullDisplayName() + " - < " + stepName + " - end " + OtelUtils.toDebugString(span));

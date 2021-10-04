@@ -116,7 +116,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
-        Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(node -> ("shell").equals(node.getData().spanData.getName()));
+        Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(node -> jobName.equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(shell, CoreMatchers.is(CoreMatchers.notNullValue()));
         Attributes attributes = shell.get().getData().spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
