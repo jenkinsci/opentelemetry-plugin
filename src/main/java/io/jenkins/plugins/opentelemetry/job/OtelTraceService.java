@@ -13,6 +13,7 @@ import com.google.common.collect.Multimap;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
 import hudson.model.Run;
 import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
@@ -198,6 +199,25 @@ public class OtelTraceService {
         }
 
         throw new VerifyException(run.getFullDisplayName() + " - Failure to remove span " + span + " - " + runSpans);
+    }
+
+    public void removeBuildStepSpan(@Nonnull AbstractBuild build, @Nonnull BuildStep buildStep, @Nonnull Span span) {
+        RunIdentifier runIdentifier = RunIdentifier.fromBuild(build);
+        FreestyleRunSpans freestyleRunSpans = this.freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans()); // absent when Jenkins restarts during build
+
+        Span lastSpan = Iterables.getLast(freestyleRunSpans.runPhasesSpans, null);
+        if (lastSpan == null) {
+            LOGGER.log(Level.FINE, () -> "No span found for run " + build.getFullDisplayName() + ", Jenkins server may have restarted");
+            return;
+        }
+
+        if (Objects.equals(span, lastSpan)) {
+            boolean removed = freestyleRunSpans.runPhasesSpans.remove(span);
+            verify(removed, build.getFullDisplayName() + "Failure to remove span from runPhasesSpans: " + span);
+            return;
+        }
+
+        throw new VerifyException(build.getFullDisplayName() + " - Failure to remove span " + span + " - " + freestyleRunSpans);
     }
 
     public void purgeRun(@Nonnull Run run) {

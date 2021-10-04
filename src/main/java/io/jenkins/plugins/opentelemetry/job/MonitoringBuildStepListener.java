@@ -86,6 +86,7 @@ public class MonitoringBuildStepListener extends BuildStepListener {
                 span.setStatus(StatusCode.ERROR, "Build step failed");
             }
             span.end();
+            getTracerService().removeBuildStepSpan(build, buildStep, span);
             LOGGER.log(Level.FINE, () -> build.getFullDisplayName() + " - < " + stepName + " - end " + OtelUtils.toDebugString(span));
         }
     }
