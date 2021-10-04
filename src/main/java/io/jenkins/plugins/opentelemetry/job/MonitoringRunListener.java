@@ -169,6 +169,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
             runSpan.makeCurrent();
             this.getTraceService().putSpan(run, runSpan);
+            // Support non-pipeline jobs
+            if (run instanceof AbstractBuild) {
+                this.getTraceService().putSpan((AbstractBuild) run, runSpan);
+            }
             this.runStartedCounter.add(1);
         }
     }

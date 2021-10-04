@@ -39,9 +39,28 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "Phase: Run");
+        checkChainOfSpans(spans, "Shell", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(4L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+
+        assertFreestyleJobMetadata(build, spans);
+    }
+
+    @Test
+    public void testFreestyleJob_with_multiple_builders() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
+        FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
+        project.getBuildersList().add(new Shell("set -u && touch \"x\""));
+        project.getBuildersList().add(new Shell("set -u && touch \"y\""));
+        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Start", jobName);
+        // TODO: implementation should have two siblings Shell steps.
+        checkChainOfSpans(spans, "Shell", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
 
         assertFreestyleJobMetadata(build, spans);
     }
@@ -56,13 +75,12 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "Phase: Run");
+        checkChainOfSpans(spans, "Shell", "Phase: Run", jobName);
         checkChainOfSpans(spans, "Phase: Finalise", jobName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(4L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
         assertFreestyleJobMetadata(build, spans);
     }
-
 
     private void assertFreestyleJobMetadata(FreeStyleBuild build, Tree<SpanDataWrapper> spans) throws Exception {
         List<SpanDataWrapper> root = spans.byDepth().get(0);
@@ -74,5 +92,4 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         EnvVars environment = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
         assertEnvironmentVariables(environment);
     }
-
 }

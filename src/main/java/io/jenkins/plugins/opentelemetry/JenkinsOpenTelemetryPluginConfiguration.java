@@ -11,6 +11,7 @@ import hudson.Extension;
 import hudson.PluginWrapper;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import hudson.tasks.BuildStep;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
@@ -283,6 +284,17 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             }
         }
         return descriptor;
+    }
+
+    @Nullable
+    private Descriptor<? extends Describable> getBuildStepDescriptor(@Nonnull BuildStep buildStep) {
+        // TODO: Search for the descriptor for a given BuildStep
+        return null;
+    }
+
+    @Nonnull
+    public StepPlugin findStepPluginOrDefault(@Nonnull String buildStepName, @Nonnull BuildStep buildStep) {
+        return findStepPluginOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
     }
 
     @Nonnull
