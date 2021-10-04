@@ -11,14 +11,23 @@ import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
 import hudson.model.Run;
+import hudson.tasks.Ant;
 import hudson.tasks.Shell;
+import hudson.tasks._ant.AntTargetNote;
 import hudson.util.LogTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
+import org.jvnet.hudson.test.FlagRule;
+import org.jvnet.hudson.test.SingleFileSCM;
+import org.jvnet.hudson.test.recipes.WithPlugin;
+import org.jvnet.hudson.test.ToolInstallations;
 
 import java.util.List;
 import java.util.logging.Level;
@@ -29,6 +38,11 @@ import static org.junit.Assume.assumeFalse;
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
     private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
+    @Rule
+    public TemporaryFolder tmp = new TemporaryFolder();
+
+    @Rule
+    public TestRule antTargetNoteEnabled = new FlagRule<Boolean>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
     @Test
     public void testFreestyleJob() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
@@ -80,6 +94,31 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
         assertFreestyleJobMetadata(build, spans);
+    }
+
+    @Test
+    @WithPlugin("ant")
+    public void testFreestyleJob_with_ant_plugin() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
+        FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
+        project.setScm(new SingleFileSCM("build.xml", io.jenkins.plugins.opentelemetry.JenkinsOtelPluginFreestyleIntegrationTest.class.getResource("ant.xml")));
+        String antName = configureDefaultAnt().getName();
+        project.getBuildersList().add(new Ant("foo",antName,null,null,null));
+        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Start", jobName);
+        checkChainOfSpans(spans, "ant", "Phase: Run", jobName);
+        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+
+        assertFreestyleJobMetadata(build, spans);
+    }
+
+    // See https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
+    private Ant.AntInstallation configureDefaultAnt() throws Exception {
+        return ToolInstallations.configureDefaultAnt(tmp);
     }
 
     private void assertFreestyleJobMetadata(FreeStyleBuild build, Tree<SpanDataWrapper> spans) throws Exception {
