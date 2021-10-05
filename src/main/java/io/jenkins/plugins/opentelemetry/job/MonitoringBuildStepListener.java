@@ -23,6 +23,7 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import jenkins.model.Jenkins;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -31,6 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.google.common.base.Verify.verifyNotNull;
+import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
 
 @Extension
 public class MonitoringBuildStepListener extends BuildStepListener {
@@ -51,12 +53,11 @@ public class MonitoringBuildStepListener extends BuildStepListener {
             SpanBuilder spanBuilder = getTracer().spanBuilder(stepName);
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepName, buildStep);
 
-            // TODO: For core buildSteps the stepPlugin is unknown, we might need to decorate those values with core and version: service-version
             spanBuilder
                 .setParent(Context.current())
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stepName)
-                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.isUnknown() ? JENKINS_CORE : stepPlugin.getName())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.isUnknown() ? Jenkins.getVersion().toString() : stepPlugin.getVersion());
 
             Span atomicStepSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> build.getFullDisplayName() + " - > " + stepName + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
@@ -79,6 +80,9 @@ public class MonitoringBuildStepListener extends BuildStepListener {
             } else {
                 // Create a synthetic error with the buildStep details.
                 JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepName, buildStep);
+                if (stepPlugin.isUnknown()) {
+                    stepPlugin = new JenkinsOpenTelemetryPluginConfiguration.StepPlugin(JENKINS_CORE, Jenkins.getVersion().toString());
+                }
                 span.recordException(new AbortException("StepName: " + stepName + ", " + stepPlugin.toString()));
                 span.setStatus(StatusCode.ERROR, "Build step failed");
             }

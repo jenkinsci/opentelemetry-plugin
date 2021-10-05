@@ -34,6 +34,7 @@ public class OtelUtils {
     public static final String BRANCH = "branch";
     public static final String CHANGE_REQUEST = "change_request";
     public static final String TAG = "tag";
+    public static final String JENKINS_CORE = "jenkins-core";
 
     @Nonnull
     public static Function<Span, String> spanToDebugString() {

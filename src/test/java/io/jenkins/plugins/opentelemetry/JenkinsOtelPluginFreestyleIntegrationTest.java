@@ -26,6 +26,7 @@ import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
+import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
 import static org.junit.Assume.assumeFalse;
 
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
@@ -51,6 +52,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
         assertFreestyleJobMetadata(build, spans);
+        assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
         assertNodeMetadata(spans, jobName, false);
     }
 
@@ -71,6 +73,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
 
         assertFreestyleJobMetadata(build, spans);
+        assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
         assertNodeMetadata(spans, jobName, false);
     }
 
@@ -89,6 +92,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
         assertFreestyleJobMetadata(build, spans);
+        assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
         assertNodeMetadata(spans, jobName, false);
     }
 
@@ -111,6 +115,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
 
         assertFreestyleJobMetadata(build, spans);
+        assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
         assertNodeMetadata(spans, jobName, false);
     }
 
@@ -132,6 +137,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
         assertFreestyleJobMetadata(build, spans);
+        assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
         assertNodeMetadata(spans, jobName, true);
     }
 
@@ -153,6 +159,8 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
         assertFreestyleJobMetadata(build, spans);
+        // Jenkins UTs classloader does not load the plugins :/ so let's use the default value.
+        assertBuildStepMetadata(spans, "ant", JENKINS_CORE);
         assertNodeMetadata(spans, jobName, true);
     }
 

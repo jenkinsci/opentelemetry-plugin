@@ -54,6 +54,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
+
 @Extension
 @Symbol("openTelemetry")
 public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration {
@@ -409,8 +411,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         }
 
         public StepPlugin() {
-            this.name = "unknown";
-            this.version = "unknown";
+            this.name = UNKNOWN;
+            this.version = UNKNOWN;
         }
 
         public String getName() {
@@ -419,6 +421,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
         public String getVersion() {
             return version;
+        }
+
+        public boolean isUnknown() {
+            return getName().equals(UNKNOWN) && getVersion().equals(UNKNOWN);
         }
 
         @Override
