@@ -200,6 +200,10 @@ public class BaseIntegrationTest {
         assertJobMetadata(build, spans, OtelUtils.MATRIX);
     }
 
+    protected void assertMavenJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
+        assertJobMetadata(build, spans, OtelUtils.MAVEN);
+    }
+
     protected void assertNodeMetadata(Tree<SpanDataWrapper> spans, String jobName, boolean withNode) throws Exception {
         Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(node -> jobName.equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(shell, CoreMatchers.is(CoreMatchers.notNullValue()));
