@@ -6,19 +6,14 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.github.rutledgepaulv.prune.Tree;
-import hudson.EnvVars;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
 import hudson.model.Result;
-import hudson.model.Run;
 import hudson.tasks.Ant;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.Shell;
 import hudson.tasks._ant.AntTargetNote;
-import hudson.util.LogTaskListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.common.Attributes;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -28,18 +23,12 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
 import org.jvnet.hudson.test.FlagRule;
 import org.jvnet.hudson.test.SingleFileSCM;
-import org.jvnet.hudson.test.recipes.WithPlugin;
 import org.jvnet.hudson.test.ToolInstallations;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.jvnet.hudson.test.recipes.WithPlugin;
 
 import static org.junit.Assume.assumeFalse;
 
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
-    private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder();
@@ -170,30 +159,5 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     // See https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
     private Ant.AntInstallation configureDefaultAnt() throws Exception {
         return ToolInstallations.configureDefaultAnt(tmp);
-    }
-
-    private void assertFreestyleJobMetadata(FreeStyleBuild build, Tree<SpanDataWrapper> spans) throws Exception {
-        List<SpanDataWrapper> root = spans.byDepth().get(0);
-        Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.FREESTYLE));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
-
-        // Environment variables are populated
-        EnvVars environment = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
-        assertEnvironmentVariables(environment);
-    }
-
-    private void assertNodeMetadata(Tree<SpanDataWrapper> spans, String jobName, boolean withNode) throws Exception {
-        Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(node -> jobName.equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(shell, CoreMatchers.is(CoreMatchers.notNullValue()));
-        Attributes attributes = shell.get().getData().spanData.getAttributes();
-
-        if (withNode) {
-            MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is(CoreMatchers.notNullValue()));
-        } else {
-            MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is(CoreMatchers.nullValue()));
-        }
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 }
