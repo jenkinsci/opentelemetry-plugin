@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.job;
 
 import com.google.errorprone.annotations.MustBeClosed;
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
@@ -76,8 +77,9 @@ public class MonitoringBuildStepListener extends BuildStepListener {
             if (canContinue) {
                 span.setStatus(StatusCode.OK);
             } else {
-                // TODO: fetch the error for the given buildStep if possible
-                // then span.recordException
+                // Create a synthetic error with the buildStep details.
+                JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepName, buildStep);
+                span.recordException(new AbortException("StepName: " + stepName + ", " + stepPlugin.toString()));
                 span.setStatus(StatusCode.ERROR, "Build step failed");
             }
 
