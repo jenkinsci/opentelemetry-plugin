@@ -141,7 +141,9 @@ public class OtelUtils {
         if (run == null) {
             return false;
         }
-        return isInstance(run, "hudson.matrix.MatrixBuild");
+        return isInstance(run, "hudson.matrix.MatrixBuild") ||
+            isInstance(run, "hudson.matrix.MatrixProject") ||
+            isInstance(run, "hudson.matrix.MatrixRun");
     }
 
     @Nonnull
