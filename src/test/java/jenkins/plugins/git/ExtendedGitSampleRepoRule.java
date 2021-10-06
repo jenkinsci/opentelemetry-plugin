@@ -66,7 +66,8 @@ public final class ExtendedGitSampleRepoRule extends AbstractSampleDVCSRepoRule 
     public void init() throws Exception {
         run(true, tmp.getRoot(), "git", "version");
         checkGlobalConfig();
-        git("init", "--initial-branch=" + this.initialBranch);
+        git("init");
+        git("checkout", "-b", this.initialBranch);
         write("file", "");
         git("add", "file");
         git("config", "user.name", "Git SampleRepoRule");
