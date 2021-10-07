@@ -13,6 +13,7 @@
   - [Monitoring and troubleshooting Jenkins jobs using distributed tracing](#monitoring-and-troubleshooting-jenkins-jobs-using-distributed-tracing)
   - [Metrics on Jenkins health indicators](#metrics-on-jenkins-health-indicators)
 - [Getting Started](#getting-started)
+- [Pipeline syntax](#Pipeline-syntax)
 - [Examples](#screenshots)
 - [Configuration as Code](#configuration-as-code)
 - [Demos](#demos)
@@ -356,6 +357,37 @@ See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folde
 For more details see the configuration as code plugin documentation:
 <https://github.com/jenkinsci/configuration-as-code-plugin#getting-started>
 
+
+## Pipeline syntax
+
+**Available since `opentelemetry-0.20`**
+
+You can enrich your distributed traces with some attributes that are stored as properties or options, in your pipelines.
+
+### Declarative pipeline:
+
+```groovy
+pipeline {
+    ...
+    options {
+        opentelemetry('your-org=acme,team=your-team,project=your-project')
+    }
+    stages{...}
+}
+```
+
+### Scripted pipeline:
+
+```groovy
+properties([
+    opentelemetry('your-org=acme,team=your-team,project=your-project')
+])
+node {
+    ...
+}
+```
+
+You can specify multiple attributes separated by commas.
 
 ## Demos
 
