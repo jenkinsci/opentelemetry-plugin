@@ -177,4 +177,10 @@ public class OtelUtils {
             throw new RuntimeException(ex.getCause());
         }
     }
+
+    @Nonnull
+    public static String getJenkinsVersion() {
+        final VersionNumber versionNumber = Jenkins.getVersion();
+        return versionNumber == null ? "#unknown" : versionNumber.toString(); // should not be null except maybe in development of Jenkins itself
+    }
 }

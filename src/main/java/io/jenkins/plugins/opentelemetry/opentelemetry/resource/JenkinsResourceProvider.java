@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.opentelemetry.resource;
 
 import hudson.util.VersionNumber;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
@@ -29,8 +30,7 @@ public class JenkinsResourceProvider implements ResourceProvider {
     public Resource createResource(ConfigProperties config) {
         Jenkins jenkins = Jenkins.getInstanceOrNull();
         String rootUrl = jenkins == null ? "#unknown#" : Objects.toString(jenkins.getRootUrl(), "#undefined#");
-        final VersionNumber versionNumber = Jenkins.getVersion();
-        final String version =  versionNumber == null ? "#unknown" : versionNumber.toString(); // should not be null except maybe in development of Jenkins itself
+        final String version = OtelUtils.getJenkinsVersion();
         Attributes attributes = Attributes.of(
                 ResourceAttributes.SERVICE_NAMESPACE, Objects.requireNonNull(JenkinsOpenTelemetryPluginConfiguration.get().getServiceNamespace()),
                 ResourceAttributes.SERVICE_NAME, Objects.requireNonNull(JenkinsOpenTelemetryPluginConfiguration.get().getServiceName()),
