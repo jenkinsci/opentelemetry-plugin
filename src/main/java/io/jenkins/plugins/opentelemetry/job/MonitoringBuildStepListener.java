@@ -82,7 +82,8 @@ public class MonitoringBuildStepListener extends BuildStepListener {
                 // Create a synthetic error with the buildStep details.
                 JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepName, buildStep);
                 if (stepPlugin.isUnknown()) {
-                    stepPlugin = new JenkinsOpenTelemetryPluginConfiguration.StepPlugin(JENKINS_CORE, Jenkins.getVersion().toString());
+                    final String jenkinsVersion = OtelUtils.getJenkinsVersion();
+                    stepPlugin = new JenkinsOpenTelemetryPluginConfiguration.StepPlugin(JENKINS_CORE, jenkinsVersion);
                 }
                 span.recordException(new AbortException("StepName: " + stepName + ", " + stepPlugin.toString()));
                 span.setStatus(StatusCode.ERROR, "Build step failed");
