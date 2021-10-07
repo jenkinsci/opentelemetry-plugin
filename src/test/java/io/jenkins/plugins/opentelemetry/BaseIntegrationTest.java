@@ -9,6 +9,9 @@ import com.cloudbees.hudson.plugins.folder.computed.FolderComputation;
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.EnvVars;
 import hudson.ExtensionList;
+import hudson.model.AbstractBuild;
+import hudson.model.Run;
+import hudson.util.LogTaskListener;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -46,12 +49,15 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verify;
 import static org.junit.Assert.fail;
 
 public class BaseIntegrationTest {
+    private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
     static {
         OpenTelemetrySdkProvider.TESTING_INMEMORY_MODE = true;
         OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER = InMemorySpanExporter.create();
@@ -173,6 +179,52 @@ public class BaseIntegrationTest {
         MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_ENDPOINT), CoreMatchers.is("http://otel-collector-contrib:4317"));
         MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_INSECURE), CoreMatchers.is("true"));
         MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT), CoreMatchers.is("3000"));
+    }
+
+    protected void assertJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans, String jobType) throws Exception {
+        List<SpanDataWrapper> root = spans.byDepth().get(0);
+        Attributes attributes = root.get(0).spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(jobType));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
+
+        // Environment variables are populated
+        EnvVars environment = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
+        assertEnvironmentVariables(environment);
+    }
+
+    protected void assertFreestyleJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
+        assertJobMetadata(build, spans, OtelUtils.FREESTYLE);
+    }
+
+    protected void assertMatrixJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
+        assertJobMetadata(build, spans, OtelUtils.MATRIX);
+    }
+
+    protected void assertMavenJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
+        assertJobMetadata(build, spans, OtelUtils.MAVEN);
+    }
+
+    protected void assertNodeMetadata(Tree<SpanDataWrapper> spans, String jobName, boolean withNode) throws Exception {
+        Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(node -> jobName.equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(shell, CoreMatchers.is(CoreMatchers.notNullValue()));
+        Attributes attributes = shell.get().getData().spanData.getAttributes();
+
+        if (withNode) {
+            MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is(CoreMatchers.notNullValue()));
+        } else {
+            MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is(CoreMatchers.nullValue()));
+        }
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
+    }
+
+    protected void assertBuildStepMetadata(Tree<SpanDataWrapper> spans, String stepName, String pluginName) throws Exception {
+        Optional<Tree.Node<SpanDataWrapper>> step = spans.breadthFirstSearchNodes(node -> stepName.equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(step, CoreMatchers.is(CoreMatchers.notNullValue()));
+        Attributes attributes = step.get().getData().spanData.getAttributes();
+
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(pluginName));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java

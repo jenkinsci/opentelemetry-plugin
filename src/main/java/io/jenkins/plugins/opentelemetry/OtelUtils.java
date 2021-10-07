@@ -34,6 +34,7 @@ public class OtelUtils {
     public static final String BRANCH = "branch";
     public static final String CHANGE_REQUEST = "change_request";
     public static final String TAG = "tag";
+    public static final String JENKINS_CORE = "jenkins-core";
 
     @Nonnull
     public static Function<Span, String> spanToDebugString() {
@@ -141,7 +142,9 @@ public class OtelUtils {
         if (run == null) {
             return false;
         }
-        return isInstance(run, "hudson.matrix.MatrixBuild");
+        return isInstance(run, "hudson.matrix.MatrixBuild") ||
+            isInstance(run, "hudson.matrix.MatrixProject") ||
+            isInstance(run, "hudson.matrix.MatrixRun");
     }
 
     @Nonnull

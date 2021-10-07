@@ -5,18 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
-
 import com.github.rutledgepaulv.prune.Tree;
 import com.google.common.collect.Iterables;
-import hudson.EnvVars;
 import hudson.Functions;
-import hudson.model.FreeStyleBuild;
-import hudson.model.FreeStyleProject;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
-import hudson.util.LogTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
@@ -37,8 +31,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Note usage of `def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}}` is inspired by
@@ -179,29 +174,6 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         attributes = root.get(0).spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.WORKFLOW));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
-    }
-
-    @Test
-    public void testFreestyleJob() throws Exception {
-        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
-        FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
-
-        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
-
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "Phase: Run");
-        checkChainOfSpans(spans, "Phase: Finalise", jobName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(4L));
-
-        List<SpanDataWrapper> root = spans.byDepth().get(0);
-        Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.FREESTYLE));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
-
-        // Environment variables are populated
-        EnvVars environment = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
-        assertEnvironmentVariables(environment);
     }
 
     @Test

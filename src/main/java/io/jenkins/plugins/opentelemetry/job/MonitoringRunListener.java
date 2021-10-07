@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
@@ -169,6 +170,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
             runSpan.makeCurrent();
             this.getTraceService().putSpan(run, runSpan);
+            // Support non-pipeline jobs
+            if (run instanceof AbstractBuild) {
+                this.getTraceService().putSpan((AbstractBuild) run, runSpan);
+            }
             this.runStartedCounter.add(1);
         }
     }
@@ -223,6 +228,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             if (run instanceof AbstractBuild) {
                 Node node = ((AbstractBuild) run).getBuiltOn();
                 if (node != null) {
+                    parentSpan.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL, Strings.emptyToNull(node.getLabelString()));
                     parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID, node.getNodeName());
                     parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME, node.getDisplayName());
                 }

@@ -11,6 +11,7 @@ import hudson.Extension;
 import hudson.PluginWrapper;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import hudson.tasks.BuildStep;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
@@ -46,11 +47,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
 
 @Extension
 @Symbol("openTelemetry")
@@ -285,6 +289,16 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return descriptor;
     }
 
+    @Nullable
+    private Descriptor<? extends Describable> getBuildStepDescriptor(@Nonnull BuildStep buildStep) {
+        return Jenkins.get().getDescriptor((Class<? extends Describable>) buildStep.getClass());
+    }
+
+    @Nonnull
+    public StepPlugin findStepPluginOrDefault(@Nonnull String buildStepName, @Nonnull BuildStep buildStep) {
+        return findStepPluginOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
+    }
+
     @Nonnull
     public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepAtomNode node) {
         return findStepPluginOrDefault(stepName, getStepDescriptor(node, node.getDescriptor()));
@@ -313,6 +327,21 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             }
         }
         return data;
+    }
+
+    @Nonnull
+    public String findSymbolOrDefault(@Nonnull String buildStepName, @Nonnull BuildStep buildStep) {
+        return findSymbolOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
+    }
+
+    @Nonnull
+    public String findSymbolOrDefault(@Nonnull String buildStepName, @Nullable Descriptor<? extends Describable> descriptor) {
+        String value = buildStepName;
+        if (descriptor != null) {
+            Set<String> values = SymbolLookup.getSymbolValue(descriptor);
+            value = values.stream().findFirst().orElse(buildStepName);
+        }
+        return value;
     }
 
     /**
@@ -382,8 +411,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         }
 
         public StepPlugin() {
-            this.name = "unknown";
-            this.version = "unknown";
+            this.name = UNKNOWN;
+            this.version = UNKNOWN;
         }
 
         public String getName() {
@@ -392,6 +421,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
         public String getVersion() {
             return version;
+        }
+
+        public boolean isUnknown() {
+            return getName().equals(UNKNOWN) && getVersion().equals(UNKNOWN);
         }
 
         @Override
