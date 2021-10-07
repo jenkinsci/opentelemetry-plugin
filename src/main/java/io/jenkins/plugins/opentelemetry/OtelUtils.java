@@ -7,9 +7,11 @@ package io.jenkins.plugins.opentelemetry;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
+import hudson.util.VersionNumber;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 import jenkins.scm.api.mixin.TagSCMHead;

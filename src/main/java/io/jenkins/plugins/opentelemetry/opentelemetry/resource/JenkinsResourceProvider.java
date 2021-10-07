@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry.resource;
 
-import hudson.util.VersionNumber;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
