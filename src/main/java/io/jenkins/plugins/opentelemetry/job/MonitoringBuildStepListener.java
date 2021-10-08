@@ -53,11 +53,12 @@ public class MonitoringBuildStepListener extends BuildStepListener {
             SpanBuilder spanBuilder = getTracer().spanBuilder(stepName);
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepName, buildStep);
 
+            final String jenkinsVersion = OtelUtils.getJenkinsVersion();
             spanBuilder
                 .setParent(Context.current())
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stepName)
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.isUnknown() ? JENKINS_CORE : stepPlugin.getName())
-                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.isUnknown() ? Jenkins.getVersion().toString() : stepPlugin.getVersion());
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.isUnknown() ? jenkinsVersion : stepPlugin.getVersion());
 
             Span atomicStepSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> build.getFullDisplayName() + " - > " + stepName + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
@@ -81,7 +82,8 @@ public class MonitoringBuildStepListener extends BuildStepListener {
                 // Create a synthetic error with the buildStep details.
                 JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepName, buildStep);
                 if (stepPlugin.isUnknown()) {
-                    stepPlugin = new JenkinsOpenTelemetryPluginConfiguration.StepPlugin(JENKINS_CORE, Jenkins.getVersion().toString());
+                    final String jenkinsVersion = OtelUtils.getJenkinsVersion();
+                    stepPlugin = new JenkinsOpenTelemetryPluginConfiguration.StepPlugin(JENKINS_CORE, jenkinsVersion);
                 }
                 span.recordException(new AbortException("StepName: " + stepName + ", " + stepPlugin.toString()));
                 span.setStatus(StatusCode.ERROR, "Build step failed");

@@ -7,9 +7,11 @@ package io.jenkins.plugins.opentelemetry;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
+import hudson.util.VersionNumber;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 import jenkins.scm.api.mixin.TagSCMHead;
@@ -176,5 +178,11 @@ public class OtelUtils {
         } catch (UnsupportedEncodingException ex) {
             throw new RuntimeException(ex.getCause());
         }
+    }
+
+    @Nonnull
+    public static String getJenkinsVersion() {
+        final VersionNumber versionNumber = Jenkins.getVersion();
+        return versionNumber == null ? "#unknown" : versionNumber.toString(); // should not be null except maybe in development of Jenkins itself
     }
 }

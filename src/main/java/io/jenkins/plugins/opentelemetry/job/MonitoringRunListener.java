@@ -252,10 +252,6 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         }
     }
 
-    @Override
-    public void _onDeleted(Run run) {
-    }
-
     private void dumpCauses(Run<?, ?> run, StringBuilder buf) {
         for (CauseAction action : run.getActions(CauseAction.class)) {
             for (Cause cause : action.getCauses()) {
