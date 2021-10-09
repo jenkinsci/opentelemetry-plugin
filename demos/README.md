@@ -24,7 +24,7 @@ This is an example of distributed tracing with Jenkins based on:
 
 ## System Requirements
 
-- Docker >= 19.x.x
+- Docker >= 19.x.x (make sure you have greater than 2gb memory allocated to Docker)
 - Docker Compose >= 1.25.0
 - Java >= 8
 - *nix based (preferably x86_64)
