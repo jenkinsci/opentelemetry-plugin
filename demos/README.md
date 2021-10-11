@@ -59,7 +59,7 @@ It uses the OpenTelemetry Collector to send traces and metrics to different vend
 
 ### Support for ARM64
 
-The OpenTelemetry Collector does not support ARM64 arch yet, though there is a workaround, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/2379#issuecomment-781745225
+The docker image of the OpenTelemetry Collector does not support ARM64 arch yet, though there is a workaround, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/2379#issuecomment-781745225
 
 If you'd like to use it then:
 
