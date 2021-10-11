@@ -59,7 +59,7 @@ services:
       - cluster.name=docker-cluster
       - cluster.routing.allocation.disk.threshold_enabled=false
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-XX:UseAVX=2 -Xms1g -Xmx1g
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
     ulimits:
       memlock:
         hard: -1
