@@ -30,7 +30,11 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import jenkins.branch.BranchSource;
+import jenkins.branch.MultiBranchProject;
 import jenkins.model.Jenkins;
+import jenkins.plugins.git.GitSCMSource;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
@@ -38,6 +42,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -95,8 +100,31 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
         String rootSpanName = this.spanNamingStrategy.getRootSpanName(run);
         String runUrl = Objects.toString(Jenkins.get().getRootUrl(), "") + run.getUrl();
-        SpanBuilder rootSpanBuilder = getTracer().spanBuilder(rootSpanName)
-                .setSpanKind(SpanKind.SERVER);
+        SpanBuilder rootSpanBuilder = null;
+
+        // Populate the SCM metadata and create the root span.
+        if (OtelUtils.isMultibranch(run)) {
+            try {
+                MultiBranchProject mbp = (MultiBranchProject) run.getParent().getParent();
+                // TODO: let's support all the sources such as Gitea, GitHub, BitBucket, GitLab (see https://www.jenkins.io/doc/book/pipeline/multibranch/#supporting-pull-requests)
+                Optional branchSource = mbp.getSCMSources().stream().filter(source -> source instanceof GitSCMSource).findFirst();
+                GitSCMSource scmSource;
+                if (branchSource.isPresent()) {
+                    scmSource = (GitSCMSource) branchSource.get();
+                    // TODO: get branch name
+                    rootSpanBuilder = new GitStepHandler().createSpanBuilder(scmSource.getRemote(), "", scmSource.getCredentialsId(), "git", getTracer(), (WorkflowRun) run);
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, run.getFullDisplayName() + " failure to handle SCM source", e);
+            }
+        }
+
+        // Otherwise, let's create the root span
+        if (rootSpanBuilder == null) {
+            rootSpanBuilder = getTracer().spanBuilder(rootSpanName);
+        }
+
+        rootSpanBuilder.setSpanKind(SpanKind.SERVER);
 
         // TODO move this to a pluggable span enrichment API with implementations for different observability backends
         // Regarding the value `unknown`, see https://github.com/jenkinsci/opentelemetry-plugin/issues/51
