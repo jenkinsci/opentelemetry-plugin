@@ -29,6 +29,8 @@ This is an example of distributed tracing with Jenkins based on:
 - Java >= 8
 - *nix based (preferably x86_64)
 
+If `ARM64` please read the [support for `ARM64`](#support-for-arm64) section.
+
 ## Run this demo
 
 
@@ -49,9 +51,18 @@ This is an example of distributed tracing with Jenkins based on:
 
 ## Next
 
-1. Decouple builds from the local agent, then the requirements can be simplify with only docker and java.
-2. Support gradle integration with this plugin.
+1. Support gradle integration with this plugin.
 
 ## Further details
 
 It uses the OpenTelemetry Collector to send traces and metrics to different vendors, see https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/examples/demo
+
+### Support for ARM64
+
+The OpenTelemetry Collector does not support ARM64 arch yet, though there is a workaround, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/2379#issuecomment-781745225
+
+If you'd like to use it then:
+
+1. Create a Dockerfile in `demos/` with the content explained in the above comment.
+2. Edit `demos/docker-compose.yml` and replace the `otel-collector` service with the `build` command.
+3. Proceed with the `Run this demo` section.
