@@ -55,13 +55,9 @@ public class HeaderAuthentication extends OtlpAuthentication {
     }
 
     @Override
-    public void configure(OtlpGrpcMetricExporterBuilder metricExporterBuilder) {
-        metricExporterBuilder.addHeader(this.getHeaderName(), this.getAuthenticationHeaderValue());
-    }
-
-    @Override
-    public void configure(OtlpGrpcSpanExporterBuilder spanExporterBuilder) {
-        spanExporterBuilder.addHeader(this.getHeaderName(), this.getAuthenticationHeaderValue());
+    public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {
+        // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
+        configProperties.put("otel.exporter.otlp.headers", this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
     }
 
     @Override
@@ -69,6 +65,7 @@ public class HeaderAuthentication extends OtlpAuthentication {
         // TODO don't overwrite OTEL_EXPORTER_OTLP_HEADERS if already defined, just append to it
         environmentVariables.put("OTEL_EXPORTER_OTLP_HEADERS", this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
     }
+
     public String getHeaderName() {
         return headerName;
     }

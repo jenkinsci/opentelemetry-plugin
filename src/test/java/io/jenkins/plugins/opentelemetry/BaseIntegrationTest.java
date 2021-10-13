@@ -21,8 +21,8 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
-import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
-import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import jenkins.plugins.git.ExtendedGitSampleRepoRule;
 import org.hamcrest.CoreMatchers;
@@ -58,10 +58,9 @@ import static org.junit.Assert.fail;
 
 public class BaseIntegrationTest {
     private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
+
     static {
         OpenTelemetrySdkProvider.TESTING_INMEMORY_MODE = true;
-        OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER = InMemorySpanExporter.create();
-        OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER = InMemoryMetricExporter.create();
     }
 
     final static AtomicInteger jobNameSuffix = new AtomicInteger();
@@ -85,8 +84,8 @@ public class BaseIntegrationTest {
     @After
     public void after() throws Exception {
         jenkinsRule.waitUntilNoActivity();
-        ((InMemorySpanExporter) OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER).reset();
-        ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).reset();
+        InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
+        InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
     }
 
     @BeforeClass
@@ -101,7 +100,8 @@ public class BaseIntegrationTest {
         openTelemetrySdkProvider = openTelemetrySdkProviders.get(0);
 
         // verify(openTelemetrySdkProvider.openTelemetry == null, "OpenTelemetrySdkProvider has already been configured");
-        openTelemetrySdkProvider.initializeForTesting();
+        OpenTelemetrySdkProvider.TESTING_INMEMORY_MODE = true;
+        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration());
 
         // openTelemetrySdkProvider.tracer.setDelegate(openTelemetrySdkProvider.openTelemetry.getTracer("jenkins"));
     }
@@ -153,10 +153,9 @@ public class BaseIntegrationTest {
     }
 
     protected Tree<SpanDataWrapper> getGeneratedSpans() {
-
         CompletableResultCode completableResultCode = this.openTelemetrySdkProvider.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
         completableResultCode.join(1, TimeUnit.SECONDS);
-        List<SpanData> spans = ((InMemorySpanExporter) OpenTelemetrySdkProvider.TESTING_SPAN_EXPORTER).getFinishedSpanItems();
+        List<SpanData> spans = InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.getFinishedSpanItems();
 
         final BiPredicate<Tree.Node<SpanDataWrapper>, Tree.Node<SpanDataWrapper>> parentChildMatcher = (spanDataNode1, spanDataNode2) -> {
             final SpanData spanData1 = spanDataNode1.getData().spanData;
@@ -235,7 +234,8 @@ public class BaseIntegrationTest {
     }
 
     // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java
-    public static @Nonnull WorkflowJob findBranchProject(@Nonnull WorkflowMultiBranchProject mp, @Nonnull String name) throws Exception {
+    public static @Nonnull
+    WorkflowJob findBranchProject(@Nonnull WorkflowMultiBranchProject mp, @Nonnull String name) throws Exception {
         WorkflowJob p = mp.getItem(name);
         showIndexing(mp);
         if (p == null) {

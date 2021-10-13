@@ -17,7 +17,8 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
-import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -73,8 +74,8 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
-        Thread.sleep(OpenTelemetrySdkProvider.TESTING_METRIC_EXPORTER_INTERVAL_MILLIS * 3);
-        Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
+        openTelemetrySdkProvider.getSdkMeterProvider().forceFlush();
+        Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
         dumpMetrics(exportedMetrics);
         MetricData runCompletedCounterData = exportedMetrics.get(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED);
         MatcherAssert.assertThat(runCompletedCounterData, CoreMatchers.notNullValue());
@@ -88,8 +89,10 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     @WithPlugin("cloudbees-disk-usage-simple")
     public void testMetricsWithDiskUsagePlugin() throws Exception {
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
-        Thread.sleep(OpenTelemetrySdkProvider.TESTING_METRIC_EXPORTER_INTERVAL_MILLIS * 3);
-        Map<String, MetricData> exportedMetrics = ((InMemoryMetricExporter) OpenTelemetrySdkProvider.TESTING_METRICS_EXPORTER).getLastExportedMetricByMetricName();
+        Thread.sleep(15_000); // FIXME
+        openTelemetrySdkProvider.getSdkMeterProvider().forceFlush();
+
+        Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
         dumpMetrics(exportedMetrics);
         MetricData diskUsageData = exportedMetrics.get(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES);
         MatcherAssert.assertThat(diskUsageData, CoreMatchers.notNullValue());

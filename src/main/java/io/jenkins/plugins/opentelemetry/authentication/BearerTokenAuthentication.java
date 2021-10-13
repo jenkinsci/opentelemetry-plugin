@@ -62,13 +62,9 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
     }
 
     @Override
-    public void configure(@Nonnull OtlpGrpcMetricExporterBuilder metricExporterBuilder) {
-        metricExporterBuilder.addHeader("Authorization", "Bearer " + this.getAuthenticationHeaderValue());
-    }
-
-    @Override
-    public void configure(@Nonnull OtlpGrpcSpanExporterBuilder spanExporterBuilder) {
-        spanExporterBuilder.addHeader("Authorization", "Bearer " + this.getAuthenticationHeaderValue());
+    public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {
+        // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
+        configProperties.put("otel.exporter.otlp.headers", "Authorization=Bearer " + this.getAuthenticationHeaderValue());
     }
 
     @Override

@@ -6,8 +6,8 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.base.Strings;
-import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
+import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -24,8 +24,12 @@ public class OpenTelemetryConfiguration {
     private final String serviceName;
     private final String serviceNamespace;
 
+    public OpenTelemetryConfiguration() {
+        this(null, null, null, 0, 0, null, null, null);
+    }
+
     public OpenTelemetryConfiguration(@Nullable String endpoint, @Nullable String trustedCertificatesPem, @Nullable OtlpAuthentication authentication,
-                                      @Nullable int exporterTimeoutMillis, @Nullable int exporterIntervalMillis, @Nullable String ignoredSteps,
+                                      int exporterTimeoutMillis, int exporterIntervalMillis, @Nullable String ignoredSteps,
                                       @Nullable String serviceName, @Nullable String serviceNamespace) {
         this.endpoint = endpoint;
         this.trustedCertificatesPem = trustedCertificatesPem;
@@ -40,6 +44,16 @@ public class OpenTelemetryConfiguration {
     @Nullable
     public String getEndpoint() {
         return endpoint;
+    }
+
+    @Nonnull
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    @Nullable
+    public String getServiceNamespace() {
+        return serviceNamespace;
     }
 
     /**
