@@ -9,12 +9,12 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.19</version>
+        <version>4.29</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>opentelemetry</artifactId>
-    <version>${revision}${changelist}</version>
+    <version>0.21</version>
     <packaging>hpi</packaging>
     <properties>
         <revision>0.21</revision>
@@ -351,7 +351,7 @@
         <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
         <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
         <url>https://github.com/${gitHubRepo}</url>
-        <tag>${scmTag}</tag>
+        <tag>opentelemetry-0.21</tag>
     </scm>
     <contributors>
         <contributor>
