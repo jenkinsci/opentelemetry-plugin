@@ -133,9 +133,19 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_VALUE, nonNullParameterValues);
         }
 
+        // CAUSES
         if (!run.getCauses().isEmpty()) {
-            List causes = run.getCauses();
-            // TODO
+            List<String> causeNames = new ArrayList<>();
+            List<String> causeValues = new ArrayList<>();
+
+            run.getCauses().stream().forEach( cause ->
+                causeValues.add(((Cause)cause).getShortDescription())
+            );
+            run.getCauses().stream().forEach( cause ->
+                causeNames.add(((Cause)cause).getClass().getSimpleName())
+            );
+            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_NAME, causeNames);
+            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_VALUE, causeValues);
         }
 
         // START ROOT SPAN

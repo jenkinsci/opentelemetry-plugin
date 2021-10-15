@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.github.rutledgepaulv.prune.Tree;
+import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
@@ -14,6 +15,8 @@ import hudson.tasks.Ant;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.Shell;
 import hudson.tasks._ant.AntTargetNote;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.common.Attributes;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -25,6 +28,9 @@ import org.jvnet.hudson.test.FlagRule;
 import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
+
+import java.util.List;
+import java.util.concurrent.Future;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
 import static org.junit.Assume.assumeFalse;
@@ -139,6 +145,20 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         assertFreestyleJobMetadata(build, spans);
         assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
         assertNodeMetadata(spans, jobName, true);
+    }
+
+    @Test
+    public void testFreestyleJob_with_causes() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        final String jobName = "test-freestyle-cause-" + jobNameSuffix.incrementAndGet();
+        FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
+        project.getBuildersList().add(new Shell("set -u && touch \"x\""));
+        jenkinsRule.assertBuildStatusSuccess(project.scheduleBuild2(0, new Cause.UserIdCause()));
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        List<SpanDataWrapper> root = spans.byDepth().get(0);
+        Attributes attributes = root.get(0).spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_VALUE), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
