@@ -30,7 +30,6 @@ import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
 import java.util.List;
-import java.util.concurrent.Future;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
 import static org.junit.Assume.assumeFalse;
