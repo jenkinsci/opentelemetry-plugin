@@ -208,6 +208,23 @@ the span name will refer to `Agent` in the distributed traces.
 ![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
 
+### Enrich your pipeline step with the label
+
+If you use Jenkins pipelines in conjunction with the `sh`, `bat`, `powershell` built-in steps, then it's highly recommended to use the `label` argument, this will help you to enrich the name of the span. So the view is more meaningful and domain specific instead of technical.
+
+To illustrate the above, let's use the below snippet:
+
+```groovy
+node {
+    sh 'echo hi'
+    sh(label: 'say bye', script: 'echo bye')
+}
+```
+
+And how those steps are represented:
+
+![Enriched span with label](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/enriched-span-with-label.png)
+
 ### Dashboards
 
 You can now import some of the existing dashboards that have been created to provide further insights about your CI/CD Jenkins platform
