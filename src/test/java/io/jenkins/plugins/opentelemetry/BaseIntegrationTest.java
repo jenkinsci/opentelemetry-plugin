@@ -90,10 +90,10 @@ public class BaseIntegrationTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        System.out.println("beforeClass()");
-        System.out.println("Wait for jenkins to start...");
+        LOGGER.log(Level.INFO, "beforeClass()");
+        LOGGER.log(Level.INFO, "Wait for jenkins to start...");
         jenkinsRule.waitUntilNoActivity();
-        System.out.println("Jenkins started");
+        LOGGER.log(Level.INFO, "Jenkins started");
 
         ExtensionList<OpenTelemetrySdkProvider> openTelemetrySdkProviders = jenkinsRule.getInstance().getExtensionList(OpenTelemetrySdkProvider.class);
         verify(openTelemetrySdkProviders.size() == 1, "Number of openTelemetrySdkProviders: %s", openTelemetrySdkProviders.size());
