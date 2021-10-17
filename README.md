@@ -62,6 +62,10 @@ service:
 
 ## Features
 
+### Support for Jenkins pipelines and traditional Jobs
+
+Support for Jenkins pipelines and traditional Jenkins jobs. In Jenkins pipeline for each executed step there is a span representation. A similar analogy for the the Jenkins traditional jobs (Freestyle, Matrix, Maven, and so on), every pre builder, builder and publisher step is a span representation.
+
 ### Monitoring and troubleshooting Jenkins jobs using distributed tracing
 
 * Understand where time is spent, including time spent waiting to schedule the job (time spent in the build queue)
