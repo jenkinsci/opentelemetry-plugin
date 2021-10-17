@@ -64,7 +64,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     @Test
     public void testFreestyleJob_with_multiple_builders() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "test-multiple-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.getBuildersList().add(new Shell("set -u && touch \"x\""));
         project.getBuildersList().add(new Shell("set -u && touch \"y\""));
@@ -85,7 +85,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     @Test
     public void testFreestyleJobFailed() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "test-failed-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.getBuildersList().add(new Shell("set -u && exit 1"));
         FreeStyleBuild build = jenkinsRule.buildAndAssertStatus(Result.FAILURE, project);
@@ -104,7 +104,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     @Test
     public void testFreestyleJob_with_publishers() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "test-publisher-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.getBuildersList().add(new Shell("set -u && touch \"test.txt\""));
         ArtifactArchiver archiver = new ArtifactArchiver("test.txt");
@@ -127,7 +127,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     @Test
     public void testFreestyleJob_with_assigned_node() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "test-assigned-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.getBuildersList().add(new Shell("set -u && exit 0"));
         final Node agent = jenkinsRule.createOnlineSlave();
@@ -149,7 +149,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     @Test
     public void testFreestyleJob_with_causes() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        final String jobName = "test-freestyle-cause-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "test-cause-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.getBuildersList().add(new Shell("set -u && touch \"x\""));
         jenkinsRule.assertBuildStatusSuccess(project.scheduleBuild2(0, new Cause.UserIdCause()));
@@ -164,7 +164,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     @WithPlugin("ant")
     public void testFreestyleJob_with_ant_plugin() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "test-ant-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.setScm(new SingleFileSCM("build.xml", io.jenkins.plugins.opentelemetry.JenkinsOtelPluginFreestyleIntegrationTest.class.getResource("ant.xml")));
         String antName = configureDefaultAnt().getName();
