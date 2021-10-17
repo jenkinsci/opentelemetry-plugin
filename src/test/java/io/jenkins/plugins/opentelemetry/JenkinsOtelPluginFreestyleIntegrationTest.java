@@ -169,6 +169,9 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         project.setScm(new SingleFileSCM("build.xml", io.jenkins.plugins.opentelemetry.JenkinsOtelPluginFreestyleIntegrationTest.class.getResource("ant.xml")));
         String antName = configureDefaultAnt().getName();
         project.getBuildersList().add(new Ant("foo", antName,null,null,null));
+        final Node agent = jenkinsRule.createOnlineSlave();
+        agent.setLabelString("ant");
+        project.setAssignedNode(agent);
         FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
