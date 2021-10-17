@@ -18,8 +18,8 @@ public class OpenTelemetryConfiguration {
     private final String endpoint;
     private final String trustedCertificatesPem;
     private final OtlpAuthentication authentication;
-    private final int exporterTimeoutMillis;
-    private final int exporterIntervalMillis;
+    private final Integer exporterTimeoutMillis;
+    private final Integer exporterIntervalMillis;
     private final String ignoredSteps;
     private final String serviceName;
     private final String serviceNamespace;
@@ -29,7 +29,7 @@ public class OpenTelemetryConfiguration {
     }
 
     public OpenTelemetryConfiguration(@Nullable String endpoint, @Nullable String trustedCertificatesPem, @Nullable OtlpAuthentication authentication,
-                                      int exporterTimeoutMillis, int exporterIntervalMillis, @Nullable String ignoredSteps,
+                                      @Nullable Integer exporterTimeoutMillis, @Nullable Integer exporterIntervalMillis, @Nullable String ignoredSteps,
                                       @Nullable String serviceName, @Nullable String serviceNamespace) {
         this.endpoint = endpoint;
         this.trustedCertificatesPem = trustedCertificatesPem;
@@ -69,13 +69,13 @@ public class OpenTelemetryConfiguration {
         return trustedCertificatesPem;
     }
 
-    @Nonnull
-    public int getExporterTimeoutMillis() {
+    @Nullable
+    public Integer getExporterTimeoutMillis() {
         return exporterTimeoutMillis;
     }
 
-    @Nonnull
-    public int getExporterIntervalMillis() {
+    @Nullable
+    public Integer getExporterIntervalMillis() {
         return exporterIntervalMillis;
     }
 

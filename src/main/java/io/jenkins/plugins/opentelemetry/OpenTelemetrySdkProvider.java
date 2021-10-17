@@ -109,6 +109,7 @@ public class OpenTelemetrySdkProvider {
 
             configProperties.put("otel.traces.exporter", "testing");
             configProperties.put("otel.metrics.exporter", "testing");
+            configProperties.put("otel.imr.export.interval", "10");
 
         } else if (StringUtils.isNotBlank(configuration.getEndpoint())) {
             LOGGER.log(Level.FINE, "Initialize GRPC");
@@ -165,10 +166,18 @@ public class OpenTelemetrySdkProvider {
         authentication.enrichOpenTelemetryAutoConfigureConfigProperties(configProperties);
 
         // otel.exporter.otlp.timeout	OTEL_EXPORTER_OTLP_TIMEOUT
-        configProperties.put("otel.exporter.otlp.timeout", Integer.toString(configuration.getExporterTimeoutMillis()));
+        if (configuration.getExporterTimeoutMillis() != null) {
+            configProperties.put("otel.exporter.otlp.timeout", Integer.toString(configuration.getExporterTimeoutMillis()));
+        } else if (StringUtils.isNotBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("otel.exporter.otlp.timeout", "OTEL_EXPORTER_OTLP_TIMEOUT"))) {
+            configProperties.put("otel.exporter.otlp.timeout", OtelUtils.getSystemPropertyOrEnvironmentVariable("otel.exporter.otlp.timeout", "OTEL_EXPORTER_OTLP_TIMEOUT"));
+        }
 
         // otel.imr.export.interval	OTEL_IMR_EXPORT_INTERVAL Interval Metric Reader
-        configProperties.put("otel.imr.export.interval", Integer.toString(configuration.getExporterTimeoutMillis()));
+        if (configuration.getExporterIntervalMillis() != null) {
+            configProperties.put("otel.imr.export.interval", Integer.toString(configuration.getExporterIntervalMillis()));
+        } else if (StringUtils.isNotBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("otel.imr.export.interval", "OTEL_IMR_EXPORT_INTERVAL"))){
+            configProperties.put("otel.imr.export.interval", OtelUtils.getSystemPropertyOrEnvironmentVariable("otel.imr.export.interval", "OTEL_IMR_EXPORT_INTERVAL"));
+        }
 
         String newComaSeparatedAttributes = OtelUtils.getComaSeparatedString(attributes);
         LOGGER.log(Level.FINE, () -> "Initial resource attributes:" + initialComaSeparatedAttributes);

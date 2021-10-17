@@ -72,9 +72,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
 
-    private int exporterTimeoutMillis = 30_000;
+    private Integer exporterTimeoutMillis = null;
 
-    private int exporterIntervalMillis = 60_000;
+    private Integer exporterIntervalMillis = null;
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
@@ -192,22 +192,22 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
     }
 
-    public int getExporterTimeoutMillis() {
+    public Integer getExporterTimeoutMillis() {
         return exporterTimeoutMillis;
     }
 
     @DataBoundSetter
-    public void setExporterTimeoutMillis(int exporterTimeoutMillis) {
+    public void setExporterTimeoutMillis(Integer exporterTimeoutMillis) {
         this.exporterTimeoutMillis = exporterTimeoutMillis;
         initializeOpenTelemetry();
     }
 
-    public int getExporterIntervalMillis() {
+    public Integer getExporterIntervalMillis() {
         return exporterIntervalMillis;
     }
 
     @DataBoundSetter
-    public void setExporterIntervalMillis(int exporterIntervalMillis) {
+    public void setExporterIntervalMillis(Integer exporterIntervalMillis) {
         this.exporterIntervalMillis = exporterIntervalMillis;
         initializeOpenTelemetry();
     }
@@ -242,7 +242,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         if (trustedCertificatesPem != null && !trustedCertificatesPem.isEmpty()) {
             environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_CERTIFICATE, trustedCertificatesPem);
         }
-        if (this.exporterTimeoutMillis != 0) {
+        if (this.exporterTimeoutMillis != null) {
             environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT, Integer.toString(this.exporterTimeoutMillis));
         }
         return environmentVariables;
