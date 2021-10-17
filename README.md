@@ -64,7 +64,7 @@ service:
 
 ### Support for Jenkins pipelines and traditional Jobs
 
-Support for Jenkins pipelines and traditional Jenkins jobs. In Jenkins pipeline for each executed step there is a span representation. A similar analogy for the the Jenkins traditional jobs (Freestyle, Matrix, Maven, and so on), every pre builder, builder and publisher step is a span representation.
+Support for Jenkins pipelines and traditional Jenkins jobs. For every executed step in a Jenkins Pipeline there is a span representation. A similar analogy for the the Jenkins traditional jobs (Freestyle, Matrix, Maven, and so on), therefore for every pre builder, builder and publisher step there is a span representation.
 
 ### Monitoring and troubleshooting Jenkins jobs using distributed tracing
 
@@ -237,25 +237,25 @@ node {
 }
 ```
 
-![Scripted pipeline status page with Elastic Observability link](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
+![Scripted pipeline status page with Elastic Observability link](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
 
 
 #### Scripted pipeline visualized with Elastic Observability
 
-![Scripted pipeline visualised with Elastic Observability](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
+![Scripted pipeline visualised with Elastic Observability](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
 
 #### Scripted pipeline visualized with Jaeger
 
-![Scripted pipeline visualised with Jaeger](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-jaeger.png)
+![Scripted pipeline visualised with Jaeger](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-jaeger.png)
 
 #### Scripted pipeline visualized with Zipkin
 
-![Scripted pipeline visualised with Jaeger](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-zipkin.png)
+![Scripted pipeline visualised with Jaeger](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-zipkin.png)
 
 
 ### Declarative Pipeline
 
-![Declarative pipeline visualised with Elastic Observability](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/declarative-pipeline.png)
+![Declarative pipeline visualised with Elastic Observability](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/declarative-pipeline.png)
 
 ```groovy
 pipeline {
@@ -279,7 +279,7 @@ pipeline {
 ```
 ### Scripted Pipeline with Error
 
-![scripted-pipeline-with-error](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-error.png)
+![scripted-pipeline-with-error](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-with-error.png)
 
 ```
 node {
@@ -298,7 +298,7 @@ node {
 
 ### Scripted Pipeline with Parallel Step
 
-![scripted-pipeline-with-parallel-step](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-parallel-step.png)
+![scripted-pipeline-with-parallel-step](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-with-parallel-step.png)
 
 ```
 node {
@@ -322,7 +322,7 @@ node {
 
 ### Freestyle Job
 
-![freestyle-job](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
+![freestyle-job](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/freestyle-job.png)
 
 ## Configuration as code
 
