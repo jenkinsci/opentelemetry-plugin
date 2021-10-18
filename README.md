@@ -62,6 +62,10 @@ service:
 
 ## Features
 
+### Support for Jenkins pipelines and traditional Jobs
+
+Support for Jenkins pipelines and traditional Jenkins jobs. For every executed step in a Jenkins Pipeline there is a span representation. A similar analogy for the the Jenkins traditional jobs (Freestyle, Matrix, Maven, and so on), therefore for every pre builder, builder and publisher step there is a span representation.
+
 ### Monitoring and troubleshooting Jenkins jobs using distributed tracing
 
 * Understand where time is spent, including time spent waiting to schedule the job (time spent in the build queue)
@@ -204,6 +208,23 @@ the span name will refer to `Agent` in the distributed traces.
 ![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
 
+### Enrich your pipeline step with the label
+
+If you use Jenkins pipelines in conjunction with the `sh`, `bat`, `powershell` built-in steps, then it's highly recommended to use the `label` argument, this will help you to enrich the name of the span. So the view is more meaningful and domain specific instead of technical.
+
+To illustrate the above, let's use the below snippet:
+
+```groovy
+node {
+    sh 'echo hi'
+    sh(label: 'say bye', script: 'echo bye')
+}
+```
+
+And how those steps are represented:
+
+![Enriched span with label](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/enriched-span-with-label.png)
+
 ### Dashboards
 
 You can now import some of the existing dashboards that have been created to provide further insights about your CI/CD Jenkins platform
@@ -233,25 +254,25 @@ node {
 }
 ```
 
-![Scripted pipeline status page with Elastic Observability link](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
+![Scripted pipeline status page with Elastic Observability link](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
 
 
 #### Scripted pipeline visualized with Elastic Observability
 
-![Scripted pipeline visualised with Elastic Observability](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
+![Scripted pipeline visualised with Elastic Observability](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
 
 #### Scripted pipeline visualized with Jaeger
 
-![Scripted pipeline visualised with Jaeger](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-jaeger.png)
+![Scripted pipeline visualised with Jaeger](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-jaeger.png)
 
 #### Scripted pipeline visualized with Zipkin
 
-![Scripted pipeline visualised with Jaeger](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-zipkin.png)
+![Scripted pipeline visualised with Jaeger](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-zipkin.png)
 
 
 ### Declarative Pipeline
 
-![Declarative pipeline visualised with Elastic Observability](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/declarative-pipeline.png)
+![Declarative pipeline visualised with Elastic Observability](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/declarative-pipeline.png)
 
 ```groovy
 pipeline {
@@ -275,7 +296,7 @@ pipeline {
 ```
 ### Scripted Pipeline with Error
 
-![scripted-pipeline-with-error](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-error.png)
+![scripted-pipeline-with-error](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-with-error.png)
 
 ```
 node {
@@ -294,7 +315,7 @@ node {
 
 ### Scripted Pipeline with Parallel Step
 
-![scripted-pipeline-with-parallel-step](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-parallel-step.png)
+![scripted-pipeline-with-parallel-step](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-with-parallel-step.png)
 
 ```
 node {
@@ -318,7 +339,7 @@ node {
 
 ### Freestyle Job
 
-![freestyle-job](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
+![freestyle-job](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/freestyle-job.png)
 
 ## Configuration as code
 
