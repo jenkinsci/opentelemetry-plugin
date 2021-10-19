@@ -116,6 +116,8 @@ In addition, if the backends were configured then there will be an environment v
 | ci.pipeline.run.result           | Build result | Enum (`aborted`, `success`, `failure`, `not_build` and `unstable`) |
 | ci.pipeline.run.url              | Build URL | String |
 | ci.pipeline.run.user             | Who triggered the build | String |
+| ci.pipeline.run.cause.type       | Name of the type that caused the build to start | String |
+| ci.pipeline.run.cause.description| Description of the cause | String |
 | ci.pipeline.parameter.sensitive  | Whether the information contained in this parameter is sensitive or security related. | Boolean |
 | ci.pipeline.parameter.name       | Name of the parameter | String |
 | ci.pipeline.parameter.value      | Value of the parameter. "Sensitive" values are redacted | String |
