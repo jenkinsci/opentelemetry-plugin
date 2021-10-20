@@ -156,7 +156,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_TYPE), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_XXX), CoreMatchers.is(CoreMatchers.notNullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_DESCRIPTION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
