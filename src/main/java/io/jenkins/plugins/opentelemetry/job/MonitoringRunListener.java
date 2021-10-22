@@ -9,6 +9,7 @@ import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
 import hudson.model.CauseAction;
@@ -19,6 +20,7 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -133,9 +135,23 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_VALUE, nonNullParameterValues);
         }
 
+        // CAUSES
         if (!run.getCauses().isEmpty()) {
-            List causes = run.getCauses();
-            // TODO
+            List<String> causeXxx = new ArrayList<>();
+            List<String> causeDescriptions = new ArrayList<>();
+
+            run.getCauses()
+                .stream()
+                .forEach( cause -> {
+                    for (CauseHandler stepHandler : ExtensionList.lookup(CauseHandler.class)) {
+                        if (stepHandler.canAddAttributes((Cause) cause)) {
+                            causeDescriptions.add(stepHandler.getDescription());
+                            causeXxx.add(stepHandler.getXxx());
+                        }
+                    }
+                });
+            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_XXX, causeXxx);
+            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_DESCRIPTION, causeDescriptions);
         }
 
         // START ROOT SPAN
