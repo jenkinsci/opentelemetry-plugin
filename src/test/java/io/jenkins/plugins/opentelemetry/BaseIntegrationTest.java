@@ -60,7 +60,7 @@ public class BaseIntegrationTest {
     private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     static {
-        OpenTelemetrySdkProvider.TESTING_INMEMORY_MODE = true;
+        OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
     }
 
     final static AtomicInteger jobNameSuffix = new AtomicInteger();
@@ -100,7 +100,7 @@ public class BaseIntegrationTest {
         openTelemetrySdkProvider = openTelemetrySdkProviders.get(0);
 
         // verify(openTelemetrySdkProvider.openTelemetry == null, "OpenTelemetrySdkProvider has already been configured");
-        OpenTelemetrySdkProvider.TESTING_INMEMORY_MODE = true;
+        OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
         openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration());
 
         // openTelemetrySdkProvider.tracer.setDelegate(openTelemetrySdkProvider.openTelemetry.getTracer("jenkins"));

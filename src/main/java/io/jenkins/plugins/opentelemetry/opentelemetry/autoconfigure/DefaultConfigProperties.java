@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure;
 
+import com.google.common.annotations.VisibleForTesting;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurationException;
 import java.time.Duration;
@@ -16,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -40,6 +43,44 @@ public final class DefaultConfigProperties implements ConfigProperties {
     // Visible for testing
     static ConfigProperties createForTest(Map<String, String> properties) {
         return new DefaultConfigProperties(properties, Collections.emptyMap());
+    }
+
+    private DefaultConfigProperties(Map<String, String> config) {
+        this.config = config;
+    }
+
+    public static ConfigProperties createFromConfiguration(Map<String, String> overwriteProperties, Map<String, String> defaultProperties) {
+        final Properties systemProperties = System.getProperties();
+        Map<String, String> environmentVariables = System.getenv();
+
+        return createFromConfiguration(overwriteProperties, systemProperties, environmentVariables, defaultProperties);
+    }
+
+    @VisibleForTesting
+    protected static DefaultConfigProperties createFromConfiguration(Map<String, String> overwriteProperties, Properties systemProperties, Map<String, String> environmentVariables, Map<String, String> defaultProperties) {
+        Map<String, String> config = new HashMap<>();
+        Map<String, String> resourceAttributes = new HashMap<>();
+
+        // default config values
+        config.putAll(defaultProperties);
+        resourceAttributes.putAll(OtelUtils.getCommaSeparatedMap(defaultProperties.get("otel.resource.attributes")));
+
+        // config injected via environment variables
+        environmentVariables.forEach((name, value) -> config.put(name.toLowerCase(Locale.ROOT).replace('_', '.'), value));
+        resourceAttributes.putAll(OtelUtils.getCommaSeparatedMap(environmentVariables.get("OTEL_RESOURCE_ATTRIBUTES")));
+
+        // config injected via system properties
+        systemProperties.forEach(
+            (key, value) ->
+                config.put(((String) key).toLowerCase(Locale.ROOT).replace('-', '.'), (String) value));
+        resourceAttributes.putAll(OtelUtils.getCommaSeparatedMap(systemProperties.getProperty("otel.resource.attributes")));
+
+        // overwrites
+        config.putAll(overwriteProperties);
+        resourceAttributes.putAll(OtelUtils.getCommaSeparatedMap(overwriteProperties.get("otel.resource.attributes")));
+
+        config.put("otel.resource.attributes", OtelUtils.getComaSeparatedString(resourceAttributes));
+        return new DefaultConfigProperties(config);
     }
 
     public DefaultConfigProperties(

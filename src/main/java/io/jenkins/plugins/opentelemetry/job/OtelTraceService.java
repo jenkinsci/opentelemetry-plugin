@@ -13,7 +13,6 @@ import com.google.common.collect.Multimap;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 import hudson.model.Run;
 import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;

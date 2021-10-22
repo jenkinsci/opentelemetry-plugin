@@ -59,6 +59,16 @@ service:
       ...
 ```
 
+### Configuring the Jenkins OpenTelemetry Plugin using OpenTelemetry standard environment variables and system properties
+
+The configuration of the Jenkins OpenTelemetry plugin that relate to the export of the signals can be set up using the standard OpenTelemetry configuration environment variables and system properties.
+The Jenkins OpenTelemetry plugin supports the following exporters: OTLP, Jaeger, Prometheus, and Logging.
+
+When specifying configuration parameters mixing environment variables, system properties, and Jenkins Otel plugin config, the order of precedence is: Jenkins Plugin Config > JVM System Properties > Environment Variable.
+Note that the key-value pairs of the `OTEL_RESOURCE_ATTRIBUTES` attributes are merged across all the layers of settings.
+
+All the system properties and environment variables of the [OpenTelemetry SDK Auto Configuration Extension](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md) are supported at the exception of the settings of Zipkin exporter which is not included.
+
 
 ## Features
 

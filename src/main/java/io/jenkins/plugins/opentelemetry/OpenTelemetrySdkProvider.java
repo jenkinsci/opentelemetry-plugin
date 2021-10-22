@@ -9,7 +9,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.DefaultConfigProperties;
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -21,6 +21,7 @@ import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.OpenTelemetrySdkAutoConfiguration;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.JenkinsLocationConfiguration;
@@ -33,7 +34,6 @@ import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,10 +42,6 @@ import java.util.logging.Logger;
 public class OpenTelemetrySdkProvider {
 
     private static final Logger LOGGER = Logger.getLogger(OpenTelemetrySdkProvider.class.getName());
-
-    @SuppressFBWarnings
-    @VisibleForTesting
-    public static boolean TESTING_INMEMORY_MODE = false;
 
     protected transient OpenTelemetry openTelemetry;
     protected transient OpenTelemetrySdk openTelemetrySdk;
@@ -76,7 +72,7 @@ public class OpenTelemetrySdkProvider {
 
     @VisibleForTesting
     @Nonnull
-    protected SdkMeterProvider getSdkMeterProvider(){
+    protected SdkMeterProvider getSdkMeterProvider() {
         return Preconditions.checkNotNull(sdkMeterProvider);
     }
 
@@ -102,93 +98,32 @@ public class OpenTelemetrySdkProvider {
     public void initialize(@Nonnull OpenTelemetryConfiguration configuration) {
         preDestroy(); // shutdown existing SDK
 
-        Map<String, String> configProperties = new HashMap<>();
+        // CONFIGURATION DEFAULTS
+        Map<String, String> configurationDefaults = new HashMap<>();
+        configurationDefaults.put("otel.service.name", JenkinsOtelSemanticAttributes.JENKINS);
+        configurationDefaults.put("otel.resource.attributes", ResourceAttributes.SERVICE_NAMESPACE.getKey() + "=" + JenkinsOtelSemanticAttributes.JENKINS);
 
-        if (TESTING_INMEMORY_MODE) {
-            LOGGER.log(Level.FINE, "Initialize for testing");
+        // OVERWRITES OF THE OTEL AUTO CONFIGURATION
+        Map<String, String> configurationOverwrites = new HashMap<>();
 
-            configProperties.put("otel.traces.exporter", "testing");
-            configProperties.put("otel.metrics.exporter", "testing");
-            configProperties.put("otel.imr.export.interval", "10");
-
-        } else if (StringUtils.isNotBlank(configuration.getEndpoint())) {
-            LOGGER.log(Level.FINE, "Initialize GRPC");
-
-            Preconditions.checkArgument(
-                configuration.getEndpoint().startsWith("http://") ||
-                    configuration.getEndpoint().startsWith("https://"),
-                "endpoint must be prefixed by 'http://' or 'https://': %s", configuration.getEndpoint());
-
-            configProperties.put("otel.traces.exporter", "otlp");
-            configProperties.put("otel.metrics.exporter", "otlp");
-            configProperties.put("otel.exporter.otlp.endpoint", configuration.getEndpoint());
-        } else if (StringUtils.isNotBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("otel.exporter.otlp.endpoint", "OTEL_EXPORTER_OTLP_ENDPOINT"))) {
-            LOGGER.log(Level.FINE, "Initialize GRPC auto configuration");
-            // use autoconfigure endpoint
-        } else {
-            configProperties.put("otel.traces.exporter", "none");
-            configProperties.put("otel.metrics.exporter", "none");
-            // TODO support cases where users don't want the OTLP exporter (ie just Prometheus Exposition Format)
+        // Change default of "otel.traces.exporter" from "otlp" to "none" unless "otel.exporter.otlp.endpoint" or "otel.exporter.otlp.traces.endpoint" is defined
+        if (StringUtils.isBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("OTEL_TRACES_EXPORTER")) &&
+            StringUtils.isBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")) &&
+            StringUtils.isBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"))) {
+            configurationOverwrites.put("otel.traces.exporter", "none");
         }
 
-        // otel.resource.attributes	OTEL_RESOURCE_ATTRIBUTES
-        String initialComaSeparatedAttributes = OtelUtils.getSystemPropertyOrEnvironmentVariable("otel.resource.attributes", "OTEL_RESOURCE_ATTRIBUTES");
-        Map<String, String> attributes = OtelUtils.getCommaSeparatedMap(initialComaSeparatedAttributes);
+        // Put configuration params specified in the Jenkins plugin configuration
+        configurationOverwrites.putAll(configuration.toOpenTelemetryAutoConfigurationProperties());
 
-        // otel.service.name	OTEL_SERVICE_NAME
-        if (StringUtils.isNotBlank(configuration.getServiceName())) {
-            configProperties.put("otel.service.name", configuration.getServiceName());
-        } else if (StringUtils.isNotBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable(
-            "otel.service.name", "OTEL_SERVICE_NAME"))) {
-            // use autoconfigure service.name
-        } else {
-            attributes.put(ResourceAttributes.SERVICE_NAME.getKey(), JenkinsOtelSemanticAttributes.JENKINS);
-        }
-
-        // service.namespace
-        if (StringUtils.isNotBlank(configuration.getServiceNamespace())) {
-            attributes.put(ResourceAttributes.SERVICE_NAMESPACE.getKey(), configuration.getServiceNamespace());
-        }
-
-        // As invoking Jenkins.getInstanceOrNull() causes an infinite loop, use JenkinsLocationConfiguration
+        // Use JenkinsLocationConfiguration because invoking Jenkins.getInstanceOrNull() causes an infinite loop,
         String rootUrl = jenkinsLocationConfiguration == null ? "#unknown#" : Objects.toString(jenkinsLocationConfiguration.getUrl(), "#undefined#");
-        attributes.put(JenkinsOtelSemanticAttributes.JENKINS_URL.getKey(), rootUrl);
+        configurationOverwrites.put("otel.resource.attributes", JenkinsOtelSemanticAttributes.JENKINS_URL.getKey() + "=" + rootUrl);
 
-        // otel.exporter.otlp.certificate OTEL_EXPORTER_OTLP_CERTIFICATE
-        if (StringUtils.isNotBlank(configuration.getTrustedCertificatesPem())) {
-            configProperties.put("otel.exporter.otlp.certificate", configuration.getTrustedCertificatesPem());
-        }
 
-        // otel.exporter.otlp.headers	OTEL_EXPORTER_OTLP_HEADERS
+        ConfigProperties configProperties = DefaultConfigProperties.createFromConfiguration(configurationOverwrites, configurationDefaults);
 
-        // authentication
-        OtlpAuthentication authentication = configuration.getAuthentication();
-        authentication.enrichOpenTelemetryAutoConfigureConfigProperties(configProperties);
-
-        // otel.exporter.otlp.timeout	OTEL_EXPORTER_OTLP_TIMEOUT
-        if (configuration.getExporterTimeoutMillis() != null) {
-            configProperties.put("otel.exporter.otlp.timeout", Integer.toString(configuration.getExporterTimeoutMillis()));
-        } else if (StringUtils.isNotBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("otel.exporter.otlp.timeout", "OTEL_EXPORTER_OTLP_TIMEOUT"))) {
-            configProperties.put("otel.exporter.otlp.timeout", OtelUtils.getSystemPropertyOrEnvironmentVariable("otel.exporter.otlp.timeout", "OTEL_EXPORTER_OTLP_TIMEOUT"));
-        }
-
-        // otel.imr.export.interval	OTEL_IMR_EXPORT_INTERVAL Interval Metric Reader
-        if (configuration.getExporterIntervalMillis() != null) {
-            configProperties.put("otel.imr.export.interval", Integer.toString(configuration.getExporterIntervalMillis()));
-        } else if (StringUtils.isNotBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("otel.imr.export.interval", "OTEL_IMR_EXPORT_INTERVAL"))){
-            configProperties.put("otel.imr.export.interval", OtelUtils.getSystemPropertyOrEnvironmentVariable("otel.imr.export.interval", "OTEL_IMR_EXPORT_INTERVAL"));
-        }
-
-        String newComaSeparatedAttributes = OtelUtils.getComaSeparatedString(attributes);
-        LOGGER.log(Level.FINE, () -> "Initial resource attributes:" + initialComaSeparatedAttributes);
-        LOGGER.log(Level.FINE, () -> "Use resource attributes: " + newComaSeparatedAttributes);
-        configProperties.put("otel.resource.attributes", newComaSeparatedAttributes);
-
-        final Properties properties = new Properties(System.getProperties());
-        properties.putAll(configProperties);
-        DefaultConfigProperties defaultConfigProperties = new DefaultConfigProperties(properties, System.getenv());
-
-        this.openTelemetrySdk = OpenTelemetrySdkAutoConfiguration.initialize(true, defaultConfigProperties);
+        this.openTelemetrySdk = OpenTelemetrySdkAutoConfiguration.initialize(true, configProperties);
         this.openTelemetry = this.openTelemetrySdk;
         this.tracer.setDelegate(openTelemetry.getTracer("jenkins"));
 
@@ -196,7 +131,7 @@ public class OpenTelemetrySdkProvider {
         this.meterProvider = GlobalMeterProvider.get();
         this.meter = meterProvider.get("jenkins");
 
-        LOGGER.log(Level.INFO, () -> "OpenTelemetry initialized " + newComaSeparatedAttributes);
+        LOGGER.log(Level.INFO, () -> "OpenTelemetry initialized: " + ConfigPropertiesUtils.prettyPrintConfiguration(configProperties));
     }
 
     public void initializeNoOp() {

@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.net.URLEncoder;
@@ -47,17 +48,9 @@ public class OtelUtils {
     public static final String TAG = "tag";
     public static final String JENKINS_CORE = "jenkins-core";
 
-    public static String getConfiguration(
-        @Nullable String pluginConfigurationValue, @Nonnull String systemPropertyName, @Nonnull String environmentVariableName) {
-        if (StringUtils.isNotBlank(pluginConfigurationValue)) {
-            return pluginConfigurationValue;
-        }
-       return getSystemPropertyOrEnvironmentVariable(systemPropertyName, environmentVariableName);
-    }
-
     @CheckForNull
-    public static String getSystemPropertyOrEnvironmentVariable(
-        String systemPropertyName, String environmentVariableName) {
+    public static String getSystemPropertyOrEnvironmentVariable(String environmentVariableName) {
+        String systemPropertyName = environmentVariableName.replace('_', '.').toLowerCase(Locale.ROOT);
         String systemProperty = System.getProperty(systemPropertyName);
         if (StringUtils.isNotBlank(systemProperty)) {
             return systemProperty;
@@ -75,6 +68,7 @@ public class OtelUtils {
             .collect(Collectors.joining(","));
     }
 
+    @Nonnull
     public static Map<String, String> getCommaSeparatedMap(@Nullable String comaSeparatedKeyValuePairs) {
         if (StringUtils.isBlank(comaSeparatedKeyValuePairs)) {
             return new HashMap<>();

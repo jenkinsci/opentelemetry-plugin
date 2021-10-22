@@ -52,9 +52,15 @@ public class OtelEnvironmentContributorService {
         if (this.jenkinsOpenTelemetryPluginConfiguration.isExportOtelConfigurationAsEnvironmentVariables()) {
             Map<String, String> otelConfiguration = jenkinsOpenTelemetryPluginConfiguration.getOtelConfigurationAsEnvironmentVariables();
             for (Map.Entry<String, String> otelEnvironmentVariable : otelConfiguration.entrySet()) {
-                String previousValue = envs.put(otelEnvironmentVariable.getKey(), otelEnvironmentVariable.getValue());
-                if (previousValue != null) {
-                    LOGGER.log(Level.FINE, "Overwrite environment variable '" + otelEnvironmentVariable.getKey() + "'");
+                String envVarValue = otelEnvironmentVariable.getValue();
+                String envVarName = otelEnvironmentVariable.getKey();
+                if (envVarValue == null) {
+                    LOGGER.log(Level.FINE, () -> "No value found for environment variable '" + envVarName + "'");
+                } else {
+                    String previousValue = envs.put(envVarName, envVarValue);
+                    if (previousValue != null) {
+                        LOGGER.log(Level.FINE, () -> "Overwrite environment variable '" + envVarName + "'");
+                    }
                 }
             }
         } else {
