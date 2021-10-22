@@ -18,17 +18,7 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 
 public abstract class OtlpAuthentication implements Describable<OtlpAuthentication>, ExtensionPoint {
-    /**
-     * Configure the given {@code metricExporterBuilder} injecting authentication settings
-     * @param metricExporterBuilder the builder to configure
-     */
-    public abstract void configure(@Nonnull OtlpGrpcMetricExporterBuilder metricExporterBuilder);
-
-    /**
-     * Configure the given {@code spanExporterBuilder} injecting authentication settings
-     * @param spanExporterBuilder the builder to configure
-     */
-    public abstract void configure(@Nonnull OtlpGrpcSpanExporterBuilder spanExporterBuilder);
+    public abstract void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties);
 
     /**
      * Enrich the provided environment variables injecting the authentication settings,

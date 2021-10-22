@@ -24,11 +24,7 @@ public class NoAuthentication extends OtlpAuthentication {
     }
 
     @Override
-    public void configure(@Nonnull OtlpGrpcMetricExporterBuilder metricExporterBuilder) {
-    }
-
-    @Override
-    public void configure(@Nonnull OtlpGrpcSpanExporterBuilder spanExporterBuilder) {
+    public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {
     }
 
     @Override

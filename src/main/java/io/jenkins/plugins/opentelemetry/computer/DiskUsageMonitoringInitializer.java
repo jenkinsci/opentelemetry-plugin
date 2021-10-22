@@ -9,8 +9,11 @@ import com.cloudbees.simplediskusage.DiskItem;
 import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import hudson.Extension;
 import hudson.ExtensionPoint;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.init.OpenTelemetryPluginAbstractInitializer;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.Meter;
 import jenkins.YesNoMaybe;
@@ -28,32 +31,30 @@ import java.util.logging.Logger;
  * There may be a better API to do this.
  */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class DiskUsageMonitoringInitializer extends ComputerListener {
+public class DiskUsageMonitoringInitializer {
 
     private final static Logger LOGGER = Logger.getLogger(DiskUsageMonitoringInitializer.class.getName());
 
     protected Meter meter;
 
-    public DiskUsageMonitoringInitializer() {
-    }
+    protected QuickDiskUsagePlugin quickDiskUsagePlugin;
 
-    @PostConstruct
-    public void postConstruct() {
-        final Jenkins jenkins = Jenkins.get();
-        QuickDiskUsagePlugin diskUsagePlugin = jenkins.getPlugin(QuickDiskUsagePlugin.class);
-        if (diskUsagePlugin == null) {
+    @Initializer(after = InitMilestone.JOB_LOADED)
+    public void initialize() {
+        if (quickDiskUsagePlugin == null) {
             LOGGER.log(Level.WARNING, () -> "Plugin 'disk-usage' not loaded, don't start monitoring Jenkins controller disk usage");
         } else {
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
                 .ofLongs()
                 .setDescription("Disk usage of first level folder in JENKINS_HOME.")
                 .setUnit("byte")
-                .buildWithCallback(valueObserver -> valueObserver.observe(calculateDiskUsageInBytes(diskUsagePlugin)));
+                .buildWithCallback(valueObserver -> valueObserver.observe(calculateDiskUsageInBytes(quickDiskUsagePlugin)));
             LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage");
         }
     }
 
     private long calculateDiskUsageInBytes(@Nonnull QuickDiskUsagePlugin diskUsagePlugin) {
+        LOGGER.log(Level.FINE, "calculateDiskUsageInBytes");
         try {
             DiskItem disk = diskUsagePlugin.getDirectoriesUsages()
                     .stream()
@@ -69,6 +70,11 @@ public class DiskUsageMonitoringInitializer extends ComputerListener {
             LOGGER.log(Level.WARNING, e, () -> "Exception invoking `diskUsagePlugin.getDirectoriesUsages()`");
             return 0;
         }
+    }
+
+    @Inject
+    public void setQuickDiskUsagePlugin(QuickDiskUsagePlugin quickDiskUsagePlugin) {
+        this.quickDiskUsagePlugin = quickDiskUsagePlugin;
     }
 
     /**

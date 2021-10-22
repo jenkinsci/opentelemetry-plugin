@@ -15,15 +15,24 @@ import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 import jenkins.scm.api.mixin.TagSCMHead;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.AbstractMap;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.io.UnsupportedEncodingException;
+import java.util.stream.Collectors;
 
 public class OtelUtils {
 
@@ -37,6 +46,62 @@ public class OtelUtils {
     public static final String CHANGE_REQUEST = "change_request";
     public static final String TAG = "tag";
     public static final String JENKINS_CORE = "jenkins-core";
+
+    public static String getConfiguration(
+        @Nullable String pluginConfigurationValue, @Nonnull String systemPropertyName, @Nonnull String environmentVariableName) {
+        if (StringUtils.isNotBlank(pluginConfigurationValue)) {
+            return pluginConfigurationValue;
+        }
+       return getSystemPropertyOrEnvironmentVariable(systemPropertyName, environmentVariableName);
+    }
+
+    @CheckForNull
+    public static String getSystemPropertyOrEnvironmentVariable(
+        String systemPropertyName, String environmentVariableName) {
+        String systemProperty = System.getProperty(systemPropertyName);
+        if (StringUtils.isNotBlank(systemProperty)) {
+            return systemProperty;
+        }
+        String environmentVariable = System.getenv(environmentVariableName);
+        if (StringUtils.isNotBlank(environmentVariable)) {
+            return environmentVariable;
+        }
+        return null;
+    }
+
+    public static String getComaSeparatedString(@Nonnull Map<String, String> keyValuePairs) {
+        return keyValuePairs.entrySet().stream()
+            .map(keyValuePair -> keyValuePair.getKey() + "=" + keyValuePair.getValue())
+            .collect(Collectors.joining(","));
+    }
+
+    public static Map<String, String> getCommaSeparatedMap(@Nullable String comaSeparatedKeyValuePairs) {
+        if (StringUtils.isBlank(comaSeparatedKeyValuePairs)) {
+            return new HashMap<>();
+        }
+        return filterBlanksAndNulls(comaSeparatedKeyValuePairs.split(",")).stream()
+            .map(keyValuePair -> filterBlanksAndNulls(keyValuePair.split("=", 2)))
+            .map(
+                splitKeyValuePairs -> {
+                    if (splitKeyValuePairs.size() != 2) {
+                        throw new RuntimeException("Invalid key-value pair: " + comaSeparatedKeyValuePairs);
+                    }
+                    return new AbstractMap.SimpleImmutableEntry<>(
+                        splitKeyValuePairs.get(0), splitKeyValuePairs.get(1));
+                })
+            // If duplicate keys, prioritize later ones similar to duplicate system properties on a
+            // Java command line.
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, Map.Entry::getValue, (first, next) -> next, LinkedHashMap::new));
+    }
+
+    private static List<String> filterBlanksAndNulls(String[] values) {
+        return Arrays.stream(values)
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.toList());
+    }
 
     @Nonnull
     public static Function<Span, String> spanToDebugString() {
