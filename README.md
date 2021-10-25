@@ -401,3 +401,7 @@ Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob
 ## LICENSE
 
 Licensed under Apache Software License 2, see [LICENSE](LICENSE)
+
+## Learn More
+
+* [DevOpsWorld 2021 - Embracing Observability in Jenkins with OpenTelemetry](https://www.devopsworld.com/agenda/session/581459)
