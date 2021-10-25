@@ -17,6 +17,8 @@
 - [Configuration as Code](#configuration-as-code)
 - [Demos](#demos)
 - [Contributing](#contributing)
+- [Learn More](#learn-more)
+  -  DevOpsWorld 2021 presentations...
 
 ## Introduction
 
