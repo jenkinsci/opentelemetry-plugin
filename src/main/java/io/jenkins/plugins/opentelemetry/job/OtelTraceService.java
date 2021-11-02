@@ -31,7 +31,11 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -147,7 +151,13 @@ public class OtelTraceService {
             flowNode = startNode;
         }
         for (FlowNode parentNode : flowNode.getParents()) {
-            buildListOfAncestors(parentNode, parents);
+            if (flowNode.equals(parentNode)) {
+                LOGGER.log(Level.INFO, "buildListOfAncestors(" + flowNode + "): skip parentFlowNode as it is the current node"); // TODO change message to Level.FINE once the cause is understood
+            } else if (parents.contains(parentNode)) {
+                LOGGER.log(Level.INFO, "buildListOfAncestors(" + flowNode + "): skip already added " + flowNode);  // TODO can we remove this check once the cause is understood?
+            } else {
+                buildListOfAncestors(parentNode, parents);
+            }
         }
     }
 
