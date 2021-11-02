@@ -154,7 +154,7 @@ public class OtelTraceService {
             if (flowNode.equals(parentNode)) {
                 LOGGER.log(Level.INFO, "buildListOfAncestors(" + flowNode + "): skip parentFlowNode as it is the current node"); // TODO change message to Level.FINE once the cause is understood
             } else if (parents.contains(parentNode)) {
-                LOGGER.log(Level.INFO, "buildListOfAncestors(" + flowNode + "): skip already added " + flowNode);  // TODO can we remove this check once the cause is understood?
+                LOGGER.log(Level.INFO, "buildListOfAncestors(" + flowNode + "): skip already added " + parentNode);  // TODO can we remove this check once the cause is understood?
             } else {
                 buildListOfAncestors(parentNode, parents);
             }
