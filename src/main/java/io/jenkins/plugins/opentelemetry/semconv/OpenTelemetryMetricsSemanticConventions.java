@@ -5,7 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.semconv;
 
-import io.opentelemetry.api.metrics.common.Labels;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 
 /**
  * Java constants for the
@@ -21,8 +22,8 @@ public class OpenTelemetryMetricsSemanticConventions {
     public final static String SYSTEM_PAGING_USAGE = "system.paging.usage";
     public final static String SYSTEM_PAGING_UTILIZATION = "system.paging.utilization";
 
-    public final static Labels STATE_FREE = Labels.of("state", "free");
-    public final static Labels STATE_USED = Labels.of("state", "used");
+    public final static Attributes STATE_FREE = Attributes.of(AttributeKey.stringKey("state"), "free");
+    public final static Attributes STATE_USED = Attributes.of(AttributeKey.stringKey("state"), "used");
 
     public final static String PROCESS_CPU_LOAD = "process.cpu.load";
     public final static String PROCESS_CPU_TIME = "process.cpu.time";

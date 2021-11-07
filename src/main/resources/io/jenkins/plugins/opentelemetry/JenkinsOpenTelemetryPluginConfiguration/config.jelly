@@ -9,6 +9,11 @@
                 <f:hetero-radio
                      descriptors="${authenticationDescriptors}" field="authentication"/>
             </f:entry>
+            <f:entry
+                title="Export OpenTelemetry configuration as environment variables"
+                field="exportOtelConfigurationAsEnvironmentVariables">
+                <f:checkbox />
+            </f:entry>
 
             <f:entry title="Visualisation" description="${instance.observabilityBackends.isEmpty() ? instance.getVisualisationObservabilityBackendsString() : null}">
                 <j:invokeStatic var="backendDescriptors" className="io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend" method="allDescriptors"/>

@@ -48,8 +48,8 @@ public class ConfigurationAsCodeDefaultTest {
         OtlpAuthentication authentication = configuration.getAuthentication();
         MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
 
-        MatcherAssert.assertThat(configuration.getExporterTimeoutMillis(), CoreMatchers.is(30_000));
-        MatcherAssert.assertThat(configuration.getExporterIntervalMillis(), CoreMatchers.is(60_000));
+        MatcherAssert.assertThat(configuration.getExporterTimeoutMillis(), CoreMatchers.nullValue());
+        MatcherAssert.assertThat(configuration.getExporterIntervalMillis(), CoreMatchers.nullValue());
 
         MatcherAssert.assertThat(configuration.getIgnoredSteps(), CoreMatchers.is("dir,echo,isUnix,pwd,properties"));
 

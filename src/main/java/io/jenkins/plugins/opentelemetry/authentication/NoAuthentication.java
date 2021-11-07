@@ -12,6 +12,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
+import java.util.Map;
 import java.util.logging.Logger;
 
 @Extension
@@ -23,11 +24,11 @@ public class NoAuthentication extends OtlpAuthentication {
     }
 
     @Override
-    public void configure(@Nonnull OtlpGrpcMetricExporterBuilder metricExporterBuilder) {
+    public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {
     }
 
     @Override
-    public void configure(@Nonnull OtlpGrpcSpanExporterBuilder spanExporterBuilder) {
+    public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
     }
 
     @Override

@@ -22,6 +22,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,13 +55,15 @@ public class HeaderAuthentication extends OtlpAuthentication {
     }
 
     @Override
-    public void configure(OtlpGrpcMetricExporterBuilder metricExporterBuilder) {
-        metricExporterBuilder.addHeader(this.getHeaderName(), this.getAuthenticationHeaderValue());
+    public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {
+        // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
+        configProperties.put("otel.exporter.otlp.headers", this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
     }
 
     @Override
-    public void configure(OtlpGrpcSpanExporterBuilder spanExporterBuilder) {
-        spanExporterBuilder.addHeader(this.getHeaderName(), this.getAuthenticationHeaderValue());
+    public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
+        // TODO don't overwrite OTEL_EXPORTER_OTLP_HEADERS if already defined, just append to it
+        environmentVariables.put("OTEL_EXPORTER_OTLP_HEADERS", this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
     }
 
     public String getHeaderName() {

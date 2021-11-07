@@ -25,18 +25,18 @@ public class AuditingSecurityListener extends SecurityListener  {
 
     private void initialise(){
         loginSuccessCounter =
-                meter.longCounterBuilder("login_success")
+                meter.counterBuilder("login_success")
                 .setDescription("Successful logins")
                 .setUnit("1")
                 .build();
         loginFailureCounter =
-                meter.longCounterBuilder("login_failure")
+                meter.counterBuilder("login_failure")
                         .setDescription("Failing logins")
                         .setUnit("1")
                         .build();
 
         loginCounter =
-                meter.longCounterBuilder("login")
+                meter.counterBuilder("login")
                         .setDescription("Logins")
                         .setUnit("1")
                         .build();

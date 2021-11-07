@@ -5,27 +5,42 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
+import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class OpenTelemetryConfiguration {
 
+    @SuppressFBWarnings
+    @VisibleForTesting
+    public static boolean TESTING_INMEMORY_MODE = false;
+
     private final String endpoint;
     private final String trustedCertificatesPem;
     private final OtlpAuthentication authentication;
-    private final int exporterTimeoutMillis;
-    private final int exporterIntervalMillis;
+    private final Integer exporterTimeoutMillis;
+    private final Integer exporterIntervalMillis;
     private final String ignoredSteps;
     private final String serviceName;
     private final String serviceNamespace;
 
+    public OpenTelemetryConfiguration() {
+        this(null, null, null, 0, 0, null, null, null);
+    }
+
     public OpenTelemetryConfiguration(@Nullable String endpoint, @Nullable String trustedCertificatesPem, @Nullable OtlpAuthentication authentication,
-                                      @Nullable int exporterTimeoutMillis, @Nullable int exporterIntervalMillis, @Nullable String ignoredSteps,
+                                      @Nullable Integer exporterTimeoutMillis, @Nullable Integer exporterIntervalMillis, @Nullable String ignoredSteps,
                                       @Nullable String serviceName, @Nullable String serviceNamespace) {
         this.endpoint = endpoint;
         this.trustedCertificatesPem = trustedCertificatesPem;
@@ -42,6 +57,16 @@ public class OpenTelemetryConfiguration {
         return endpoint;
     }
 
+    @Nonnull
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    @Nullable
+    public String getServiceNamespace() {
+        return serviceNamespace;
+    }
+
     /**
      * @return default to {@link NoAuthentication}
      */
@@ -55,16 +80,59 @@ public class OpenTelemetryConfiguration {
         return trustedCertificatesPem;
     }
 
-    @Nonnull
-    public int getExporterTimeoutMillis() {
+    @Nullable
+    public Integer getExporterTimeoutMillis() {
         return exporterTimeoutMillis;
     }
 
-    @Nonnull
-    public int getExporterIntervalMillis() {
+    @Nullable
+    public Integer getExporterIntervalMillis() {
         return exporterIntervalMillis;
     }
 
+    public Map<String, String> toOpenTelemetryAutoConfigurationProperties() {
+        Map<String, String> configuration = new HashMap<>();
+        Map<String, String> resourceAttributes = new HashMap<>();
+
+        if (StringUtils.isNotBlank(endpoint)){
+            Preconditions.checkArgument(
+                endpoint.startsWith("http://") ||
+                    endpoint.startsWith("https://"),
+                "endpoint must be prefixed by 'http://' or 'https://': %s", endpoint);
+
+            configuration.put("otel.traces.exporter", "otlp");
+            configuration.put("otel.metrics.exporter", "otlp");
+            configuration.put("otel.exporter.otlp.endpoint", endpoint);
+        }
+        if (StringUtils.isNotBlank(serviceName)) {
+            configuration.put("otel.service.name", serviceName);
+        }
+        if (StringUtils.isNotBlank(serviceNamespace)) {
+            resourceAttributes.put(ResourceAttributes.SERVICE_NAMESPACE.getKey(), serviceNamespace);
+        }
+        if (StringUtils.isNotBlank(trustedCertificatesPem)) {
+            configuration.put("otel.exporter.otlp.certificate", trustedCertificatesPem);
+        }
+        if (authentication != null) {
+            authentication.enrichOpenTelemetryAutoConfigureConfigProperties(configuration);
+        }
+        if (exporterTimeoutMillis != null) {
+            configuration.put("otel.exporter.otlp.timeout", Integer.toString(exporterTimeoutMillis));
+        }
+        if (exporterIntervalMillis != null) {
+            configuration.put("otel.imr.export.interval", Integer.toString(exporterIntervalMillis));
+        }
+
+        configuration.put("otel.resource.attributes", OtelUtils.getComaSeparatedString(resourceAttributes));
+
+        if (OpenTelemetryConfiguration.TESTING_INMEMORY_MODE) {
+            configuration.put("otel.traces.exporter", "testing");
+            configuration.put("otel.metrics.exporter", "testing");
+            configuration.put("otel.imr.export.interval", "10");
+        }
+
+        return  configuration;
+    }
     @Nullable
     public String getIgnoredSteps() {
         return ignoredSteps;

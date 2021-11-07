@@ -32,11 +32,11 @@ public class MonitoringCloudListener extends CloudProvisioningListener {
 
     @PostConstruct
     public void postConstruct() {
-        failureCloudCounter = meter.longCounterBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_FAILURE)
+        failureCloudCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_FAILURE)
             .setDescription("Number of failed cloud agents when provisioning")
             .setUnit("1")
             .build();
-        totalCloudCount = meter.longCounterBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_COMPLETED)
+        totalCloudCount = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_COMPLETED)
             .setDescription("Number of provisioned cloud agents")
             .setUnit("1")
             .build();

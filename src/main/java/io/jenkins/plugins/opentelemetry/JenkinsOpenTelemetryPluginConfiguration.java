@@ -11,12 +11,14 @@ import hudson.Extension;
 import hudson.PluginWrapper;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import hudson.tasks.BuildStep;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -41,20 +43,27 @@ import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
+
 @Extension
 @Symbol("openTelemetry")
 public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration {
     private final static Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());
 
+    /**
+     * OTLP endpoint prefixed by "http://" or "https://"
+     */
     private String endpoint;
 
     private String trustedCertificatesPem;
@@ -63,13 +72,15 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
 
-    private int exporterTimeoutMillis = 30_000;
+    private Integer exporterTimeoutMillis = null;
 
-    private int exporterIntervalMillis = 60_000;
+    private Integer exporterIntervalMillis = null;
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
+
+    private boolean exportOtelConfigurationAsEnvironmentVariables;
 
     private transient SpanNamingStrategy spanNamingStrategy;
 
@@ -181,22 +192,22 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
     }
 
-    public int getExporterTimeoutMillis() {
+    public Integer getExporterTimeoutMillis() {
         return exporterTimeoutMillis;
     }
 
     @DataBoundSetter
-    public void setExporterTimeoutMillis(int exporterTimeoutMillis) {
+    public void setExporterTimeoutMillis(Integer exporterTimeoutMillis) {
         this.exporterTimeoutMillis = exporterTimeoutMillis;
         initializeOpenTelemetry();
     }
 
-    public int getExporterIntervalMillis() {
+    public Integer getExporterIntervalMillis() {
         return exporterIntervalMillis;
     }
 
     @DataBoundSetter
-    public void setExporterIntervalMillis(int exporterIntervalMillis) {
+    public void setExporterIntervalMillis(Integer exporterIntervalMillis) {
         this.exporterIntervalMillis = exporterIntervalMillis;
         initializeOpenTelemetry();
     }
@@ -207,6 +218,34 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     public void setIgnoredSteps(String ignoredSteps) {
         this.ignoredSteps = ignoredSteps;
+    }
+
+    public boolean isExportOtelConfigurationAsEnvironmentVariables() {
+        return exportOtelConfigurationAsEnvironmentVariables;
+    }
+
+    @DataBoundSetter
+    public void setExportOtelConfigurationAsEnvironmentVariables(boolean exportOtelConfigurationAsEnvironmentVariables) {
+        this.exportOtelConfigurationAsEnvironmentVariables = exportOtelConfigurationAsEnvironmentVariables;
+    }
+
+    @Nonnull
+    public Map<String, String> getOtelConfigurationAsEnvironmentVariables() {
+        Map<String, String> environmentVariables = new HashMap<>();
+        environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_ENDPOINT, this.endpoint);
+        String sanitizeOtlpEndpoint = sanitizeOtlpEndpoint(this.endpoint);
+        if (sanitizeOtlpEndpoint != null && sanitizeOtlpEndpoint.startsWith("http://")) {
+            environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_INSECURE, Boolean.TRUE.toString());
+        }
+        this.authentication.enrichOtelEnvironmentVariables(environmentVariables);
+        String trustedCertificatesPem = this.getTrustedCertificatesPem();
+        if (trustedCertificatesPem != null && !trustedCertificatesPem.isEmpty()) {
+            environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_CERTIFICATE, trustedCertificatesPem);
+        }
+        if (this.exporterTimeoutMillis != null) {
+            environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT, Integer.toString(this.exporterTimeoutMillis));
+        }
+        return environmentVariables;
     }
 
     /**
@@ -250,6 +289,16 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return descriptor;
     }
 
+    @Nullable
+    private Descriptor<? extends Describable> getBuildStepDescriptor(@Nonnull BuildStep buildStep) {
+        return Jenkins.get().getDescriptor((Class<? extends Describable>) buildStep.getClass());
+    }
+
+    @Nonnull
+    public StepPlugin findStepPluginOrDefault(@Nonnull String buildStepName, @Nonnull BuildStep buildStep) {
+        return findStepPluginOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
+    }
+
     @Nonnull
     public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepAtomNode node) {
         return findStepPluginOrDefault(stepName, getStepDescriptor(node, node.getDescriptor()));
@@ -278,6 +327,21 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             }
         }
         return data;
+    }
+
+    @Nonnull
+    public String findSymbolOrDefault(@Nonnull String buildStepName, @Nonnull BuildStep buildStep) {
+        return findSymbolOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
+    }
+
+    @Nonnull
+    public String findSymbolOrDefault(@Nonnull String buildStepName, @Nullable Descriptor<? extends Describable> descriptor) {
+        String value = buildStepName;
+        if (descriptor != null) {
+            Set<String> values = SymbolLookup.getSymbolValue(descriptor);
+            value = values.stream().findFirst().orElse(buildStepName);
+        }
+        return value;
     }
 
     /**
@@ -323,6 +387,19 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return FormValidation.error("Invalid format: \"%s\"", ignoredSteps);
     }
 
+    /**
+     * A warning if it's selected.
+     *
+     * @param value the exportOtelConfigurationAsEnvironmentVariables flag
+     * @return ok if the form input was valid
+     */
+    public FormValidation doCheckExportOtelConfigurationAsEnvironmentVariables(@QueryParameter String value) {
+        if(value.equals("false")) {
+            return FormValidation.ok();
+        }
+        return FormValidation.warning("Note that OpenTelemetry credentials, if configured, will be exposed as environment variables (likely in OTEL_EXPORTER_OTLP_HEADERS)");
+    }
+
     @Immutable
     public static class StepPlugin {
         final String name;
@@ -334,8 +411,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         }
 
         public StepPlugin() {
-            this.name = "unknown";
-            this.version = "unknown";
+            this.name = UNKNOWN;
+            this.version = UNKNOWN;
         }
 
         public String getName() {
@@ -344,6 +421,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
         public String getVersion() {
             return version;
+        }
+
+        public boolean isUnknown() {
+            return getName().equals(UNKNOWN) && getVersion().equals(UNKNOWN);
         }
 
         @Override

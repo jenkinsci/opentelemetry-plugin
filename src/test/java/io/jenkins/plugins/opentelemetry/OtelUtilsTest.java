@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static org.junit.Assume.assumeFalse;
+
 import hudson.matrix.AxisList;
 import hudson.matrix.MatrixBuild;
 import hudson.matrix.MatrixProject;
@@ -18,6 +20,7 @@ import jenkins.branch.BranchProperty;
 import jenkins.branch.BranchSource;
 import jenkins.branch.DefaultBranchPropertyStrategy;
 import jenkins.plugins.git.GitSCMSource;
+import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -110,12 +113,13 @@ public class OtelUtilsTest extends BaseIntegrationTest {
 
     @Test
     public void test_multibranch() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         sampleRepo.init();
         sampleRepo.write("Jenkinsfile", "echo 'hi'");
         sampleRepo.write("file", "initial content");
         sampleRepo.git("add", "Jenkinsfile");
         sampleRepo.git("commit", "--all", "--message=flow");
-        final String mbpName = "test-pipeline-with-node-steps-" + jobNameSuffix.incrementAndGet();
+        final String mbpName = "node-steps-" + jobNameSuffix.incrementAndGet();
         final String branchName = "master";
         WorkflowMultiBranchProject mp = jenkinsRule.createProject(WorkflowMultiBranchProject.class, mbpName);
         mp.getSourcesList().add(new BranchSource(new GitSCMSource(null, sampleRepo.toString(), "", "*", "", false), new DefaultBranchPropertyStrategy(new BranchProperty[0])));

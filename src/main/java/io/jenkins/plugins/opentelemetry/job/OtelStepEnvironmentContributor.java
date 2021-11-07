@@ -20,10 +20,15 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Inject OpenTelemetry environment variables in shell steps: {@code TRACEPARENT}, {@code OTEL_EXPORTER_OTLP_ENDPOINT}...
+ */
 @Extension
 public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
 
     private final static Logger LOGGER = Logger.getLogger(OtelStepEnvironmentContributor.class.getName());
+
+    private OtelEnvironmentContributorService otelEnvironmentContributorService;
 
     private OtelTraceService otelTraceService;
 
@@ -42,7 +47,12 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
             span = otelTraceService.getSpan(run, flowNode);
         }
 
-        EnvironmentContributorUtils.setEnvironmentVariables(run, envs, span);
+        otelEnvironmentContributorService.addEnvironmentVariables(run, envs, span);
+    }
+
+    @Inject
+    public void setEnvironmentContributorService(OtelEnvironmentContributorService otelEnvironmentContributorService) {
+        this.otelEnvironmentContributorService = otelEnvironmentContributorService;
     }
 
     @Inject

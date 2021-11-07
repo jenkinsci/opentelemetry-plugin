@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static org.junit.Assume.assumeFalse;
+
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.EnvVars;
 import hudson.model.Run;
@@ -15,6 +17,7 @@ import jenkins.branch.BranchProperty;
 import jenkins.branch.BranchSource;
 import jenkins.branch.DefaultBranchPropertyStrategy;
 import jenkins.plugins.git.GitSCMSource;
+import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -32,6 +35,7 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testMultibranchPipelineStep() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String pipelineScript = "pipeline {\n" +
                 "  agent any\n" +
                 "  stages {\n" +
@@ -70,6 +74,8 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.is(OtelUtils.BRANCH));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.MULTIBRANCH));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION), CoreMatchers.is("Bar"));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_XXX), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_DESCRIPTION), CoreMatchers.is(CoreMatchers.notNullValue()));
 
         // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
         // It returns the first checkout, aka the one without any shallow cloning, depth shallow.
@@ -82,7 +88,6 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
 
         // Environment variables are populated
         EnvVars environment = b1.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
-        MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.SPAN_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(environment.get(JenkinsOtelSemanticAttributes.TRACE_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertEnvironmentVariables(environment);
     }
 }

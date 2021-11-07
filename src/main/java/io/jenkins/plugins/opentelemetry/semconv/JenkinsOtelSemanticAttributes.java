@@ -30,6 +30,8 @@ public final class JenkinsOtelSemanticAttributes {
      * @see hudson.model.Node#getDisplayName() ()
      */
     public static final AttributeKey<String>        CI_PIPELINE_AGENT_NAME = AttributeKey.stringKey("ci.pipeline.agent.name");
+    public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_CAUSE_DESCRIPTION = AttributeKey.stringArrayKey("ci.pipeline.run.cause.description");
+    public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_CAUSE_XXX = AttributeKey.stringArrayKey("ci.pipeline.run.cause.xxx");
     public static final AttributeKey<Boolean>       CI_PIPELINE_RUN_COMPLETED = AttributeKey.booleanKey("ci.pipeline.run.completed");
     public static final AttributeKey<Long>          CI_PIPELINE_RUN_DURATION_MILLIS = AttributeKey.longKey("ci.pipeline.run.durationMillis");
     public static final AttributeKey<String>        CI_PIPELINE_RUN_DESCRIPTION = AttributeKey.stringKey("ci.pipeline.run.description");
@@ -90,8 +92,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final String JENKINS_JOB_SPAN_PHASE_RUN_NAME = "Phase: Run";
     public static final String JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME = "Phase: Finalise";
 
-    public static final String SPAN_ID = "SPAN_ID";
-    public static final String TRACE_ID = "TRACE_ID";
+
 
     /**
      * A machine or a container which is connected to the Jenkins coordinator and capable of executing

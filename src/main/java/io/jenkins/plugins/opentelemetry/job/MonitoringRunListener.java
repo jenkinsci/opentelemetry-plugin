@@ -5,17 +5,27 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import hudson.model.*;
+import hudson.ExtensionList;
+import hudson.model.AbstractBuild;
+import hudson.model.Cause;
+import hudson.model.CauseAction;
+import hudson.model.Node;
+import hudson.model.ParameterValue;
+import hudson.model.ParametersAction;
+import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.LongValueObserver;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
@@ -42,7 +52,6 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
     private AtomicInteger activeRun;
-    private LongValueObserver activeRunObserver;
     private LongCounter runLaunchedCounter;
     private LongCounter runStartedCounter;
     private LongCounter runCompletedCounter;
@@ -53,28 +62,28 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     @PostConstruct
     public void postConstruct() {
         activeRun = new AtomicInteger();
-        activeRunObserver = getMeter().longValueObserverBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
-                .setDescription("Gauge of active jobs")
-                .setUnit("1")
-                .setUpdater(longResult -> this.activeRun.get())
-                .build();
+        getMeter().gaugeBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
+            .ofLongs()
+            .setDescription("Gauge of active jobs")
+            .setUnit("1")
+            .buildWithCallback(valueObserver -> this.activeRun.get());
         runLaunchedCounter =
-                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
+                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
                         .setDescription("Job launched")
                         .setUnit("1")
                         .build();
         runStartedCounter =
-                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED)
+                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED)
                         .setDescription("Job started")
                         .setUnit("1")
                         .build();
         runAbortedCounter =
-                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
+                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
                         .setDescription("Job aborted")
                         .setUnit("1")
                         .build();
         runCompletedCounter =
-                getMeter().longCounterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED)
+                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED)
                         .setDescription("Job completed")
                         .setUnit("1")
                         .build();
@@ -126,9 +135,23 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_VALUE, nonNullParameterValues);
         }
 
+        // CAUSES
         if (!run.getCauses().isEmpty()) {
-            List causes = run.getCauses();
-            // TODO
+            List<String> causeXxx = new ArrayList<>();
+            List<String> causeDescriptions = new ArrayList<>();
+
+            run.getCauses()
+                .stream()
+                .forEach( cause -> {
+                    for (CauseHandler stepHandler : ExtensionList.lookup(CauseHandler.class)) {
+                        if (stepHandler.canAddAttributes((Cause) cause)) {
+                            causeDescriptions.add(stepHandler.getDescription());
+                            causeXxx.add(stepHandler.getXxx());
+                        }
+                    }
+                });
+            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_XXX, causeXxx);
+            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_DESCRIPTION, causeDescriptions);
         }
 
         // START ROOT SPAN
@@ -163,6 +186,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
             runSpan.makeCurrent();
             this.getTraceService().putSpan(run, runSpan);
+            // Support non-pipeline jobs
+            if (run instanceof AbstractBuild) {
+                this.getTraceService().putSpan((AbstractBuild) run, runSpan);
+            }
             this.runStartedCounter.add(1);
         }
     }
@@ -217,6 +244,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             if (run instanceof AbstractBuild) {
                 Node node = ((AbstractBuild) run).getBuiltOn();
                 if (node != null) {
+                    parentSpan.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL, Strings.emptyToNull(node.getLabelString()));
                     parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID, node.getNodeName());
                     parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME, node.getDisplayName());
                 }
@@ -238,10 +266,6 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         } finally {
             activeRun.decrementAndGet();
         }
-    }
-
-    @Override
-    public void _onDeleted(Run run) {
     }
 
     private void dumpCauses(Run<?, ?> run, StringBuilder buf) {

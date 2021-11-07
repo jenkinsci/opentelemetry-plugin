@@ -53,6 +53,6 @@ service:
         - batch
       exporters:
         - otlp/elastic
-        #- jaeger
+        - jaeger
         #- zipkin
   extensions: [zpages]

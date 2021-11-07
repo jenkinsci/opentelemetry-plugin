@@ -16,7 +16,10 @@
 - [Examples](#screenshots)
 - [Configuration as Code](#configuration-as-code)
 - [Advanced features](#advanced-features)
+- [Demos](#demos)
 - [Contributing](#contributing)
+- [Learn More](#learn-more)
+  -  DevOpsWorld 2021 presentations...
 
 ## Introduction
 
@@ -59,8 +62,22 @@ service:
       ...
 ```
 
+### Configuring the Jenkins OpenTelemetry Plugin using OpenTelemetry standard environment variables and system properties
+
+The configuration of the Jenkins OpenTelemetry plugin that relate to the export of the signals can be set up using the standard OpenTelemetry configuration environment variables and system properties.
+The Jenkins OpenTelemetry plugin supports the following exporters: OTLP, Jaeger, Prometheus, and Logging.
+
+When specifying configuration parameters mixing environment variables, system properties, and Jenkins Otel plugin config, the order of precedence is: Jenkins Plugin Config > JVM System Properties > Environment Variable.
+Note that the key-value pairs of the `OTEL_RESOURCE_ATTRIBUTES` attributes are merged across all the layers of settings.
+
+All the system properties and environment variables of the [OpenTelemetry SDK Auto Configuration Extension](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md) are supported at the exception of the settings of Zipkin exporter which is not included.
+
 
 ## Features
+
+### Support for Jenkins pipelines and traditional Jobs
+
+Support for Jenkins pipelines and traditional Jenkins jobs. For every executed step in a Jenkins Pipeline there is a span representation. A similar analogy for the the Jenkins traditional jobs (Freestyle, Matrix, Maven, and so on), therefore for every pre builder, builder and publisher step there is a span representation.
 
 ### Monitoring and troubleshooting Jenkins jobs using distributed tracing
 
@@ -71,19 +88,28 @@ service:
 * Built in integration with [Elastic Observability](https://www.elastic.co/observability), [Jaeger](https://www.jaegertracing.io/), and [Zipkin](https://zipkin.io/).
    Other OpenTelemetry compatible distributed tracing solutions are also supported.
 
-### Environment variables
+### Environment variables for trace context propagation and integrations
 
-The current span and trace IDs are exposed as environment variables.
+The context of the current span is exposed as environment variables to ease integration with third party tools.
 
-* SPAN_ID
-* TRACE_ID
+* `TRACEPARENT`: the [W3C Trace Context header `traceparent`](https://www.w3.org/TR/trace-context-1/#traceparent-header)
+* `TRACESTATE`: the [W3C Trace Context header `tracestate`](https://www.w3.org/TR/trace-context-1/#tracestate-header)
+* `TRACE_ID`: the trace id of the job / pipeline
+* `SPAN_ID`: the id of the pipeline shell step span
+
+When the configuration options "Export OpenTelemetry configuration as environment variables", the following [OpenTelemetry environment variables](https://github.com/open-telemetry/opentelemetry-specification/blob/v1.6.0/specification/protocol/exporter.md) will be exported according to the settings of the plugin:
+* `OTEL_EXPORTER_OTLP_ENDPOINT`: Target to which the exporter is going to send spans or metrics.
+* `OTEL_EXPORTER_OTLP_INSECURE`: Whether to enable client transport security for the exporter's gRPC connection
+* `OTEL_EXPORTER_OTLP_HEADERS`: Key-value pairs to be used as headers associated with gRPC or HTTP requests. Typically used to pass credentials.
+* `OTEL_EXPORTER_OTLP_TIMEOUT`: Maximum time the OTLP exporter will wait for each batch export.
+* `OTEL_EXPORTER_OTLP_CERTIFICATE`: The trusted certificate to use when verifying a server's TLS credentials.
 
 In addition, if the backends were configured then there will be an environment variable for each of them pointing to the URL with the span/transactions:
 
-* OTEL_CUSTOM_URL
-* OTEL_ELASTIC_URL
-* OTEL_JAEGER_URL
-* OTEL_ZIPKIN_URL
+* `OTEL_CUSTOM_URL`
+* `OTEL_ELASTIC_URL`
+* `OTEL_JAEGER_URL`
+* `OTEL_ZIPKIN_URL`
 
 #### Attributes
 
@@ -103,6 +129,8 @@ In addition, if the backends were configured then there will be an environment v
 | ci.pipeline.run.result           | Build result | Enum (`aborted`, `success`, `failure`, `not_build` and `unstable`) |
 | ci.pipeline.run.url              | Build URL | String |
 | ci.pipeline.run.user             | Who triggered the build | String |
+| ci.pipeline.run.cause.xxx        | List of machine readable build causes | String |
+| ci.pipeline.run.cause.description| List of human readable description of build causes | String |
 | ci.pipeline.parameter.sensitive  | Whether the information contained in this parameter is sensitive or security related. | Boolean |
 | ci.pipeline.parameter.name       | Name of the parameter | String |
 | ci.pipeline.parameter.value      | Value of the parameter. "Sensitive" values are redacted | String |
@@ -172,6 +200,11 @@ The `runtime.*` metrics are the same as the one collected by the `
 `Node` steps will be transformed to `Agent` spans to be the more agnostic to any platform. Therefore the `jenkins.pipeline.step.type` attribute will report the jenkins pipeline step `node` but
 the span name will refer to `Agent` in the distributed traces.
 
+## Getting started with a video tutorial
+
+[![Tracing Your Jenkins Pipelines With OpenTelemetry and Jaeger](https://img.youtube.com/vi/3XzVOxvNpGM/0.jpg)](https://www.youtube.com/watch?v=3XzVOxvNpGM)
+
+
 ## Getting started
 
 * Setup an OpenTelemetry endpoint such as the [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib)
@@ -189,6 +222,23 @@ the span name will refer to `Agent` in the distributed traces.
 
 ![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
+
+### Enrich your pipeline step with the label
+
+If you use Jenkins pipelines in conjunction with the `sh`, `bat`, `powershell` built-in steps, then it's highly recommended to use the `label` argument, this will help you to enrich the name of the span. So the view is more meaningful and domain specific instead of technical.
+
+To illustrate the above, let's use the below snippet:
+
+```groovy
+node {
+    sh 'echo hi'
+    sh(label: 'say bye', script: 'echo bye')
+}
+```
+
+And how those steps are represented:
+
+![Enriched span with label](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/enriched-span-with-label.png)
 
 ### Dashboards
 
@@ -219,25 +269,25 @@ node {
 }
 ```
 
-![Scripted pipeline status page with Elastic Observability link](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
+![Scripted pipeline status page with Elastic Observability link](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
 
 
 #### Scripted pipeline visualized with Elastic Observability
 
-![Scripted pipeline visualised with Elastic Observability](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
+![Scripted pipeline visualised with Elastic Observability](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
 
 #### Scripted pipeline visualized with Jaeger
 
-![Scripted pipeline visualised with Jaeger](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-jaeger.png)
+![Scripted pipeline visualised with Jaeger](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-jaeger.png)
 
 #### Scripted pipeline visualized with Zipkin
 
-![Scripted pipeline visualised with Jaeger](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-trace-zipkin.png)
+![Scripted pipeline visualised with Jaeger](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-zipkin.png)
 
 
 ### Declarative Pipeline
 
-![Declarative pipeline visualised with Elastic Observability](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/declarative-pipeline.png)
+![Declarative pipeline visualised with Elastic Observability](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/declarative-pipeline.png)
 
 ```groovy
 pipeline {
@@ -261,7 +311,7 @@ pipeline {
 ```
 ### Scripted Pipeline with Error
 
-![scripted-pipeline-with-error](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-error.png)
+![scripted-pipeline-with-error](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-with-error.png)
 
 ```
 node {
@@ -280,7 +330,7 @@ node {
 
 ### Scripted Pipeline with Parallel Step
 
-![scripted-pipeline-with-parallel-step](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/scripted-pipeline-with-parallel-step.png)
+![scripted-pipeline-with-parallel-step](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-with-parallel-step.png)
 
 ```
 node {
@@ -304,7 +354,7 @@ node {
 
 ### Freestyle Job
 
-![freestyle-job](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/images/freestyle-job.png)
+![freestyle-job](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/freestyle-job.png)
 
 ## Configuration as code
 
@@ -315,6 +365,7 @@ unclassified:
   openTelemetry:
     authentication: "noAuthentication"
     endpoint: "otel-collector-contrib:4317"
+    exportOtelConfigurationAsEnvironmentVariables: true
     exporterIntervalMillis: 60000
     exporterTimeoutMillis: 30000
     ignoredSteps: "dir,echo,isUnix,pwd,properties"
@@ -365,6 +416,10 @@ pipeline {
 
 ![Sample Advanced Feature](./docs/images/advanced-features.png)
 
+## Demos
+
+If you'd like to see this plugin in action with some other integrations then refer to the [demos](demos/README.md).
+
 ## Contributing
 
 Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md)
@@ -372,3 +427,7 @@ Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob
 ## LICENSE
 
 Licensed under Apache Software License 2, see [LICENSE](LICENSE)
+
+## Learn More
+
+* [DevOpsWorld 2021 - Embracing Observability in Jenkins with OpenTelemetry](https://www.devopsworld.com/agenda/session/581459)

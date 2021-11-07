@@ -12,7 +12,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
+import hudson.model.AbstractBuild;
 import hudson.model.Run;
+import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.opentelemetry.api.trace.Span;
@@ -29,7 +31,11 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -44,6 +50,8 @@ public class OtelTraceService {
     private static Logger LOGGER = Logger.getLogger(OtelTraceService.class.getName());
 
     private transient ConcurrentMap<RunIdentifier, RunSpans> spansByRun;
+
+    private transient ConcurrentMap<RunIdentifier, FreestyleRunSpans> freestyleSpansByRun;
 
     private Tracer tracer;
 
@@ -60,6 +68,7 @@ public class OtelTraceService {
 
     private void initialize() {
         spansByRun = new ConcurrentHashMap();
+        freestyleSpansByRun = new ConcurrentHashMap();
     }
 
     @Nonnull
@@ -111,6 +120,22 @@ public class OtelTraceService {
     }
 
     @Nonnull
+    public Span getSpan(@Nonnull AbstractBuild build, @Nonnull BuildStep buildStep) {
+
+        RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromBuild(build);
+        FreestyleRunSpans freestyleRunSpans = freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans()); // absent when Jenkins restarts during build
+        LOGGER.log(Level.FINEST, () -> "getSpan(" + build.getFullDisplayName() + ", BuildStep[name" + buildStep.getClass().getSimpleName() + ") -  " + freestyleRunSpans);
+
+        final Span span = Iterables.getLast(freestyleRunSpans.runPhasesSpans, null);
+        if (span == null) {
+            LOGGER.log(Level.FINE, () -> "No span found for run " + build.getFullDisplayName() + ", Jenkins server may have restarted");
+            return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + build.getFullDisplayName()).startSpan();
+        }
+        LOGGER.log(Level.FINEST, () -> "span: " + span.getSpanContext().getSpanId());
+        return span;
+    }
+
+    @Nonnull
     private Iterable<FlowNode> getAncestors(FlowNode flowNode) {
         List<FlowNode> ancestors = new ArrayList<>();
         buildListOfAncestors(flowNode, ancestors);
@@ -126,7 +151,13 @@ public class OtelTraceService {
             flowNode = startNode;
         }
         for (FlowNode parentNode : flowNode.getParents()) {
-            buildListOfAncestors(parentNode, parents);
+            if (flowNode.equals(parentNode)) {
+                LOGGER.log(Level.INFO, "buildListOfAncestors(" + flowNode + "): skip parentFlowNode as it is the current node"); // TODO change message to Level.FINE once the cause is understood
+            } else if (parents.contains(parentNode)) {
+                LOGGER.log(Level.INFO, "buildListOfAncestors(" + flowNode + "): skip already added " + parentNode);  // TODO can we remove this check once the cause is understood?
+            } else {
+                buildListOfAncestors(parentNode, parents);
+            }
         }
     }
 
@@ -179,6 +210,25 @@ public class OtelTraceService {
         throw new VerifyException(run.getFullDisplayName() + " - Failure to remove span " + span + " - " + runSpans);
     }
 
+    public void removeBuildStepSpan(@Nonnull AbstractBuild build, @Nonnull BuildStep buildStep, @Nonnull Span span) {
+        RunIdentifier runIdentifier = RunIdentifier.fromBuild(build);
+        FreestyleRunSpans freestyleRunSpans = this.freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans()); // absent when Jenkins restarts during build
+
+        Span lastSpan = Iterables.getLast(freestyleRunSpans.runPhasesSpans, null);
+        if (lastSpan == null) {
+            LOGGER.log(Level.FINE, () -> "No span found for run " + build.getFullDisplayName() + ", Jenkins server may have restarted");
+            return;
+        }
+
+        if (Objects.equals(span, lastSpan)) {
+            boolean removed = freestyleRunSpans.runPhasesSpans.remove(span);
+            verify(removed, build.getFullDisplayName() + "Failure to remove span from runPhasesSpans: " + span);
+            return;
+        }
+
+        throw new VerifyException(build.getFullDisplayName() + " - Failure to remove span " + span + " - " + freestyleRunSpans);
+    }
+
     public void purgeRun(@Nonnull Run run) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = this.spansByRun.remove(runIdentifier);
@@ -189,6 +239,14 @@ public class OtelTraceService {
         if (!runSpans.runPhasesSpans.isEmpty() || !runSpans.pipelineStepSpansByFlowNodeId.isEmpty()) {
             throw new VerifyException(run.getFullDisplayName() + " - Some spans have not been ended and removed: " + runSpans);
         }
+    }
+
+    public void putSpan(@Nonnull AbstractBuild build, @Nonnull Span span) {
+        RunIdentifier runIdentifier = RunIdentifier.fromBuild(build);
+        FreestyleRunSpans runSpans = freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans());
+        runSpans.runPhasesSpans.add(span);
+
+        LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + "," + span + ") - new stack: " + runSpans);
     }
 
     public void putSpan(@Nonnull Run run, @Nonnull Span span) {
@@ -214,7 +272,6 @@ public class OtelTraceService {
     }
 
     /**
-     * @param run
      * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
      */
     @Nonnull
@@ -244,6 +301,61 @@ public class OtelTraceService {
                     "runPhasesSpans=" + Collections.unmodifiableList(runPhasesSpans) +
                     ", pipelineStepSpansByFlowNodeId=" + ArrayListMultimap.create(pipelineStepSpansByFlowNodeId) +
                     '}';
+        }
+    }
+
+    @Immutable
+    public static class FreestyleRunSpans {
+        final Multimap<String, FreestyleSpanContext> buildStepSpans = ArrayListMultimap.create();
+        final List<Span> runPhasesSpans = new ArrayList<>();
+
+        @Override
+        public String toString() {
+            // clone the Multimap to prevent a ConcurrentModificationException
+            // see https://github.com/jenkinsci/opentelemetry-plugin/issues/129
+            return "FreestyleRunSpans{" +
+                "runPhasesSpans=" + Collections.unmodifiableList(runPhasesSpans) +
+                ", buildStepSpans=" + ArrayListMultimap.create(buildStepSpans) +
+                '}';
+        }
+    }
+
+    public static class FreestyleSpanContext {
+        final transient Span span;
+        final String flowNodeId;
+
+        public FreestyleSpanContext(@Nonnull Span span, @Nonnull BuildStep buildStep) {
+            this.span = span;
+            this.flowNodeId = buildStep.getClass().getSimpleName();
+        }
+
+        /**
+         * FIXME handle cases where the data structure has been deserialized and {@link Span} is null.
+         */
+        @Nonnull
+        public Span getSpan() {
+            return span;
+        }
+
+        @Override
+        public String toString() {
+            return "FreestyleSpanContext{" +
+                "span=" + span +
+                ", flowNodeId=" + flowNodeId +
+                '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            FreestyleSpanContext that = (FreestyleSpanContext) o;
+            return Objects.equals(this.span.getSpanContext().getSpanId(), that.span.getSpanContext().getSpanId()) && flowNodeId.equals(that.flowNodeId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(span.getSpanContext().getSpanId(), flowNodeId);
         }
     }
 
@@ -320,6 +432,22 @@ public class OtelTraceService {
                 } catch (StackOverflowError e2) {
                     LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for unknown job #" + run.getNumber());
                     return new RunIdentifier("#StackOverflowError#", run.getNumber());
+                }
+            }
+        }
+
+        static RunIdentifier fromBuild(@Nonnull AbstractBuild build) {
+            try {
+                return new RunIdentifier(build.getParent().getFullName(), build.getNumber());
+            } catch (StackOverflowError e) {
+                // TODO remove when https://github.com/jenkinsci/opentelemetry-plugin/issues/87 is fixed
+                try {
+                    final String jobName = build.getParent().getName();
+                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for " + jobName + "#" + build.getNumber());
+                    return new RunIdentifier("#StackOverflowError#_" + jobName, build.getNumber());
+                } catch (StackOverflowError e2) {
+                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for unknown job #" + build.getNumber());
+                    return new RunIdentifier("#StackOverflowError#", build.getNumber());
                 }
             }
         }

@@ -1,0 +1,40 @@
+jenkins:
+  systemMessage: "Configured automatically with JCasC plugin"
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+  labelString: flyweight
+  mode: EXCLUSIVE
+  numExecutors: 5
+  remotingSecurity:
+    enabled: false
+  scmCheckoutRetryCount: 2
+  nodes:
+  - permanent:
+      labelString: "local"
+      launcher:
+        jnlp:
+          workDirSettings:
+            disabled: true
+            failIfWorkDirIsMissing: false
+            internalDir: "remoting"
+            workDirPath: "/tmp"
+      name: "local"
+      numExecutors: 2
+      remoteFS: "/tmp"
+      retentionStrategy: "always"
+unclassified:
+  openTelemetry:
+    authentication: "noAuthentication"
+    endpoint: "http://otel-collector:4317"
+    exportOtelConfigurationAsEnvironmentVariables: true  # Note that OpenTelemetry credentials, if configured, will be exposed as environment variables
+    observabilityBackends:
+    - elastic:
+        kibanaBaseUrl: "http://localhost:5601"
+        name: "Elastic Observability"
+jobs:
+  - file: "/var/jenkins_home/config/ansible.dsl"
+  - file: "/var/jenkins_home/config/gradle.dsl"
+  - file: "/var/jenkins_home/config/maven.dsl"
+  - file: "/var/jenkins_home/config/otel-cli.dsl"
+  - file: "/var/jenkins_home/config/otel-cli-make.dsl"

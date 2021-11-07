@@ -18,7 +18,6 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.metrics.common.Labels;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
@@ -63,25 +62,25 @@ public class MonitoringComputerListener extends ComputerListener {
                 LOGGER.log(Level.FINE, () -> "Resources for Jenkins Controller computer " + controllerComputer + ": " + openTelemetryAttributesAction);
                 controllerComputer.addAction(openTelemetryAttributesAction);
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING,  "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
+                LOGGER.log(Level.WARNING, "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
             }
         }
-        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
-                .setUpdater(longResult -> longResult.observe(this.getOfflineAgentsCount(), Labels.empty()))
-                .setDescription("Number of offline agents")
-                .setUnit("1")
-                .build();
-        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
-                .setUpdater(longResult -> longResult.observe(this.getOnlineAgentsCount(), Labels.empty()))
-                .setDescription("Number of online agents")
-                .setUnit("1")
-                .build();
-        meter.longValueObserverBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
-                .setUpdater(longResult -> longResult.observe(this.getAgentsCount(), Labels.empty()))
-                .setDescription("Number of agents")
-                .setUnit("1")
-                .build();
-        failureAgentCounter = meter.longCounterBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
+        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
+            .ofLongs()
+            .setDescription("Number of offline agents")
+            .setUnit("1")
+            .buildWithCallback(valueObserver -> valueObserver.observe(this.getOfflineAgentsCount()));
+        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
+            .ofLongs()
+            .setDescription("Number of online agents")
+            .setUnit("1")
+            .buildWithCallback(valueObserver -> valueObserver.observe(this.getOnlineAgentsCount()));
+        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
+            .ofLongs()
+            .setDescription("Number of agents")
+            .setUnit("1")
+            .buildWithCallback(valueObserver -> valueObserver.observe(this.getAgentsCount()));
+        failureAgentCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
             .setDescription("Number of ComputerLauncher failures")
             .setUnit("1")
             .build();
@@ -94,6 +93,7 @@ public class MonitoringComputerListener extends ComputerListener {
         }
         return Arrays.stream(jenkins.getComputers()).filter(computer -> computer.isOffline()).count();
     }
+
     private long getOnlineAgentsCount() {
         final Jenkins jenkins = Jenkins.getInstanceOrNull();
         if (jenkins == null) {
@@ -101,6 +101,7 @@ public class MonitoringComputerListener extends ComputerListener {
         }
         return Arrays.stream(jenkins.getComputers()).filter(computer -> computer.isOnline()).count();
     }
+
     private long getAgentsCount() {
         final Jenkins jenkins = Jenkins.getInstanceOrNull();
         if (jenkins == null) {
@@ -133,13 +134,21 @@ public class MonitoringComputerListener extends ComputerListener {
         @Override
         public Map<String, String> call() throws IOException {
             Map<String, String> attributes = new HashMap<>();
-
-            InetAddress localHost = InetAddress.getLocalHost();
-            if (localHost.isLoopbackAddress()) {
-                // we have a problem, we want another network interface
+            try {
+                InetAddress localHost = InetAddress.getLocalHost();
+                if (localHost.isLoopbackAddress()) {
+                    // we have a problem, we want another network interface
+                }
+                attributes.put(ResourceAttributes.HOST_NAME.getKey(), localHost.getHostName());
+                attributes.put("host.ip", localHost.getHostAddress());
+            } catch (IOException e) {
+                // as this code will go through Jenkins remoting, test isLoggable before transferring data
+                if (LOGGER.isLoggable(Level.FINER)) {
+                    MonitoringComputerListener.LOGGER.log(Level.FINER, "Exception retrieving the build agent host details", e);
+                } else if (LOGGER.isLoggable(Level.FINE)) {
+                    MonitoringComputerListener.LOGGER.log(Level.FINE, () -> "Exception retrieving the build agent host details " + e.getMessage());
+                }
             }
-            attributes.put(ResourceAttributes.HOST_NAME.getKey(), localHost.getHostName());
-            attributes.put("host.ip", localHost.getHostAddress());
             return attributes;
         }
     }
