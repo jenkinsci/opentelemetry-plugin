@@ -15,9 +15,9 @@ public interface CauseHandler {
 
     boolean canAddAttributes(@Nonnull Cause cause);
 
+    /**
+     * Machine-readable description of the cause like "UserIdCause:anonymous"...
+     */
     @Nonnull
-    String getDescription();
-
-    @Nonnull
-    String getXxx();
+    String getStructuredDescription();
 }
