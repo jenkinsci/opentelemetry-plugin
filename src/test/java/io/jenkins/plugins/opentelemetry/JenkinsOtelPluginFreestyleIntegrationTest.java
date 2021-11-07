@@ -29,6 +29,7 @@ import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
@@ -156,8 +157,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_XXX), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_DESCRIPTION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE), CoreMatchers.is(Arrays.asList("UserIdCause:SYSTEM")));
     }
 
     @Test

@@ -14,14 +14,12 @@ import javax.annotation.Nonnull;
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class AbstractCauseHandler implements CauseHandler {
 
-    private String description;
-    private String xxx;
+    private String structuredDescription;
 
     @Override
     public boolean canAddAttributes(@Nonnull Cause cause) {
         if (isSupported(cause)) {
-            setDescription(cause.getShortDescription());
-            setXxx(cause.getClass().getSimpleName() + getDetails(cause));
+            setStructuredDescription(cause.getClass().getSimpleName() + getDetails(cause));
             return true;
         }
         return false;
@@ -34,26 +32,20 @@ public class AbstractCauseHandler implements CauseHandler {
 
     @Nonnull
     @Override
-    public String getDescription() {
-        return this.description;
+    public String getStructuredDescription() {
+        return this.structuredDescription;
     }
 
+    /**
+     * @return Empty or prefixed by ":"
+     */
     @Nonnull
-    @Override
-    public String getXxx() {
-        return this.xxx;
-    }
-
     public String getDetails(@Nonnull Cause cause) {
         return "";
     }
 
-    protected void setDescription(String description) {
-        this.description = description;
-    }
-
-    protected void setXxx(String xxx) {
-        this.xxx = xxx;
+    protected void setStructuredDescription(String xxx) {
+        this.structuredDescription = xxx;
     }
 
     protected boolean isGitHubPushCause(Cause cause) {

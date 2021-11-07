@@ -137,21 +137,18 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
         // CAUSES
         if (!run.getCauses().isEmpty()) {
-            List<String> causeXxx = new ArrayList<>();
-            List<String> causeDescriptions = new ArrayList<>();
+            List<String> causesDescriptions = new ArrayList<>();
 
             run.getCauses()
                 .stream()
                 .forEach( cause -> {
                     for (CauseHandler stepHandler : ExtensionList.lookup(CauseHandler.class)) {
                         if (stepHandler.canAddAttributes((Cause) cause)) {
-                            causeDescriptions.add(stepHandler.getDescription());
-                            causeXxx.add(stepHandler.getXxx());
+                            causesDescriptions.add(stepHandler.getStructuredDescription());
                         }
                     }
                 });
-            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_XXX, causeXxx);
-            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE_DESCRIPTION, causeDescriptions);
+            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE, causesDescriptions);
         }
 
         // START ROOT SPAN
