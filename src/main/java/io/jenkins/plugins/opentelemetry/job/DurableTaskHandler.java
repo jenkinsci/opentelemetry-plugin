@@ -32,7 +32,7 @@ public class DurableTaskHandler implements StepHandler {
 
     @Nonnull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull  WorkflowRun run, @Nonnull Tracer tracer) throws Exception {
+    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull  WorkflowRun run, @Nonnull Tracer tracer) {
         final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
         final String displayFunctionName = node.getDisplayFunctionName();
         final String label = Objects.toString(arguments.get("label"), null);

@@ -12,17 +12,17 @@ import jenkins.YesNoMaybe;
 import javax.annotation.Nonnull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
-public class GitLabWebHookCauseHandler extends AbstractCauseHandler {
+public class GitLabWebHookCauseHandler implements CauseHandler  {
 
     @Override
     public boolean isSupported(@Nonnull Cause cause) {
-        return isGitLabWebHookCause(cause);
+        return cause instanceof com.dabsquared.gitlabjenkins.cause.GitLabWebHookCause;
     }
 
     @Override
-    public String getDetails(@Nonnull Cause cause)  {
+    public String getStructuredDescription(@Nonnull Cause cause)  {
         // https://github.com/jenkinsci/gitlab-plugin/blob/master/src/main/resources/com/dabsquared/gitlabjenkins/cause/Messages.properties#L2
         String id = cause.getShortDescription().replaceAll(".* by ", "");
-        return ":" + id;
+        return cause.getClass().getSimpleName()  + ":" + id;
     }
 }

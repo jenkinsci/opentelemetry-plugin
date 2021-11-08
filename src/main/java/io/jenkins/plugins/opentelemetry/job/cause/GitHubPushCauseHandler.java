@@ -12,17 +12,21 @@ import jenkins.YesNoMaybe;
 import javax.annotation.Nonnull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
-public class GitHubPushCauseHandler extends AbstractCauseHandler {
+public class GitHubPushCauseHandler implements CauseHandler {
 
     @Override
     public boolean isSupported(@Nonnull Cause cause) {
         return isGitHubPushCause(cause);
     }
 
+    protected boolean isGitHubPushCause(Cause cause) {
+        return cause instanceof com.cloudbees.jenkins.GitHubPushCause;
+    }
+
     @Override
-    public String getDetails(@Nonnull Cause cause)  {
+    public String getStructuredDescription(@Nonnull Cause cause)  {
         // https://github.com/jenkinsci/github-plugin/blob/master/src/main/java/com/cloudbees/jenkins/GitHubPushCause.java#L39
         String id = cause.getShortDescription().replaceAll(".* by ", "");
-        return ":" + id;
+        return cause.getClass().getSimpleName()  + ":" + id;
     }
 }

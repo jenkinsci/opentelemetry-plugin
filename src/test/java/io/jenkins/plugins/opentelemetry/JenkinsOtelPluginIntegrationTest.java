@@ -278,6 +278,43 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    public void testChainOfPipelines() throws Exception {
+        final Node node = jenkinsRule.createOnlineSlave();
+
+        String childPipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+            "node() {\n" +
+            "    stage('child-pipeline') {\n" +
+            "       echo 'child-pipeline' \n" +
+            "    }\n" +
+            "}";
+        WorkflowJob childPipeline = jenkinsRule.createProject(WorkflowJob.class, "child-pipeline-" + jobNameSuffix.incrementAndGet());
+        childPipeline.setDefinition(new CpsFlowDefinition(childPipelineScript, true));
+
+        String parentPipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+            "node() {\n" +
+            "    stage('trigger-child-pipeline') {\n" +
+            "       build '" + childPipeline.getName() + "' \n" +
+            "    }\n" +
+            "}";
+
+        WorkflowJob parentPipeline = jenkinsRule.createProject(WorkflowJob.class, "parent-pipeline-" + jobNameSuffix.incrementAndGet());
+        parentPipeline.setDefinition(new CpsFlowDefinition(parentPipelineScript, true));
+        WorkflowRun parentBuild = jenkinsRule.assertBuildStatus(Result.SUCCESS, parentPipeline.scheduleBuild2(0));
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans,
+            "Stage: child-pipeline",
+            JenkinsOtelSemanticAttributes.AGENT_UI,
+            "Phase: Run",
+            childPipeline.getName(), // child pipeline execution
+            "build: " + childPipeline.getName(),
+            "Stage: trigger-child-pipeline",
+            JenkinsOtelSemanticAttributes.AGENT_UI,
+            "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(15L));
+    }
+
+    @Test
     public void testPipelineWithParallelStep() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +

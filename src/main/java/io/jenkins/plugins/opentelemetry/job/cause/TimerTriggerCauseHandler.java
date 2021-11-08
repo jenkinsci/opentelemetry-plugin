@@ -13,7 +13,7 @@ import jenkins.YesNoMaybe;
 import javax.annotation.Nonnull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
-public class TimerTriggerCauseHandler extends AbstractCauseHandler {
+public class TimerTriggerCauseHandler implements CauseHandler {
 
     @Override
     public boolean isSupported(@Nonnull Cause cause) {

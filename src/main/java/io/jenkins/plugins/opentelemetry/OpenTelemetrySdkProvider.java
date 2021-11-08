@@ -140,6 +140,7 @@ public class OpenTelemetrySdkProvider {
 
         this.openTelemetrySdk = null;
         this.openTelemetry = OpenTelemetry.noop();
+        GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
         GlobalOpenTelemetry.set(OpenTelemetry.noop());
         if (this.tracer == null) {
             this.tracer = new TracerDelegate(OpenTelemetry.noop().getTracer("noop"));

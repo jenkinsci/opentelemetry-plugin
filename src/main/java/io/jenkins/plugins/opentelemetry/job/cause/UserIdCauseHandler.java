@@ -12,23 +12,21 @@ import jenkins.YesNoMaybe;
 import javax.annotation.Nonnull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
-public class UserIdCauseHandler extends AbstractCauseHandler {
+public class UserIdCauseHandler implements CauseHandler {
 
     @Override
     public boolean isSupported(@Nonnull Cause cause) {
         return (cause instanceof Cause.UserIdCause);
     }
 
-    private Cause.UserIdCause getCause(@Nonnull Cause cause) {
-        return ((Cause.UserIdCause) cause);
-    }
-
+    @Nonnull
     @Override
-    public String getDetails(@Nonnull Cause cause)  {
-        String id = getCause(cause).getUserId();
+    public String getStructuredDescription(@Nonnull Cause cause) {
+        Cause.UserIdCause userIdCause = (Cause.UserIdCause) cause;
+        String id = userIdCause.getUserId();
         if (id == null) {
-            id = getCause(cause).getUserName();
+            id = userIdCause.getUserName();
         }
-        return ":" + id;
+        return cause.getClass().getSimpleName() + ":" + id;
     }
 }
