@@ -15,6 +15,11 @@ import javax.annotation.Nonnull;
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class SCMTriggerCauseHandler implements CauseHandler {
 
+    public SCMTriggerCauseHandler() throws ClassNotFoundException {
+        // verify the class is available to force the contract `@Extension(optional = true)`
+        Class.forName(SCMTrigger.SCMTriggerCause.class.getName());
+    }
+
     @Override
     public boolean isSupported(@Nonnull Cause cause) {
         return cause instanceof SCMTrigger.SCMTriggerCause;

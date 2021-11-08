@@ -14,9 +14,14 @@ import javax.annotation.Nonnull;
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class UserIdCauseHandler implements CauseHandler {
 
+    public UserIdCauseHandler() throws ClassNotFoundException {
+        // verify the class is available to force the contract `@Extension(optional = true)`
+        Class.forName(Cause.UserIdCause.class.getName());
+    }
+
     @Override
     public boolean isSupported(@Nonnull Cause cause) {
-        return (cause instanceof Cause.UserIdCause);
+        return cause instanceof Cause.UserIdCause;
     }
 
     @Nonnull
