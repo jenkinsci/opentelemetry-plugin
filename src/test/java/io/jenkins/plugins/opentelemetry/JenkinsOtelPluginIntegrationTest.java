@@ -11,6 +11,7 @@ import hudson.Functions;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.job.JunitAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
@@ -399,4 +400,22 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(2L));
     }
 
+    @Test
+    public void testJunitPipeline() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+
+        String pipelineScript = "node() {\n" +
+            "    stage('ze-stage1') {\n" +
+            "       junit(allowEmptyResults: true, testResults: 'junit-*.xml') \n" +
+            "    }\n" +
+            "}";
+        final Node agent = jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-junit-pipeline-" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        JunitAction action = build.getAction(JunitAction.class);
+        MatcherAssert.assertThat(action.getAttributes().get("foo"), CoreMatchers.is(CoreMatchers.notNullValue()));
+    }
 }
