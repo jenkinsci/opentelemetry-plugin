@@ -401,7 +401,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    public void testJunitPipeline() throws Exception {
+    public void testPipelineWithJunitStep() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
         String pipelineScript = "node() {\n" +
@@ -415,6 +415,11 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "junit", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+
         JunitAction action = build.getAction(JunitAction.class);
         // TODO: Verify attributes are properly passed
         MatcherAssert.assertThat(action.getAttributes().size(), CoreMatchers.is(1));
