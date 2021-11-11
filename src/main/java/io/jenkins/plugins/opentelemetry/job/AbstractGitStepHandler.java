@@ -48,7 +48,7 @@ public abstract class AbstractGitStepHandler implements StepHandler {
      */
     @VisibleForTesting
     @Nonnull
-    public SpanBuilder createSpanBuilder(@Nonnull String gitUrl, @Nullable String gitBranch, @Nullable String credentialsId, @Nonnull String stepFunctionName, @Nonnull Tracer tracer, @Nonnull WorkflowRun run) throws URISyntaxException {
+    public SpanBuilder createSpanBuilder(@Nonnull String gitUrl, @Nullable String gitBranch, @Nullable String credentialsId, @Nonnull String stepFunctionName, @Nonnull Tracer tracer, @Nonnull WorkflowRun run) {
         String gitUserName = searchGitUserName(credentialsId, run);
         return createSpanBuilderFromGitDetails(gitUrl, gitBranch, gitUserName, stepFunctionName, tracer);
     }
@@ -57,8 +57,13 @@ public abstract class AbstractGitStepHandler implements StepHandler {
      * Visible for testing. User {@link #createSpanBuilder(String, String, String, String, Tracer, WorkflowRun)} instead of this method
      */
     @VisibleForTesting
-    protected SpanBuilder createSpanBuilderFromGitDetails(@Nullable String gitUrl, @Nullable String gitBranch, @Nullable String gitUserName, @Nonnull String stepFunctionName, @Nonnull Tracer tracer) throws URISyntaxException {
-        URIish gitUri = new URIish(gitUrl);
+    protected SpanBuilder createSpanBuilderFromGitDetails(@Nullable String gitUrl, @Nullable String gitBranch, @Nullable String gitUserName, @Nonnull String stepFunctionName, @Nonnull Tracer tracer) {
+        URIish gitUri;
+        try {
+            gitUri = new URIish(gitUrl);
+        } catch (URISyntaxException e) {
+            return tracer.spanBuilder(stepFunctionName);
+        }
         String host = gitUri.getHost();
         String gitRepositoryPath = normalizeGitRepositoryPath(gitUri);
 
