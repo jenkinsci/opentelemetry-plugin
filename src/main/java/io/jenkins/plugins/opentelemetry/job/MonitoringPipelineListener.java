@@ -20,6 +20,7 @@ import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.FlowNodeContextKey;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
+import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
@@ -56,9 +57,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -195,7 +194,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             Span atomicStepSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
             try (Scope ignored2 = atomicStepSpan.makeCurrent()) {
-                stepHandler.enrichContext(node, run);
+                stepHandler.afterSpanCreated(node, run);
             }
             getTracerService().putSpan(run, atomicStepSpan, node);
         }

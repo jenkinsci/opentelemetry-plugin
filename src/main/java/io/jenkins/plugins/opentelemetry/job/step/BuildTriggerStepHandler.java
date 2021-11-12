@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.job;
+package io.jenkins.plugins.opentelemetry.job.step;
 
 import hudson.Extension;
+import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
@@ -44,7 +45,7 @@ public class BuildTriggerStepHandler implements StepHandler {
     }
 
     @Override
-    public void enrichContext(StepAtomNode node, WorkflowRun run) {
+    public void afterSpanCreated(StepAtomNode node, WorkflowRun run) {
         Map<String, String> context = new HashMap<>();
         MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
         W3CTraceContextPropagator.getInstance().inject(Context.current(), context, (carrier, key, value) -> carrier.put(key, value));
