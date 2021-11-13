@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.job;
+package io.jenkins.plugins.opentelemetry.job.step;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;

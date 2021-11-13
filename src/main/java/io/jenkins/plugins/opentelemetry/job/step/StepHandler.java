@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.job;
+package io.jenkins.plugins.opentelemetry.job.step;
 
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -35,7 +36,11 @@ public interface StepHandler extends Comparable<StepHandler> {
         }
     }
 
-    default void enrichContext(StepAtomNode node, WorkflowRun run) {
-
-    }
+    /**
+     * Invoked after the {@link io.opentelemetry.api.trace.Span} has been created using the {@link SpanBuilder} created by
+     * {@link #createSpanBuilder(FlowNode, WorkflowRun, Tracer)}.
+     *
+     * The created {@link io.opentelemetry.api.trace.Span} can be retrieved using {@link io.opentelemetry.api.trace.Span#current()}
+     */
+    default void afterSpanCreated(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {}
 }
