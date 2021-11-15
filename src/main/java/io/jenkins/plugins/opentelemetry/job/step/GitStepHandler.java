@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.job;
+package io.jenkins.plugins.opentelemetry.job.step;
 
 import hudson.Extension;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -37,7 +37,7 @@ public class GitStepHandler extends AbstractGitStepHandler {
 
     @Nonnull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer) throws Exception {
+    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer) {
         final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
         final String gitUrl = checkNotNull(arguments.get("url")).toString();
         final String gitBranch = Objects.toString(arguments.get("branch"), null);

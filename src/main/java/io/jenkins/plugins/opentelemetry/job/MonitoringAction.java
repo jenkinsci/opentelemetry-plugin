@@ -10,12 +10,14 @@ import hudson.model.Action;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.*;
@@ -26,6 +28,8 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
 
     final String traceId;
     final String spanId;
+    Map<String, Map<String, String>> contextPerNodeId = new HashMap<>();
+
     SpanNamingStrategy spanNamingStrategy;
     transient Run run;
     transient JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
@@ -75,6 +79,21 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
 
     public String getSpanId() {
         return spanId;
+    }
+
+    /**
+     * Add per {@link FlowNode} contextual information.
+     */
+    public void addContext(@Nonnull FlowNode node, @Nonnull Map<String, String> context) {
+        if (contextPerNodeId == null) {
+            contextPerNodeId = new HashMap<>();
+        }
+        contextPerNodeId.put(node.getId(), context);
+    }
+
+    @CheckForNull
+    public Map<String, String> getContext(@Nonnull String flowNodeId) {
+        return contextPerNodeId.get(flowNodeId);
     }
 
     @Nonnull

@@ -12,19 +12,21 @@ import jenkins.YesNoMaybe;
 import javax.annotation.Nonnull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
-public class RemoteCauseHandler extends AbstractCauseHandler {
+public class RemoteCauseHandler implements CauseHandler {
+
+    public RemoteCauseHandler() throws ClassNotFoundException {
+        // verify the class is available to force the contract `@Extension(optional = true)`
+        Class.forName(Cause.RemoteCause.class.getName());
+    }
 
     @Override
     public boolean isSupported(@Nonnull Cause cause) {
         return (cause instanceof Cause.RemoteCause);
     }
 
-    private Cause.RemoteCause getCause(@Nonnull Cause cause) {
-        return ((Cause.RemoteCause) cause);
-    }
-
     @Override
-    public String getDetails(@Nonnull Cause cause)  {
-        return ":" + getCause(cause).getAddr();
+    public String getStructuredDescription(@Nonnull Cause cause) {
+        Cause.RemoteCause remoteCause = (Cause.RemoteCause) cause;
+        return cause.getClass().getSimpleName() + ":" + remoteCause.getAddr();
     }
 }

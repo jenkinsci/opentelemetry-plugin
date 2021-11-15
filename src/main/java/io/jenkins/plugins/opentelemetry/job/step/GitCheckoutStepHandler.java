@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.job;
+package io.jenkins.plugins.opentelemetry.job.step;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
@@ -76,7 +76,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
 
     @Nonnull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer) throws Exception {
+    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer) {
         final Map<String, ?> rootArguments = ArgumentsAction.getFilteredArguments(node);
         final String stepFunctionName = node.getDisplayFunctionName();
         LOGGER.log(Level.FINE, () -> stepFunctionName + " - begin " + rootArguments);
@@ -152,7 +152,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
         }
     }
 
-    private SpanBuilder addCloneAttributes(@Nonnull SpanBuilder spanBuilder, @Nonnull boolean shallow, @Nonnull int depth) throws Exception {
+    private SpanBuilder addCloneAttributes(@Nonnull SpanBuilder spanBuilder, @Nonnull boolean shallow, @Nonnull int depth) {
         return spanBuilder
             .setAttribute(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH, (long) depth)
             .setAttribute(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW, shallow);
