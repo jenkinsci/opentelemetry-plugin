@@ -8,7 +8,12 @@ package io.jenkins.plugins.opentelemetry.job.step;
 import hudson.Extension;
 import hudson.tasks.junit.pipeline.JUnitResultsStep;
 import io.jenkins.plugins.opentelemetry.job.JunitAction;
+import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Context;
 import jenkins.YesNoMaybe;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -17,15 +22,24 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Customization of spans for {@code junit} step.
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
-public class JunitTaskHandler extends DefaultStepHandler {
+public class JunitTaskHandler implements StepHandler {
+    private final static Logger LOGGER = Logger.getLogger(JunitTaskHandler.class.getName());
     @Override
     public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
         return flowNode instanceof StepAtomNode && ((StepAtomNode) flowNode).getDescriptor() instanceof JUnitResultsStep.DescriptorImpl;
+    }
+
+    @Nonnull
+    @Override
+    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer) {
+        return tracer.spanBuilder(node.getDisplayFunctionName());
     }
 
     @Override
@@ -36,6 +50,12 @@ public class JunitTaskHandler extends DefaultStepHandler {
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {
             junitAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
         }
+
+        Map<String, String> context = new HashMap<>();
+        MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
+        W3CTraceContextPropagator.getInstance().inject(Context.current(), context, (carrier, key, value) -> carrier.put(key, value));
+        context.forEach( (key, value) -> junitAction.getAttributes().put(AttributeKey.stringKey(key), value));
+        LOGGER.log(Level.INFO, context.toString());
         run.addAction(junitAction);
     }
 }
