@@ -20,15 +20,13 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Customization of spans for {@code junit} step.
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class JunitTaskHandler implements StepHandler {
-    private final static Logger LOGGER = Logger.getLogger(JunitTaskHandler.class.getName());
+
     @Override
     public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
         return flowNode instanceof StepAtomNode && ((StepAtomNode) flowNode).getDescriptor() instanceof JUnitResultsStep.DescriptorImpl;
@@ -50,7 +48,7 @@ public class JunitTaskHandler implements StepHandler {
         }
 
         MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-        monitoringAction.getAttributes().forEach((name, value) -> junitAction.getAttributes().put(name, value));
+        monitoringAction.getAttributes().forEach((name, value) -> junitAction.getAttributes().put(AttributeKey.stringKey(name), value));
         run.addAction(junitAction);
     }
 }

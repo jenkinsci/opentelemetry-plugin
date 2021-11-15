@@ -25,7 +25,6 @@ import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstra
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
@@ -201,15 +200,14 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         Span rootSpan = rootSpanBuilder.startSpan();
         String traceId = rootSpan.getSpanContext().getTraceId();
         String spanId = rootSpan.getSpanContext().getSpanId();
-        Map<String, String> map = new HashMap<>();
-        attributes.forEach( (key, value) map.put(AttributeKey.stringKey(key), (String) value));
-        for (Map.Entry<AttributeKey, Object> attribute : attributes.asMap()) {
-            openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
-        }
-        for (Map.Entry<String, String> attribute : attributes.asMap()) {
-            openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
-        }
-        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId, attributes);
+        Map<String, String> attrMap = new HashMap<>();
+        attributes.forEach((key, value) -> {
+                if (value instanceof String) {
+                    attrMap.put(String.valueOf(key), (String) value);
+                }
+            }
+        );
+        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId, attrMap);
         run.addAction(monitoringAction);
 
         this.getTraceService().putSpan(run, rootSpan);

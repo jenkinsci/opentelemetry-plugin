@@ -9,9 +9,8 @@ import hudson.ExtensionList;
 import hudson.model.Action;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
-import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
-import io.opentelemetry.api.common.Attributes;
+import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
@@ -20,7 +19,13 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.LastBuildAction {

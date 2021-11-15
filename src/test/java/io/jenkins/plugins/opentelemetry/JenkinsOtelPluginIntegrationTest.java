@@ -458,7 +458,6 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         JunitAction action = build.getAction(JunitAction.class);
-        // TODO: Verify attributes are properly passed
-        MatcherAssert.assertThat(action.getAttributes().size(), CoreMatchers.is(1));
+        MatcherAssert.assertThat(action.getAttributes().get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.WORKFLOW));
     }
 }
