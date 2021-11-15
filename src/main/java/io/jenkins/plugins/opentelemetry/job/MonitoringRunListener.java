@@ -200,14 +200,15 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         Span rootSpan = rootSpanBuilder.startSpan();
         String traceId = rootSpan.getSpanContext().getTraceId();
         String spanId = rootSpan.getSpanContext().getSpanId();
-        Map<String, String> attrMap = new HashMap<>();
-        attributes.forEach((key, value) -> {
-                if (value instanceof String) {
-                    attrMap.put(String.valueOf(key), (String) value);
-                }
-            }
+        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId, attributes.asMap()
+            .entrySet()
+            .stream()
+            .filter((v) -> v.getValue() instanceof String)
+            .collect(Collectors.toMap(
+                e -> String.valueOf(e.getKey()),
+                e -> String.valueOf(e.getValue()))
+            )
         );
-        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId, attrMap);
         run.addAction(monitoringAction);
 
         this.getTraceService().putSpan(run, rootSpan);
