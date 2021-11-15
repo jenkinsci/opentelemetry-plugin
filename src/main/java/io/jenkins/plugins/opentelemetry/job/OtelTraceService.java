@@ -138,11 +138,11 @@ public class OtelTraceService {
     @Nonnull
     private Iterable<FlowNode> getAncestors(FlowNode flowNode) {
         // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
-        LOGGER.log(Level.FINEST, () -> "> getAncestors([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + "," + flowNode.getDisplayFunctionName() + "])");
+        LOGGER.log(Level.FINEST, () -> "> getAncestors([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "'])");
         List<FlowNode> ancestors = new ArrayList<>();
         buildListOfAncestors(flowNode, ancestors);
         // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
-        LOGGER.log(Level.FINEST, () -> "< getAncestors([" +  flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + "," + flowNode.getDisplayFunctionName() + "]): " + ancestors.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
+        LOGGER.log(Level.FINEST, () -> "< getAncestors([" +  flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "']): " + ancestors.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
         return ancestors;
     }
 
@@ -150,8 +150,8 @@ public class OtelTraceService {
         if (LOGGER.isLoggable(Level.FINEST)) {
             // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
             LOGGER.log(Level.FINEST, "buildListOfAncestors: [" + flowNode.getClass().getSimpleName() + ", " +
-                flowNode.getId() + ", " + flowNode.getDisplayFunctionName() + "]   -   " +
-                parents.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
+                flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "']   -   " +
+                parents.stream().map(fn -> "[" + fn.getId() + ", '" + fn.getDisplayFunctionName() + "']").collect(Collectors.joining(", ")));
         }
         parents.add(flowNode);
         if (flowNode instanceof StepEndNode) {
