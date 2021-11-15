@@ -136,7 +136,7 @@ public class OtelTraceService {
     }
 
     @Nonnull
-    private Iterable<FlowNode> getAncestors(FlowNode flowNode) {
+    private Iterable<FlowNode> getAncestors(@Nonnull FlowNode flowNode) {
         // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
         LOGGER.log(Level.FINEST, () -> "> getAncestors([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "'])");
         List<FlowNode> ancestors = new ArrayList<>();
