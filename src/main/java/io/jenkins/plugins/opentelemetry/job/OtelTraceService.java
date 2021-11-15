@@ -115,7 +115,7 @@ public class OtelTraceService {
             LOGGER.log(Level.FINE, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
             return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
         }
-        LOGGER.log(Level.FINEST, () -> "span: " + span.getSpanContext().getSpanId());
+        LOGGER.log(Level.FINEST, () -> "getSpan(): " + span.getSpanContext().getSpanId());
         return span;
     }
 
@@ -137,12 +137,22 @@ public class OtelTraceService {
 
     @Nonnull
     private Iterable<FlowNode> getAncestors(FlowNode flowNode) {
+        // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
+        LOGGER.log(Level.FINEST, () -> "> getAncestors([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + "," + flowNode.getDisplayFunctionName() + "])");
         List<FlowNode> ancestors = new ArrayList<>();
         buildListOfAncestors(flowNode, ancestors);
+        // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
+        LOGGER.log(Level.FINEST, () -> "< getAncestors([" +  flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + "," + flowNode.getDisplayFunctionName() + "]): " + ancestors.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
         return ancestors;
     }
 
     public void buildListOfAncestors(@Nonnull FlowNode flowNode, @Nonnull List<FlowNode> parents) {
+        if (LOGGER.isLoggable(Level.FINEST)) {
+            // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
+            LOGGER.log(Level.FINEST, "buildListOfAncestors: [" + flowNode.getClass().getSimpleName() + ", " +
+                flowNode.getId() + ", " + flowNode.getDisplayFunctionName() + "]   -   " +
+                parents.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
+        }
         parents.add(flowNode);
         if (flowNode instanceof StepEndNode) {
             StepEndNode endNode = (StepEndNode) flowNode;
