@@ -11,7 +11,7 @@ import hudson.Functions;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.job.JunitAction;
+import io.jenkins.plugins.opentelemetry.job.JUnitAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
@@ -457,7 +457,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "junit", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
-        JunitAction action = build.getAction(JunitAction.class);
+        JUnitAction action = build.getAction(JUnitAction.class);
         MatcherAssert.assertThat(action.getAttributes().get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.WORKFLOW));
     }
 }

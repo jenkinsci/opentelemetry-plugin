@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.job.step;
 
 import hudson.Extension;
 import hudson.tasks.junit.pipeline.JUnitResultsStep;
-import io.jenkins.plugins.opentelemetry.job.JunitAction;
+import io.jenkins.plugins.opentelemetry.job.JUnitAction;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -25,7 +25,7 @@ import java.util.Map;
  * Customization of spans for {@code junit} step.
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
-public class JunitTaskHandler implements StepHandler {
+public class JUnitTaskHandler implements StepHandler {
 
     @Override
     public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
@@ -40,7 +40,7 @@ public class JunitTaskHandler implements StepHandler {
 
     @Override
     public void afterSpanCreated(StepAtomNode node, WorkflowRun run) {
-        JunitAction junitAction = new JunitAction();
+        JUnitAction junitAction = new JUnitAction();
         Map<String, String> attributes = new HashMap<>();
         attributes.put("foo", "bar");
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {

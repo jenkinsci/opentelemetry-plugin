@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * @see AttributeKey
  * @see io.opentelemetry.api.common.AttributeType
  */
-public class JunitAction extends InvisibleAction {
+public class JUnitAction extends InvisibleAction {
 
     private transient Map<AttributeKey<?>, Object> attributes;
 
@@ -31,7 +31,7 @@ public class JunitAction extends InvisibleAction {
 
     @Override
     public String toString() {
-        return "JunitAction{" +
+        return "JUnitAction{" +
                 "attributes=" + getAttributes().entrySet().stream().map(e -> e.getKey().getKey() + "-" + e.getKey().getType() + " - " + e.getValue()).collect(Collectors.joining(", ")) +
                 '}';
     }
