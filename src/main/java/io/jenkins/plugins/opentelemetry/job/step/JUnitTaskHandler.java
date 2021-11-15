@@ -18,8 +18,6 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Customization of spans for {@code junit} step.
@@ -41,14 +39,10 @@ public class JUnitTaskHandler implements StepHandler {
     @Override
     public void afterSpanCreated(StepAtomNode node, WorkflowRun run) {
         JUnitAction junitAction = new JUnitAction();
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put("foo", "bar");
-        for (Map.Entry<String, String> attribute : attributes.entrySet()) {
-            junitAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
-        }
-
         MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-        monitoringAction.getAttributes().forEach((name, value) -> junitAction.getAttributes().put(AttributeKey.stringKey(name), value));
+        monitoringAction
+            .getAttributes()
+            .forEach((name, value) -> junitAction.getAttributes().put(AttributeKey.stringKey(name), value));
         run.addAction(junitAction);
     }
 }
