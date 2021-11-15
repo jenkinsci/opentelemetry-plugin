@@ -12,8 +12,6 @@ import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
-import io.opentelemetry.context.Context;
 import jenkins.YesNoMaybe;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -51,11 +49,8 @@ public class JunitTaskHandler implements StepHandler {
             junitAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
         }
 
-        Map<String, String> context = new HashMap<>();
         MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-        W3CTraceContextPropagator.getInstance().inject(Context.current(), context, (carrier, key, value) -> carrier.put(key, value));
-        context.forEach( (key, value) -> junitAction.getAttributes().put(AttributeKey.stringKey(key), value));
-        LOGGER.log(Level.INFO, context.toString());
+        monitoringAction.getAttributes().forEach((name, value) -> junitAction.getAttributes().put(name, value));
         run.addAction(junitAction);
     }
 }

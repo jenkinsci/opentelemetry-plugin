@@ -25,6 +25,9 @@ import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstra
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -43,6 +46,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -124,15 +128,15 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
         // TODO move this to a pluggable span enrichment API with implementations for different observability backends
         // Regarding the value `unknown`, see https://github.com/jenkinsci/opentelemetry-plugin/issues/51
-        rootSpanBuilder
-                .setAttribute(JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE, "unknown");
 
-        rootSpanBuilder
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, rootSpanName)
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, runUrl)
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
+        AttributesBuilder attrBuilders = Attributes.builder()
+                .put(JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE, "unknown")
+                .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, rootSpanName)
+                .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
+                .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, runUrl)
+                .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
+                .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
+
 
         // PARAMETERS
         ParametersAction parameters = run.getAction(ParametersAction.class);
@@ -152,14 +156,14 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                     nonNullParameterValues.add(Objects.toString(parameter.getValue(), "#NULL#"));
                 }
             }
-            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_NAME, parameterNames);
-            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE, parameterIsSensitive);
-            rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_VALUE, nonNullParameterValues);
+            attrBuilders.put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_NAME, parameterNames);
+            attrBuilders.put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE, parameterIsSensitive);
+            attrBuilders.put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_VALUE, nonNullParameterValues);
         }
 
         // CAUSES
         List<String> causesDescriptions = ((List<Cause>) run.getCauses()).stream().map(c -> getCauseHandler(c).getStructuredDescription(c)).collect(Collectors.toList());
-        rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE, causesDescriptions);
+        attrBuilders.put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE, causesDescriptions);
 
         if (!run.getCauses().isEmpty() && run.getCauses().get(0) instanceof BuildUpstreamCause) {
             BuildUpstreamCause buildUpstreamCause = (BuildUpstreamCause) run.getCauses().get(0);
@@ -190,12 +194,22 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 }
             }
         }
+        Attributes attributes = attrBuilders.build();
+        rootSpanBuilder.setAllAttributes(attributes);
 
         // START ROOT SPAN
         Span rootSpan = rootSpanBuilder.startSpan();
         String traceId = rootSpan.getSpanContext().getTraceId();
         String spanId = rootSpan.getSpanContext().getSpanId();
-        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId);
+        Map<String, String> map = new HashMap<>();
+        attributes.forEach( (key, value) map.put(AttributeKey.stringKey(key), (String) value));
+        for (Map.Entry<AttributeKey, Object> attribute : attributes.asMap()) {
+            openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
+        }
+        for (Map.Entry<String, String> attribute : attributes.asMap()) {
+            openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
+        }
+        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId, attributes);
         run.addAction(monitoringAction);
 
         this.getTraceService().putSpan(run, rootSpan);

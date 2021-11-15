@@ -11,10 +11,10 @@ import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.opentelemetry.api.common.Attributes;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import javax.annotation.CheckForNull;
@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 
 public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.LastBuildAction {
     private final static Logger LOGGER = Logger.getLogger(MonitoringAction.class.getName());
-
+    final Map<String, String> attributes;
     final String traceId;
     final String spanId;
     Map<String, Map<String, String>> contextPerNodeId = new HashMap<>();
@@ -35,8 +35,13 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
     transient JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
 
     public MonitoringAction(String traceId, String spanId) {
+        this(traceId, spanId, new HashMap<>());
+    }
+
+    public MonitoringAction(String traceId, String spanId, Map<String, String> attributes) {
         this.traceId = traceId;
         this.spanId = spanId;
+        this.attributes = attributes;
     }
 
     @Override
@@ -79,6 +84,10 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
 
     public String getSpanId() {
         return spanId;
+    }
+
+    public Map<String, String> getAttributes() {
+        return attributes;
     }
 
     /**
