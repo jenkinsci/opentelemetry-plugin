@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.LastBuildAction {
     private final static Logger LOGGER = Logger.getLogger(MonitoringAction.class.getName());
@@ -146,7 +147,8 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
                 "traceId='" + traceId + '\'' +
                 ", spanId='" + spanId + '\'' +
                 ", run='" + run + '\'' +
-                '}';
+                ", attributes='" + getAttributes().entrySet().stream().map(Map.Entry::getKey).collect(Collectors.joining(", ")) + '\'' +
+            '}';
     }
 
     public static class ObservabilityBackendLink {
