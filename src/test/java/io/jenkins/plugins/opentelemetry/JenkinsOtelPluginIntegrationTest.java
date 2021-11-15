@@ -457,7 +457,11 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "junit", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
+        // Validate the String attributes are populated to the JUnitAction
         JUnitAction action = build.getAction(JUnitAction.class);
         MatcherAssert.assertThat(action.getAttributes().get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.WORKFLOW));
+        MatcherAssert.assertThat(action.getAttributes().get(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME), CoreMatchers.is(jobName));
+        MatcherAssert.assertThat(action.getAttributes().get(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID), CoreMatchers.is(jobName));
+        MatcherAssert.assertThat(action.getAttributes().get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 }
