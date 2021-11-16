@@ -1,0 +1,2 @@
+io.opentelemetry.api.internal.ReadOnlyArrayMap
+io.opentelemetry.api.internal.InternalAttributeKeyImpl
