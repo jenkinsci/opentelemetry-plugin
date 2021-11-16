@@ -20,6 +20,15 @@ import java.util.stream.Collectors;
 public class JUnitAction extends InvisibleAction {
 
     private Map<AttributeKey<?>, Object> attributes;
+    private final String testResults;
+
+    public JUnitAction(String testResults) {
+        this.testResults = testResults;
+    }
+
+    public String getTestResults() {
+        return testResults;
+    }
 
     @Nonnull
     public Map<AttributeKey<?>, Object> getAttributes() {

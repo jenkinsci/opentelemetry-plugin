@@ -13,13 +13,16 @@ import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import jenkins.YesNoMaybe;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.TEST_STAGE_NAME;
 
 /**
@@ -43,7 +46,11 @@ public class JUnitTaskHandler implements StepHandler {
 
     @Override
     public void afterSpanCreated(StepAtomNode node, WorkflowRun run) {
-        JUnitAction junitAction = new JUnitAction();
+        // Gather the testResults argument
+        Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
+        String testResults = checkNotNull(arguments.get("testResults")).toString();
+
+        JUnitAction junitAction = new JUnitAction(testResults);
         MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
         monitoringAction
             .getAttributes()
