@@ -35,6 +35,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause;
 
 import javax.annotation.Nonnull;
@@ -133,6 +134,12 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, runUrl)
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
+
+        // CULPRITS
+        if (OtelUtils.isWorkflow(run)) {
+            rootSpanBuilder
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CULPRITS, ((WorkflowRun) run).getCulpritIds().stream().collect(Collectors.toList()));
+        }
 
         // PARAMETERS
         ParametersAction parameters = run.getAction(ParametersAction.class);
