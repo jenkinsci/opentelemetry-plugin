@@ -463,5 +463,6 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(action.getAttributes().get(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME), CoreMatchers.is(jobName));
         MatcherAssert.assertThat(action.getAttributes().get(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID), CoreMatchers.is(jobName));
         MatcherAssert.assertThat(action.getAttributes().get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(action.getAttributes().get(JenkinsOtelSemanticAttributes.TEST_STAGE_NAME), CoreMatchers.is("ze-stage1"));
     }
 }

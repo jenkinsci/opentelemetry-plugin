@@ -22,6 +22,8 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import org.jenkinsci.plugins.workflow.actions.LabelAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.graph.AtomNode;
@@ -29,6 +31,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -133,6 +136,19 @@ public class OtelTraceService {
         }
         LOGGER.log(Level.FINEST, () -> "span: " + span.getSpanContext().getSpanId());
         return span;
+    }
+
+    @Nullable
+    public String findStageParent(@Nonnull StepAtomNode flowNode) {
+        // TODO optimise lazy loading the list of ancestors just loading until w have found a span
+        Iterable<FlowNode> ancestors = getAncestors(flowNode);
+        for (FlowNode ancestor : ancestors) {
+            LabelAction labelAction = ancestor.getAction(LabelAction.class);
+            if (labelAction != null && ancestor instanceof StepStartNode) {
+                return labelAction.getDisplayName();
+            }
+        }
+        return null;
     }
 
     @Nonnull

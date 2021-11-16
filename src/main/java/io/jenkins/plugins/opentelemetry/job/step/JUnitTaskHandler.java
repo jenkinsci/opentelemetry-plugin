@@ -9,6 +9,7 @@ import hudson.Extension;
 import hudson.tasks.junit.pipeline.JUnitResultsStep;
 import io.jenkins.plugins.opentelemetry.job.JUnitAction;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
+import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import jenkins.YesNoMaybe;
@@ -17,12 +18,17 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
+
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.TEST_STAGE_NAME;
 
 /**
  * Customization of spans for {@code junit} step.
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class JUnitTaskHandler implements StepHandler {
+
+    private OtelTraceService otelTraceService;
 
     @Override
     public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
@@ -42,6 +48,17 @@ public class JUnitTaskHandler implements StepHandler {
         monitoringAction
             .getAttributes()
             .forEach((name, value) -> junitAction.getAttributes().put(name, value));
+
+        // Search for the Stage where the junit step run from.
+        String stageParent = this.otelTraceService.findStageParent(node);
+        if (stageParent != null) {
+            junitAction.getAttributes().put(TEST_STAGE_NAME, stageParent);
+        }
         run.addAction(junitAction);
+    }
+
+    @Inject
+    public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService) {
+        this.otelTraceService = otelTraceService;
     }
 }

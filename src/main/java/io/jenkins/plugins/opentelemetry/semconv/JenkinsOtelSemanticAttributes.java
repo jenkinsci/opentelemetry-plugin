@@ -113,5 +113,8 @@ public final class JenkinsOtelSemanticAttributes {
 
     public static final AttributeKey<String>        ELASTIC_TRANSACTION_TYPE = AttributeKey.stringKey("type");
 
-
+    /**
+     * The stage name for the executed test.
+     */
+    public static final AttributeKey<String>        TEST_STAGE_NAME = AttributeKey.stringKey("test.stage.name");
 }
