@@ -138,10 +138,8 @@ public class OtelTraceService {
     }
 
     @Nullable
-    public String findStageParent(@Nonnull StepAtomNode flowNode) {
-        // TODO optimise lazy loading the list of ancestors just loading until w have found a span
-        Iterable<FlowNode> ancestors = getAncestors(flowNode);
-        for (FlowNode ancestor : ancestors) {
+    public String findStageParent(@Nonnull final FlowNode flowNode) {
+        for(FlowNode ancestor : flowNode.iterateEnclosingBlocks()) {
             LabelAction labelAction = ancestor.getAction(LabelAction.class);
             if (labelAction != null && ancestor instanceof StepStartNode) {
                 return labelAction.getDisplayName();
