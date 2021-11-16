@@ -9,7 +9,6 @@ import hudson.Extension;
 import hudson.tasks.junit.pipeline.JUnitResultsStep;
 import io.jenkins.plugins.opentelemetry.job.JUnitAction;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import jenkins.YesNoMaybe;
@@ -42,7 +41,7 @@ public class JUnitTaskHandler implements StepHandler {
         MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
         monitoringAction
             .getAttributes()
-            .forEach((name, value) -> junitAction.getAttributes().put(AttributeKey.stringKey(name), value));
+            .forEach((name, value) -> junitAction.getAttributes().put(name, value));
         run.addAction(junitAction);
     }
 }

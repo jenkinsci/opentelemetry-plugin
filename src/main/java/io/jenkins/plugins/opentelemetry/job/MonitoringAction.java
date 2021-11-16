@@ -11,6 +11,7 @@ import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.opentelemetry.api.common.AttributeKey;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 
 public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.LastBuildAction {
     private final static Logger LOGGER = Logger.getLogger(MonitoringAction.class.getName());
-    final Map<String, String> attributes;
+    final Map<AttributeKey<?>, Object> attributes;
     final String traceId;
     final String spanId;
     Map<String, Map<String, String>> contextPerNodeId = new HashMap<>();
@@ -44,7 +45,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         this(traceId, spanId, new HashMap<>());
     }
 
-    public MonitoringAction(String traceId, String spanId, Map<String, String> attributes) {
+    public MonitoringAction(String traceId, String spanId, Map<AttributeKey<?>, Object> attributes) {
         this.traceId = traceId;
         this.spanId = spanId;
         this.attributes = attributes;
@@ -92,7 +93,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         return spanId;
     }
 
-    public Map<String, String> getAttributes() {
+    public Map<AttributeKey<?>, Object> getAttributes() {
         return attributes;
     }
 
@@ -147,7 +148,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
                 "traceId='" + traceId + '\'' +
                 ", spanId='" + spanId + '\'' +
                 ", run='" + run + '\'' +
-                ", attributes='" + getAttributes().entrySet().stream().map(Map.Entry::getKey).collect(Collectors.joining(", ")) + '\'' +
+                "attributes=" + getAttributes().entrySet().stream().map(e -> e.getKey().getKey() + "-" + e.getKey().getType() + " - " + e.getValue()).collect(Collectors.joining(", ")) +
             '}';
     }
 

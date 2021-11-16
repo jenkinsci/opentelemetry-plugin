@@ -45,7 +45,6 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -200,15 +199,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         Span rootSpan = rootSpanBuilder.startSpan();
         String traceId = rootSpan.getSpanContext().getTraceId();
         String spanId = rootSpan.getSpanContext().getSpanId();
-        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId, attributes.asMap()
-            .entrySet()
-            .stream()
-            .filter((v) -> v.getValue() instanceof String)
-            .collect(Collectors.toMap(
-                e -> String.valueOf(e.getKey()),
-                e -> String.valueOf(e.getValue()))
-            )
-        );
+        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId, attributes.asMap());
         run.addAction(monitoringAction);
 
         this.getTraceService().putSpan(run, rootSpan);
