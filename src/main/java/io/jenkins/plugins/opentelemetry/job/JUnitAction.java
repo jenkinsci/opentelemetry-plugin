@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  */
 public class JUnitAction extends InvisibleAction {
 
-    private transient Map<AttributeKey<?>, Object> attributes;
+    private Map<AttributeKey<?>, Object> attributes;
 
     @Nonnull
     public Map<AttributeKey<?>, Object> getAttributes() {
