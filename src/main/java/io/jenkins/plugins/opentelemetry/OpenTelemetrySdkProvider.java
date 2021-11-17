@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
@@ -158,18 +159,20 @@ public class OpenTelemetrySdkProvider {
     /**
      * see {@code Jenkins#computeVersion(javax.servlet.ServletContext)}
      */
+    @SuppressFBWarnings({"NP_LOAD_OF_KNOWN_NULL_VALUE", "RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE", "RCN_REDUNDANT_NULLCHECK_OF_NULL_VALUE"})
     @CheckForNull
     protected String getJenkinsVersion() {
-        Properties props = new Properties();
+        Properties properties = new Properties();
         try (InputStream is = Jenkins.class.getResourceAsStream("jenkins-version.properties")) {
             if (is == null) {
+                return null;
             } else {
-                props.load(is);
+                properties.load(is);
             }
         } catch (IOException e) {
             return null;
         }
-        String version = props.getProperty("version");
+        String version = properties.getProperty("version");
         if (version == null) {
             return null;
         } else if (version.equals("${project.version}")) {
