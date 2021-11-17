@@ -31,7 +31,11 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -42,7 +46,6 @@ import static com.google.common.base.Verify.verify;
 
 @Extension
 public class OtelTraceService {
-
     private static Logger LOGGER = Logger.getLogger(OtelTraceService.class.getName());
 
     private transient ConcurrentMap<RunIdentifier, RunSpans> spansByRun;
@@ -97,8 +100,8 @@ public class OtelTraceService {
         LOGGER.log(Level.FINEST, () -> "getSpan(" + run.getFullDisplayName() + ", FlowNode[name" + flowNode.getDisplayName() + ", function:" + flowNode.getDisplayFunctionName() + ", id=" + flowNode.getId() + "]) -  " + runSpans);
         LOGGER.log(Level.FINEST, () -> "parentFlowNodes: " + flowNode.getParents().stream().map(node -> node.getDisplayName() + ", id: " + node.getId()).collect(Collectors.toList()));
 
-        // TODO optimise lazy loading the list of ancestors just loading until w have found a span
         Iterable<FlowNode> ancestors = getAncestors(flowNode);
+
         for (FlowNode ancestor : ancestors) {
             final Collection<PipelineSpanContext> pipelineSpanContexts = runSpans.pipelineStepSpansByFlowNodeId.get(ancestor.getId());
             PipelineSpanContext pipelineSpanContext = Iterables.getLast(pipelineSpanContexts, null);
@@ -111,7 +114,7 @@ public class OtelTraceService {
             LOGGER.log(Level.FINE, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
             return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
         }
-        LOGGER.log(Level.FINEST, () -> "span: " + span.getSpanContext().getSpanId());
+        LOGGER.log(Level.FINEST, () -> "getSpan(): " + span.getSpanContext().getSpanId());
         return span;
     }
 
@@ -131,24 +134,66 @@ public class OtelTraceService {
         return span;
     }
 
+    /**
+     * Return the chain of enclosing flowNodes including the given flow node. If the given flow node is a step end node,
+     * the associated step start node is also added.
+     *
+     * Example
+     * <pre>
+     * test-pipeline-with-parallel-step8
+     *    |
+     *    |- Phase: Start
+     *    |
+     *    |- Phase: Run
+     *    |   |
+     *    |   |- Agent, function: node, name: agent, node.id: 3
+     *    |       |
+     *    |       |- Agent Allocation, function: node, name: agent.allocate, node.id: 3
+     *    |       |
+     *    |       |- Stage: ze-parallel-stage, function: stage, name: ze-parallel-stage, node.id: 6
+     *    |           |
+     *    |           |- Parallel branch: parallelBranch1, function: parallel, name: parallelBranch1, node.id: 10
+     *    |           |   |
+     *    |           |   |- shell-1, function: sh, name: Shell Script, node.id: 14
+     *    |           |
+     *    |           |- Parallel branch: parallelBranch2, function: parallel, name: parallelBranch2, node.id: 11
+     *    |           |   |
+     *    |           |   |- shell-2, function: sh, name: Shell Script, node.id: 16
+     *    |           |
+     *    |           |- Parallel branch: parallelBranch3, function: parallel, name: parallelBranch3, node.id: 12
+     *    |               |
+     *    |               |- shell-3, function: sh, name: Shell Script, node.id: 18
+     *    |
+     *    |- Phase: Finalise
+     * </pre>
+     *
+     * {@code getAncestors("shell-3/node.id: 18")} will return {@code [
+     *    "shell-3/node.id: 18",
+     *    "Parallel branch: parallelBranch3/node.id: 12",
+     *    "Stage: ze-parallel-stage, node.id: 6",
+     *    "node / node.id: 3",
+     *    "Start of Pipeline / node.id: 2" // not visualized above
+     *    ]}
+     * TODO optimize lazing loading the enclosing blocks using {@link org.jenkinsci.plugins.workflow.graph.GraphLookupView#findEnclosingBlockStart(org.jenkinsci.plugins.workflow.graph.FlowNode)}
+     * @param flowNode
+     * @return list of enclosing flow nodes starting with the passed flow nodes
+     */
     @Nonnull
-    private Iterable<FlowNode> getAncestors(FlowNode flowNode) {
+    private Iterable<FlowNode> getAncestors(@Nonnull final FlowNode flowNode) {
+        // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
+        LOGGER.log(Level.FINEST, () -> "> getAncestorsV2([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "'])");
         List<FlowNode> ancestors = new ArrayList<>();
-        buildListOfAncestors(flowNode, ancestors);
-        return ancestors;
-    }
-
-    public void buildListOfAncestors(@Nonnull FlowNode flowNode, @Nonnull List<FlowNode> parents) {
-        parents.add(flowNode);
+        FlowNode startNode;
         if (flowNode instanceof StepEndNode) {
-            StepEndNode endNode = (StepEndNode) flowNode;
-            final StepStartNode startNode = endNode.getStartNode();
-            parents.add(startNode);
-            flowNode = startNode;
+            startNode = ((StepEndNode) flowNode).getStartNode();
+        } else {
+            startNode = flowNode;
         }
-        for (FlowNode parentNode : flowNode.getParents()) {
-            buildListOfAncestors(parentNode, parents);
-        }
+        ancestors.add(startNode);
+        ancestors.addAll(startNode.getEnclosingBlocks());
+        // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
+        LOGGER.log(Level.FINEST, () -> "< getAncestorsV2([" +  flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "']): " + ancestors.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
+        return ancestors;
     }
 
     public void removePipelineStepSpan(@Nonnull Run run, @Nonnull FlowNode flowNode, @Nonnull Span span) {

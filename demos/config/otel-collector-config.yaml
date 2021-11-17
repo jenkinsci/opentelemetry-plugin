@@ -17,11 +17,13 @@ exporters:
 
   jaeger:
     endpoint: jaeger-all-in-one:14250
-    insecure: true
+    tls:
+      insecure: true
 
   otlp/elastic:
     endpoint: "apm-server:8200"
-    insecure: true
+    tls:
+      insecure: true
 
 processors:
   batch:
