@@ -44,9 +44,11 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -136,9 +138,16 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
 
         // CULPRITS
-        if (OtelUtils.isWorkflow(run)) {
+        Set<String> culpritIds = new HashSet<>(); ;
+        if (OtelUtils.isWorkflow(run) || OtelUtils.isMultibranch(run)) {
+            culpritIds = ((WorkflowRun) run).getCulpritIds();
+        }
+        if (run instanceof AbstractBuild && ((AbstractBuild) run).getCulprits().size() > 0) {
+            culpritIds = ((AbstractBuild) run).getCulpritIds();
+        }
+        if (culpritIds != null) {
             rootSpanBuilder
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CULPRITS, ((WorkflowRun) run).getCulpritIds().stream().collect(Collectors.toList()));
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CULPRITS, culpritIds.stream().collect(Collectors.toList()));
         }
 
         // PARAMETERS
