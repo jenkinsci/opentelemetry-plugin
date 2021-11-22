@@ -24,9 +24,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
+import org.jvnet.hudson.test.FailureBuilder;
+import org.jvnet.hudson.test.FakeChangeLogSCM;
 import org.jvnet.hudson.test.FlagRule;
 import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
+import org.jvnet.hudson.test.UnstableBuilder;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
 import java.util.Arrays;
@@ -189,5 +192,31 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     // See https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
     private Ant.AntInstallation configureDefaultAnt() throws Exception {
         return ToolInstallations.configureDefaultAnt(tmp);
+    }
+
+    @Test
+    public void testFreestyleJo_with_culprits() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        final String jobName = "test-freestyle-culprits-" + jobNameSuffix.incrementAndGet();
+        FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
+        FakeChangeLogSCM scm = new FakeChangeLogSCM();
+        project.setScm(scm);
+        scm.addChange().withAuthor("alice");
+        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Run", jobName);
+
+        // 2nd build
+        scm.addChange().withAuthor("bob");
+        project.getBuildersList().add(new FailureBuilder());
+        build = jenkinsRule.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(0).get());
+
+        spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Run", jobName);
+
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(4L));
+
+        assertFreestyleJobMetadata(build, spans);
     }
 }
