@@ -19,6 +19,7 @@ import hudson.model.ParametersAction;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.model.User;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
@@ -138,16 +139,17 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
 
         // CULPRITS
-        Set<String> culpritIds = new HashSet<>(); ;
+        Set<User> culpritIds = new HashSet<>(); ;
         if (OtelUtils.isWorkflow(run) || OtelUtils.isMultibranch(run)) {
-            culpritIds = ((WorkflowRun) run).getCulpritIds();
+            culpritIds = ((WorkflowRun) run).getCulprits();
         }
-        if (run instanceof AbstractBuild && ((AbstractBuild) run).getCulprits().size() > 0) {
-            culpritIds = ((AbstractBuild) run).getCulpritIds();
+        if (run instanceof AbstractBuild) {
+            culpritIds = ((AbstractBuild) run).getCulprits();
         }
         if (culpritIds != null) {
             rootSpanBuilder
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CULPRITS, culpritIds.stream().collect(Collectors.toList()));
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CULPRITS,
+                    culpritIds.stream().map(p -> p.getId()).collect(Collectors.toList()));
         }
 
         // PARAMETERS

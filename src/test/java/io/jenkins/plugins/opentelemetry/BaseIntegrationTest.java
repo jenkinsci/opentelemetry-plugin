@@ -153,6 +153,10 @@ public class BaseIntegrationTest {
     }
 
     protected Tree<SpanDataWrapper> getGeneratedSpans() {
+        return getGeneratedSpans(0);
+    }
+
+    protected Tree<SpanDataWrapper> getGeneratedSpans(int index) {
         CompletableResultCode completableResultCode = this.openTelemetrySdkProvider.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
         completableResultCode.join(1, TimeUnit.SECONDS);
         List<SpanData> spans = InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.getFinishedSpanItems();
@@ -168,7 +172,7 @@ public class BaseIntegrationTest {
             System.out.println(tree);
         }
 
-        return trees.get(0);
+        return trees.get(index);
     }
 
     protected void assertEnvironmentVariables(EnvVars environment) {
