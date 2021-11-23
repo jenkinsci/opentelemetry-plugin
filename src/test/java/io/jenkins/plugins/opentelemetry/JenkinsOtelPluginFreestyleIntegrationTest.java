@@ -194,7 +194,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     }
 
     @Test
-    public void testFreestyleJo_with_culprits() throws Exception {
+    public void testFreestyleJob_with_culprits() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // See https://github.com/abayer/jenkins/blob/914963c22317e7d72cf7e3e7d9ed8ab57709ccb0/test/src/test/java/hudson/model/AbstractBuildTest.java#L135-L150
 
