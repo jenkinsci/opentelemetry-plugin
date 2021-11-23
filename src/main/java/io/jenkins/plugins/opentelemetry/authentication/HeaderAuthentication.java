@@ -63,7 +63,7 @@ public class HeaderAuthentication extends OtlpAuthentication {
     @Override
     public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
         // TODO don't overwrite OTEL_EXPORTER_OTLP_HEADERS if already defined, just append to it
-        environmentVariables.put("OTEL_EXPORTER_OTLP_HEADERS", this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
+        environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_HEADERS, this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
     }
 
     public String getHeaderName() {
