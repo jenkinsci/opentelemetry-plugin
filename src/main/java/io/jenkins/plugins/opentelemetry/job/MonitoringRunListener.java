@@ -123,9 +123,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 .setSpanKind(SpanKind.SERVER);
 
         // TODO move this to a pluggable span enrichment API with implementations for different observability backends
-        // Regarding the value `unknown`, see https://github.com/jenkinsci/opentelemetry-plugin/issues/51
         rootSpanBuilder
-                .setAttribute(JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE, "unknown");
+                .setAttribute(JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE, "job");
 
         rootSpanBuilder
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, rootSpanName)
