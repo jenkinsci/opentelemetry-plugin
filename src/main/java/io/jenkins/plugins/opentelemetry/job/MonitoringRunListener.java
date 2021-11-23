@@ -139,12 +139,13 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
 
         // CULPRITS
-        Set<User> culpritIds = new HashSet<>(); ;
-        if (OtelUtils.isWorkflow(run) || OtelUtils.isMultibranch(run)) {
+        Set<User> culpritIds;
+        if (run instanceof WorkflowRun) {
             culpritIds = ((WorkflowRun) run).getCulprits();
-        }
-        if (run instanceof AbstractBuild) {
+        } else if (run instanceof AbstractBuild) {
             culpritIds = ((AbstractBuild) run).getCulprits();
+        } else {
+            culpritIds = null;
         }
         if (culpritIds != null) {
             rootSpanBuilder
