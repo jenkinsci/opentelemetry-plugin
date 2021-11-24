@@ -460,6 +460,6 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         Attributes attributes = checkoutNode.get().getData().spanData.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
     }
 }
