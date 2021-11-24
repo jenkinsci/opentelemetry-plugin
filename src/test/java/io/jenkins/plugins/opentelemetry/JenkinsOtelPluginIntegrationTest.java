@@ -459,7 +459,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         Optional<Tree.Node<SpanDataWrapper>> checkoutNode = spans.breadthFirstSearchNodes(node -> "checkout: github.com/jenkinsci/opentelemetry-plugin".equals(node.getData().spanData.getName()));
         Attributes attributes = checkoutNode.get().getData().spanData.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW), CoreMatchers.nullValue());
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.nullValue());
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0));
     }
 }
