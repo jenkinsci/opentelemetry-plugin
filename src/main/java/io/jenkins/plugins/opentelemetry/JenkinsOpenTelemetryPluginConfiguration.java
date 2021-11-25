@@ -231,7 +231,12 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @Nonnull
     public Map<String, String> getOtelConfigurationAsEnvironmentVariables() {
+        if (this.endpoint == null) {
+            return Collections.emptyMap();
+        }
+
         Map<String, String> environmentVariables = new HashMap<>();
+        environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_TRACES_EXPORTER, "otlp");
         environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_ENDPOINT, this.endpoint);
         String sanitizeOtlpEndpoint = sanitizeOtlpEndpoint(this.endpoint);
         if (sanitizeOtlpEndpoint != null && sanitizeOtlpEndpoint.startsWith("http://")) {
