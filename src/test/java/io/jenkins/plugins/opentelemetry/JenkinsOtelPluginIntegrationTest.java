@@ -437,4 +437,29 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(2L));
     }
 
+    @Test
+    public void testPipelineWithoutCheckoutShallowSteps() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        final String jobName = "without-checkout-" + jobNameSuffix.incrementAndGet();
+
+        String pipelineScript = "node() {\n" +
+            "  stage('foo') {\n" +
+            "    checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/jenkinsci/opentelemetry-plugin']]]) \n" +
+            "  }\n" +
+            "}";
+        final Node agent = jenkinsRule.createOnlineSlave();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "checkout: github.com/jenkinsci/opentelemetry-plugin", "Stage: foo", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+
+        Optional<Tree.Node<SpanDataWrapper>> checkoutNode = spans.breadthFirstSearchNodes(node -> "checkout: github.com/jenkinsci/opentelemetry-plugin".equals(node.getData().spanData.getName()));
+        Attributes attributes = checkoutNode.get().getData().spanData.getAttributes();
+
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
+    }
 }
