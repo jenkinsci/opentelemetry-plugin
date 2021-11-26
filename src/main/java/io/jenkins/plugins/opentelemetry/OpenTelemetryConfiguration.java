@@ -11,6 +11,8 @@ import com.google.common.base.Strings;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.resources.ResourceBuilder;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.lang.StringUtils;
 
@@ -19,6 +21,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 
 public class OpenTelemetryConfiguration {
 
@@ -36,7 +39,7 @@ public class OpenTelemetryConfiguration {
     private final String serviceNamespace;
 
     public OpenTelemetryConfiguration() {
-        this(null, null, null, 0, 0, null, null, null);
+        this(null, null, null, null, null, null, null, null);
     }
 
     public OpenTelemetryConfiguration(@Nullable String endpoint, @Nullable String trustedCertificatesPem, @Nullable OtlpAuthentication authentication,
@@ -90,52 +93,66 @@ public class OpenTelemetryConfiguration {
         return exporterIntervalMillis;
     }
 
-    public Map<String, String> toOpenTelemetryAutoConfigurationProperties() {
-        Map<String, String> configuration = new HashMap<>();
-        Map<String, String> resourceAttributes = new HashMap<>();
-
-        if (StringUtils.isNotBlank(endpoint)){
-            Preconditions.checkArgument(
-                endpoint.startsWith("http://") ||
-                    endpoint.startsWith("https://"),
-                "endpoint must be prefixed by 'http://' or 'https://': %s", endpoint);
-
-            configuration.put("otel.traces.exporter", "otlp");
-            configuration.put("otel.metrics.exporter", "otlp");
-            configuration.put("otel.exporter.otlp.endpoint", endpoint);
-        }
-        if (StringUtils.isNotBlank(serviceName)) {
-            configuration.put("otel.service.name", serviceName);
-        }
-        if (StringUtils.isNotBlank(serviceNamespace)) {
-            resourceAttributes.put(ResourceAttributes.SERVICE_NAMESPACE.getKey(), serviceNamespace);
-        }
-        if (StringUtils.isNotBlank(trustedCertificatesPem)) {
-            configuration.put("otel.exporter.otlp.certificate", trustedCertificatesPem);
-        }
-        if (authentication != null) {
-            authentication.enrichOpenTelemetryAutoConfigureConfigProperties(configuration);
-        }
-        if (exporterTimeoutMillis != null) {
-            configuration.put("otel.exporter.otlp.timeout", Integer.toString(exporterTimeoutMillis));
-        }
-        if (exporterIntervalMillis != null) {
-            configuration.put("otel.imr.export.interval", Integer.toString(exporterIntervalMillis));
-        }
-
-        configuration.put("otel.resource.attributes", OtelUtils.getComaSeparatedString(resourceAttributes));
-
-        if (OpenTelemetryConfiguration.TESTING_INMEMORY_MODE) {
-            configuration.put("otel.traces.exporter", "testing");
-            configuration.put("otel.metrics.exporter", "testing");
-            configuration.put("otel.imr.export.interval", "10");
-        }
-
-        return  configuration;
-    }
     @Nullable
     public String getIgnoredSteps() {
         return ignoredSteps;
+    }
+
+    /**
+     * @see io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder#addPropertiesSupplier(java.util.function.Supplier)
+     */
+    @Nonnull
+    public Map<String, String> toOpenTelemetryProperties() {
+        Map<String, String> properties = new HashMap<>();
+        if (TESTING_INMEMORY_MODE) {
+            properties.put("otel.traces.exporter", "testing");
+            properties.put("otel.metrics.exporter", "testing");
+            properties.put("otel.imr.export.interval", "10ms");
+        } else if (StringUtils.isNotBlank(this.getEndpoint())) {
+            Preconditions.checkArgument(
+                this.getEndpoint().startsWith("http://") ||
+                    this.getEndpoint().startsWith("https://"),
+                "endpoint must be prefixed by 'http://' or 'https://': %s", this.getEndpoint());
+
+            properties.put("otel.traces.exporter", "otlp");
+            properties.put("otel.metrics.exporter", "otlp");
+            properties.put("otel.exporter.otlp.endpoint", this.getEndpoint());
+        } else if (StringUtils.isBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("OTEL_TRACES_EXPORTER")) &&
+            StringUtils.isBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")) &&
+            StringUtils.isBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"))) {
+            // Change default of "otel.traces.exporter" from "otlp" to "none" unless "otel.exporter.otlp.endpoint" or "otel.exporter.otlp.traces.endpoint" is defined
+            properties.put("otel.traces.exporter", "none");
+        }
+
+        if (StringUtils.isNotBlank(this.getTrustedCertificatesPem())) {
+            properties.put("otel.exporter.otlp.certificate", this.getTrustedCertificatesPem());
+        }
+        if (this.getAuthentication() != null) {
+            this.getAuthentication().enrichOpenTelemetryAutoConfigureConfigProperties(properties);
+        }
+        if (this.getExporterTimeoutMillis() != null) {
+            properties.put("otel.exporter.otlp.timeout", Integer.toString(this.getExporterTimeoutMillis()));
+        }
+        if (this.getExporterIntervalMillis() != null) {
+            properties.put("otel.imr.export.interval", Integer.toString(this.getExporterIntervalMillis()));
+        }
+        return properties;
+    }
+
+    /**
+     *
+     * @see io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder#addResourceCustomizer(BiFunction)
+     */
+    @Nonnull
+    public Resource toOpenTelemetryResource() {
+        ResourceBuilder resourceBuilder = Resource.builder();
+        if (StringUtils.isNotBlank(this.getServiceName())) {
+            resourceBuilder.put(ResourceAttributes.SERVICE_NAME, this.getServiceName());
+        }
+        if (StringUtils.isNotBlank(this.getServiceNamespace())) {
+            resourceBuilder.put(ResourceAttributes.SERVICE_NAMESPACE, this.getServiceNamespace());
+        }
+        return resourceBuilder.build();
     }
 
     @Override

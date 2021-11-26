@@ -40,7 +40,7 @@ public class ElasticBackend extends ObservabilityBackend {
                 "?rangeFrom=${startTime.minusSeconds(600)}" +
                 "&rangeTo=${startTime.plusSeconds(600)}" +
                 "&transactionName=${rootSpanName}" +
-                "&transactionType=unknown" + // see io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE
+                "&transactionType=job" + // see io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE
                 "&latencyAggregationType=avg" +
                 "&traceId=${traceId}" +
                 "&transactionId=${spanId}";

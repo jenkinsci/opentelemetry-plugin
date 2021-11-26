@@ -129,8 +129,7 @@ In addition, if the backends were configured then there will be an environment v
 | ci.pipeline.run.result           | Build result | Enum (`aborted`, `success`, `failure`, `not_build` and `unstable`) |
 | ci.pipeline.run.url              | Build URL | String |
 | ci.pipeline.run.user             | Who triggered the build | String |
-| ci.pipeline.run.cause.xxx        | List of machine readable build causes | String |
-| ci.pipeline.run.cause.description| List of human readable description of build causes | String |
+| ci.pipeline.run.cause            | List of machine readable build causes like `UserIdCause:anonymous` or `BranchIndexingCause`. Pattern : `${cause.class.simpleName}[:details]` | String |
 | ci.pipeline.parameter.sensitive  | Whether the information contained in this parameter is sensitive or security related. | Boolean |
 | ci.pipeline.parameter.name       | Name of the parameter | String |
 | ci.pipeline.parameter.value      | Value of the parameter. "Sensitive" values are redacted | String |
