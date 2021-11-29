@@ -259,7 +259,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>bitbucket</artifactId>
-            <version>1.1.19</version>
+            <version>214.v2fd4234d0554</version>
             <optional>true</optional>
         </dependency>
         <dependency>
