@@ -3,5 +3,5 @@ unclassified:
     endpoint: "http://otel-collector-contrib:4317"
     observabilityBackends:
       - customObservabilityBackend:
-          metricsVisualisationUrlTemplate: "foo"
+          metricsVisualisationUrl: "foo"
           traceVisualisationUrlTemplate: "http://example.com"

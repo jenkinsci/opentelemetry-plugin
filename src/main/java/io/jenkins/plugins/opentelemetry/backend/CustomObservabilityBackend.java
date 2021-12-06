@@ -20,7 +20,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     public static final String OTEL_CUSTOM_URL = "OTEL_CUSTOM_URL";
     public static final String DEFAULT_NAME = "Custom Observability Backend";
     private String traceVisualisationUrlTemplate;
-    private String metricsVisualisationUrlTemplate;
+    private String metricsVisualisationUrl;
 
     @DataBoundConstructor
     public CustomObservabilityBackend() {
@@ -33,8 +33,8 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     }
 
     @DataBoundSetter
-    public void setMetricsVisualisationUrlTemplate(String metricsVisualisationUrlTemplate) {
-        this.metricsVisualisationUrlTemplate = metricsVisualisationUrlTemplate;
+    public void setMetricsVisualisationUrl(String metricsVisualisationUrl) {
+        this.metricsVisualisationUrl = metricsVisualisationUrl;
     }
 
     @Override
@@ -50,8 +50,8 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
-    public String getMetricsVisualisationUrlTemplate() {
-        return this.metricsVisualisationUrlTemplate;
+    public String getMetricsVisualisationUrl() {
+        return this.metricsVisualisationUrl;
     }
 
     @CheckForNull
@@ -76,7 +76,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     public String toString() {
         return "CustomBackend{" +
                 "traceVisualisationUrlTemplate='" + traceVisualisationUrlTemplate + '\'' +
-                ", metricsVisualisationUrlTemplate='" + metricsVisualisationUrlTemplate + '\'' +
+                ", metricsVisualisationUrl='" + metricsVisualisationUrl + '\'' +
                 '}';
     }
 
@@ -85,12 +85,12 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CustomObservabilityBackend that = (CustomObservabilityBackend) o;
-        return Objects.equals(traceVisualisationUrlTemplate, that.traceVisualisationUrlTemplate) && Objects.equals(metricsVisualisationUrlTemplate, that.metricsVisualisationUrlTemplate);
+        return Objects.equals(traceVisualisationUrlTemplate, that.traceVisualisationUrlTemplate) && Objects.equals(metricsVisualisationUrl, that.metricsVisualisationUrl);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(traceVisualisationUrlTemplate, metricsVisualisationUrlTemplate);
+        return Objects.hash(traceVisualisationUrlTemplate, metricsVisualisationUrl);
     }
 
     @Extension

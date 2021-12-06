@@ -50,7 +50,7 @@ public class ConfigurationAsCodeTest {
         MatcherAssert.assertThat(jaeger.getName(), CoreMatchers.is("My Jaeger"));
 
         CustomObservabilityBackend custom = (CustomObservabilityBackend) configuration.getObservabilityBackends().get(2);
-        MatcherAssert.assertThat(custom.getMetricsVisualisationUrlTemplate(), CoreMatchers.is("foo"));
+        MatcherAssert.assertThat(custom.getMetricsVisualisationUrl(), CoreMatchers.is("foo"));
         MatcherAssert.assertThat(custom.getTraceVisualisationUrlTemplate(), CoreMatchers.is("http://example.com"));
         MatcherAssert.assertThat(custom.getName(), CoreMatchers.is("My Custom"));
 

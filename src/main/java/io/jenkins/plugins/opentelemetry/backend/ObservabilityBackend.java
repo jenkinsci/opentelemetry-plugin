@@ -34,7 +34,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     public abstract String getTraceVisualisationUrlTemplate();
 
     @CheckForNull
-    public abstract String getMetricsVisualisationUrlTemplate();
+    public abstract String getMetricsVisualisationUrl();
 
     @CheckForNull
     public abstract String getIconPath();
@@ -63,7 +63,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     }
 
     /**
-     * @return {@code null} if no {@link #getMetricsVisualisationUrlTemplate()} has been defined or if the {@link #getMetricsVisualisationUrlTemplate} has a syntax error
+     * @return {@code null} if no {@link #getTraceVisualisationUrlTemplate()} has been defined or if the {@link #getMetricsVisualisationUrl} has a syntax error
      */
     @CheckForNull
     public String getTraceVisualisationUrl(Map<String, Object> bindings) {

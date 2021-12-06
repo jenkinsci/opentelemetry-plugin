@@ -69,7 +69,7 @@ public class JaegerBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
-    public String getMetricsVisualisationUrlTemplate() {
+    public String getMetricsVisualisationUrl() {
         return null;
     }
 

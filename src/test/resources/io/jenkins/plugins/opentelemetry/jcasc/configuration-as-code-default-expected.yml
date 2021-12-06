@@ -4,7 +4,7 @@ exportOtelConfigurationAsEnvironmentVariables: false
 ignoredSteps: "dir,echo,isUnix,pwd,properties"
 observabilityBackends:
 - customObservabilityBackend:
-    metricsVisualisationUrlTemplate: "foo"
+    metricsVisualisationUrl: "foo"
     traceVisualisationUrlTemplate: "http://example.com"
 serviceName: "jenkins"
 serviceNamespace: "jenkins"

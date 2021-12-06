@@ -375,7 +375,7 @@ unclassified:
           jaegerBaseUrl: "http://localhost:16686"
           name: "Jaeger"
       - customObservabilityBackend:
-          metricsVisualisationUrlTemplate: "foo"
+          metricsVisualisationUrl: "foo"
           traceVisualisationUrlTemplate: "http://example.com"
           name: "Custom Observability"
       - zipkin:
