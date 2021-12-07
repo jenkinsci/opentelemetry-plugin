@@ -8,7 +8,7 @@
              <f:entry title="Name" field="name">
                  <f:textbox default="${descriptor.displayName}"/>
              </f:entry>
-             <f:entry title="Metrics visualisation URL" field="metricsVisualisationUrl">
+             <f:entry title="Metrics visualization URL" field="metricsVisualizationUrlTemplate">
                  <f:textbox />
              </f:entry>
          </f:advanced>

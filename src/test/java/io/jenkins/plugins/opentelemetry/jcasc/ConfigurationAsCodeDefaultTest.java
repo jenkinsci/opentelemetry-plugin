@@ -41,7 +41,7 @@ public class ConfigurationAsCodeDefaultTest {
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
 
         CustomObservabilityBackend custom = (CustomObservabilityBackend) configuration.getObservabilityBackends().get(0);
-        MatcherAssert.assertThat(custom.getMetricsVisualisationUrl(), CoreMatchers.is("foo"));
+        MatcherAssert.assertThat(custom.getMetricsVisualizationUrlTemplate(), CoreMatchers.is("foo"));
         MatcherAssert.assertThat(custom.getTraceVisualisationUrlTemplate(), CoreMatchers.is("http://example.com"));
         MatcherAssert.assertThat(custom.getName(), CoreMatchers.is(CustomObservabilityBackend.DEFAULT_NAME));
 

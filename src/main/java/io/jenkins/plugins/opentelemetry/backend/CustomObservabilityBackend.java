@@ -19,8 +19,11 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
 
     public static final String OTEL_CUSTOM_URL = "OTEL_CUSTOM_URL";
     public static final String DEFAULT_NAME = "Custom Observability Backend";
+    /**
+     * TODO fix typo "visualisation" -> "visualization" but WARNING handle backward compatibility
+     */
     private String traceVisualisationUrlTemplate;
-    private String metricsVisualisationUrl;
+    private String metricsVisualizationUrlTemplate;
 
     @DataBoundConstructor
     public CustomObservabilityBackend() {
@@ -33,8 +36,8 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     }
 
     @DataBoundSetter
-    public void setMetricsVisualisationUrl(String metricsVisualisationUrl) {
-        this.metricsVisualisationUrl = metricsVisualisationUrl;
+    public void setMetricsVisualizationUrlTemplate(String metricsVisualizationUrlTemplate) {
+        this.metricsVisualizationUrlTemplate = metricsVisualizationUrlTemplate;
     }
 
     @Override
@@ -50,8 +53,8 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
-    public String getMetricsVisualisationUrl() {
-        return this.metricsVisualisationUrl;
+    public String getMetricsVisualizationUrlTemplate() {
+        return this.metricsVisualizationUrlTemplate;
     }
 
     @CheckForNull
@@ -76,7 +79,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     public String toString() {
         return "CustomBackend{" +
                 "traceVisualisationUrlTemplate='" + traceVisualisationUrlTemplate + '\'' +
-                ", metricsVisualisationUrl='" + metricsVisualisationUrl + '\'' +
+                ", metricsVisualizationUrl='" + metricsVisualizationUrlTemplate + '\'' +
                 '}';
     }
 
@@ -85,12 +88,12 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CustomObservabilityBackend that = (CustomObservabilityBackend) o;
-        return Objects.equals(traceVisualisationUrlTemplate, that.traceVisualisationUrlTemplate) && Objects.equals(metricsVisualisationUrl, that.metricsVisualisationUrl);
+        return Objects.equals(traceVisualisationUrlTemplate, that.traceVisualisationUrlTemplate) && Objects.equals(metricsVisualizationUrlTemplate, that.metricsVisualizationUrlTemplate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(traceVisualisationUrlTemplate, metricsVisualisationUrl);
+        return Objects.hash(traceVisualisationUrlTemplate, metricsVisualizationUrlTemplate);
     }
 
     @Extension

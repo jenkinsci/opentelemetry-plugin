@@ -72,7 +72,7 @@ public class ZipkinBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
-    public String getMetricsVisualisationUrl() {
+    public String getMetricsVisualizationUrlTemplate() {
         return null;
     }
 
