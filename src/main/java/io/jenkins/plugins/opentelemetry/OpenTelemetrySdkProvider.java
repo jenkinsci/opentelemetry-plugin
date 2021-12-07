@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 
 @Extension
@@ -120,6 +121,9 @@ public class OpenTelemetrySdkProvider {
         AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = sdkBuilder.build();
         this.openTelemetrySdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
         this.resource = autoConfiguredOpenTelemetrySdk.getResource();
+        LOGGER.log(Level.FINE, () -> "OpenTelemetry resource: " +
+            resource.getAttributes().asMap().entrySet().stream()
+                .map(e -> e.getKey().getKey() + "=" + e.getValue()).collect(Collectors.joining(", ")));
         this.openTelemetry = this.openTelemetrySdk;
         this.tracer.setDelegate(openTelemetry.getTracer("jenkins"));
 
