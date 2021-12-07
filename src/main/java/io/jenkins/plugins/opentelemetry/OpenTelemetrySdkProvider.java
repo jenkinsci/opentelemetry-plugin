@@ -51,6 +51,7 @@ public class OpenTelemetrySdkProvider {
     protected transient SdkMeterProvider sdkMeterProvider;
     protected transient MeterProvider meterProvider;
     protected transient Meter meter;
+    protected transient Resource resource;
 
     public OpenTelemetrySdkProvider() {
     }
@@ -69,6 +70,11 @@ public class OpenTelemetrySdkProvider {
     @Nonnull
     public Meter getMeter() {
         return Preconditions.checkNotNull(meter);
+    }
+
+    @Nonnull
+    public Resource getResource() {
+        return Preconditions.checkNotNull(resource);
     }
 
     @VisibleForTesting
@@ -113,6 +119,7 @@ public class OpenTelemetrySdkProvider {
 
         AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = sdkBuilder.build();
         this.openTelemetrySdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
+        this.resource = autoConfiguredOpenTelemetrySdk.getResource();
         this.openTelemetry = this.openTelemetrySdk;
         this.tracer.setDelegate(openTelemetry.getTracer("jenkins"));
 
@@ -133,6 +140,7 @@ public class OpenTelemetrySdkProvider {
         preDestroy();
 
         this.openTelemetrySdk = null;
+        this.resource = Resource.getDefault();
         this.openTelemetry = OpenTelemetry.noop();
         GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
         GlobalOpenTelemetry.set(OpenTelemetry.noop());

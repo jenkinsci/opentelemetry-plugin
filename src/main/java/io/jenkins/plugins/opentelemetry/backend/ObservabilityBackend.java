@@ -14,6 +14,7 @@ import hudson.DescriptorExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import io.opentelemetry.sdk.resources.Resource;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundSetter;
 
@@ -22,19 +23,22 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public abstract class ObservabilityBackend implements Describable<ObservabilityBackend>, ExtensionPoint {
     private final static Logger LOGGER = Logger.getLogger(ObservabilityBackend.class.getName());
 
     private String name;
 
-    private transient Template traceVisualisationUrlGTemplate;
-
     @CheckForNull
     public abstract String getTraceVisualisationUrlTemplate();
 
+    private transient Template traceVisualisationUrlGTemplate;
+
     @CheckForNull
-    public abstract String getMetricsVisualisationUrlTemplate();
+    public abstract String getMetricsVisualizationUrlTemplate();
+
+    private transient Template metricsVisualizationUrlGTemplate;
 
     @CheckForNull
     public abstract String getIconPath();
@@ -63,7 +67,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     }
 
     /**
-     * @return {@code null} if no {@link #getMetricsVisualisationUrlTemplate()} has been defined or if the {@link #getMetricsVisualisationUrlTemplate} has a syntax error
+     * @return {@code null} if no {@link #getTraceVisualisationUrlTemplate()} has been defined or if the {@link #getMetricsVisualizationUrlTemplate} has a syntax error
      */
     @CheckForNull
     public String getTraceVisualisationUrl(Map<String, Object> bindings) {
@@ -85,6 +89,25 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
         }
         Map<String, Object> mergedBindings = mergeBindings(bindings);
         return traceVisualisationUrlGTemplate.make(mergedBindings).toString();
+    }
+
+    public String getMetricsVisualizationUrl(Resource resource) {
+        if (Strings.isNullOrEmpty(this.getMetricsVisualizationUrlTemplate())) {
+            return null;
+        }
+        if (this.metricsVisualizationUrlGTemplate == null) {
+
+            GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
+            try {
+                this.metricsVisualizationUrlGTemplate = gStringTemplateEngine.createTemplate(this.getMetricsVisualizationUrlTemplate());
+            } catch (IOException | ClassNotFoundException e) {
+                LOGGER.log(Level.WARNING, "Invalid Metrics Visualisation URL Template '" + this.getMetricsVisualizationUrlTemplate() + "'", e);
+                this.metricsVisualizationUrlGTemplate = ERROR_TEMPLATE;
+            }
+        }
+        Map<String, Object> bindings = resource.getAttributes().asMap().entrySet().stream()
+            .collect(Collectors.toMap(entry -> entry.getKey().getKey(),entry -> entry.getValue()));
+        return this.metricsVisualizationUrlGTemplate.make(bindings).toString();
     }
 
     @Override

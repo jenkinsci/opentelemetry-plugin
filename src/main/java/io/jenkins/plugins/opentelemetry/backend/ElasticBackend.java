@@ -20,6 +20,7 @@ public class ElasticBackend extends ObservabilityBackend {
     public static final String OTEL_ELASTIC_URL = "OTEL_ELASTIC_URL";
     public static final String DEFAULT_NAME = "Elastic Observability";
     private String kibanaBaseUrl;
+    private String metricsVisualizationUrlTemplate;
 
     @DataBoundConstructor
     public ElasticBackend(){
@@ -75,8 +76,13 @@ public class ElasticBackend extends ObservabilityBackend {
 
     @CheckForNull
     @Override
-    public String getMetricsVisualisationUrlTemplate() {
-        return null;
+    public String getMetricsVisualizationUrlTemplate() {
+        return this.metricsVisualizationUrlTemplate;
+    }
+
+    @DataBoundSetter
+    public void setMetricsVisualizationUrlTemplate(String metricsVisualizationUrlTemplate) {
+        this.metricsVisualizationUrlTemplate = metricsVisualizationUrlTemplate;
     }
 
     @Override

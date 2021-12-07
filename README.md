@@ -216,7 +216,7 @@ the span name will refer to `Agent` in the distributed traces.
     * Elastic Observability
     * Jaeger
     * Zipkin
-    * Custom Observability backend for other visualisation solution
+    * Custom Observability backend for other visualization solutions
 
 ![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
@@ -375,7 +375,7 @@ unclassified:
           jaegerBaseUrl: "http://localhost:16686"
           name: "Jaeger"
       - customObservabilityBackend:
-          metricsVisualisationUrlTemplate: "foo"
+          metricsVisualizationUrlTemplate: "foo"
           traceVisualisationUrlTemplate: "http://example.com"
           name: "Custom Observability"
       - zipkin:
@@ -384,6 +384,9 @@ unclassified:
     serviceName: "jenkins"
     serviceNamespace: "jenkins"
 ```
+
+ℹ️ be careful of the misalignment of spelling between  `metricsVisualizationUrlTemplate` and `traceVisualisationUrlTemplate`.
+This misalignment ("visualisation" versus "visualization") will be fixed soon aligning on "visualization" while supporting backward compatibility.
 
 See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folder with various samples.
 
