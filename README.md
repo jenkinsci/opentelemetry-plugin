@@ -216,7 +216,7 @@ the span name will refer to `Agent` in the distributed traces.
     * Elastic Observability
     * Jaeger
     * Zipkin
-    * Custom Observability backend for other visualization solution
+    * Custom Observability backend for other visualization solutions
 
 ![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
