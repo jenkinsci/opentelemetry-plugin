@@ -30,6 +30,8 @@ public class ElasticBackend extends ObservabilityBackend {
     public static final String DEFAULT_BACKEND_NAME = "Elastic Observability";
     public static String DEFAULT_KIBANA_DASHBOARD_TITLE = "CI/CD Overview";
     public static String DEFAULT_KIBANA_SPACE_IDENTIFIER = "";
+    public static String DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS= "title=${kibanaDashboardTitle}&" +
+        "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
 
     private String kibanaBaseUrl;
 
@@ -40,6 +42,9 @@ public class ElasticBackend extends ObservabilityBackend {
 
     private String kibanaDashboardTitle;
 
+    private String kibanaDashboardUrlParameters;
+
+
     @DataBoundConstructor
     public ElasticBackend() {
 
@@ -49,6 +54,7 @@ public class ElasticBackend extends ObservabilityBackend {
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
         mergedBindings.put("kibanaBaseUrl", this.kibanaBaseUrl);
+        mergedBindings.put("kibanaDashboardTitle", this.kibanaDashboardTitle);
         return mergedBindings;
     }
 
@@ -130,6 +136,15 @@ public class ElasticBackend extends ObservabilityBackend {
     @DataBoundSetter
     public void setKibanaDashboardTitle(String kibanaDashboardTitle) {
         this.kibanaDashboardTitle = kibanaDashboardTitle;
+    }
+
+    public String getKibanaDashboardUrlParameters() {
+        return Objects.toString(kibanaDashboardUrlParameters, DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS);
+    }
+
+    @DataBoundSetter
+    public void setKibanaDashboardUrlParameters(String kibanaDashboardUrlParameters) {
+        this.kibanaDashboardUrlParameters = kibanaDashboardUrlParameters;
     }
 
     @Override

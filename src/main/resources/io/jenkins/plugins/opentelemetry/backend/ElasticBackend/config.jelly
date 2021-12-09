@@ -10,12 +10,16 @@
     </f:entry>
 
     <f:advanced>
+        <f:entry title="Display Name" field="name" description="Name used in Jenkins GUI">
+            <f:textbox default="${descriptor.displayName}"/>
+        </f:entry>
         <f:entry title="Kibana space identifier" field="kibanaSpaceIdentifier"
                  description="Identifier of the Kibana space in which the Jenkins monitoring dashboard is defined. The identifier for the default space is an empty string">
             <f:textbox/>
         </f:entry>
-        <f:entry title="Display Name" field="name" description="Name used in Jenkins GUI">
-            <f:textbox default="${descriptor.displayName}"/>
+
+        <f:entry title="Kibana dashboard URL parameters" field="kibanaDashboardUrlParameters">
+            <f:textbox/>
         </f:entry>
     </f:advanced>
 </j:jelly>
