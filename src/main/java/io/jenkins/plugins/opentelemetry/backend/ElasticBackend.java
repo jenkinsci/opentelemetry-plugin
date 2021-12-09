@@ -28,9 +28,9 @@ public class ElasticBackend extends ObservabilityBackend {
 
     public static final String OTEL_ELASTIC_URL = "OTEL_ELASTIC_URL";
     public static final String DEFAULT_BACKEND_NAME = "Elastic Observability";
-    public static String DEFAULT_KIBANA_DASHBOARD_TITLE = "CI/CD Overview";
-    public static String DEFAULT_KIBANA_SPACE_IDENTIFIER = "";
-    public static String DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS= "title=${kibanaDashboardTitle}&" +
+    public static final String DEFAULT_KIBANA_DASHBOARD_TITLE = "CI/CD Overview";
+    public static final String DEFAULT_KIBANA_SPACE_IDENTIFIER = "";
+    public static final String DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS= "title=${kibanaDashboardTitle}&" +
         "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
 
     private String kibanaBaseUrl;
