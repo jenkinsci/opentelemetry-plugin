@@ -1,6 +1,6 @@
 # Dashboards
 
-CICD dashboards to be imported.
+CI/CD dashboards to be imported.
 
 ## Elastic
 
@@ -11,14 +11,10 @@ There are different ways to import a Kibana dashboard:
 * Through the [import API](https://www.elastic.co/guide/en/kibana/current/dashboard-import-api.html)
 * Through the [UI](https://www.elastic.co/guide/en/kibana/7.12/managing-saved-objects.html#managing-saved-objects-export-objects)
 
-### CICD overview
+### Jenkins Overview and Jenkins Provisioning Kibana Dashboards
 
-Import [cicd_overview_dashboard.ndjson](./dashboards/elastic/cicd_overview_dashboard.ndjson) and you will get something like:
+Import [jenkins-kibana-dashboards.ndjson](./dashboards/elastic/jenkins-kibana-dashboards.ndjson) and you will get something like:
 
-![CICD overview](./images/cicd_overview_dashboard.png)
+![Jenkins overview](./images/cicd_overview_dashboard.png)
 
-### Provisioner
-
-Import [provisioner_dashboard.ndjson](./dashboards/elastic/provisioner_dashboard.ndjson) and you will get something like:
-
-![Provisioner](./images/provisioner_dashboard.png)
+![Jenkins Provisioning](./images/provisioner_dashboard.png)
