@@ -28,10 +28,12 @@ public class ElasticBackend extends ObservabilityBackend {
 
     public static final String OTEL_ELASTIC_URL = "OTEL_ELASTIC_URL";
     public static final String DEFAULT_BACKEND_NAME = "Elastic Observability";
-    public static final String DEFAULT_KIBANA_DASHBOARD_TITLE = "CI/CD Overview";
+    public static final String DEFAULT_KIBANA_DASHBOARD_TITLE = "Jenkins Overview";
     public static final String DEFAULT_KIBANA_SPACE_IDENTIFIER = "";
-    public static final String DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS= "title=${kibanaDashboardTitle}&" +
+    public static final String DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS = "title=${kibanaDashboardTitle}&" +
         "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
+
+    private boolean displayKibanaDashboardLink;
 
     private String kibanaBaseUrl;
 
@@ -44,7 +46,6 @@ public class ElasticBackend extends ObservabilityBackend {
 
     private String kibanaDashboardUrlParameters;
 
-
     @DataBoundConstructor
     public ElasticBackend() {
 
@@ -55,6 +56,7 @@ public class ElasticBackend extends ObservabilityBackend {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
         mergedBindings.put("kibanaBaseUrl", this.kibanaBaseUrl);
         mergedBindings.put("kibanaDashboardTitle", this.kibanaDashboardTitle);
+        mergedBindings.put("kibanaSpaceIdentifier", this.kibanaSpaceIdentifier);
         return mergedBindings;
     }
 
@@ -101,6 +103,9 @@ public class ElasticBackend extends ObservabilityBackend {
     @CheckForNull
     @Override
     public String getMetricsVisualizationUrlTemplate() {
+        if (! displayKibanaDashboardLink) {
+            return null;
+        }
         // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
         try {
             String kibanaSpaceBaseUrl;
@@ -147,17 +152,30 @@ public class ElasticBackend extends ObservabilityBackend {
         this.kibanaDashboardUrlParameters = kibanaDashboardUrlParameters;
     }
 
+    public boolean isDisplayKibanaDashboardLink() {
+        return displayKibanaDashboardLink;
+    }
+
+    @DataBoundSetter
+    public void setDisplayKibanaDashboardLink(boolean displayKibanaDashboardLink) {
+        this.displayKibanaDashboardLink = displayKibanaDashboardLink;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ElasticBackend that = (ElasticBackend) o;
-        return Objects.equals(kibanaBaseUrl, that.kibanaBaseUrl) && Objects.equals(kibanaSpaceIdentifier, that.kibanaSpaceIdentifier) && Objects.equals(kibanaDashboardTitle, that.kibanaDashboardTitle);
+        return displayKibanaDashboardLink == that.displayKibanaDashboardLink &&
+            Objects.equals(kibanaBaseUrl, that.kibanaBaseUrl) &&
+            Objects.equals(kibanaSpaceIdentifier, that.kibanaSpaceIdentifier) &&
+            Objects.equals(kibanaDashboardTitle, that.kibanaDashboardTitle) &&
+            Objects.equals(kibanaDashboardUrlParameters, that.kibanaDashboardUrlParameters);
     }
 
     @Override
     public int hashCode() {
-        return ElasticBackend.class.hashCode();
+        return Objects.hash(displayKibanaDashboardLink, kibanaBaseUrl, kibanaSpaceIdentifier, kibanaDashboardTitle, kibanaDashboardUrlParameters);
     }
 
     @Extension
@@ -166,6 +184,18 @@ public class ElasticBackend extends ObservabilityBackend {
         @Override
         public String getDisplayName() {
             return DEFAULT_BACKEND_NAME;
+        }
+
+        public String getDefaultKibanaDashboardUrlParameters() {
+            return DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS;
+        }
+
+        public String getDefaultKibanaDashboardTitle() {
+            return DEFAULT_KIBANA_DASHBOARD_TITLE;
+        }
+
+        public String getDefaultKibanaSpaceIdentifier() {
+            return DEFAULT_KIBANA_SPACE_IDENTIFIER;
         }
     }
 }
