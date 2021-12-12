@@ -1,0 +1,16 @@
+<?jelly escape-by-default='true'?>
+<!--
+  ~ Copyright The Original Author or Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <div class="alert alert-warning">
+        <form method="post" action="${rootURL}/${it.url}/act" name="${it.id}">
+            <f:submit name="yes" value="${%Configure Kibana base URL}"/>
+            <f:submit name="no" value="${%Dismiss}"/>
+        </form>
+        The OpenTelemetry Plugin is configured with an Elastic Observability backend but the Kibana base URL is not
+        defined, preventing displaying links from Jenkins GUI to Kibana to visualize traces of the job executions and
+        dashboards of Jenkins health &amp; performances. Configure Elastic backend?
+    </div>
+</j:jelly>

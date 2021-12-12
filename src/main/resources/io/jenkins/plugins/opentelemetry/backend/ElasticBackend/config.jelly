@@ -6,7 +6,7 @@
     </f:entry>
     <f:entry title="Display Kibana dashboard link?"
              field="displayKibanaDashboardLink"
-             description="Create the 'Jenkins Overview' dashboard in Kibana and link it from Jenkins GUI. See help for guidance to create the dashboard in Kibana">
+             description="Display a link from Jenkins home GUI to the 'Jenkins Overview' dashboard in Kibana. Requires to create a 'Jenkins Overview' dashboard in Kibana. Click on the question mark icon on the right for guidance to create the dashboard in Kibana.">
         <f:checkbox />
     </f:entry>
     <f:advanced>
@@ -14,11 +14,11 @@
             <f:textbox default="${descriptor.displayName}"/>
         </f:entry>
         <f:entry title="Kibana dashboard title" field="kibanaDashboardTitle"
-                 description="Name of the Kibana dashboard used to monitor Jenkins. Default value is 'Jenkins Overview'">
+                 description="Name of the Kibana dashboard used to monitor Jenkins. Default value is 'Jenkins Overview'.">
             <f:textbox default="${descriptor.defaultKibanaDashboardTitle}"/>
         </f:entry>
         <f:entry title="Kibana space identifier" field="kibanaSpaceIdentifier"
-                 description="Identifier of the Kibana space in which the Jenkins monitoring dashboard is defined. The identifier for the default space is an empty string">
+                 description="Identifier of the Kibana space in which the Jenkins monitoring dashboard is defined. The identifier for the default space is an empty string.">
             <f:textbox default="${descriptor.defaultKibanaSpaceIdentifier}"/>
         </f:entry>
         <f:entry title="Kibana dashboard URL parameters" field="kibanaDashboardUrlParameters">
