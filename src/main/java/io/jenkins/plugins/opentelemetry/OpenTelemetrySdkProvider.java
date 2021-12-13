@@ -21,8 +21,11 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
+import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
+import io.opentelemetry.sdk.extension.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.resources.ResourceBuilder;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
@@ -34,7 +37,10 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -44,6 +50,11 @@ import java.util.stream.Collectors;
 public class OpenTelemetrySdkProvider {
 
     private static final Logger LOGGER = Logger.getLogger(OpenTelemetrySdkProvider.class.getName());
+
+    /**
+     * See {@code OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS}
+     */
+    public static final String DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS = ProcessResourceProvider.class.getName();
 
     protected transient OpenTelemetry openTelemetry;
     protected transient OpenTelemetrySdk openTelemetrySdk;
@@ -106,17 +117,37 @@ public class OpenTelemetrySdkProvider {
         preDestroy(); // shutdown existing SDK
 
         AutoConfiguredOpenTelemetrySdkBuilder sdkBuilder = AutoConfiguredOpenTelemetrySdk.builder();
-        // RESOURCE
-        sdkBuilder.addResourceCustomizer((resource, configProperties) ->
-            Resource.builder()
-                .put(ResourceAttributes.SERVICE_VERSION, getJenkinsVersion())
-                .put(JenkinsOtelSemanticAttributes.JENKINS_URL, jenkinsLocationConfiguration.getUrl())
-                .putAll(resource)
-                .putAll(configuration.toOpenTelemetryResource())
-                .build()
-        );
         // PROPERTIES
         sdkBuilder.addPropertiesSupplier(() -> configuration.toOpenTelemetryProperties());
+
+        // RESOURCE
+        sdkBuilder.addResourceCustomizer((resource, configProperties) -> {
+                ResourceBuilder resourceBuilder = Resource.builder()
+                    .put(ResourceAttributes.SERVICE_VERSION, getJenkinsVersion())
+                    .put(JenkinsOtelSemanticAttributes.JENKINS_URL, jenkinsLocationConfiguration.getUrl())
+                    .putAll(resource)
+                    .putAll(configuration.toOpenTelemetryResource());
+
+            // mimic i.o.s.a.OpenTelemetryResourceAutoConfiguration.configureResource(ConfigProperties, BiFunction<? super Resource,ConfigProperties,? extends Resource>)
+            // waiting for this feature to support specifying the classloader
+            {
+                Set<String> disabledProviders =
+                    new HashSet<>(configProperties.getList("otel.java.disabled.resource.providers"));
+                LOGGER.log(Level.FINER, () -> "Disabled providers: " + disabledProviders);
+                ClassLoader serviceClassLoader =
+                    AutoConfiguredOpenTelemetrySdkBuilder.class.getClassLoader();
+                for (ResourceProvider resourceProvider : ServiceLoader.load(ResourceProvider.class, serviceClassLoader)) {
+                    Resource extensionResources = resourceProvider.createResource(configProperties);
+                    if (disabledProviders.contains(resourceProvider.getClass().getName())) {
+                        continue;
+                    }
+                    LOGGER.log(Level.FINER, () -> "ResourceProvider: " + resourceProvider + " - add resources " + extensionResources.getAttributes().asMap().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
+                    resourceBuilder.putAll(extensionResources);
+                }
+            }
+                return resourceBuilder.build();
+            }
+        );
 
         AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = sdkBuilder.build();
         this.openTelemetrySdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();

@@ -34,25 +34,25 @@ public class OpenTelemetryConfiguration {
     private final OtlpAuthentication authentication;
     private final Integer exporterTimeoutMillis;
     private final Integer exporterIntervalMillis;
-    private final String ignoredSteps;
     private final String serviceName;
     private final String serviceNamespace;
+    private final String disabledResourceProviders;
 
     public OpenTelemetryConfiguration() {
         this(null, null, null, null, null, null, null, null);
     }
 
     public OpenTelemetryConfiguration(@Nullable String endpoint, @Nullable String trustedCertificatesPem, @Nullable OtlpAuthentication authentication,
-                                      @Nullable Integer exporterTimeoutMillis, @Nullable Integer exporterIntervalMillis, @Nullable String ignoredSteps,
-                                      @Nullable String serviceName, @Nullable String serviceNamespace) {
+                                      @Nullable Integer exporterTimeoutMillis, @Nullable Integer exporterIntervalMillis,
+                                      @Nullable String serviceName, @Nullable String serviceNamespace, @Nullable String disabledResourceProviders) {
         this.endpoint = endpoint;
         this.trustedCertificatesPem = trustedCertificatesPem;
         this.authentication = authentication;
         this.exporterTimeoutMillis = exporterTimeoutMillis;
         this.exporterIntervalMillis = exporterIntervalMillis;
-        this.ignoredSteps = ignoredSteps;
         this.serviceName = serviceName;
         this.serviceNamespace = serviceNamespace;
+        this.disabledResourceProviders = disabledResourceProviders;
     }
 
     @Nullable
@@ -94,8 +94,8 @@ public class OpenTelemetryConfiguration {
     }
 
     @Nullable
-    public String getIgnoredSteps() {
-        return ignoredSteps;
+    public String getDisabledResourceProviders() {
+        return disabledResourceProviders;
     }
 
     /**
@@ -136,6 +136,10 @@ public class OpenTelemetryConfiguration {
         if (this.getExporterIntervalMillis() != null) {
             properties.put("otel.imr.export.interval", Integer.toString(this.getExporterIntervalMillis()));
         }
+
+        if (this.disabledResourceProviders != null) {
+            properties.put("otel.java.disabled.resource.providers", this.getDisabledResourceProviders());
+        }
         return properties;
     }
 
@@ -161,14 +165,15 @@ public class OpenTelemetryConfiguration {
         if (o == null || getClass() != o.getClass()) return false;
         OpenTelemetryConfiguration that = (OpenTelemetryConfiguration) o;
         return Objects.equals(endpoint, that.endpoint) && Objects.equals(authentication, that.authentication) &&
-                Objects.equals(trustedCertificatesPem, that.trustedCertificatesPem) && Objects.equals(exporterTimeoutMillis, that.exporterTimeoutMillis) &&
-                Objects.equals(exporterIntervalMillis, that.exporterIntervalMillis) && Objects.equals(ignoredSteps, that.ignoredSteps) &&
-                Objects.equals(serviceName, that.serviceName) && Objects.equals(serviceNamespace, that.serviceNamespace);
+            Objects.equals(trustedCertificatesPem, that.trustedCertificatesPem) && Objects.equals(exporterTimeoutMillis, that.exporterTimeoutMillis) &&
+            Objects.equals(exporterIntervalMillis, that.exporterIntervalMillis) &&
+            Objects.equals(serviceName, that.serviceName) && Objects.equals(serviceNamespace, that.serviceNamespace) &&
+            Objects.equals(disabledResourceProviders, that.disabledResourceProviders);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endpoint, authentication, trustedCertificatesPem, exporterTimeoutMillis, exporterIntervalMillis, serviceName, serviceNamespace);
+        return Objects.hash(endpoint, authentication, trustedCertificatesPem, exporterTimeoutMillis, exporterIntervalMillis, serviceName, serviceNamespace, disabledResourceProviders);
     }
 
     @Override
@@ -179,9 +184,9 @@ public class OpenTelemetryConfiguration {
                 ", authentication=" + authentication +
                 ", exporterTimeoutMillis=" + exporterTimeoutMillis +
                 ", exporterIntervalMillis=" + exporterIntervalMillis +
-                ", ignoredSteps=" + ignoredSteps +
                 ", serviceName=" + serviceName +
                 ", serviceNamespace=" + serviceNamespace +
+                ", disabledResourceProviders=" + disabledResourceProviders +
                 '}';
     }
 }
