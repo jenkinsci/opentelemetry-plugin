@@ -25,7 +25,7 @@ public class JenkinsResourceProvider implements ResourceProvider {
         resourceBuilder.put(ResourceAttributes.SERVICE_NAMESPACE, JenkinsOtelSemanticAttributes.JENKINS);
         // resourceBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_URL, Jenkins.get().getRootUrl()); FIXME GET JENKINS URL
         final Resource resource = resourceBuilder.build();
-        LOGGER.log(Level.INFO, () -> "Jenkins resource: " + resource);
+        LOGGER.log(Level.FINER, () -> "Jenkins resource: " + resource);
         return resource;
     }
 }
