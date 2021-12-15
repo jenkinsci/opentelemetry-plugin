@@ -102,9 +102,11 @@ public class OpenTelemetryConfiguration {
             properties.put("otel.metrics.exporter", "testing");
             properties.put("otel.imr.export.interval", "10ms");
         } else if (this.getEndpoint().isPresent()) {
-            properties.put("otel.traces.exporter", "otlp");
-            properties.put("otel.metrics.exporter", "otlp");
-            properties.put("otel.exporter.otlp.endpoint", this.getEndpoint().get());
+            this.getEndpoint().ifPresent(endpoint -> { // prepare of Optional.ifPResentOrElse()
+                properties.put("otel.traces.exporter", "otlp");
+                properties.put("otel.metrics.exporter", "otlp");
+                properties.put("otel.exporter.otlp.endpoint", endpoint);
+            });
         } else if (StringUtils.isBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("OTEL_TRACES_EXPORTER")) &&
             StringUtils.isBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")) &&
             StringUtils.isBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"))) {
@@ -118,11 +120,11 @@ public class OpenTelemetryConfiguration {
         this.getAuthentication().ifPresent(authentication ->
             authentication.enrichOpenTelemetryAutoConfigureConfigProperties(properties));
 
-        this.getExporterTimeoutMillis().ifPresent(exporterTimeoutMillis ->
-            properties.put("otel.exporter.otlp.timeout", Integer.toString(exporterTimeoutMillis)));
+        this.getExporterTimeoutMillis().map(Object::toString).ifPresent(exporterTimeoutMillis ->
+            properties.put("otel.exporter.otlp.timeout", exporterTimeoutMillis));
 
-        this.getExporterIntervalMillis().ifPresent(exporterIntervalMillis ->
-            properties.put("otel.imr.export.interval", Integer.toString(exporterIntervalMillis)));
+        this.getExporterIntervalMillis().map(Object::toString).ifPresent(exporterIntervalMillis ->
+            properties.put("otel.imr.export.interval", exporterIntervalMillis));
 
         this.getDisabledResourceProviders().ifPresent(disabledResourceProviders ->
             properties.put("otel.java.disabled.resource.providers", disabledResourceProviders));
