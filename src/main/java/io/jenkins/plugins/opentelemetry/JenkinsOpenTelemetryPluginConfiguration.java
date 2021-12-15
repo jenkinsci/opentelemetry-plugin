@@ -117,14 +117,14 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @PostConstruct
     public void initializeOpenTelemetry() {
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(
-            this.getEndpoint(),
-            this.getTrustedCertificatesPem(),
-            this.getAuthentication(),
-            this.getExporterTimeoutMillis(),
-            this.getExporterIntervalMillis(),
-            this.getServiceName(),
-            this.getServiceNamespace(),
-            this.getDisabledResourceProviders());
+            Optional.ofNullable(this.getEndpoint()),
+            Optional.ofNullable(this.getTrustedCertificatesPem()),
+            Optional.ofNullable(this.getAuthentication()),
+            Optional.ofNullable(this.getExporterTimeoutMillis()),
+            Optional.ofNullable(this.getExporterIntervalMillis()),
+            Optional.ofNullable(this.getServiceName()),
+            Optional.ofNullable(this.getServiceNamespace()),
+            Optional.ofNullable(this.getDisabledResourceProviders()));
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
