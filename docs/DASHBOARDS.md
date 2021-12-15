@@ -13,7 +13,7 @@ There are different ways to import a Kibana dashboard:
 
 ### Jenkins Overview and Jenkins Provisioning Kibana Dashboards
 
-Import [jenkins-kibana-dashboards.ndjson](./dashboards/elastic/jenkins-kibana-dashboards.ndjson) and you will get something like:
+Import [jenkins-kibana-dashboards.ndjson](../src/main/kibana/jenkins-kibana-dashboards.ndjson) and you will get something like:
 
 ![Jenkins overview](./images/kibana_jenkins_overview_dashboard.png)
 
