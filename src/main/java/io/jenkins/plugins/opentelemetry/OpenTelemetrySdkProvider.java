@@ -119,6 +119,7 @@ public class OpenTelemetrySdkProvider {
                 ResourceBuilder resourceBuilder = Resource.builder()
                     .put(ResourceAttributes.SERVICE_VERSION, OtelUtils.getJenkinsVersion())
                     .put(JenkinsOtelSemanticAttributes.JENKINS_URL, jenkinsLocationConfiguration.getUrl())
+                    .put(JenkinsOtelSemanticAttributes.JENKINS_OTEL_VERSION, OtelUtils.getOpentelemetryPluginVersion())
                     .putAll(resource)
                     .putAll(configuration.toOpenTelemetryResource());
 

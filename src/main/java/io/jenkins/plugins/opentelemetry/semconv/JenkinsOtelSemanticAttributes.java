@@ -48,6 +48,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<Long>          GIT_CLONE_DEPTH = AttributeKey.longKey("git.clone.depth");
     public static final AttributeKey<Boolean>       GIT_CLONE_SHALLOW = AttributeKey.booleanKey("git.clone.shallow");
 
+    public static final AttributeKey<String>        JENKINS_OTEL_VERSION = AttributeKey.stringKey("jenkins.otel.version");
     /**
      * @see Jenkins#getRootUrl()
      */
