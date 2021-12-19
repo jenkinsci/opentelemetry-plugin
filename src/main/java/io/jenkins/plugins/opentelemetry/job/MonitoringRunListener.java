@@ -34,6 +34,7 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause;
 
@@ -273,7 +274,15 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                     parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION, description);
                 }
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, runResult.toString());
-                StatusCode statusCode = Result.SUCCESS.equals(runResult) ? StatusCode.OK : StatusCode.ERROR;
+
+                StatusCode statusCode;
+                if (Result.SUCCESS.equals(runResult)) {
+                    statusCode = StatusCode.OK;
+                } else {
+                    parentSpan.setAttribute(SemanticAttributes.EXCEPTION_TYPE, "PIPELINE_" + runResult);
+                    parentSpan.setAttribute(SemanticAttributes.EXCEPTION_MESSAGE, "PIPELINE_" + runResult);
+                    statusCode = StatusCode.ERROR;
+                }
                 parentSpan.setStatus(statusCode);
             }
             // NODE
