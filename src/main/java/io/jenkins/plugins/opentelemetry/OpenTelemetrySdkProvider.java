@@ -119,7 +119,6 @@ public class OpenTelemetrySdkProvider {
                 ResourceBuilder resourceBuilder = Resource.builder()
                     .put(ResourceAttributes.SERVICE_VERSION, OtelUtils.getJenkinsVersion())
                     .put(JenkinsOtelSemanticAttributes.JENKINS_URL, jenkinsLocationConfiguration.getUrl())
-                    .put(JenkinsOtelSemanticAttributes.JENKINS_OTEL_VERSION, OtelUtils.getOpentelemetryPluginVersion())
                     .putAll(resource)
                     .putAll(configuration.toOpenTelemetryResource());
 
@@ -151,7 +150,7 @@ public class OpenTelemetrySdkProvider {
             resource.getAttributes().asMap().entrySet().stream()
                 .map(e -> e.getKey().getKey() + "=" + e.getValue()).collect(Collectors.joining(", ")));
         this.openTelemetry = this.openTelemetrySdk;
-        this.tracer.setDelegate(openTelemetry.getTracer("jenkins"));
+        this.tracer.setDelegate(openTelemetry.getTracer("jenkins", OtelUtils.getOpentelemetryPluginVersion()));
 
         this.meterProvider = GlobalMeterProvider.get();
         if (this.meterProvider instanceof SdkMeterProvider) {
