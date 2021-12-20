@@ -82,11 +82,10 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String agentLabel, @Nonnull WorkflowRun run) {
         try (Scope nodeSpanScope = setupContext(run, stepStartNode)) {
             verifyNotNull(nodeSpanScope, "%s - No span found for node %s", run, stepStartNode);
-            String agentSpanName = Strings.isNullOrEmpty(agentLabel) ? JenkinsOtelSemanticAttributes.AGENT_UI : JenkinsOtelSemanticAttributes.AGENT_UI + ": " + agentLabel;
             String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NODE);
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
-            Span agentSpan = getTracer().spanBuilder(agentSpanName)
+            Span agentSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.AGENT_UI)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
@@ -100,8 +99,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             getTracerService().putSpan(run, agentSpan, stepStartNode);
 
             try (Scope allocateAgentSpanScope = agentSpan.makeCurrent()) {
-                String allocateAgentSpanName = Strings.isNullOrEmpty(agentLabel) ? JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI : JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI + ": " + agentLabel;
-                Span allocateAgentSpan = getTracer().spanBuilder(allocateAgentSpanName)
+                Span allocateAgentSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI)
                         .setParent(Context.current())
                         .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode, stepStartNode.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NODE))
                         .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
