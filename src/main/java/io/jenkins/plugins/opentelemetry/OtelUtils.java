@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import hudson.Plugin;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
 import hudson.util.VersionNumber;
@@ -47,6 +48,7 @@ public class OtelUtils {
     public static final String CHANGE_REQUEST = "change_request";
     public static final String TAG = "tag";
     public static final String JENKINS_CORE = "jenkins-core";
+    public static final String UNKNOWN_VALUE ="#unknown";
 
     @CheckForNull
     public static String getSystemPropertyOrEnvironmentVariable(String environmentVariableName) {
@@ -242,6 +244,16 @@ public class OtelUtils {
     @Nonnull
     public static String getJenkinsVersion() {
         final VersionNumber versionNumber = Jenkins.getVersion();
-        return versionNumber == null ? "#unknown" : versionNumber.toString(); // should not be null except maybe in development of Jenkins itself
+        return versionNumber == null ? UNKNOWN_VALUE : versionNumber.toString(); // should not be null except maybe in development of Jenkins itself
+    }
+
+    @Nonnull
+    public static String getOpentelemetryPluginVersion() {
+        final Jenkins instance = Jenkins.getInstanceOrNull();
+        if (instance == null) {
+            return UNKNOWN_VALUE;
+        }
+        final Plugin opentelemetryPlugin = instance.getPlugin("opentelemetry");
+        return opentelemetryPlugin == null ? UNKNOWN_VALUE : opentelemetryPlugin.getWrapper().getVersion();
     }
 }

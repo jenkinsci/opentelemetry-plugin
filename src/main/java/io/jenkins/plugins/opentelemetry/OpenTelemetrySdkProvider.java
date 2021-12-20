@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
@@ -27,18 +26,13 @@ import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
-import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.logging.Level;
@@ -123,7 +117,7 @@ public class OpenTelemetrySdkProvider {
         // RESOURCE
         sdkBuilder.addResourceCustomizer((resource, configProperties) -> {
                 ResourceBuilder resourceBuilder = Resource.builder()
-                    .put(ResourceAttributes.SERVICE_VERSION, getJenkinsVersion())
+                    .put(ResourceAttributes.SERVICE_VERSION, OtelUtils.getJenkinsVersion())
                     .put(JenkinsOtelSemanticAttributes.JENKINS_URL, jenkinsLocationConfiguration.getUrl())
                     .putAll(resource)
                     .putAll(configuration.toOpenTelemetryResource());
@@ -156,7 +150,7 @@ public class OpenTelemetrySdkProvider {
             resource.getAttributes().asMap().entrySet().stream()
                 .map(e -> e.getKey().getKey() + "=" + e.getValue()).collect(Collectors.joining(", ")));
         this.openTelemetry = this.openTelemetrySdk;
-        this.tracer.setDelegate(openTelemetry.getTracer("jenkins"));
+        this.tracer.setDelegate(openTelemetry.getTracer("jenkins", OtelUtils.getOpentelemetryPluginVersion()));
 
         this.meterProvider = GlobalMeterProvider.get();
         if (this.meterProvider instanceof SdkMeterProvider) {
@@ -197,31 +191,5 @@ public class OpenTelemetrySdkProvider {
     @Inject
     public void setJenkinsLocationConfiguration(@Nonnull JenkinsLocationConfiguration jenkinsLocationConfiguration) {
         this.jenkinsLocationConfiguration = jenkinsLocationConfiguration;
-    }
-
-    /**
-     * see {@code Jenkins#computeVersion(javax.servlet.ServletContext)}
-     */
-    @SuppressFBWarnings({"NP_LOAD_OF_KNOWN_NULL_VALUE", "RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE", "RCN_REDUNDANT_NULLCHECK_OF_NULL_VALUE"})
-    @CheckForNull
-    protected String getJenkinsVersion() {
-        Properties properties = new Properties();
-        try (InputStream is = Jenkins.class.getResourceAsStream("jenkins-version.properties")) {
-            if (is == null) {
-                return null;
-            } else {
-                properties.load(is);
-            }
-        } catch (IOException e) {
-            return null;
-        }
-        String version = properties.getProperty("version");
-        if (version == null) {
-            return null;
-        } else if (version.equals("${project.version}")) {
-            return "development";
-        } else {
-            return version;
-        }
     }
 }
