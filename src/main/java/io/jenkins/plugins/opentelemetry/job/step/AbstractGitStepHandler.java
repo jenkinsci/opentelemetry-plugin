@@ -78,7 +78,7 @@ public abstract class AbstractGitStepHandler implements StepHandler {
                     .setAttribute(SemanticAttributes.RPC_SERVICE, "git")
                     .setAttribute(SemanticAttributes.RPC_METHOD, "checkout")
                     .setAttribute(SemanticAttributes.NET_PEER_NAME, host)
-                    .setAttribute(SemanticAttributes.PEER_SERVICE, "git")
+                    .setAttribute(SemanticAttributes.PEER_SERVICE, host)
                     .setAttribute(SemanticAttributes.HTTP_URL, sanitizeUrl(gitUri))
                     .setAttribute(SemanticAttributes.HTTP_METHOD, "POST")
                     .setSpanKind(SpanKind.CLIENT)
@@ -96,7 +96,7 @@ public abstract class AbstractGitStepHandler implements StepHandler {
                     .setAttribute(SemanticAttributes.RPC_SERVICE, "git")
                     .setAttribute(SemanticAttributes.RPC_METHOD, "checkout")
                     .setAttribute(SemanticAttributes.NET_PEER_NAME, host)
-                    .setAttribute(SemanticAttributes.PEER_SERVICE, "git")
+                    .setAttribute(SemanticAttributes.PEER_SERVICE, host)
                     .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP)
                     .setSpanKind(SpanKind.CLIENT)
             ;
