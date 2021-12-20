@@ -150,7 +150,7 @@ public class OpenTelemetrySdkProvider {
             resource.getAttributes().asMap().entrySet().stream()
                 .map(e -> e.getKey().getKey() + "=" + e.getValue()).collect(Collectors.joining(", ")));
         this.openTelemetry = this.openTelemetrySdk;
-        this.tracer.setDelegate(openTelemetry.getTracer("jenkins", OtelUtils.getOpentelemetryPluginVersion()));
+        this.tracer.setDelegate(openTelemetry.getTracer("jenkins-opentelemetry", OtelUtils.getOpentelemetryPluginVersion()));
 
         this.meterProvider = GlobalMeterProvider.get();
         if (this.meterProvider instanceof SdkMeterProvider) {
