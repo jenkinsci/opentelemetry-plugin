@@ -261,29 +261,27 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span parentSpan = Span.current();
             parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DURATION_MILLIS, run.getDuration());
+            parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION, run.getDescription());
+            if (OtelUtils.isMultibranch(run)) {
+                parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE, OtelUtils.getMultibranchType(run));
+            }
+
             Result runResult = run.getResult();
             if (runResult == null) {
                 parentSpan.setStatus(StatusCode.UNSET);
             } else {
-                if (OtelUtils.isMultibranch(run)) {
-                    parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE, OtelUtils.getMultibranchType(run));
-                }
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMPLETED, runResult.completeBuild);
-                String description = run.getDescription();
-                if (description != null) {
-                    parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION, description);
-                }
-                parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, runResult.toString());
+                parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, Objects.toString(runResult, null));
 
-                StatusCode statusCode;
                 if (Result.SUCCESS.equals(runResult)) {
-                    statusCode = StatusCode.OK;
-                } else {
+                    parentSpan.setStatus(StatusCode.OK);
+                } else if (Result.FAILURE.equals(runResult) || Result.UNSTABLE.equals(runResult)){
                     parentSpan.setAttribute(SemanticAttributes.EXCEPTION_TYPE, "PIPELINE_" + runResult);
                     parentSpan.setAttribute(SemanticAttributes.EXCEPTION_MESSAGE, "PIPELINE_" + runResult);
-                    statusCode = StatusCode.ERROR;
+                    parentSpan.setStatus(StatusCode.ERROR);
+                } else if (Result.ABORTED.equals(runResult) || Result.NOT_BUILT.equals(runResult)) {
+                    parentSpan.setStatus(StatusCode.UNSET);
                 }
-                parentSpan.setStatus(statusCode);
             }
             // NODE
             if (run instanceof AbstractBuild) {
