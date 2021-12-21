@@ -235,7 +235,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CULPRITS), CoreMatchers.is(Arrays.asList("bob")));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMMITTERS), CoreMatchers.is(Arrays.asList("bob")));
 
         assertFreestyleJobMetadata(build, spans);
     }

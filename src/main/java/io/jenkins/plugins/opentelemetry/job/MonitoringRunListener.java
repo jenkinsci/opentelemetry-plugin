@@ -45,7 +45,6 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -148,7 +147,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         }
         if (culpritIds != null) {
             rootSpanBuilder
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CULPRITS,
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMMITTERS,
                     culpritIds.stream().map(p -> p.getId()).collect(Collectors.toList()));
         }
 
