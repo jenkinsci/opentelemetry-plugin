@@ -5,9 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.GlobalMeterProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import java.lang.management.ManagementFactory;
@@ -64,7 +64,7 @@ public final class MemoryPools {
     /** Register only the "area" measurements. */
     public static void registerMemoryAreaObservers() {
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        Meter meter = GlobalMeterProvider.get().get(MemoryPools.class.getName());
+        Meter meter = GlobalOpenTelemetry.get().getMeterProvider().get(MemoryPools.class.getName());
         meter
             .gaugeBuilder("runtime.jvm.memory.area")
             .ofLongs()
@@ -80,7 +80,7 @@ public final class MemoryPools {
     /** Register only the "pool" measurements. */
     public static void registerMemoryPoolObservers() {
         List<MemoryPoolMXBean> poolBeans = ManagementFactory.getMemoryPoolMXBeans();
-        Meter meter = GlobalMeterProvider.get().get(MemoryPools.class.getName());
+        Meter meter = GlobalOpenTelemetry.get().getMeterProvider().get(MemoryPools.class.getName());
         List<Attributes> usedLabelSets = new ArrayList<>(poolBeans.size());
         List<Attributes> committedLabelSets = new ArrayList<>(poolBeans.size());
         List<Attributes> maxLabelSets = new ArrayList<>(poolBeans.size());
@@ -89,6 +89,7 @@ public final class MemoryPools {
             committedLabelSets.add(Attributes.of(TYPE_KEY, COMMITTED, POOL_KEY, pool.getName()));
             maxLabelSets.add(Attributes.of(TYPE_KEY, MAX, POOL_KEY, pool.getName()));
         }
+
         meter
             .gaugeBuilder("runtime.jvm.memory.pool")
             .ofLongs()
@@ -99,7 +100,7 @@ public final class MemoryPools {
                     for (int i = 0; i < poolBeans.size(); i++) {
                         MemoryUsage poolUsage = poolBeans.get(i).getUsage();
                         if (poolUsage != null) {
-                            observe(
+                            record(
                                 resultLongObserver,
                                 poolUsage,
                                 usedLabelSets.get(i),
@@ -117,14 +118,14 @@ public final class MemoryPools {
     }
 
     static void observeHeap(ObservableLongMeasurement measurement, MemoryUsage usage) {
-        observe(measurement, usage, USED_HEAP, COMMITTED_HEAP, MAX_HEAP);
+        record(measurement, usage, USED_HEAP, COMMITTED_HEAP, MAX_HEAP);
     }
 
     static void observeNonHeap(ObservableLongMeasurement measurement, MemoryUsage usage) {
-        observe(measurement, usage, USED_NON_HEAP, COMMITTED_NON_HEAP, MAX_NON_HEAP);
+        record(measurement, usage, USED_NON_HEAP, COMMITTED_NON_HEAP, MAX_NON_HEAP);
     }
 
-    private static void observe(
+    private static void record(
         ObservableLongMeasurement measurement,
         MemoryUsage usage,
         Attributes usedAttributes,
@@ -134,11 +135,11 @@ public final class MemoryPools {
         // if (usage.getInit() != -1) {
         //  measurement.observe(usage.getInit(), ...);
         // }
-        measurement.observe(usage.getUsed(), usedAttributes);
-        measurement.observe(usage.getCommitted(), committedAttributes);
+        measurement.record(usage.getUsed(), usedAttributes);
+        measurement.record(usage.getCommitted(), committedAttributes);
         // TODO: Decide if max is needed or not. It is a constant that can be queried once on startup.
         if (usage.getMax() != -1) {
-            measurement.observe(usage.getMax(), maxAttributes);
+            measurement.record(usage.getMax(), maxAttributes);
         }
     }
 

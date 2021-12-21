@@ -8,7 +8,6 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
-import io.opentelemetry.api.metrics.GlobalMeterProvider;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -20,8 +19,9 @@ public abstract class OpenTelemetryPluginAbstractInitializer {
 
     /**
      * WARNING do not remove this setter used to surface the dependency to first initialize the OpenTelemetry SDK and then register metrics.
-     * Note that once {@link GlobalMeterProvider#get()}} is replaced by a getter on {@link io.opentelemetry.api.OpenTelemetry},
-     * then the problem dependency will become explicit.
+     * Note that once {@link io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics.MemoryPools} and
+     * {@link io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics.GarbageCollector} stop
+     * using {@link io.opentelemetry.api.GlobalOpenTelemetry}, proper dependency injection can be implemented.
      */
     @Inject
     public void setOpenTelemetrySdkProvider(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider){
