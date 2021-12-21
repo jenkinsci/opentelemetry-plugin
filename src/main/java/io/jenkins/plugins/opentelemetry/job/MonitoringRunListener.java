@@ -35,6 +35,7 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause;
@@ -47,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -101,6 +103,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                         .build();
     }
 
+    @NonNull
     public synchronized List<CauseHandler> getCauseHandlers() {
         if (this.causeHandlers == null) {
             List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));
@@ -110,12 +113,13 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         return causeHandlers;
     }
 
-    public CauseHandler getCauseHandler(Cause cause) {
+    @NonNull
+    public CauseHandler getCauseHandler(@NonNull Cause cause) throws NoSuchElementException {
         return getCauseHandlers().stream().filter(ch -> ch.isSupported(cause)).findFirst().get();
     }
 
     @Override
-    public void _onInitialize(Run run) {
+    public void _onInitialize(@NonNull Run run) {
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - onInitialize");
 
         activeRun.incrementAndGet();
@@ -234,7 +238,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void _onStarted(Run run, TaskListener listener) {
+    public void _onStarted(@NonNull Run run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span runSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
@@ -249,7 +253,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void _onCompleted(Run run, @NonNull TaskListener listener) {
+    public void _onCompleted(@NonNull Run run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span finalizeSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(finalizeSpan));
@@ -273,26 +277,36 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void _onFinalized(Run run) {
+    public void _onFinalized(@NonNull Run run) {
 
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span parentSpan = Span.current();
             parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DURATION_MILLIS, run.getDuration());
+            String description = run.getDescription(); // make spotbugs happy extracting a variable
+            if (description != null) {
+                parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION, description);
+            }
+            if (OtelUtils.isMultibranch(run)) {
+                parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE, OtelUtils.getMultibranchType(run));
+            }
+
             Result runResult = run.getResult();
             if (runResult == null) {
+                // illegal state, job should no longer be running
                 parentSpan.setStatus(StatusCode.UNSET);
             } else {
-                if (OtelUtils.isMultibranch(run)) {
-                    parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE, OtelUtils.getMultibranchType(run));
-                }
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMPLETED, runResult.completeBuild);
-                String description = run.getDescription();
-                if (description != null) {
-                    parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION, description);
+                parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, Objects.toString(runResult, null));
+
+                if (Result.SUCCESS.equals(runResult)) {
+                    parentSpan.setStatus(StatusCode.OK);
+                } else if (Result.FAILURE.equals(runResult) || Result.UNSTABLE.equals(runResult)){
+                    parentSpan.setAttribute(SemanticAttributes.EXCEPTION_TYPE, "PIPELINE_" + runResult);
+                    parentSpan.setAttribute(SemanticAttributes.EXCEPTION_MESSAGE, "PIPELINE_" + runResult);
+                    parentSpan.setStatus(StatusCode.ERROR);
+                } else if (Result.ABORTED.equals(runResult) || Result.NOT_BUILT.equals(runResult)) {
+                    parentSpan.setStatus(StatusCode.UNSET);
                 }
-                parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, runResult.toString());
-                StatusCode statusCode = Result.SUCCESS.equals(runResult) ? StatusCode.OK : StatusCode.ERROR;
-                parentSpan.setStatus(statusCode);
             }
             // NODE
             if (run instanceof AbstractBuild) {
@@ -320,16 +334,6 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         } finally {
             activeRun.decrementAndGet();
         }
-    }
-
-    private void dumpCauses(Run<?, ?> run, StringBuilder buf) {
-        for (CauseAction action : run.getActions(CauseAction.class)) {
-            for (Cause cause : action.getCauses()) {
-                if (buf.length() > 0) buf.append(", ");
-                buf.append(cause.getShortDescription());
-            }
-        }
-        if (buf.length() == 0) buf.append("Started");
     }
 
     @Inject

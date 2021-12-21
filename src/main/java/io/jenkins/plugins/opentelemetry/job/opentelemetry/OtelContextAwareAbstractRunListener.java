@@ -5,8 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.opentelemetry;
 
-import static com.google.common.base.Verify.*;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Launcher;
 import hudson.model.*;
@@ -21,7 +19,6 @@ import io.opentelemetry.context.Scope;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -44,17 +41,17 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     }
 
     @Override
-    public final void onCompleted(Run run, @NonNull TaskListener listener) {
+    public final void onCompleted(@NonNull Run run, @NonNull TaskListener listener) {
         try (Scope scope = getTraceService().setupContext(run)) {
             this._onCompleted(run, listener);
         }
     }
 
-    public void _onCompleted(Run run, @NonNull TaskListener listener) {
+    public void _onCompleted(@NonNull Run run, @NonNull TaskListener listener) {
     }
 
     @Override
-    public final void onFinalized(Run run) {
+    public final void onFinalized(@NonNull Run run) {
         try (Scope scope = getTraceService().setupContext(run)) {
             this._onFinalized(run);
         }
@@ -65,53 +62,57 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     }
 
     @Override
-    public final void onInitialize(Run run) {
+    public final void onInitialize(@NonNull Run run) {
         this._onInitialize(run);
     }
 
-    public void _onInitialize(Run run) {
+    public void _onInitialize(@NonNull Run run) {
     }
 
     @Override
-    public final void onStarted(Run run, TaskListener listener) {
+    public final void onStarted(@NonNull Run run, @NonNull TaskListener listener) {
         try (Scope scope = getTraceService().setupContext(run)) {
             this._onStarted(run, listener);
         }
     }
 
-    public void _onStarted(Run run, TaskListener listener) {
+    public void _onStarted(@NonNull Run run, @NonNull TaskListener listener) {
     }
 
     @Override
-    public final Environment setUpEnvironment(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
+    public final Environment setUpEnvironment(@NonNull AbstractBuild build, @NonNull Launcher launcher, @NonNull BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
         try (Scope ignored = getTraceService().setupContext(build)) {
             return this._setUpEnvironment(build, launcher, listener);
         }
     }
 
-    public Environment _setUpEnvironment(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
+    @NonNull
+    public Environment _setUpEnvironment(@NonNull AbstractBuild build, @NonNull Launcher launcher, @NonNull BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
         return new Environment() {
         };
     }
 
     @Override
-    public final void onDeleted(Run run) {
+    public final void onDeleted(@NonNull Run run) {
         try (Scope ignored = getTraceService().setupContext(run)) {
             this._onDeleted(run);
         }
     }
 
-    public void _onDeleted(Run run) {
+    public void _onDeleted(@NonNull Run run) {
     }
 
+    @NonNull
     public OtelTraceService getTraceService() {
         return otelTraceService;
     }
 
+    @NonNull
     public Tracer getTracer() {
         return tracer;
     }
 
+    @NonNull
     public Meter getMeter() {
         return meter;
     }
