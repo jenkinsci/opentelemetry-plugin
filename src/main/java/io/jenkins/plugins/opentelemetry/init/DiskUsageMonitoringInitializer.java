@@ -49,7 +49,7 @@ public class DiskUsageMonitoringInitializer {
                 .ofLongs()
                 .setDescription("Disk usage of first level folder in JENKINS_HOME.")
                 .setUnit("byte")
-                .buildWithCallback(valueObserver -> valueObserver.observe(calculateDiskUsageInBytes()));
+                .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes()));
             LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage");
     }
     private long calculateDiskUsageInBytes() {

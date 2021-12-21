@@ -5,9 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.GlobalMeterProvider;
 import io.opentelemetry.api.metrics.Meter;
 
 import java.lang.management.GarbageCollectorMXBean;
@@ -40,7 +40,7 @@ public final class GarbageCollector {
     /** Register all observers provided by this module. */
     public static void registerObservers() {
         List<GarbageCollectorMXBean> garbageCollectors = ManagementFactory.getGarbageCollectorMXBeans();
-        Meter meter = GlobalMeterProvider.get().get(GarbageCollector.class.getName());
+        Meter meter = GlobalOpenTelemetry.get().getMeterProvider().get(GarbageCollector.class.getName());
         List<Attributes> labelSets = new ArrayList<>(garbageCollectors.size());
         for (GarbageCollectorMXBean gc : garbageCollectors) {
             labelSets.add(Attributes.of(GC_KEY, gc.getName()));
@@ -53,7 +53,7 @@ public final class GarbageCollector {
             .buildWithCallback(
                 resultLongObserver -> {
                     for (int i = 0; i < garbageCollectors.size(); i++) {
-                        resultLongObserver.observe(
+                        resultLongObserver.record(
                             garbageCollectors.get(i).getCollectionTime(), labelSets.get(i));
                     }
                 });
@@ -66,7 +66,7 @@ public final class GarbageCollector {
             .buildWithCallback(
                 resultLongObserver -> {
                     for (int i = 0; i < garbageCollectors.size(); i++) {
-                        resultLongObserver.observe(
+                        resultLongObserver.record(
                             garbageCollectors.get(i).getCollectionCount(), labelSets.get(i));
                     }
                 });

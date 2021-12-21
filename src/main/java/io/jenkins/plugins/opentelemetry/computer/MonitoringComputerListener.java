@@ -69,17 +69,17 @@ public class MonitoringComputerListener extends ComputerListener {
             .ofLongs()
             .setDescription("Number of offline agents")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.observe(this.getOfflineAgentsCount()));
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount()));
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
             .ofLongs()
             .setDescription("Number of online agents")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.observe(this.getOnlineAgentsCount()));
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount()));
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
             .ofLongs()
             .setDescription("Number of agents")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.observe(this.getAgentsCount()));
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount()));
         failureAgentCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
             .setDescription("Number of ComputerLauncher failures")
             .setUnit("1")

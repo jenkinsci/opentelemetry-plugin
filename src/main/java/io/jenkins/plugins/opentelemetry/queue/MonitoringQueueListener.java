@@ -41,17 +41,17 @@ public class MonitoringQueueListener extends QueueListener {
             .ofLongs()
             .setDescription("Number of waiting items in queue")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.observe(this.getUnblockedItemsSize()));
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getUnblockedItemsSize()));
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BLOCKED)
             .ofLongs()
             .setDescription("Number of blocked items in queue")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.observe(this.blockedItemGauge.longValue()));
+            .buildWithCallback(valueObserver -> valueObserver.record(this.blockedItemGauge.longValue()));
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BUILDABLE)
             .ofLongs()
             .setDescription("Number of buildable items in queue")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.observe(this.getBuildableItemsSize()));
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getBuildableItemsSize()));
         leftItemCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_LEFT)
             .setDescription("Total count of left items")
             .setUnit("1")
