@@ -19,6 +19,7 @@ import hudson.model.ParametersAction;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.model.User;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
@@ -35,6 +36,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause;
 
 import javax.annotation.Nonnull;
@@ -46,6 +48,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -132,6 +135,21 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, runUrl)
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
+
+        // CULPRITS
+        Set<User> culpritIds;
+        if (run instanceof WorkflowRun) {
+            culpritIds = ((WorkflowRun) run).getCulprits();
+        } else if (run instanceof AbstractBuild) {
+            culpritIds = ((AbstractBuild) run).getCulprits();
+        } else {
+            culpritIds = null;
+        }
+        if (culpritIds != null) {
+            rootSpanBuilder
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMMITTERS,
+                    culpritIds.stream().map(p -> p.getId()).collect(Collectors.toList()));
+        }
 
         // PARAMETERS
         ParametersAction parameters = run.getAction(ParametersAction.class);

@@ -24,6 +24,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
+import org.jvnet.hudson.test.FailureBuilder;
+import org.jvnet.hudson.test.FakeChangeLogSCM;
 import org.jvnet.hudson.test.FlagRule;
 import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
@@ -197,5 +199,44 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     // See https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
     private Ant.AntInstallation configureDefaultAnt() throws Exception {
         return ToolInstallations.configureDefaultAnt(tmp);
+    }
+
+    @Test
+    public void testFreestyleJob_with_culprits() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        // See https://github.com/abayer/jenkins/blob/914963c22317e7d72cf7e3e7d9ed8ab57709ccb0/test/src/test/java/hudson/model/AbstractBuildTest.java#L135-L150
+
+        final String jobName = "test-freestyle-culprits-" + jobNameSuffix.incrementAndGet();
+        FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
+        FakeChangeLogSCM scm = new FakeChangeLogSCM();
+        project.setScm(scm);
+
+        // 1st build, successful, no culprits
+        scm.addChange().withAuthor("alice");
+        jenkinsRule.buildAndAssertSuccess(project);
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Run", jobName);
+
+        // 2nd build
+        scm.addChange().withAuthor("bob");
+        project.getBuildersList().add(new FailureBuilder());
+        jenkinsRule.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(0).get());
+        spans = getGeneratedSpans(1);
+        checkChainOfSpans(spans, "Phase: Run", jobName);
+
+        // 3rd build. bob continues to be in culprit
+        project.getBuildersList().add(new FailureBuilder());
+        scm.addChange().withAuthor("charlie");
+        FreeStyleBuild build = project.scheduleBuild2(0).get();
+        spans = getGeneratedSpans(2);
+
+        checkChainOfSpans(spans, "Phase: Run", jobName);
+
+        List<SpanDataWrapper> root = spans.byDepth().get(0);
+        Attributes attributes = root.get(0).spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMMITTERS), CoreMatchers.is(Arrays.asList("bob")));
+
+        assertFreestyleJobMetadata(build, spans);
     }
 }

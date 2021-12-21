@@ -30,6 +30,7 @@ public final class JenkinsOtelSemanticAttributes {
      * @see hudson.model.Node#getDisplayName() ()
      */
     public static final AttributeKey<String>        CI_PIPELINE_AGENT_NAME = AttributeKey.stringKey("ci.pipeline.agent.name");
+    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_COMMITTERS = AttributeKey.stringArrayKey("ci.pipeline.run.committers");
     public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_CAUSE = AttributeKey.stringArrayKey("ci.pipeline.run.cause");
     public static final AttributeKey<Boolean>       CI_PIPELINE_RUN_COMPLETED = AttributeKey.booleanKey("ci.pipeline.run.completed");
     public static final AttributeKey<Long>          CI_PIPELINE_RUN_DURATION_MILLIS = AttributeKey.longKey("ci.pipeline.run.durationMillis");
