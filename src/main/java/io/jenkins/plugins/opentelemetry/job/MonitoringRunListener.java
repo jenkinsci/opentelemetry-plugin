@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -99,6 +100,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                         .build();
     }
 
+    @NonNull
     public synchronized List<CauseHandler> getCauseHandlers() {
         if (this.causeHandlers == null) {
             List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));
@@ -108,12 +110,13 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         return causeHandlers;
     }
 
-    public CauseHandler getCauseHandler(Cause cause) {
+    @NonNull
+    public CauseHandler getCauseHandler(@NonNull Cause cause) throws NoSuchElementException {
         return getCauseHandlers().stream().filter(ch -> ch.isSupported(cause)).findFirst().get();
     }
 
     @Override
-    public void _onInitialize(Run run) {
+    public void _onInitialize(@NonNull Run run) {
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - onInitialize");
 
         activeRun.incrementAndGet();
@@ -217,7 +220,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void _onStarted(Run run, TaskListener listener) {
+    public void _onStarted(@NonNull Run run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span runSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
@@ -232,7 +235,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void _onCompleted(Run run, @NonNull TaskListener listener) {
+    public void _onCompleted(@NonNull Run run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span finalizeSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(finalizeSpan));
@@ -256,18 +259,22 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void _onFinalized(Run run) {
+    public void _onFinalized(@NonNull Run run) {
 
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span parentSpan = Span.current();
             parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DURATION_MILLIS, run.getDuration());
-            parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION, run.getDescription());
+            String description = run.getDescription(); // make spotbugs happy extracting a variable
+            if (description != null) {
+                parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION, description);
+            }
             if (OtelUtils.isMultibranch(run)) {
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE, OtelUtils.getMultibranchType(run));
             }
 
             Result runResult = run.getResult();
             if (runResult == null) {
+                // illegal state, job should no longer be running
                 parentSpan.setStatus(StatusCode.UNSET);
             } else {
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMPLETED, runResult.completeBuild);
@@ -309,16 +316,6 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         } finally {
             activeRun.decrementAndGet();
         }
-    }
-
-    private void dumpCauses(Run<?, ?> run, StringBuilder buf) {
-        for (CauseAction action : run.getActions(CauseAction.class)) {
-            for (Cause cause : action.getCauses()) {
-                if (buf.length() > 0) buf.append(", ");
-                buf.append(cause.getShortDescription());
-            }
-        }
-        if (buf.length() == 0) buf.append("Started");
     }
 
     @Inject
