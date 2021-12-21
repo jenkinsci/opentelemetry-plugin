@@ -1,0 +1,16 @@
+<?jelly escape-by-default='true'?>
+<!--
+  ~ Copyright The Original Author or Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <div class="alert alert-warning">
+        <form method="post" action="${rootURL}/${it.url}/act" name="${it.id}">
+            <f:submit name="yes" value="${%Configure Kibana dashboard}"/>
+            <f:submit name="no" value="${%Dismiss}"/>
+        </form>
+        The OpenTelemetry Plugin is configured with an Elastic Observability backend for which the display of the link
+        to the Kibana dashboard of Jenkins health &amp; performance indicators has not been activated.
+        Configure Kibana dashboard and activate link from Jenkins GUI (checkbox "Display Kibana dashboard link?")?
+    </div>
+</j:jelly>

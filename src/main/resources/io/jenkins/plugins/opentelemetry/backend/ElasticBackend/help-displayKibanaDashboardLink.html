@@ -1,0 +1,31 @@
+<!--
+  ~ Copyright The Original Author or Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+<div>
+    <p>
+        To install the Kibana Jenkins dashboard:
+    <ul>
+        <li>Download the Kibana Jenkins dashboard <a
+            href="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/src/main/kibana/jenkins-kibana-dashboards.ndjson">jenkins-kibana-dashboards.ndjson</a>,
+        </li>
+        <li>Open Kibana GUI and navigate to Stack Management / Saved Objects,</li>
+        <li>Click on "Import"</li>
+        <li>Drag & Drop the file <code>jenkins-kibana-dashboards.ndjson</code> in the area "Select a file to import",
+        </li>
+        <li>Keep the default import settings "Check for existing objects" / "Automatically overwrite conflicts"</li>
+        <li>Click on the "Import" button</li>
+        <li>Verify on the import status flyout that the import is successful</li>
+        <li>Verify in the Kibana dashboard view that the "Jenkins Overview screen has been created"</li>
+    </ul>
+    </p>
+    <p>
+        To enable the Kibana Jenkins Dashboard in Jenkins:
+    <ul>
+        <li>check this checkbox ans save the Jenkins configuration</li>
+        <li>On the Jenkins homepage, verify that a new navigation menu entry with the link to the Kibana dashboard has
+            been added
+        </li>
+    </ul>
+    </p>
+</div>

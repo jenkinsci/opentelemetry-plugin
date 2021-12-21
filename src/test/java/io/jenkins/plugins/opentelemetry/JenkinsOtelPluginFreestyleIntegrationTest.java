@@ -134,19 +134,23 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.getBuildersList().add(new Shell("set -u && exit 0"));
         final Node agent = jenkinsRule.createOnlineSlave();
-        agent.setLabelString("linux");
-        project.setAssignedNode(agent);
-        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
+        try {
+            agent.setLabelString("linux");
+            project.setAssignedNode(agent);
+            FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "shell", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "Phase: Finalise", jobName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+            Tree<SpanDataWrapper> spans = getGeneratedSpans();
+            checkChainOfSpans(spans, "Phase: Start", jobName);
+            checkChainOfSpans(spans, "shell", "Phase: Run", jobName);
+            checkChainOfSpans(spans, "Phase: Finalise", jobName);
+            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
-        assertFreestyleJobMetadata(build, spans);
-        assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
-        assertNodeMetadata(spans, jobName, true);
+            assertFreestyleJobMetadata(build, spans);
+            assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
+            assertNodeMetadata(spans, jobName, true);
+        } finally {
+            jenkinsRule.jenkins.removeNode(agent);
+        }
     }
 
     @Test
@@ -172,20 +176,24 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         String antName = configureDefaultAnt().getName();
         project.getBuildersList().add(new Ant("foo", antName,null,null,null));
         final Node agent = jenkinsRule.createOnlineSlave();
-        agent.setLabelString("ant");
-        project.setAssignedNode(agent);
-        FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
+        try {
+            agent.setLabelString("ant");
+            project.setAssignedNode(agent);
+            FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "Phase: Start", jobName);
-        checkChainOfSpans(spans, "ant", "Phase: Run", jobName);
-        checkChainOfSpans(spans, "Phase: Finalise", jobName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+            Tree<SpanDataWrapper> spans = getGeneratedSpans();
+            checkChainOfSpans(spans, "Phase: Start", jobName);
+            checkChainOfSpans(spans, "ant", "Phase: Run", jobName);
+            checkChainOfSpans(spans, "Phase: Finalise", jobName);
+            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
-        assertFreestyleJobMetadata(build, spans);
-        // Jenkins UTs classloader does not load the plugins :/ so let's use the default value.
-        assertBuildStepMetadata(spans, "ant", JENKINS_CORE);
-        assertNodeMetadata(spans, jobName, true);
+            assertFreestyleJobMetadata(build, spans);
+            // Jenkins UTs classloader does not load the plugins :/ so let's use the default value.
+            assertBuildStepMetadata(spans, "ant", JENKINS_CORE);
+            assertNodeMetadata(spans, jobName, true);
+        } finally {
+          jenkinsRule.jenkins.removeNode(agent);
+        }
     }
 
     // See https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java

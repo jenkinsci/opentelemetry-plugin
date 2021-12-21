@@ -19,6 +19,7 @@ import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
+import io.opentelemetry.sdk.resources.Resource;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -78,6 +79,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
+    private String disabledResourceProviders = OpenTelemetrySdkProvider.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
     private boolean exportOtelConfigurationAsEnvironmentVariables;
@@ -113,7 +116,15 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(this.getEndpoint(), this.getTrustedCertificatesPem(), this.getAuthentication(), this.getExporterTimeoutMillis(), this.getExporterIntervalMillis(), this.getIgnoredSteps(), this.getServiceName(), this.getServiceNamespace());
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(
+            Optional.ofNullable(this.getEndpoint()),
+            Optional.ofNullable(this.getTrustedCertificatesPem()),
+            Optional.ofNullable(this.getAuthentication()),
+            Optional.ofNullable(this.getExporterTimeoutMillis()),
+            Optional.ofNullable(this.getExporterIntervalMillis()),
+            Optional.ofNullable(this.getServiceName()),
+            Optional.ofNullable(this.getServiceNamespace()),
+            Optional.ofNullable(this.getDisabledResourceProviders()));
         if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
@@ -216,8 +227,19 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return ignoredSteps;
     }
 
+    @DataBoundSetter
     public void setIgnoredSteps(String ignoredSteps) {
         this.ignoredSteps = ignoredSteps;
+    }
+
+    public String getDisabledResourceProviders() {
+        return disabledResourceProviders;
+    }
+
+    @DataBoundSetter
+    public void setDisabledResourceProviders(String disabledResourceProviders) {
+        this.disabledResourceProviders = disabledResourceProviders;
+        initializeOpenTelemetry();
     }
 
     public boolean isExportOtelConfigurationAsEnvironmentVariables() {
@@ -231,7 +253,12 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @Nonnull
     public Map<String, String> getOtelConfigurationAsEnvironmentVariables() {
+        if (this.endpoint == null) {
+            return Collections.emptyMap();
+        }
+
         Map<String, String> environmentVariables = new HashMap<>();
+        environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_TRACES_EXPORTER, "otlp");
         environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_ENDPOINT, this.endpoint);
         String sanitizeOtlpEndpoint = sanitizeOtlpEndpoint(this.endpoint);
         if (sanitizeOtlpEndpoint != null && sanitizeOtlpEndpoint.startsWith("http://")) {
@@ -368,6 +395,33 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     public void setServiceNamespace(String serviceNamespace) {
         this.serviceNamespace = serviceNamespace;
         initializeOpenTelemetry();
+    }
+
+    @Nonnull
+    public Resource getResource(){
+        if (this.openTelemetrySdkProvider == null) {
+            return Resource.empty();
+        } else {
+            return this.openTelemetrySdkProvider.resource;
+        }
+    }
+
+    /**
+     * Used in io/jenkins/plugins/opentelemetry/JenkinsOpenTelemetryPluginConfiguration/config.jelly because
+     * cyrille doesn't know how to format the content with linebreaks in a html teaxtarea
+     */
+    @Nonnull
+    public String getResourceAsText(){
+        return this.getResource().getAttributes().asMap().entrySet().stream().
+            map(e -> e.getKey() + "=" + e.getValue()).
+            collect(Collectors.joining("\r\n"));
+    }
+
+    protected Object readResolve() {
+        if (this.disabledResourceProviders == null) {
+            this.disabledResourceProviders = OpenTelemetrySdkProvider.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+        }
+        return this;
     }
 
     public static JenkinsOpenTelemetryPluginConfiguration get() {

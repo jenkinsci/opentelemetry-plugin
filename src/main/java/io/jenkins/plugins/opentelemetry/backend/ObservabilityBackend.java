@@ -7,6 +7,9 @@ package io.jenkins.plugins.opentelemetry.backend;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Maps;
+import groovy.lang.Binding;
+import groovy.lang.MissingPropertyException;
 import groovy.lang.Writable;
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
@@ -14,27 +17,36 @@ import hudson.DescriptorExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.sdk.resources.Resource;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.CheckForNull;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public abstract class ObservabilityBackend implements Describable<ObservabilityBackend>, ExtensionPoint {
     private final static Logger LOGGER = Logger.getLogger(ObservabilityBackend.class.getName());
 
     private String name;
 
-    private transient Template traceVisualisationUrlGTemplate;
-
     @CheckForNull
     public abstract String getTraceVisualisationUrlTemplate();
 
+    private transient Template traceVisualisationUrlGTemplate;
+
     @CheckForNull
-    public abstract String getMetricsVisualisationUrlTemplate();
+    public abstract String getMetricsVisualizationUrlTemplate();
+
+    private transient Template metricsVisualizationUrlGTemplate;
 
     @CheckForNull
     public abstract String getIconPath();
@@ -51,6 +63,9 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     @Override
     public abstract int hashCode();
 
+    /**
+     * For extensions
+     */
     public abstract Map<String, Object> mergeBindings(Map<String, Object> bindings);
 
     public String getName() {
@@ -63,15 +78,16 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     }
 
     /**
-     * @return {@code null} if no {@link #getMetricsVisualisationUrlTemplate()} has been defined or if the {@link #getMetricsVisualisationUrlTemplate} has a syntax error
+     * @return {@code null} if no {@link #getTraceVisualisationUrlTemplate()} has been defined or if the {@link #getMetricsVisualizationUrlTemplate} has a syntax error
      */
     @CheckForNull
     public String getTraceVisualisationUrl(Map<String, Object> bindings) {
         if (Strings.isNullOrEmpty(this.getTraceVisualisationUrlTemplate())) {
             return null;
         }
-        if (this.traceVisualisationUrlGTemplate == null) {
-
+        if (traceVisualisationUrlGTemplate == ERROR_TEMPLATE) {
+            return null;
+        } else if (this.traceVisualisationUrlGTemplate == null) {
             GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
             try {
                 this.traceVisualisationUrlGTemplate = gStringTemplateEngine.createTemplate(this.getTraceVisualisationUrlTemplate());
@@ -80,11 +96,39 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
                 this.traceVisualisationUrlGTemplate = ERROR_TEMPLATE;
             }
         }
-        if (traceVisualisationUrlGTemplate == ERROR_TEMPLATE ) {
-            return null;
-        }
+
         Map<String, Object> mergedBindings = mergeBindings(bindings);
         return traceVisualisationUrlGTemplate.make(mergedBindings).toString();
+    }
+
+    public String getMetricsVisualizationUrl(Resource resource) {
+        if (Strings.isNullOrEmpty(this.getMetricsVisualizationUrlTemplate())) {
+            return null;
+        }
+        if (metricsVisualizationUrlGTemplate == ERROR_TEMPLATE) {
+            return null;
+        } else if (this.metricsVisualizationUrlGTemplate == null) {
+            GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
+            try {
+                this.metricsVisualizationUrlGTemplate = gStringTemplateEngine.createTemplate(this.getMetricsVisualizationUrlTemplate());
+            } catch (IOException | ClassNotFoundException e) {
+                LOGGER.log(Level.WARNING, "Invalid Metrics Visualisation URL Template '" + this.getMetricsVisualizationUrlTemplate() + "'", e);
+                this.metricsVisualizationUrlGTemplate = ERROR_TEMPLATE;
+            }
+        }
+        Map<String, String> resourceMap =
+            resource.getAttributes().asMap().entrySet().stream()
+            .collect(Collectors.toMap(entry -> entry.getKey().getKey(), entry -> Objects.toString(entry.getValue())));
+        Map<String, Object> mergedBindings = mergeBindings(Collections.singletonMap("resource", resourceMap));
+
+        try {
+            return this.metricsVisualizationUrlGTemplate.make(mergedBindings).toString();
+        } catch (MissingPropertyException e) {
+            this.metricsVisualizationUrlGTemplate = ERROR_TEMPLATE;
+            LOGGER.log(Level.WARNING, "Failure to generate MetricsVisualizationUrl, missing binding for property '"
+                + e.getProperty() + "' in template " + getMetricsVisualizationUrlTemplate());
+            return null;
+        }
     }
 
     @Override
@@ -102,6 +146,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     public static abstract class ObservabilityBackendDescriptor extends Descriptor<ObservabilityBackend> implements Comparable<ObservabilityBackendDescriptor> {
         /**
          * Enable displaying the {@link CustomObservabilityBackend} at the end when listing all available backend types
+         *
          * @return ordinal position
          */
         public int ordinal() {
@@ -114,21 +159,13 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
         }
     }
 
-    public final static Template ERROR_TEMPLATE = new Template() {
-        @Override
-        public Writable make() {
-            return out -> {
-                out.write("#ERROR#");
-                return out;
-            };
-        }
+    public final static Template ERROR_TEMPLATE;
 
-        @Override
-        public Writable make(Map binding) {
-            return out -> {
-                out.write("#ERROR#");
-                return out;
-            };
+    static {
+        try {
+            ERROR_TEMPLATE = new GStringTemplateEngine().createTemplate("#ERROR#");
+        } catch (Exception e) {
+            throw new IllegalStateException("failure to create error template");
         }
-    };
+    }
 }

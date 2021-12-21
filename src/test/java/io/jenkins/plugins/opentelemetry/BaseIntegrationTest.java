@@ -179,6 +179,7 @@ public class BaseIntegrationTest {
         MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.SPAN_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
         MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.TRACE_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
         // See src/test/resources/io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
+        MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_TRACES_EXPORTER), CoreMatchers.is("otlp"));
         MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_ENDPOINT), CoreMatchers.is("http://otel-collector-contrib:4317"));
         MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_INSECURE), CoreMatchers.is("true"));
         MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT), CoreMatchers.is("3000"));

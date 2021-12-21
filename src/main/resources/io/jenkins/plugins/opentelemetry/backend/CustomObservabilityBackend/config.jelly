@@ -4,12 +4,10 @@
         <f:entry title="Name" field="name">
             <f:textbox default="${descriptor.displayName}"/>
         </f:entry>
-        <f:entry title="Trace visualisation URL template" field="traceVisualisationUrlTemplate" description="e.g. 'https://my-observability.example.com:5601/traces/\$\{traceId}'">
+        <f:entry title="Trace visualization URL template" field="traceVisualisationUrlTemplate" description="e.g. 'https://my-observability.example.com:5601/traces/\$\{traceId}'">
             <f:textbox/>
         </f:entry>
-    <!--
-        <f:entry title="Metrics visualisation URL template" field="metricsVisualisationUrlTemplate">
+        <f:entry title="Metrics visualization URL template" field="metricsVisualizationUrlTemplate">
             <f:textbox />
         </f:entry>
-    -->
 </j:jelly>

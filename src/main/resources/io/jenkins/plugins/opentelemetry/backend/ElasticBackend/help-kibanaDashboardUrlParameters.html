@@ -1,0 +1,37 @@
+<!--
+  ~ Copyright The Original Author or Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+<div>
+    <p>HTTP parameters of the URL of the Kibana dashboard</p>
+    <p>The URL uses the
+        <a href="https://docs.groovy-lang.org/docs/next/html/documentation/template-engines.html#_gstringtemplateengine">
+            Groovy GString Template Engine
+        </a>.
+    </p>
+    <p>
+        Available templating parameters are:
+    <ul>
+        <li><code>${kibanaBaseUrl}</code></li>
+        <li><code>${kibanaSpaceIdentifier}</code></li>
+        <li><code>${kibanaDashboardTitle}</code></li>
+        <li><code>${kibanaDashboardUrlParameters}</code></li>
+        <li>The OpenTelemetry resource attributes using the syntax:
+            <code>${resource['resource-attribute-key']}</code></li>
+    </ul>
+    </p>
+    <p>
+        Default OpenTelemetry resource attributes:
+    <ul>
+        <li><code>service.name</code></li>
+        <li><code>service.namespace</code></li>
+        <li><code>service.version</code></li>
+        <li><code>jenkins.url</code></li>
+    </ul>
+    </p>
+    <p>
+        Default OpenTelemetry resource attributes can be overwritten and additional resource attributes can be defined using the "<code>OTEL_RESOURCE_ATTRIBUTES</code>"
+        environment variable or the "<code>-Dotel.resource.attributes</code>" system property when starting the Jenkins
+        controller.
+    </p>
+</div>

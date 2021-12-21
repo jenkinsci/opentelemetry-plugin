@@ -1,4 +1,5 @@
 authentication: "noAuthentication"
+disabledResourceProviders: "io.opentelemetry.sdk.extension.resources.ProcessResourceProvider"
 endpoint: "http://otel-collector-contrib:4317"
 exportOtelConfigurationAsEnvironmentVariables: false
 exporterIntervalMillis: 60000
@@ -12,7 +13,7 @@ observabilityBackends:
     jaegerBaseUrl: "http://localhost:16686"
     name: "My Jaeger"
 - customObservabilityBackend:
-    metricsVisualisationUrlTemplate: "foo"
+    metricsVisualizationUrlTemplate: "foo"
     name: "My Custom"
     traceVisualisationUrlTemplate: "http://example.com"
 - zipkin:

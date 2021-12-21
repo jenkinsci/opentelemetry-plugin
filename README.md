@@ -64,7 +64,7 @@ service:
 ### Configuring the Jenkins OpenTelemetry Plugin using OpenTelemetry standard environment variables and system properties
 
 The configuration of the Jenkins OpenTelemetry plugin that relate to the export of the signals can be set up using the standard OpenTelemetry configuration environment variables and system properties.
-The Jenkins OpenTelemetry plugin supports the following exporters: OTLP, Jaeger, Prometheus, and Logging.
+The Jenkins OpenTelemetry plugin supports the following exporters: [OTLP](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md#otlp-exporter-both-span-and-metric-exporters), [Jaeger](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md#jaeger-exporter), [Prometheus](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md#prometheus-exporter), and [Logging](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md#logging-exporter). The logging exporter is a troubleshooting exporter than writes data to stdout.
 
 When specifying configuration parameters mixing environment variables, system properties, and Jenkins Otel plugin config, the order of precedence is: Jenkins Plugin Config > JVM System Properties > Environment Variable.
 Note that the key-value pairs of the `OTEL_RESOURCE_ATTRIBUTES` attributes are merged across all the layers of settings.
@@ -217,7 +217,7 @@ the span name will refer to `Agent` in the distributed traces.
     * Elastic Observability
     * Jaeger
     * Zipkin
-    * Custom Observability backend for other visualisation solution
+    * Custom Observability backend for other visualization solutions
 
 ![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
@@ -376,7 +376,7 @@ unclassified:
           jaegerBaseUrl: "http://localhost:16686"
           name: "Jaeger"
       - customObservabilityBackend:
-          metricsVisualisationUrlTemplate: "foo"
+          metricsVisualizationUrlTemplate: "foo"
           traceVisualisationUrlTemplate: "http://example.com"
           name: "Custom Observability"
       - zipkin:
@@ -385,6 +385,9 @@ unclassified:
     serviceName: "jenkins"
     serviceNamespace: "jenkins"
 ```
+
+ℹ️ be careful of the misalignment of spelling between  `metricsVisualizationUrlTemplate` and `traceVisualisationUrlTemplate`.
+This misalignment ("visualisation" versus "visualization") will be fixed soon aligning on "visualization" while supporting backward compatibility.
 
 See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folder with various samples.
 

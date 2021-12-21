@@ -1,12 +1,28 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-         <f:entry title="Kibana base URL" field="kibanaBaseUrl" description="e.g. 'https://kibana.example.com:5601'">
-             <f:textbox />
-         </f:entry>
-         <f:advanced>
-            <f:entry title="Name" field="name">
-               <f:textbox default="${descriptor.displayName}"/>
-            </f:entry>
-         </f:advanced>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form">
+    <f:entry title="Kibana base URL" field="kibanaBaseUrl" description="e.g. 'https://kibana.example.com:5601'">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="Display Kibana dashboard link?"
+             field="displayKibanaDashboardLink"
+             description="Display a link from Jenkins home GUI to the 'Jenkins Overview' dashboard in Kibana. Requires to create a 'Jenkins Overview' dashboard in Kibana. Click on the question mark icon on the right for guidance to create the dashboard in Kibana.">
+        <f:checkbox />
+    </f:entry>
+    <f:advanced>
+        <f:entry title="Display Name" field="name" description="Name used in Jenkins GUI">
+            <f:textbox default="${descriptor.displayName}"/>
+        </f:entry>
+        <f:entry title="Kibana dashboard title" field="kibanaDashboardTitle"
+                 description="Name of the Kibana dashboard used to monitor Jenkins. Default value is 'Jenkins Overview'.">
+            <f:textbox default="${descriptor.defaultKibanaDashboardTitle}"/>
+        </f:entry>
+        <f:entry title="Kibana space identifier" field="kibanaSpaceIdentifier"
+                 description="Identifier of the Kibana space in which the Jenkins monitoring dashboard is defined. The identifier for the default space is an empty string.">
+            <f:textbox default="${descriptor.defaultKibanaSpaceIdentifier}"/>
+        </f:entry>
+        <f:entry title="Kibana dashboard URL parameters" field="kibanaDashboardUrlParameters">
+            <f:textbox default="${descriptor.defaultKibanaDashboardUrlParameters}"/>
+        </f:entry>
+    </f:advanced>
 </j:jelly>

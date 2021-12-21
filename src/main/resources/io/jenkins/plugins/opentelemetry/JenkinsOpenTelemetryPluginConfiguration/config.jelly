@@ -45,6 +45,14 @@
                 <f:entry field="ignoredSteps" title="Steps to be ignored (comma-separated)" description="e.g. 'dir,echo,println'">
                     <f:textbox />
                 </f:entry>
+                <f:entry field="disabledResourceProviders" title="Disabled Resource Providers" description="Coma separated list of class names. Aka 'OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS'">
+                    <f:textbox />
+                </f:entry>
+                <f:entry title="Resource Attributes" description="See 'OTEL_RESOURCE_ATTRIBUTES'. OpenTelemetry Resource Attributes are added to spans and metrics as contextual data">
+                    <textarea rows="10" cols="100" wrap="off" readonly="readonly" style="overflow:scroll;background-color:lightgrey">
+                        ${instance.resourceAsText}
+                    </textarea>
+                </f:entry>
             </f:advanced>
     </f:section>
 </j:jelly>
