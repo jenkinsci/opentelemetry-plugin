@@ -11,6 +11,7 @@ import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.jenkins.plugins.opentelemetry.job.runhandler.DefaultRunHandler;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
@@ -34,8 +35,8 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
     final String traceId;
     final String spanId;
     Map<String, Map<String, String>> contextPerNodeId = new HashMap<>();
+    Map<String, String> rootContext = new HashMap<>();
 
-    SpanNamingStrategy spanNamingStrategy;
     transient Run run;
     transient JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
 
@@ -48,14 +49,12 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
     public void onAttached(Run<?, ?> r) {
         this.run = r;
         this.pluginConfiguration = ExtensionList.lookupSingleton(JenkinsOpenTelemetryPluginConfiguration.class);
-        this.spanNamingStrategy = this.pluginConfiguration.getSpanNamingStrategy();
     }
 
     @Override
     public void onLoad(Run<?, ?> r) {
         this.run = r;
         this.pluginConfiguration = ExtensionList.lookupSingleton(JenkinsOpenTelemetryPluginConfiguration.class);
-        this.spanNamingStrategy = this.pluginConfiguration.getSpanNamingStrategy();
     }
 
     @Override
@@ -97,6 +96,15 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
     }
 
     @CheckForNull
+    public Map<String, String> getRootContext() {
+        return rootContext;
+    }
+
+    public void addRootContext(@Nonnull Map<String, String> context) {
+        this.rootContext = context;
+    }
+
+    @CheckForNull
     public Map<String, String> getContext(@Nonnull String flowNodeId) {
         return contextPerNodeId.get(flowNodeId);
     }
@@ -117,7 +125,8 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         }
         Map<String, Object> binding = new HashMap<>();
         binding.put("serviceName", Objects.requireNonNull(JenkinsOpenTelemetryPluginConfiguration.get().getServiceName()));
-        binding.put("rootSpanName", OtelUtils.urlEncode(spanNamingStrategy.getRootSpanName(run)));
+        // FIXME retrieve root span name
+        binding.put("rootSpanName", "FIXME");
         binding.put("traceId", this.traceId);
         binding.put("spanId", this.spanId);
         binding.put("startTime", Instant.ofEpochMilli(run.getStartTimeInMillis()));

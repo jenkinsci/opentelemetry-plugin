@@ -16,7 +16,6 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
-import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.sdk.resources.Resource;
@@ -84,8 +83,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
     private boolean exportOtelConfigurationAsEnvironmentVariables;
-
-    private transient SpanNamingStrategy spanNamingStrategy;
 
     private transient ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
 
@@ -281,15 +278,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Nonnull
     public String getVisualisationObservabilityBackendsString(){
         return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(d-> d.getDisplayName()).collect(Collectors.joining(", "));
-    }
-
-    @Inject
-    public void setSpanNamingStrategy(SpanNamingStrategy spanNamingStrategy) {
-        this.spanNamingStrategy = spanNamingStrategy;
-    }
-
-    public SpanNamingStrategy getSpanNamingStrategy() {
-        return spanNamingStrategy;
     }
 
     @Nonnull

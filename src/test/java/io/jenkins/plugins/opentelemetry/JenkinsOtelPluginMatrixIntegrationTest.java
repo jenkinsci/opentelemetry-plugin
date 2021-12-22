@@ -37,8 +37,10 @@ public class JenkinsOtelPluginMatrixIntegrationTest extends BaseIntegrationTest 
         MatrixBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        // TODO: decide whether to support the matrix axes under the same matrix build
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(4L));
+
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(20L));
+        // TODO deeper checkChainOfSpans
+        checkChainOfSpans(spans, "test-matrix-1/execution", jobName);
 
         assertMatrixJobMetadata(build, spans);
         // TODO: maven multimodule contains the jobname and the maven goals.

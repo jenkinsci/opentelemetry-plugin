@@ -43,6 +43,9 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String>        CI_PIPELINE_RUN_URL = AttributeKey.stringKey("ci.pipeline.run.url");
     public static final AttributeKey<String>        CI_PIPELINE_RUN_USER = AttributeKey.stringKey("ci.pipeline.run.user");
 
+    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_NAMES = AttributeKey.stringArrayKey("ci.pipeline.axis.names");
+    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_VALUES = AttributeKey.stringArrayKey("ci.pipeline.axis.values");
+
     public static final AttributeKey<String>        GIT_REPOSITORY = AttributeKey.stringKey("git.repository");
     public static final AttributeKey<String>        GIT_BRANCH = AttributeKey.stringKey("git.branch");
     public static final AttributeKey<String>        GIT_USERNAME = AttributeKey.stringKey("git.username");
