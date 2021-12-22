@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -174,7 +175,9 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             String principal = Objects.toString(node.getExecution().getAuthentication().getPrincipal(), "#null#");
             LOGGER.log(Level.FINE, () -> node.getDisplayFunctionName() + " - principal: " + principal);
 
-            StepHandler stepHandler = getStepHandlers().stream().filter(sh -> sh.canCreateSpanBuilder(node, run)).findFirst().get();
+            StepHandler stepHandler = getStepHandlers().stream().filter(sh -> sh.canCreateSpanBuilder(node, run)).findFirst()
+                .orElseThrow((Supplier<RuntimeException>) () ->
+                    new IllegalStateException("No StepHandler found for node " + node.getClass() + " - " + node + " on " + run));
             SpanBuilder spanBuilder = stepHandler.createSpanBuilder(node, run, getTracer());
 
             String stepType = getStepType(node, node.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NAME);
