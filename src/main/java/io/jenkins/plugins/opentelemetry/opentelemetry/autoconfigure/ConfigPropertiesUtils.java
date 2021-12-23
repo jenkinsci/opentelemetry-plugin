@@ -36,7 +36,7 @@ public class ConfigPropertiesUtils {
     }
 
     /**
-     * Helper because there is no public implementation of the {@see ConfigProperties} interface.
+     * Helper because there is no public implementation of the "i.o.s.a.s.ConfigProperties" interface.
      */
     public static ConfigProperties emptyConfig(){
         return new ConfigProperties() {
