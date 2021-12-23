@@ -15,13 +15,22 @@ import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import jenkins.YesNoMaybe;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 
-@Extension
+@Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class MatrixRunHandler implements RunHandler {
+
+    private boolean expandJobName;
+
+    public MatrixRunHandler() throws ClassNotFoundException {
+        // verify the class is available to force the contract `@Extension(optional = true)`
+        Class.forName(MatrixRun.class.getName());
+    }
 
     @Override
     public boolean canCreateSpanBuilder(@Nonnull Run run) {
@@ -36,7 +45,8 @@ public class MatrixRunHandler implements RunHandler {
             MatrixConfiguration matrixConfiguration = matrixRun.getParent();
 
             MatrixProject matrixProject = matrixConfiguration.getParent();
-            SpanBuilder spanBuilder = tracer.spanBuilder(matrixProject.getFullName() + "/execution");
+            String spanName = expandJobName ? run.getParent().getFullName() : matrixProject.getFullName() + "/execution";
+            SpanBuilder spanBuilder = tracer.spanBuilder(spanName);
             Combination combination = matrixConfiguration.getCombination();
             List<String> axisNames = new ArrayList<>();
             List<String> axisValues = new ArrayList<>();
@@ -56,5 +66,10 @@ public class MatrixRunHandler implements RunHandler {
         } else {
             throw new IllegalStateException("Unsupported run type " + run);
         }
+    }
+
+    @Override
+    public void configure(ConfigProperties config) {
+        expandJobName = Boolean.TRUE.equals(config.getBoolean("otel.instrumentation.jenkins.job.matrix.expand.job.name"));
     }
 }

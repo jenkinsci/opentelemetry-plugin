@@ -39,7 +39,7 @@ public class JvmMonitoringInitializer extends OpenTelemetryPluginAbstractInitial
      */
     @Initializer(after = InitMilestone.JOB_LOADED)
     public void initialize() {
-        LOGGER.log(Level.INFO, "Start monitoring the JVM...");
+        LOGGER.log(Level.FINE, "Start monitoring the JVM...");
         GarbageCollector.registerObservers();
         MemoryPools.registerObservers();
 

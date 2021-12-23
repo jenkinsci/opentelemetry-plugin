@@ -22,6 +22,8 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String>        CI_PIPELINE_MULTIBRANCH_TYPE = AttributeKey.stringKey("ci.pipeline.multibranch.type");
     public static final AttributeKey<String>        CI_PIPELINE_ID = AttributeKey.stringKey("ci.pipeline.id");
     public static final AttributeKey<String>        CI_PIPELINE_NAME = AttributeKey.stringKey("ci.pipeline.name");
+    public static final AttributeKey<String>        CI_PIPELINE_TEMPLATE_ID = AttributeKey.stringKey("ci.pipeline.template.id");
+    public static final AttributeKey<String>        CI_PIPELINE_TEMPLATE_URL = AttributeKey.stringKey("ci.pipeline.template.url");
     /**
      * @see hudson.model.Node#getNodeName()
      */
@@ -30,7 +32,7 @@ public final class JenkinsOtelSemanticAttributes {
      * @see hudson.model.Node#getDisplayName() ()
      */
     public static final AttributeKey<String>        CI_PIPELINE_AGENT_NAME = AttributeKey.stringKey("ci.pipeline.agent.name");
-    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_COMMITTERS = AttributeKey.stringArrayKey("ci.pipeline.run.committers");
+    public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_COMMITTERS = AttributeKey.stringArrayKey("ci.pipeline.run.committers");
     public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_CAUSE = AttributeKey.stringArrayKey("ci.pipeline.run.cause");
     public static final AttributeKey<Boolean>       CI_PIPELINE_RUN_COMPLETED = AttributeKey.booleanKey("ci.pipeline.run.completed");
     public static final AttributeKey<Long>          CI_PIPELINE_RUN_DURATION_MILLIS = AttributeKey.longKey("ci.pipeline.run.durationMillis");
@@ -43,8 +45,8 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String>        CI_PIPELINE_RUN_URL = AttributeKey.stringKey("ci.pipeline.run.url");
     public static final AttributeKey<String>        CI_PIPELINE_RUN_USER = AttributeKey.stringKey("ci.pipeline.run.user");
 
-    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_NAMES = AttributeKey.stringArrayKey("ci.pipeline.axis.names");
-    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_VALUES = AttributeKey.stringArrayKey("ci.pipeline.axis.values");
+    public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_AXIS_NAMES = AttributeKey.stringArrayKey("ci.pipeline.axis.names");
+    public static final AttributeKey<List<String>>  CI_PIPELINE_RUN_AXIS_VALUES = AttributeKey.stringArrayKey("ci.pipeline.axis.values");
 
     public static final AttributeKey<String>        GIT_REPOSITORY = AttributeKey.stringKey("git.repository");
     public static final AttributeKey<String>        GIT_BRANCH = AttributeKey.stringKey("git.branch");
@@ -116,6 +118,4 @@ public final class JenkinsOtelSemanticAttributes {
 
 
     public static final AttributeKey<String>        ELASTIC_TRANSACTION_TYPE = AttributeKey.stringKey("type");
-
-
 }

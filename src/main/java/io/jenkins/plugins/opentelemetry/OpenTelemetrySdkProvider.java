@@ -19,6 +19,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
 import io.opentelemetry.sdk.extension.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
@@ -54,6 +55,7 @@ public class OpenTelemetrySdkProvider {
     protected transient TracerDelegate tracer;
     protected transient Meter meter;
     protected transient Resource resource;
+    protected transient ConfigProperties config;
 
     public OpenTelemetrySdkProvider() {
     }
@@ -77,6 +79,11 @@ public class OpenTelemetrySdkProvider {
     @Nonnull
     public Resource getResource() {
         return Preconditions.checkNotNull(resource);
+    }
+
+    @Nonnull
+    public ConfigProperties getConfig() {
+        return Preconditions.checkNotNull(config);
     }
 
     @VisibleForTesting
@@ -134,6 +141,7 @@ public class OpenTelemetrySdkProvider {
         AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = sdkBuilder.build();
         this.openTelemetrySdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
         this.resource = autoConfiguredOpenTelemetrySdk.getResource();
+        this.config = autoConfiguredOpenTelemetrySdk.getConfig();
         LOGGER.log(Level.FINE, () -> "OpenTelemetry resource: " +
             resource.getAttributes().asMap().entrySet().stream()
                 .map(e -> e.getKey().getKey() + "=" + e.getValue()).collect(Collectors.joining(", ")));
@@ -151,6 +159,7 @@ public class OpenTelemetrySdkProvider {
 
         this.openTelemetrySdk = null;
         this.resource = Resource.getDefault();
+        this.config = ConfigPropertiesUtils.emptyConfig();
         this.openTelemetry = OpenTelemetry.noop();
         GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
         GlobalOpenTelemetry.set(OpenTelemetry.noop());

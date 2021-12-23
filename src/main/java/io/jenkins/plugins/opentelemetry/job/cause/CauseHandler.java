@@ -6,10 +6,13 @@
 package io.jenkins.plugins.opentelemetry.job.cause;
 
 import hudson.model.Cause;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
 import javax.annotation.Nonnull;
 
 public interface CauseHandler extends Comparable<CauseHandler> {
+
+    default void configure(ConfigProperties config){};
 
     boolean isSupported(@Nonnull Cause cause);
 

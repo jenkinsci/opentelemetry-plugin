@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,17 +66,30 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
-    private List<CauseHandler> causeHandlers;
 
     private AtomicInteger activeRun;
+    private List<CauseHandler> causeHandlers;
     private LongCounter runLaunchedCounter;
     private LongCounter runStartedCounter;
     private LongCounter runCompletedCounter;
     private LongCounter runAbortedCounter;
-    private transient List<RunHandler> runHandlers;
+    private List<RunHandler> runHandlers;
 
     @PostConstruct
     public void postConstruct() {
+        // CAUSE HANDLERS
+        List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));
+        causeHandlers.stream().forEach(causeHandler -> causeHandler.configure(getConfig()));
+        Collections.sort(causeHandlers);
+        this.causeHandlers = causeHandlers;
+
+        // RUN HANDLERS
+        List<RunHandler> runHandlers = new ArrayList<>(ExtensionList.lookup(RunHandler.class));
+        runHandlers.stream().forEach(runHandler -> runHandler.configure(getConfig()));
+        Collections.sort(runHandlers);
+        this.runHandlers = runHandlers;
+
+        // METRICS
         activeRun = new AtomicInteger();
         getMeter().gaugeBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
             .ofLongs()
@@ -105,13 +119,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @NonNull
-    public synchronized List<CauseHandler> getCauseHandlers() {
-        if (this.causeHandlers == null) {
-            List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));
-            Collections.sort(causeHandlers);
-            this.causeHandlers = causeHandlers;
-        }
-        return causeHandlers;
+    public List<CauseHandler> getCauseHandlers() {
+        return Preconditions.checkNotNull(causeHandlers);
     }
 
     @NonNull
@@ -355,12 +364,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         }
     }
 
+    @Nonnull
     protected List<RunHandler> getRunHandlers() {
-        if (runHandlers == null) {
-            List<RunHandler> runHandlers = new ArrayList<>(ExtensionList.lookup(RunHandler.class));
-            Collections.sort(runHandlers);
-            this.runHandlers = runHandlers;
-        }
-        return this.runHandlers;
+        return Preconditions.checkNotNull(this.runHandlers);
     }
 }

@@ -8,10 +8,14 @@ package io.jenkins.plugins.opentelemetry.job.runhandler;
 import hudson.model.Run;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
 import javax.annotation.Nonnull;
 
 public interface RunHandler extends Comparable<RunHandler> {
+
+    default void configure(ConfigProperties config){};
+
     boolean canCreateSpanBuilder(@Nonnull Run run);
 
     @Nonnull
