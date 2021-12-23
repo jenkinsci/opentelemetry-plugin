@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.job.runhandler;
 
 import com.google.inject.Inject;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.Action;
 import hudson.model.Item;
@@ -55,8 +56,8 @@ public class JobDslRunHandler implements RunHandler {
         // TODO understand the difference between seedJobAction.getTemplateJob() and seedJobAction.getSeedJob()
         Item seedJob = seedJobAction.getSeedJob();
 
-        String templateFullName ;
-        String templateUrl ;
+        String templateFullName;
+        String templateUrl;
         String spanName;
         if (seedJob == null) {
             templateFullName = null;
@@ -68,9 +69,14 @@ public class JobDslRunHandler implements RunHandler {
             spanName = collapseJobName ? "Job from seed '" + templateFullName + "'" : job.getFullName();
         }
 
-        return tracer.spanBuilder(spanName)
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TEMPLATE_ID, templateFullName)
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TEMPLATE_URL, templateUrl);
+        SpanBuilder spanBuilder = tracer.spanBuilder(spanName);
+        if (templateFullName != null) {
+            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TEMPLATE_ID, templateFullName);
+        }
+        if (templateUrl != null) {
+            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TEMPLATE_URL, templateUrl);
+        }
+        return spanBuilder;
     }
 
     @Override
