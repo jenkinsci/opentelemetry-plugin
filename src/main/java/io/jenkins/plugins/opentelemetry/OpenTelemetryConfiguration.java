@@ -15,6 +15,7 @@ import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nonnull;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -35,14 +36,15 @@ public class OpenTelemetryConfiguration {
     private final Optional<String> serviceName;
     private final Optional<String> serviceNamespace;
     private final Optional<String> disabledResourceProviders;
+    private final Map<String, String> configurationProperties;
 
     public OpenTelemetryConfiguration() {
-        this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap());
     }
 
     public OpenTelemetryConfiguration(Optional<String> endpoint, Optional<String> trustedCertificatesPem, Optional<OtlpAuthentication> authentication,
                                       Optional<Integer> exporterTimeoutMillis, Optional<Integer> exporterIntervalMillis,
-                                      Optional<String> serviceName, Optional<String> serviceNamespace, Optional<String> disabledResourceProviders) {
+                                      Optional<String> serviceName, Optional<String> serviceNamespace, Optional<String> disabledResourceProviders, Map<String, String> configurationProperties) {
         this.endpoint = endpoint.filter(StringUtils::isNotBlank);
         this.trustedCertificatesPem = trustedCertificatesPem.filter(StringUtils::isNotBlank);
         this.authentication = authentication;
@@ -51,6 +53,7 @@ public class OpenTelemetryConfiguration {
         this.serviceName = serviceName.filter(StringUtils::isNotBlank);
         this.serviceNamespace = serviceNamespace.filter(StringUtils::isNotBlank);
         this.disabledResourceProviders = disabledResourceProviders.filter(StringUtils::isNotBlank);
+        this.configurationProperties = configurationProperties;
 
         this.getEndpoint().ifPresent(ep ->
             Preconditions.checkArgument(
@@ -97,6 +100,7 @@ public class OpenTelemetryConfiguration {
     @Nonnull
     public Map<String, String> toOpenTelemetryProperties() {
         Map<String, String> properties = new HashMap<>();
+        properties.putAll(this.configurationProperties);
         if (TESTING_INMEMORY_MODE) {
             properties.put("otel.traces.exporter", "testing");
             properties.put("otel.metrics.exporter", "testing");
@@ -156,12 +160,13 @@ public class OpenTelemetryConfiguration {
             Objects.equals(trustedCertificatesPem, that.trustedCertificatesPem) && Objects.equals(exporterTimeoutMillis, that.exporterTimeoutMillis) &&
             Objects.equals(exporterIntervalMillis, that.exporterIntervalMillis) &&
             Objects.equals(serviceName, that.serviceName) && Objects.equals(serviceNamespace, that.serviceNamespace) &&
-            Objects.equals(disabledResourceProviders, that.disabledResourceProviders);
+            Objects.equals(disabledResourceProviders, that.disabledResourceProviders) &&
+            Objects.equals(configurationProperties, that.configurationProperties);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endpoint, authentication, trustedCertificatesPem, exporterTimeoutMillis, exporterIntervalMillis, serviceName, serviceNamespace, disabledResourceProviders);
+        return Objects.hash(endpoint, authentication, trustedCertificatesPem, exporterTimeoutMillis, exporterIntervalMillis, serviceName, serviceNamespace, disabledResourceProviders, configurationProperties);
     }
 
     @Override

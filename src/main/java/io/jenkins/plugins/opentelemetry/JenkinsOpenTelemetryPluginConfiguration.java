@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import hudson.Extension;
 import hudson.PluginWrapper;
@@ -41,12 +40,16 @@ import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -86,6 +89,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private transient ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
 
+    private String configurationProperties;
+
     private String serviceName;
 
     private String serviceNamespace;
@@ -113,6 +118,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
+        Properties properties = new Properties();
+        try {
+            properties.load(new StringReader(Objects.toString(this.configurationProperties)));
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Exception parsing configuration properties", e);
+        }
+        Map<String, String> configurationProperties = new HashMap(properties);
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(
             Optional.ofNullable(this.getEndpoint()),
             Optional.ofNullable(this.getTrustedCertificatesPem()),
@@ -121,8 +133,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             Optional.ofNullable(this.getExporterIntervalMillis()),
             Optional.ofNullable(this.getServiceName()),
             Optional.ofNullable(this.getServiceNamespace()),
-            Optional.ofNullable(this.getDisabledResourceProviders()));
-        if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
+            Optional.ofNullable(this.getDisabledResourceProviders()),
+            configurationProperties);
+        if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
         }
@@ -246,6 +259,16 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setExportOtelConfigurationAsEnvironmentVariables(boolean exportOtelConfigurationAsEnvironmentVariables) {
         this.exportOtelConfigurationAsEnvironmentVariables = exportOtelConfigurationAsEnvironmentVariables;
+    }
+
+    public String getConfigurationProperties() {
+        return configurationProperties;
+    }
+
+    @DataBoundSetter
+    public void setConfigurationProperties(String configurationProperties) {
+        this.configurationProperties = configurationProperties;
+        initializeOpenTelemetry();
     }
 
     @Nonnull

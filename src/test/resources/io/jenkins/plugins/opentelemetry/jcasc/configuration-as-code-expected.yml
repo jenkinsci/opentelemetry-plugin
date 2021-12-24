@@ -1,4 +1,5 @@
 authentication: "noAuthentication"
+configurationProperties: "otel.exporter.otlp.protocol=grpc"
 disabledResourceProviders: "io.opentelemetry.sdk.extension.resources.ProcessResourceProvider"
 endpoint: "http://otel-collector-contrib:4317"
 exportOtelConfigurationAsEnvironmentVariables: false
