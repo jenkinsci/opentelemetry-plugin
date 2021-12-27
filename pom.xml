@@ -263,7 +263,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>gitlab-plugin</artifactId>
-            <version>1.5.22</version>
+            <version>1.5.25</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>
