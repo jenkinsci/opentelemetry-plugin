@@ -41,7 +41,7 @@ public class DiskUsageMonitoringInitializer {
 
     /**
      * TODO ensure initialized after {@link QuickDiskUsageInitializer#initialize()} has been invoked by Jenkins
-     * lifecycle before {@link io.opentelemetry.api.metrics.ObservableLongMeasurement#observe(long)} is invoked
+     * lifecycle before {@link io.opentelemetry.api.metrics.ObservableLongMeasurement#record(long)} is invoked
      */
     @Initializer(after = InitMilestone.JOB_CONFIG_ADAPTED)
     public void initialize() {
