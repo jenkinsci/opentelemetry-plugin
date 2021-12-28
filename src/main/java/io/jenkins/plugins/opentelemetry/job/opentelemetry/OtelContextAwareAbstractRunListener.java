@@ -15,8 +15,10 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
 import javax.annotation.Nonnull;
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -32,12 +34,14 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     private OtelTraceService otelTraceService;
     private Tracer tracer;
     private Meter meter;
+    private ConfigProperties config;
 
     @Inject
     public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService, @Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.otelTraceService = otelTraceService;
         this.tracer = this.otelTraceService.getTracer();
         this.meter = openTelemetrySdkProvider.getMeter();
+        this.config = openTelemetrySdkProvider.getConfig();
     }
 
     @Override
@@ -115,5 +119,10 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     @NonNull
     public Meter getMeter() {
         return meter;
+    }
+
+    @Nonnull
+    protected ConfigProperties getConfig() {
+        return config;
     }
 }

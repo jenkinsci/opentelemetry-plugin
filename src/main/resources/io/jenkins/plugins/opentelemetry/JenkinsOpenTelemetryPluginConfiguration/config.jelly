@@ -30,16 +30,16 @@
                 <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format). Metrics exporter get disabled for the moment when feature is used. Aka OTEL_EXPORTER_OTLP_CERTIFICATE">
                     <f:textarea />
                 </f:entry>
-                <f:entry title="Service name" field="serviceName" description="e.g. 'my-jenkins.example.com', the Logical name of the service">
+                <f:entry title="Service name" field="serviceName" description="e.g. 'my-jenkins.example.com', the Logical name of the service. Aka OTEL_SERVICE_NAME">
                     <f:textbox />
                 </f:entry>
                 <f:entry title="Service namespace" field="serviceNamespace" description="e.g. 'ci', a namespace for service name">
                     <f:textbox />
                 </f:entry>
-                <f:entry field="exporterTimeoutMillis" title="Exporter Timeout (ms)" description="e.g. '30000'">
+                <f:entry field="exporterTimeoutMillis" title="Exporter Timeout (ms)" description="e.g. '30000'. Aka OTEL_EXPORTER_OTLP_TIMEOUT">
                     <f:number clazz="required positive number" min="1" default="${exporterTimeoutMillis}"/>
                 </f:entry>
-                <f:entry field="exporterIntervalMillis" title="Exporter Interval (ms)" description="e.g. '60000'">
+                <f:entry field="exporterIntervalMillis" title="Exporter Interval (ms)" description="e.g. '60000'. Aka OTEL_IMR_EXPORT_INTERVAL">
                     <f:number clazz="required positive number" min="1" default="${exporterIntervalMillis}"/>
                 </f:entry>
                 <f:entry field="ignoredSteps" title="Steps to be ignored (comma-separated)" description="e.g. 'dir,echo,println'">
@@ -48,11 +48,15 @@
                 <f:entry field="disabledResourceProviders" title="Disabled Resource Providers" description="Coma separated list of class names. Aka 'OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS'">
                     <f:textbox />
                 </f:entry>
+                <f:entry title="Configuration Properties" field="configurationProperties" description="OpenTelemetry configuration properties">
+                    <f:textarea />
+                </f:entry>
                 <f:entry title="Resource Attributes" description="See 'OTEL_RESOURCE_ATTRIBUTES'. OpenTelemetry Resource Attributes are added to spans and metrics as contextual data">
                     <textarea rows="10" cols="100" wrap="off" readonly="readonly" style="overflow:scroll;background-color:lightgrey">
                         ${instance.resourceAsText}
                     </textarea>
                 </f:entry>
+
             </f:advanced>
     </f:section>
 </j:jelly>

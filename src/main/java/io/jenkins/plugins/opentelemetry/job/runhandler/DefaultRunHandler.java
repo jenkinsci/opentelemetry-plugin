@@ -3,17 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.job;
+package io.jenkins.plugins.opentelemetry.job.runhandler;
 
 import com.google.common.annotations.VisibleForTesting;
 import hudson.Extension;
 import hudson.model.Run;
-import jenkins.YesNoMaybe;
+import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.Tracer;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 import java.util.Arrays;
@@ -25,28 +24,31 @@ import java.util.Locale;
  * Use same root span name for all pull change request pipelines (pull request, merge request)
  * Use different span names for different branches.
  */
-@Extension(dynamicLoadable = YesNoMaybe.YES)
-@Symbol("basicSpanNamingStrategy")
-public class SpanNamingStrategy {
+@Extension
+public class DefaultRunHandler implements RunHandler {
 
     private final static List<String> CHANGE_REQUEST_JOB_NAME_SUFFIXES = Collections.unmodifiableList(Arrays.asList(
-            "-" + ChangeRequestCheckoutStrategy.HEAD.name().toLowerCase(Locale.ENGLISH),
-            "-" + ChangeRequestCheckoutStrategy.MERGE.name().toLowerCase(Locale.ENGLISH)));
+        "-" + ChangeRequestCheckoutStrategy.HEAD.name().toLowerCase(Locale.ENGLISH),
+        "-" + ChangeRequestCheckoutStrategy.MERGE.name().toLowerCase(Locale.ENGLISH)));
 
-    @DataBoundConstructor
-    public SpanNamingStrategy() {
-
+    @Override
+    public boolean canCreateSpanBuilder(@Nonnull Run run) {
+        return true;
     }
 
     @Nonnull
-    public String getRootSpanName(@Nonnull Run run) {
-        final SCMHead head = SCMHead.HeadByItem.findHead(run.getParent());
-        final String fullName = run.getParent().getFullName();
+    @Override
+    public SpanBuilder createSpanBuilder(@Nonnull Run run, @Nonnull Tracer tracer) {
+        SCMHead head = SCMHead.HeadByItem.findHead(run.getParent());
+        String spanName;
         if (head instanceof ChangeRequestSCMHead) {
-            return getChangeRequestRootSpanName(fullName);
+            spanName = getChangeRequestRootSpanName(run.getParent().getFullName());
         } else {
-            return fullName;
+            spanName = run.getParent().getFullName();
         }
+        SpanBuilder spanBuilder = tracer.spanBuilder(spanName);
+
+        return spanBuilder;
     }
 
     @VisibleForTesting
@@ -74,5 +76,10 @@ public class SpanNamingStrategy {
             return rootSpanName + "{number}";
         }
         return jobFullName;
+    }
+
+    @Override
+    public int ordinal() {
+        return Integer.MAX_VALUE;
     }
 }

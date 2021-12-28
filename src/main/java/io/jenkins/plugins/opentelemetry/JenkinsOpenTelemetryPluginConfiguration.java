@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import hudson.Extension;
 import hudson.PluginWrapper;
@@ -16,7 +15,6 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
-import io.jenkins.plugins.opentelemetry.job.SpanNamingStrategy;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.sdk.resources.Resource;
@@ -42,12 +40,16 @@ import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -85,9 +87,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private boolean exportOtelConfigurationAsEnvironmentVariables;
 
-    private transient SpanNamingStrategy spanNamingStrategy;
-
     private transient ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
+
+    private String configurationProperties;
 
     private String serviceName;
 
@@ -116,6 +118,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @PostConstruct
     public void initializeOpenTelemetry() {
+        Properties properties = new Properties();
+        try {
+            properties.load(new StringReader(Objects.toString(this.configurationProperties)));
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Exception parsing configuration properties", e);
+        }
+        Map<String, String> configurationProperties = new HashMap(properties);
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(
             Optional.ofNullable(this.getEndpoint()),
             Optional.ofNullable(this.getTrustedCertificatesPem()),
@@ -124,8 +133,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             Optional.ofNullable(this.getExporterIntervalMillis()),
             Optional.ofNullable(this.getServiceName()),
             Optional.ofNullable(this.getServiceNamespace()),
-            Optional.ofNullable(this.getDisabledResourceProviders()));
-        if (Objects.equal(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
+            Optional.ofNullable(this.getDisabledResourceProviders()),
+            configurationProperties);
+        if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
         }
@@ -251,6 +261,16 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.exportOtelConfigurationAsEnvironmentVariables = exportOtelConfigurationAsEnvironmentVariables;
     }
 
+    public String getConfigurationProperties() {
+        return configurationProperties;
+    }
+
+    @DataBoundSetter
+    public void setConfigurationProperties(String configurationProperties) {
+        this.configurationProperties = configurationProperties;
+        initializeOpenTelemetry();
+    }
+
     @Nonnull
     public Map<String, String> getOtelConfigurationAsEnvironmentVariables() {
         if (this.endpoint == null) {
@@ -281,15 +301,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Nonnull
     public String getVisualisationObservabilityBackendsString(){
         return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(d-> d.getDisplayName()).collect(Collectors.joining(", "));
-    }
-
-    @Inject
-    public void setSpanNamingStrategy(SpanNamingStrategy spanNamingStrategy) {
-        this.spanNamingStrategy = spanNamingStrategy;
-    }
-
-    public SpanNamingStrategy getSpanNamingStrategy() {
-        return spanNamingStrategy;
     }
 
     @Nonnull

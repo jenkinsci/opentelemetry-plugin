@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.job;
+package io.jenkins.plugins.opentelemetry.job.runhandler;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SpanNamingStrategyTest {
+public class DefaultRunHandlerTest {
 
     // org.jenkinsci.plugins.github_branch_source.PullRequestGHEventSubscriber
     // jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy
@@ -16,7 +16,7 @@ public class SpanNamingStrategyTest {
     // io.jenkins.plugins.gitlabbranchsource.GitLabSCMSource
     // e.g. "my-war/MR-2", "my-war/MR-2-merge", "my-war/MR-2-head"
 
-    SpanNamingStrategy spanNamingStrategy = new SpanNamingStrategy();
+    DefaultRunHandler defaultRunHandler = new DefaultRunHandler();
 
     /**
      * GitHub and BitBucket Pull Requests
@@ -67,7 +67,8 @@ public class SpanNamingStrategyTest {
     }
 
     private void verifyRootSpanName(String jobFullName, String expected) {
-        final String actual = spanNamingStrategy.getChangeRequestRootSpanName(jobFullName);
+        DefaultRunHandler defaultRunHandler = new DefaultRunHandler();
+        final String actual = defaultRunHandler.getChangeRequestRootSpanName(jobFullName);
         Assert.assertEquals(expected, actual);
     }
 }

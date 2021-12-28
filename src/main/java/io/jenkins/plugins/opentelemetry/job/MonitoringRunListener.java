@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -12,7 +13,6 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
 import hudson.model.Cause;
-import hudson.model.CauseAction;
 import hudson.model.Node;
 import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
@@ -24,6 +24,7 @@ import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
+import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
@@ -43,15 +44,17 @@ import org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -63,18 +66,30 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
-    private List<CauseHandler> causeHandlers;
 
     private AtomicInteger activeRun;
+    private List<CauseHandler> causeHandlers;
     private LongCounter runLaunchedCounter;
     private LongCounter runStartedCounter;
     private LongCounter runCompletedCounter;
     private LongCounter runAbortedCounter;
-
-    private SpanNamingStrategy spanNamingStrategy;
+    private List<RunHandler> runHandlers;
 
     @PostConstruct
     public void postConstruct() {
+        // CAUSE HANDLERS
+        List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));
+        causeHandlers.stream().forEach(causeHandler -> causeHandler.configure(getConfig()));
+        Collections.sort(causeHandlers);
+        this.causeHandlers = causeHandlers;
+
+        // RUN HANDLERS
+        List<RunHandler> runHandlers = new ArrayList<>(ExtensionList.lookup(RunHandler.class));
+        runHandlers.stream().forEach(runHandler -> runHandler.configure(getConfig()));
+        Collections.sort(runHandlers);
+        this.runHandlers = runHandlers;
+
+        // METRICS
         activeRun = new AtomicInteger();
         getMeter().gaugeBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
             .ofLongs()
@@ -104,13 +119,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @NonNull
-    public synchronized List<CauseHandler> getCauseHandlers() {
-        if (this.causeHandlers == null) {
-            List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));
-            Collections.sort(causeHandlers);
-            this.causeHandlers = causeHandlers;
-        }
-        return causeHandlers;
+    public List<CauseHandler> getCauseHandlers() {
+        return Preconditions.checkNotNull(causeHandlers);
     }
 
     @NonNull
@@ -124,17 +134,19 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
         activeRun.incrementAndGet();
 
-        String rootSpanName = this.spanNamingStrategy.getRootSpanName(run);
+        RunHandler runHandler = getRunHandlers().stream().filter(rh -> rh.canCreateSpanBuilder(run)).findFirst()
+            .orElseThrow((Supplier<RuntimeException>) () -> new IllegalStateException("No RunHandler found for run " + run.getClass() + " - " + run));
+        SpanBuilder rootSpanBuilder = runHandler.createSpanBuilder(run, getTracer());
+
+        rootSpanBuilder.setSpanKind(SpanKind.SERVER);
         String runUrl = Objects.toString(Jenkins.get().getRootUrl(), "") + run.getUrl();
-        SpanBuilder rootSpanBuilder = getTracer().spanBuilder(rootSpanName)
-                .setSpanKind(SpanKind.SERVER);
 
         // TODO move this to a pluggable span enrichment API with implementations for different observability backends
         rootSpanBuilder
                 .setAttribute(JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE, "job");
 
         rootSpanBuilder
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, rootSpanName)
+                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_URL, runUrl)
                 .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
@@ -182,35 +194,48 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         List<String> causesDescriptions = ((List<Cause>) run.getCauses()).stream().map(c -> getCauseHandler(c).getStructuredDescription(c)).collect(Collectors.toList());
         rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE, causesDescriptions);
 
-        if (!run.getCauses().isEmpty() && run.getCauses().get(0) instanceof BuildUpstreamCause) {
-            BuildUpstreamCause buildUpstreamCause = (BuildUpstreamCause) run.getCauses().get(0);
-            Run upstreamRun = buildUpstreamCause.getUpstreamRun();
-            if (upstreamRun == null) {
-                // hudson.model.Cause.UpstreamCause.getUpstreamRun() can return null, probably if upstream job or build has been deleted.
-            } else {
-                String upstreamNodeId = buildUpstreamCause.getNodeId();
-                MonitoringAction monitoringAction = upstreamRun.getAction(MonitoringAction.class);
-                if (monitoringAction == null) {
-                    // unclear why this could happen. Maybe during the installation of the plugin if the plugin is
-                    // installed while a parent job triggers a downstream job
-                } else {
-                    Map<String, String> carrier = monitoringAction.getContext(upstreamNodeId);
-                    Context context = W3CTraceContextPropagator.getInstance().extract(Context.current(), carrier, new TextMapGetter<Map<String, String>>() {
-                        @Override
-                        public Iterable<String> keys(Map<String, String> carrier) {
-                            return carrier.keySet();
+        Optional optCause = run.getCauses().stream().findFirst();
+        optCause.ifPresent(cause -> {
+                if (cause instanceof Cause.UpstreamCause) {
+                    Cause.UpstreamCause upstreamCause = (Cause.UpstreamCause) cause;
+                    Run upstreamRun = upstreamCause.getUpstreamRun();
+                    if (upstreamRun == null) {
+                        // hudson.model.Cause.UpstreamCause.getUpstreamRun() can return null, probably if upstream job or build has been deleted.
+                    } else {
+                        MonitoringAction monitoringAction = upstreamRun.getAction(MonitoringAction.class);
+                        Map<String, String> carrier;
+                        if (monitoringAction == null) {
+                            // unclear why this could happen. Maybe during the installation of the plugin if the plugin is
+                            // installed while a parent job triggers a downstream job
+                            carrier = Collections.emptyMap();
+                        } else if (upstreamCause instanceof BuildUpstreamCause) {
+                            BuildUpstreamCause buildUpstreamCause = (BuildUpstreamCause) cause;
+                            String upstreamNodeId = buildUpstreamCause.getNodeId();
+                            carrier = monitoringAction.getContext(upstreamNodeId);
+                        } else {
+                            carrier = monitoringAction.getRootContext();
                         }
+                        Context context = W3CTraceContextPropagator.getInstance().extract(Context.current(), carrier, new TextMapGetter<Map<String, String>>() {
+                            @Override
+                            public Iterable<String> keys(Map<String, String> carrier) {
+                                return carrier.keySet();
+                            }
 
-                        @Nullable
-                        @Override
-                        public String get(@Nullable Map<String, String> carrier, String key) {
-                            return carrier == null ? null : carrier.get(key);
-                        }
-                    });
-                    rootSpanBuilder.setParent(context);
+                            @Nullable
+                            @Override
+                            public String get(@Nullable Map<String, String> carrier, String key) {
+                                return carrier == null ? null : carrier.get(key);
+                            }
+                        });
+                        rootSpanBuilder.setParent(context);
+
+                    }
+                } else {
+                    // No special processing for this Cause
                 }
             }
-        }
+
+        );
 
         // START ROOT SPAN
         Span rootSpan = rootSpanBuilder.startSpan();
@@ -223,6 +248,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         try (final Scope rootSpanScope = rootSpan.makeCurrent()) {
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin root " + OtelUtils.toDebugString(rootSpan));
 
+            Map<String, String> context = new HashMap<>();
+            W3CTraceContextPropagator.getInstance().inject(Context.current(), context, (carrier, key, value) -> carrier.put(key, value));
+            monitoringAction.addRootContext(context);
 
             // START initialize span
             Span startSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_START_NAME)
@@ -336,8 +364,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         }
     }
 
-    @Inject
-    public void setSpanNamingStrategy(SpanNamingStrategy spanNamingStrategy) {
-        this.spanNamingStrategy = spanNamingStrategy;
+    @Nonnull
+    protected List<RunHandler> getRunHandlers() {
+        return Preconditions.checkNotNull(this.runHandlers);
     }
 }
