@@ -8,10 +8,12 @@ package io.jenkins.plugins.opentelemetry.job.jenkins;
 import com.google.common.collect.Iterables;
 import hudson.model.Action;
 import hudson.model.Queue;
+import io.jenkins.plugins.opentelemetry.steps.CreateSpanStep;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.pipeline.StageStatus;
 import org.jenkinsci.plugins.pipeline.SyntheticStage;
 import org.jenkinsci.plugins.workflow.actions.*;
+import org.jenkinsci.plugins.workflow.cps.actions.ArgumentsActionImpl;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.cps.steps.ParallelStep;
@@ -34,6 +36,21 @@ import java.util.stream.Collectors;
 
 public class PipelineNodeUtil {
     private final static Logger LOGGER = Logger.getLogger(PipelineNodeUtil.class.getName());
+
+    public static boolean isStartCreateSpan(FlowNode node) {
+        if (node == null) {
+            return false;
+        }
+
+        if (!(node instanceof StepStartNode)) {
+            return false;
+        }
+        StepStartNode stepStartNode = (StepStartNode) node;
+        if (!(stepStartNode.getDescriptor() instanceof CreateSpanStep.DescriptorImpl)) {
+            return false;
+        }
+        return node.getAction(ArgumentsActionImpl.class) != null;
+    }
 
     /**
      * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}

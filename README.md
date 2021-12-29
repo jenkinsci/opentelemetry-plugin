@@ -15,6 +15,7 @@
 - [Getting Started](#getting-started)
 - [Examples](#screenshots)
 - [Configuration as Code](#configuration-as-code)
+- [Advanced features](#advanced-features)
 - [Demos](#demos)
 - [Contributing](#contributing)
 - [Learn More](#learn-more)
@@ -406,6 +407,29 @@ See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folde
 For more details see the configuration as code plugin documentation:
 <https://github.com/jenkinsci/configuration-as-code-plugin#getting-started>
 
+## Advanced features
+
+You can now instrument your [Jenkins shared library](https://www.jenkins.io/doc/book/pipeline/shared-libraries/) or
+your Jenkins pipelines with the below step:
+
+* createSpan(String name, Map<String, String> attributes)
+
+For instance, let's say you would like to create a span for the docker login details
+
+```groovy
+pipeline {
+  ...
+      createSpan(name: 'my-docker-login',
+                 attributes: [[key: 'net.peer.name', value: 'my.docker.registry'],
+                              [key: 'rpc.service', value: 'docker'],
+                              [key: 'rpc.method', value: 'login']]) {
+        sh 'docker login -u $user -p $pass $OTEL_STEP_SERVICE'
+      }
+  ...
+}
+```
+
+![Sample Advanced Feature](./docs/images/advanced-features.png)
 
 ## Demos
 

@@ -54,6 +54,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -146,6 +147,57 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
+    public void onStartCreateSpanStep(@Nonnull StepStartNode stepStartNode, @Nonnull WorkflowRun run) {
+        try (Scope ignored = setupContext(run, stepStartNode)) {
+            verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
+
+            String stepName = getStepName(stepStartNode, "createSpan");
+            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), "step");
+            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
+
+            final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
+            final String spanNameAttribute = (String) arguments.getOrDefault("name", stepName);
+            final String spanName = Strings.isNullOrEmpty(spanNameAttribute) ? stepName : spanNameAttribute;
+            SpanBuilder createSpanBuilder = getTracer().spanBuilder(spanName)
+                    .setParent(Context.current())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stepName)
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+
+            // Populate the attributes if any attributes parameter was passed to the createSpan step.
+            try {
+                final List<LinkedHashMap> attributes = (List<LinkedHashMap>) arguments.getOrDefault("attributes", Collections.emptyMap());
+                for (LinkedHashMap map : attributes) {
+                    final String[] key = new String[1];
+                    final String[] value = new String[1];
+                    map.forEach((k, v) -> {
+                        if (k.equals("key")) {
+                            key[0] = v.toString();
+                        }
+                        if (k.equals("value")) {
+                            value[0] = v.toString();
+                        }
+                    });
+                    createSpanBuilder.setAttribute(AttributeKey.stringKey(key[0]), value[0]);
+                }
+            } catch (ClassCastException cce) {
+                LOGGER.log(Level.WARNING, run.getFullDisplayName() + " failure to gather the attributes for the createStep.", cce);
+            }
+
+            Span createSpan = createSpanBuilder.startSpan();
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + stepStartNode.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(createSpan));
+            getTracerService().putSpan(run, createSpan, stepStartNode);
+        }
+    }
+
+    @Override
+    public void onEndCreateSpanStep(@Nonnull StepEndNode node, @Nonnull WorkflowRun run) {
+        endCurrentSpan(node, run);
+    }
+
+    @Override
     public void onEndNodeStep(@Nonnull StepEndNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
         endCurrentSpan(node, run);
     }
@@ -225,6 +277,19 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             return name;
         }
         UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
+        return getDisplayName(stepDescriptor, describable);
+    }
+
+    private String getStepName(@Nonnull StepStartNode node, @Nonnull String name) {
+        StepDescriptor stepDescriptor = node.getDescriptor();
+        if (stepDescriptor == null) {
+            return name;
+        }
+        UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
+        return getDisplayName(stepDescriptor, describable);
+    }
+
+    private String getDisplayName(@Nonnull StepDescriptor stepDescriptor, UninstantiatedDescribable describable) {
         if (describable != null) {
             Descriptor<? extends Describable> d = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
             return d.getDisplayName();

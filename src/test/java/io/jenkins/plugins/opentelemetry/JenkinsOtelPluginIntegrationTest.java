@@ -13,6 +13,7 @@ import hudson.model.Result;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
@@ -409,6 +410,67 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    public void testPipelineWithCreateSpanSteps() throws Exception {
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+                "node() {\n" +
+                "    stage('ze-stage1') {\n" +
+                "       createSpan(name: 'my-acme-span1', " +
+                "                  attributes: [[key: 'attribute.service', value: 'acme'], [key: 'attribute.user', value: 'bob']]) { \n" +
+                "          xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
+                "       }\n" +
+                "    }\n" +
+                "    stage('ze-stage2') {\n" +
+                "       createSpan(name: 'my-acme-span2') { \n" +
+                "          xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
+                "       }\n" +
+                "    }\n" +
+                "    stage('ze-stage3') {\n" +
+                "       createSpan(name: '', " +
+                "                  attributes: [[key: 'attribute.user', value: 'alice']]) { \n" +
+                "          xsh (label: 'shell-3', script: 'echo ze-echo-3') \n" +
+                "       }\n" +
+                "    }\n" +
+                "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-pipeline-with-create-span-steps-" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "shell-1", "my-acme-span1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-2", "my-acme-span2", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", jobName);
+        checkChainOfSpans(spans, "shell-3", "Create a Span", "Stage: ze-stage3", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", jobName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(15L));
+
+        Optional<Tree.Node<SpanDataWrapper>> createSpan = spans.breadthFirstSearchNodes(node -> "my-acme-span1".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
+
+        Attributes attributes = createSpan.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("attribute.service")), CoreMatchers.is("acme"));
+        MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("attribute.user")), CoreMatchers.is("bob"));
+
+        // Children don't have the parent's attributes
+        createSpan = spans.breadthFirstSearchNodes(node -> "shell-1".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
+        attributes = createSpan.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("attribute.service")), CoreMatchers.is(CoreMatchers.not("acme")));
+        MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("attribute.user")), CoreMatchers.is(CoreMatchers.not("bob")));
+
+        createSpan = spans.breadthFirstSearchNodes(node -> "my-acme-span2".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
+
+        createSpan = spans.breadthFirstSearchNodes(node -> "Create a Span".equals(node.getData().spanData.getName()));
+        MatcherAssert.assertThat(createSpan, CoreMatchers.is(CoreMatchers.notNullValue()));
+        attributes = createSpan.get().getData().spanData.getAttributes();
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(AttributeKey.stringKey("attribute.user")), CoreMatchers.is("alice"));
+    }
+
     public void testPipelineWithCheckoutShallowSteps() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "with-checkout-" + jobNameSuffix.incrementAndGet();
