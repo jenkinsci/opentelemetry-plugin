@@ -118,13 +118,10 @@
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-extension-resources</artifactId>
         </dependency>
-        <!--
-        otel-sdk-extension-was requires com.fasterxml.jackson.module:jackson 2.13 when the version of Jenkisn we want still requires 2.12.x
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-extension-aws</artifactId>
         </dependency>
-        -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-otlp</artifactId>
