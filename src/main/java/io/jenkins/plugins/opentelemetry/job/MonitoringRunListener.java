@@ -327,13 +327,13 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, Objects.toString(runResult, null));
 
                 if (Result.SUCCESS.equals(runResult)) {
-                    parentSpan.setStatus(StatusCode.OK);
+                    parentSpan.setStatus(StatusCode.OK, runResult.toString());
                 } else if (Result.FAILURE.equals(runResult) || Result.UNSTABLE.equals(runResult)){
                     parentSpan.setAttribute(SemanticAttributes.EXCEPTION_TYPE, "PIPELINE_" + runResult);
                     parentSpan.setAttribute(SemanticAttributes.EXCEPTION_MESSAGE, "PIPELINE_" + runResult);
-                    parentSpan.setStatus(StatusCode.ERROR);
+                    parentSpan.setStatus(StatusCode.ERROR, runResult.toString());
                 } else if (Result.ABORTED.equals(runResult) || Result.NOT_BUILT.equals(runResult)) {
-                    parentSpan.setStatus(StatusCode.UNSET);
+                    parentSpan.setStatus(StatusCode.UNSET, runResult.toString());
                 }
             }
             // NODE

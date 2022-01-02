@@ -14,11 +14,14 @@ import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterUtils;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.sdk.trace.data.StatusData;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -29,6 +32,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -461,5 +465,40 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
+    }
+
+    @Test
+    public void testFailFastParallelScriptedPipelineWithException() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        String jobName = "fail-fast-parallel-scripted-pipeline-with-failure" + jobNameSuffix.incrementAndGet();
+
+        String pipelineScript = "node() {\n" +
+            "    stage('ze-parallel-stage') {\n" +
+            "        parallel failingBranch: {\n" +
+            "            error 'the failure that will cause the interruption of other branches'\n" +
+            "        }, branchThatWillBeInterrupted: {\n" +
+            "            sleep 5\n" +
+            "        }, failFast:true\n" +
+            "    }\n" +
+            "}";
+        Node agent = jenkinsRule.createOnlineSlave();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "sleep", "Parallel branch: branchThatWillBeInterrupted", "Stage: ze-parallel-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+
+        SpanData sleepSpanData = spans.breadthFirstSearchNodes(node -> "sleep".equals(node.getData().spanData.getName())).get().getData().spanData;
+        MatcherAssert.assertThat(sleepSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
+
+        SpanData branchThatWillBeInterruptedSpanData = spans.breadthFirstSearchNodes(node -> "Parallel branch: branchThatWillBeInterrupted".equals(node.getData().spanData.getName())).get().getData().spanData;
+        MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
+        MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getStatus().getDescription(), CoreMatchers.is("FlowInterruptedException: FailFastCause: Failed in branch failingBranch"));
+        MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getAttributes().get(JenkinsOtelSemanticAttributes.JENKINS_STEP_INTERRUPTION_CAUSES), CoreMatchers.is(Arrays.asList("FailFastCause: Failed in branch failingBranch")));
+
+        SpanData failingBranchSpanData = spans.breadthFirstSearchNodes(node -> "Parallel branch: failingBranch".equals(node.getData().spanData.getName())).get().getData().spanData;
+        MatcherAssert.assertThat(failingBranchSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.ERROR));
+        MatcherAssert.assertThat(failingBranchSpanData.getStatus().getDescription(), CoreMatchers.is("the failure that will cause the interruption of other branches"));
     }
 }

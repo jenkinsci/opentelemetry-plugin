@@ -18,6 +18,7 @@ import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.sdk.resources.Resource;
+import jenkins.model.CauseOfInterruption;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
@@ -29,6 +30,7 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.CoreStep;
+import org.jenkinsci.plugins.workflow.support.steps.StageStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -42,15 +44,7 @@ import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -94,6 +88,19 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private String serviceName;
 
     private String serviceNamespace;
+
+    /**
+     * Interruption causes that should mark the span as error because they are external interruptions.
+     *
+     * TODO make this list configurable and accessible through {@link io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties#getList(String)}
+     * @see CauseOfInterruption
+     * @see org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+     */
+    private List<String> statusUnsetCausesOfInterruption = Arrays.asList(
+        "org.jenkinsci.plugins.workflow.cps.steps.ParallelStep$FailFastCause",
+        StageStepExecution.CanceledCause.class.getName(),
+        CauseOfInterruption.UserInterruption.class.getName()
+    );
 
     /**
      * The previously used configuration. Kept in memory to prevent unneeded reconfigurations.
@@ -240,6 +247,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setIgnoredSteps(String ignoredSteps) {
         this.ignoredSteps = ignoredSteps;
+    }
+
+    public List<String> getStatusUnsetCausesOfInterruption() {
+        return statusUnsetCausesOfInterruption;
     }
 
     public String getDisabledResourceProviders() {

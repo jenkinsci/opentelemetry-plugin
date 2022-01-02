@@ -30,6 +30,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import jenkins.model.CauseOfInterruption;
 import org.apache.commons.compress.utils.Sets;
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
@@ -42,6 +43,7 @@ import org.jenkinsci.plugins.workflow.flow.StepListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.CoreStep;
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -54,6 +56,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -61,6 +64,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verifyNotNull;
 
@@ -74,9 +78,16 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     private Set<String> ignoredSteps;
     private List<StepHandler> stepHandlers;
 
+    /**
+     * Interruption causes that should mark the span as error because they are external interruptions.
+     */
+    Set<String> statusUnsetCausesOfInterruption;
+
     @PostConstruct
     public void postConstruct() {
-        this.ignoredSteps = Sets.newHashSet(JenkinsOpenTelemetryPluginConfiguration.get().getIgnoredSteps().split(","));
+        final JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration = JenkinsOpenTelemetryPluginConfiguration.get();
+        this.ignoredSteps = Sets.newHashSet(jenkinsOpenTelemetryPluginConfiguration.getIgnoredSteps().split(","));
+        this.statusUnsetCausesOfInterruption = new HashSet<>(jenkinsOpenTelemetryPluginConfiguration.getStatusUnsetCausesOfInterruption());
     }
 
     @Override
@@ -292,8 +303,32 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 span.setStatus(StatusCode.OK);
             } else {
                 Throwable throwable = errorAction.getError();
-                span.recordException(throwable);
-                span.setStatus(StatusCode.ERROR, throwable.getMessage());
+                if (throwable instanceof FlowInterruptedException) {
+                    FlowInterruptedException interruptedException = (FlowInterruptedException) throwable;
+                    List<CauseOfInterruption> causesOfInterruption = interruptedException.getCauses();
+
+                    List<String> causeDescriptions = causesOfInterruption.stream().map(cause -> cause.getClass().getSimpleName() + ": " + cause.getShortDescription()).collect(Collectors.toList());
+                    span.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_INTERRUPTION_CAUSES, causeDescriptions);
+
+                    String statusDescription = throwable.getClass().getSimpleName() + ": " + causeDescriptions.stream().collect(Collectors.joining(", "));
+
+                    boolean suppressSpanStatusCodeError = false;
+                    for (CauseOfInterruption causeOfInterruption: causesOfInterruption) {
+                        if (statusUnsetCausesOfInterruption.contains(causeOfInterruption.getClass().getName())) {
+                            suppressSpanStatusCodeError = true;
+                            break;
+                        }
+                    }
+                    if (suppressSpanStatusCodeError) {
+                        span.setStatus(StatusCode.UNSET, statusDescription);
+                    } else {
+                        span.recordException(throwable);
+                        span.setStatus(StatusCode.ERROR, statusDescription);
+                    }
+                } else {
+                    span.recordException(throwable);
+                    span.setStatus(StatusCode.ERROR, throwable.getMessage());
+                }
             }
             span.end();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - < " + node.getDisplayFunctionName() + " - end " + OtelUtils.toDebugString(span));
