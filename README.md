@@ -112,7 +112,7 @@ In addition, if the backends were configured then there will be an environment v
 
 #### Attributes
 
-##### Pipeline run root span
+##### Pipeline, freestyle, and matrix project build spans
 
 | Attribute                        | Description  | Type |
 |----------------------------------|--------------|------|
@@ -138,7 +138,14 @@ In addition, if the backends were configured then there will be an environment v
 | ci.pipeline.parameter.name       | Name of the parameters | String[] |
 | ci.pipeline.parameter.value      | Value of the parameters. "Sensitive" values are redacted | String[] |
 
-##### Spans
+##### Pipeline step spans  
+
+| Status Code | Status Description | Description |
+|-------------|--------------------|-------------|
+| OK | | for step and build success |
+| UNSET | Machine readable status like `FlowInterruptedException:FailFastCause:Failed in branch failingBranch` | For interrupted steps of type fail fast parallel pipeline interruption, pipeline build superseded by a newer build, or pipeline build cancelled by user, the span status is set to `UNSET`  rather than `ERROR` for readability |
+| ERROR | Machine readable status like `FlowInterruptedException:ExceededTimeout:Timeout has been exceeded` | For other causes of step failure |
+
 
 | Attribute                        | Description  | Type |
 |----------------------------------|--------------|------|
@@ -148,6 +155,7 @@ In addition, if the backends were configured then there will be an environment v
 | jenkins.pipeline.step.plugin.name | Jenkins plugin for that particular step | String |
 | jenkins.pipeline.step.plugin.version| Jenkins plugin version | String |
 | jenkins.pipeline.step.agent.label | Labels attached to the agent | String |
+| jenkins.pipeline.step.interruption.causes | List of machine readable causes of the interruption of the step like `FailFastCause:Failed in branch failingBranch`. <p/>Common causes of interruption:  `CanceledCause: Superseded by my-pipeline#123`, `ExceededTimeout: Timeout has been exceeded`, `FailFastCause:Failed in branch the-failing-branch`, `UserInterruption: Aborted by a-user` | String[] |
 | git.branch                       | Git branch name | String |
 | git.repository                   | Git repository | String |
 | git.username                     | Git user | String |
