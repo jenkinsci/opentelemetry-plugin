@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.31</version>
+        <version>4.32</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -73,7 +73,7 @@
                 <!-- okhttp:4.9.3 -> okio:2.8.0 versus okhttp:4.9.3 -> okio:2.8.0 - kotlin-stdlib-->
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-bom</artifactId>
-                <version>1.4.10</version>
+                <version>1.6.10</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -81,7 +81,13 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.11</version>
+                <version>3.12.0</version>
+            </dependency>
+            <dependency>
+                <!-- workflow-basic-steps:2.22 vs gitlab-plugin:1.5.22 -->
+                <groupId>javax.activation</groupId>
+                <artifactId>activation</artifactId>
+                <version>1.1.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -175,6 +181,11 @@
             <groupId>com.google.errorprone</groupId>
             <artifactId>error_prone_annotations</artifactId>
             <version>2.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <version>3.0.2</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
