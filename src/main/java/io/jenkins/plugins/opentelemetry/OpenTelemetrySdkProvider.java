@@ -119,8 +119,7 @@ public class OpenTelemetrySdkProvider {
                 ResourceBuilder resourceBuilder = Resource.builder()
                     .put(ResourceAttributes.SERVICE_VERSION, OtelUtils.getJenkinsVersion())
                     .put(JenkinsOtelSemanticAttributes.JENKINS_URL, jenkinsLocationConfiguration.getUrl())
-                    .putAll(resource)
-                    .putAll(configuration.toOpenTelemetryResource());
+                    .putAll(resource);
 
             // mimic i.o.s.a.OpenTelemetryResourceAutoConfiguration.configureResource(ConfigProperties, BiFunction<? super Resource,ConfigProperties,? extends Resource>)
             // waiting for this feature to support specifying the classloader
@@ -139,6 +138,7 @@ public class OpenTelemetrySdkProvider {
                     resourceBuilder.putAll(extensionResources);
                 }
             }
+            resourceBuilder.putAll(configuration.toOpenTelemetryResource());
                 return resourceBuilder.build();
             }
         );
