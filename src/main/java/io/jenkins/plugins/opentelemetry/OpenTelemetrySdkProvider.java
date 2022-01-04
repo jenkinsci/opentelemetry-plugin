@@ -14,7 +14,6 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
@@ -22,7 +21,6 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
 import io.opentelemetry.sdk.extension.resources.ProcessResourceProvider;
-import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
@@ -116,23 +114,23 @@ public class OpenTelemetrySdkProvider {
                     .putAll(resource)
                     .putAll(configuration.toOpenTelemetryResource());
 
-            // mimic i.o.s.a.OpenTelemetryResourceAutoConfiguration.configureResource(ConfigProperties, BiFunction<? super Resource,ConfigProperties,? extends Resource>)
-            // waiting for this feature to support specifying the classloader
-            {
-                Set<String> disabledProviders =
-                    new HashSet<>(configProperties.getList("otel.java.disabled.resource.providers"));
-                LOGGER.log(Level.FINER, () -> "Disabled providers: " + disabledProviders);
-                ClassLoader serviceClassLoader =
-                    AutoConfiguredOpenTelemetrySdkBuilder.class.getClassLoader();
-                for (ResourceProvider resourceProvider : ServiceLoader.load(ResourceProvider.class, serviceClassLoader)) {
-                    Resource extensionResources = resourceProvider.createResource(configProperties);
-                    if (disabledProviders.contains(resourceProvider.getClass().getName())) {
-                        continue;
+                // mimic i.o.s.a.OpenTelemetryResourceAutoConfiguration.configureResource(ConfigProperties, BiFunction<? super Resource,ConfigProperties,? extends Resource>)
+                // waiting for this feature to support specifying the classloader
+                {
+                    Set<String> disabledProviders =
+                        new HashSet<>(configProperties.getList("otel.java.disabled.resource.providers"));
+                    LOGGER.log(Level.FINER, () -> "Disabled providers: " + disabledProviders);
+                    ClassLoader serviceClassLoader =
+                        AutoConfiguredOpenTelemetrySdkBuilder.class.getClassLoader();
+                    for (ResourceProvider resourceProvider : ServiceLoader.load(ResourceProvider.class, serviceClassLoader)) {
+                        Resource extensionResources = resourceProvider.createResource(configProperties);
+                        if (disabledProviders.contains(resourceProvider.getClass().getName())) {
+                            continue;
+                        }
+                        LOGGER.log(Level.FINER, () -> "ResourceProvider: " + resourceProvider + " - add resources " + extensionResources.getAttributes().asMap().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
+                        resourceBuilder.putAll(extensionResources);
                     }
-                    LOGGER.log(Level.FINER, () -> "ResourceProvider: " + resourceProvider + " - add resources " + extensionResources.getAttributes().asMap().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
-                    resourceBuilder.putAll(extensionResources);
                 }
-            }
                 return resourceBuilder.build();
             }
         );
