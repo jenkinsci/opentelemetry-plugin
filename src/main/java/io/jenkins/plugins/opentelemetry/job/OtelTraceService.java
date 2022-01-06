@@ -13,7 +13,9 @@ import com.google.common.collect.Multimap;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
+import hudson.model.Job;
 import hudson.model.Run;
+import hudson.scm.SCM;
 import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
@@ -124,6 +126,22 @@ public class OtelTraceService {
         RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromBuild(build);
         FreestyleRunSpans freestyleRunSpans = freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans()); // absent when Jenkins restarts during build
         LOGGER.log(Level.FINEST, () -> "getSpan(" + build.getFullDisplayName() + ", BuildStep[name" + buildStep.getClass().getSimpleName() + ") -  " + freestyleRunSpans);
+
+        final Span span = Iterables.getLast(freestyleRunSpans.runPhasesSpans, null);
+        if (span == null) {
+            LOGGER.log(Level.FINE, () -> "No span found for run " + build.getFullDisplayName() + ", Jenkins server may have restarted");
+            return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + build.getFullDisplayName()).startSpan();
+        }
+        LOGGER.log(Level.FINEST, () -> "span: " + span.getSpanContext().getSpanId());
+        return span;
+    }
+
+    @Nonnull
+    public Span getSpan(@Nonnull Run<?,?> build, @Nonnull SCM scm) {
+
+        RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromBuild(build);
+        FreestyleRunSpans freestyleRunSpans = freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans()); // absent when Jenkins restarts during build
+        LOGGER.log(Level.FINEST, () -> "getSpan(" + build.getFullDisplayName() + ", ScmStep[name" + scm.getClass().getSimpleName() + ") -  " + freestyleRunSpans);
 
         final Span span = Iterables.getLast(freestyleRunSpans.runPhasesSpans, null);
         if (span == null) {
@@ -456,33 +474,25 @@ public class OtelTraceService {
         final int runNumber;
 
         static RunIdentifier fromRun(@Nonnull Run run) {
-            try {
-                return new RunIdentifier(run.getParent().getFullName(), run.getNumber());
-            } catch (StackOverflowError e) {
-                // TODO remove when https://github.com/jenkinsci/opentelemetry-plugin/issues/87 is fixed
-                try {
-                    final String jobName = run.getParent().getName();
-                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for " + jobName + "#" + run.getNumber());
-                    return new RunIdentifier("#StackOverflowError#_" + jobName, run.getNumber());
-                } catch (StackOverflowError e2) {
-                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for unknown job #" + run.getNumber());
-                    return new RunIdentifier("#StackOverflowError#", run.getNumber());
-                }
-            }
+            return fromBuild(run.getParent(), run.getNumber());
         }
 
         static RunIdentifier fromBuild(@Nonnull AbstractBuild build) {
+            return fromBuild(build.getParent(), build.getNumber());
+        }
+
+        static RunIdentifier fromBuild(@Nonnull Job parent, int number) {
             try {
-                return new RunIdentifier(build.getParent().getFullName(), build.getNumber());
+                return new RunIdentifier(parent.getFullName(), number);
             } catch (StackOverflowError e) {
                 // TODO remove when https://github.com/jenkinsci/opentelemetry-plugin/issues/87 is fixed
                 try {
-                    final String jobName = build.getParent().getName();
-                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for " + jobName + "#" + build.getNumber());
-                    return new RunIdentifier("#StackOverflowError#_" + jobName, build.getNumber());
+                    final String jobName = parent.getName();
+                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for " + jobName + "#" + number);
+                    return new RunIdentifier("#StackOverflowError#_" + jobName, number);
                 } catch (StackOverflowError e2) {
-                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for unknown job #" + build.getNumber());
-                    return new RunIdentifier("#StackOverflowError#", build.getNumber());
+                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for unknown job #" + number);
+                    return new RunIdentifier("#StackOverflowError#", number);
                 }
             }
         }
