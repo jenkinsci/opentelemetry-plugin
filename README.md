@@ -7,30 +7,98 @@
 [![Jenkins Plugin Installs](https://img.shields.io/jenkins/plugin/i/opentelemetry.svg?color=blue)](https://plugins.jenkins.io/opentelemetry)
 
 
-- [Introduction](#introduction)
-- [Architecture](#architecture)
-- [Features](#features)
-  - [Monitoring and troubleshooting Jenkins jobs using distributed tracing](#monitoring-and-troubleshooting-jenkins-jobs-using-distributed-tracing)
-  - [Metrics on Jenkins health indicators](#metrics-on-jenkins-health-indicators)
-- [Getting Started](#getting-started)
-- [Examples](#screenshots)
-- [Configuration as Code](#configuration-as-code)
-- [Demos](#demos)
-- [Contributing](#contributing)
-- [Learn More](#learn-more)
-  -  DevOpsWorld 2021 presentations...
-
 ## Introduction
 
-Collect Jenkins monitoring data through OpenTelemetry.
+Monitor and observe Jenkins with OpenTelemetry.
+
+Visualize jobs and pipelines executions as distributed traces:
+
+![SpringBootPipeline Execution Trace](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-maven-execution-trace-jaeger.png)
+_Example pipeline execution trace of a SpringBoot app built with Maven going through security checks with Snyk, deployed on a Maven repository and published as a Docker image_
+
+
+Visualize Jenkins and pipeline health indicators:
+![Jenkins health dashboard](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/kibana_jenkins_overview_dashboard.png)
+_Example Kibana dashboard of the Jenkins and CI jobs health_
+
 
 ## Architecture
 
 Using the [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases), you can use many monitoring backends to monitor Jenkins such as Jaeger, Zipkin, Prometheus, Elastic Observability and many others listed [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter).
 
-Here are few examples of architecture:
+Here are example architectures with Elastic, Jaeger, and Prometheus:
 
 <img alt="Jenkins monitoring with Elastic Observability" width="415" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-architecture-elastic.png" >  <img alt="Jenkins monitoring with Jaeger and Prometheus" width="415" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-architecture-jaeger-prometheus.png" >
+
+## Getting started
+
+* Setup an OpenTelemetry endpoint such as the [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib)
+* Install the Jenkins OpenTelemetry plugin
+* Configure the Jenkins OpenTelemetry plugin navigating to the "Manage Jenkins / Configure System" screen. In the OpenTelemetry section define:
+    * "OTLP Endpoint": the hostname and port of the OpenTelemetry GRPC Protocol (OTLP GRPC) endpoint, typically an OpenTelemetry Collector or directly an Observability backend that supports the OTLP GRPC protocol
+    * "Authentication": authentication mechanism used by your OTLP Endpoint
+        * "Header Authentication" : name of the authentication header if header based authentication is used.
+        * "Bearer Token Authentication": Bearer token when using header based authentication. Note that Elastic APM token authentication uses a "Bearer Token Authentication".
+        * "No Authentication"
+    * Check "Export OpenTelemetry configuration as environment variables" to easily integrate visibility in other build tools (see the otel-cli, the OpenTelemetry Maven extension, the OpenTelemetry Ansible integration...)
+    * Visualization: add the backend used to visualize job executions as traces.
+        * Elastic Observability
+        * Jaeger
+        * Zipkin
+        * Custom Observability backend for other visualization solutions
+* You can now import Jenkins Health Dashboards in your preferred metrics visualization tool. See details in the [dashboard docs](docs/DASHBOARDS.md).
+
+![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
+
+You can look at this video tutorial to get started: [![Tracing Your Jenkins Pipelines With OpenTelemetry and Jaeger](https://img.youtube.com/vi/3XzVOxvNpGM/0.jpg)](https://www.youtube.com/watch?v=3XzVOxvNpGM)
+
+## Advanced Configuration
+
+| System property<br/>Environment Variable | Value | Description |
+|------------------------------------------|-------|------------|
+| otel.instrumentation.jenkins.job.dsl.collapse.job.name | Boolean, default `false` | When using Job DSL generated jobs, make the pipeline run root span name a low cardinality name using the name "Job from seed '${job.jobDslSeedJob.fullName}'" rather than using "${job.fullName}". Useful when the Job DSL plugin creates a lot of jobs |
+| otel.instrumentation.jenkins.job.matrix.expand.job.name | Boolean, default `false` | When using Matrix Projects, the name of the combination jobs is by default collapsed to "${matrix-job-name}/execution" rather than using the full name that is generated joining the axis values of the combination |
+
+
+
+## Configuration as code
+
+This plugin supports configuration as code. Add to your yaml file:
+
+```yaml
+unclassified:
+  openTelemetry:
+    authentication: "noAuthentication"
+    endpoint: "otel-collector-contrib:4317"
+    exportOtelConfigurationAsEnvironmentVariables: true
+    exporterIntervalMillis: 60000
+    exporterTimeoutMillis: 30000
+    ignoredSteps: "dir,echo,isUnix,pwd,properties"
+    observabilityBackends:
+      - elastic:
+          kibanaBaseUrl: "http://localhost:5601"
+          name: "Elastic Observability"
+      - jaeger:
+          jaegerBaseUrl: "http://localhost:16686"
+          name: "Jaeger"
+      - customObservabilityBackend:
+          metricsVisualizationUrlTemplate: "foo"
+          traceVisualisationUrlTemplate: "http://example.com"
+          name: "Custom Observability"
+      - zipkin:
+          zipkinBaseUrl: "http://localhost:9411/"
+          name: "Zipkin"
+    serviceName: "jenkins"
+    serviceNamespace: "jenkins"
+```
+
+ℹ️ be careful of the misalignment of spelling between  `metricsVisualizationUrlTemplate` and `traceVisualisationUrlTemplate`.
+This misalignment ("visualisation" versus "visualization") will be fixed soon aligning on "visualization" while supporting backward compatibility.
+
+See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folder with various samples.
+
+For more details see the configuration as code plugin documentation:
+<https://github.com/jenkinsci/configuration-as-code-plugin#getting-started>
 
 ## Setup
 
@@ -200,220 +268,30 @@ In addition, if the backends were configured then there will be an environment v
 | process.cpu.time                 | ns    |            |                  | Process CPU time. See `com.sun.management.OperatingSystemMXBean.getProcessCpuTime` |
 
 
-Jenkins metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
-
-The `runtime.*` metrics are the same as the one collected by the `
-
-### Standardisation
-
-:WIP:
-
-`Node` steps will be transformed to `Agent` spans to be the more agnostic to any platform. Therefore the `jenkins.pipeline.step.type` attribute will report the jenkins pipeline step `node` but
-the span name will refer to `Agent` in the distributed traces.
-
-## Getting started with a video tutorial
-
-[![Tracing Your Jenkins Pipelines With OpenTelemetry and Jaeger](https://img.youtube.com/vi/3XzVOxvNpGM/0.jpg)](https://www.youtube.com/watch?v=3XzVOxvNpGM)
+Jenkins' metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
 
 
-## Getting started
-
-* Setup an OpenTelemetry endpoint such as the [OpenTelemetry Collector](https://github.com/open-telemetry/opentelemetry-collector-contrib)
-* Install the Jenkins OpenTelemetry plugin
-* Configure the Jenkins OpenTelemetry plugin navigating to the "Manage Jenkins / Configure System" screen
-* In the OpenTelemetry section define
-  * "OTLP GRPC Endpoint": the hostname and port of the OpenTelemetry GRPC Protocol (OTLP GRPC) endpoint, typically an OpenTelemetry Collector or directly an Observability backend that supports the OTLP GRPC protocol
-  * "Header Authentication" : name of the authentication header if header based authentication is used.
-  * "Bearer Token Authentication": Bearer token when using header based authentication.
-  * Visualization: the backend used to visualize job executions as traces.
-    * Elastic Observability
-    * Jaeger
-    * Zipkin
-    * Custom Observability backend for other visualization solutions
-
-![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
 
-### Enrich your pipeline step with the label
+## FAQ
 
-If you use Jenkins pipelines in conjunction with the `sh`, `bat`, `powershell` built-in steps, then it's highly recommended using the `label` argument, this will help you to enrich the name of the span. So the view is more meaningful and domain specific instead of technical.
+### Enrich your pipeline `sh`, `bat`, and `powershell` steps with meaningful explanation thanks to labels
 
-To illustrate the above, let's use the below snippet:
+If you use Jenkins pipelines in conjunction with the `sh`, `bat`, `powershell` steps, then it's highly recommended using the `label` argument to add a meaningful explanation thanks to step labels. Example:
 
 ```groovy
 node {
-    sh 'echo hi'
-    sh(label: 'say bye', script: 'echo bye')
+    sh(label: 'Maven verify', script: './mvnw deploy')
 }
 ```
 
-And how those steps are represented:
+### Using the OpenTelemetry OTLP/HTTP rather than OTLP/GRPC protocol
 
-![Enriched span with label](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/enriched-span-with-label.png)
-
-### Dashboards
-
-You can now import some of the existing dashboards that have been created to provide further insights about your CI/CD Jenkins platform
-
-See the details in the [dashboard docs](docs/DASHBOARDS.md).
-
-## Advanced Configuration
-
-| System property<br/>Environment Variable | Value | Description |
-|------------------------------------------|-------|------------|
-| otel.instrumentation.jenkins.job.dsl.collapse.job.name | Boolean, default `false` | When using Job DSL generated jobs, make the pipeline run root span name a low cardinality name using the name "Job from seed '${job.jobDslSeedJob.fullName}'" rather than using "${job.fullName}". Useful when the Job DSL plugin creates a lot of jobs |
-| otel.instrumentation.jenkins.job.matrix.expand.job.name | Boolean, default `false` | When using Matrix Projects, the name of the combination jobs is by default collapsed to "${matrix-job-name}/execution" rather than using the full name that is generated joining the axis values of the combination |
-
-
-## Screenshots
-
-Sample of traces collected for various flavors of pipelines
-
-### Scripted Pipeline
-
-#### Scripted pipeline status page
-
-```groovy
-node {
-    stage('Prepare') {
-        echo("Prepare")
-    }
-    stage('Build') {
-        git 'https://github.com/jglick/simple-maven-project-with-tests.git'
-        sh "mvn -Dmaven.test.failure.ignore=true clean package"
-    }
-    stage('Post Build') {
-        echo("this is the post build phase")
-    }
-}
-```
-
-![Scripted pipeline status page with Elastic Observability link](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-status-page-elastic-observability-annotated.jpg)
-
-
-#### Scripted pipeline visualized with Elastic Observability
-
-![Scripted pipeline visualised with Elastic Observability](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-elastic-observability.png)
-
-#### Scripted pipeline visualized with Jaeger
-
-![Scripted pipeline visualised with Jaeger](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-jaeger.png)
-
-#### Scripted pipeline visualized with Zipkin
-
-![Scripted pipeline visualised with Jaeger](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-trace-zipkin.png)
-
-
-### Declarative Pipeline
-
-![Declarative pipeline visualised with Elastic Observability](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/declarative-pipeline.png)
-
-```groovy
-pipeline {
-    agent any
-
-    stages {
-        stage('Build') {
-            steps {
-                git 'https://github.com/jglick/simple-maven-project-with-tests.git'
-                sh "mvn -Dmaven.test.failure.ignore=true clean package"
-            }
-            post {
-                success {
-                    echo "success"
-                }
-            }
-        }
-    }
-}
+Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" section, add to the "Configuration Properties text area the following:
 
 ```
-### Scripted Pipeline with Error
-
-![scripted-pipeline-with-error](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-with-error.png)
-
+otel.exporter.otlp.protocol=http/protobuf
 ```
-node {
-    stage('Prepare') {
-        echo("Prepare")
-    }
-    stage('Build') {
-        git 'https://github.com/jglick/simple-maven-project-with-tests.git'
-        sh "mvn -Dmaven.test.failure.ignore=true clean package"
-    }
-    stage('Post Build') {
-        error 'Fail'
-    }
-}
-```
-
-### Scripted Pipeline with Parallel Step
-
-![scripted-pipeline-with-parallel-step](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/scripted-pipeline-with-parallel-step.png)
-
-```
-node {
-    stage('Prepare') {
-        echo("Prepare")
-    }
-    stage('Build') {
-        git 'https://github.com/jglick/simple-maven-project-with-tests.git'
-        sh "mvn -Dmaven.test.failure.ignore=true clean package"
-    }
-    stage('Parallel Post Build') {
-        parallel parallBranch1: {
-            echo("this is the post build parallel branch 1")
-        } ,parallBranch2: {
-            echo("this is the post build parallel branch 2")
-            echo("this is the post build parallel branch 2")
-        }
-    }
-}
-```
-
-### Freestyle Job
-
-![freestyle-job](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/freestyle-job.png)
-
-## Configuration as code
-
-This plugin supports configuration as code. Add to your yaml file:
-
-```yaml
-unclassified:
-  openTelemetry:
-    authentication: "noAuthentication"
-    endpoint: "otel-collector-contrib:4317"
-    exportOtelConfigurationAsEnvironmentVariables: true
-    exporterIntervalMillis: 60000
-    exporterTimeoutMillis: 30000
-    ignoredSteps: "dir,echo,isUnix,pwd,properties"
-    observabilityBackends:
-      - elastic:
-          kibanaBaseUrl: "http://localhost:5601"
-          name: "Elastic Observability"
-      - jaeger:
-          jaegerBaseUrl: "http://localhost:16686"
-          name: "Jaeger"
-      - customObservabilityBackend:
-          metricsVisualizationUrlTemplate: "foo"
-          traceVisualisationUrlTemplate: "http://example.com"
-          name: "Custom Observability"
-      - zipkin:
-          zipkinBaseUrl: "http://localhost:9411/"
-          name: "Zipkin"
-    serviceName: "jenkins"
-    serviceNamespace: "jenkins"
-```
-
-ℹ️ be careful of the misalignment of spelling between  `metricsVisualizationUrlTemplate` and `traceVisualisationUrlTemplate`.
-This misalignment ("visualisation" versus "visualization") will be fixed soon aligning on "visualization" while supporting backward compatibility.
-
-See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folder with various samples.
-
-For more details see the configuration as code plugin documentation:
-<https://github.com/jenkinsci/configuration-as-code-plugin#getting-started>
-
 
 ## Demos
 
