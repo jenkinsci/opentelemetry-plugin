@@ -11,6 +11,10 @@ import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Node;
 import hudson.model.Result;
+import hudson.plugins.git.BranchSpec;
+import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.extensions.GitSCMExtension;
+import hudson.plugins.git.extensions.impl.DisableRemotePoll;
 import hudson.tasks.Ant;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.Shell;
@@ -24,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
+import org.jvnet.hudson.test.CaptureEnvironmentBuilder;
 import org.jvnet.hudson.test.FailureBuilder;
 import org.jvnet.hudson.test.FakeChangeLogSCM;
 import org.jvnet.hudson.test.FlagRule;
@@ -32,6 +37,7 @@ import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
@@ -238,5 +244,24 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMMITTERS), CoreMatchers.is(Arrays.asList("bob")));
 
         assertFreestyleJobMetadata(build, spans);
+    }
+
+    @Test
+    public void testFreestyleJob_with_git() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        // See https://github.com/abayer/jenkins/blob/914963c22317e7d72cf7e3e7d9ed8ab57709ccb0/test/src/test/java/hudson/model/AbstractBuildTest.java#L135-L150
+
+        final String jobName = "test-freestyle-git-" + jobNameSuffix.incrementAndGet();
+        FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
+        GitSCM scm = new GitSCM(remoteConfigs(), Collections.singletonList(new BranchSpec("main")),
+            null, null,
+            Collections.<GitSCMExtension>singletonList(new DisableRemotePoll()));
+        project.setScm(scm);
+        project.getBuildersList().add(new CaptureEnvironmentBuilder());
+
+        jenkinsRule.buildAndAssertSuccess(project);
+
+        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "Phase: Run", jobName);
     }
 }

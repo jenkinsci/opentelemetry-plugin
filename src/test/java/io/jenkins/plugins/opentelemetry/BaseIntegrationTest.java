@@ -11,6 +11,7 @@ import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
+import hudson.plugins.git.AbstractGitRepository;
 import hudson.util.LogTaskListener;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
@@ -56,7 +57,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Verify.verify;
 import static org.junit.Assert.fail;
 
-public class BaseIntegrationTest {
+public class BaseIntegrationTest extends AbstractGitRepository {
     private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     static {
