@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.job;
 
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
@@ -35,6 +36,7 @@ import java.util.logging.Logger;
 import static com.google.common.base.Verify.verifyNotNull;
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
 
+@Extension
 public class MonitoringSCMListener extends SCMListener {
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
