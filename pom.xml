@@ -127,6 +127,13 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-extension-aws</artifactId>
+            <exclusions>
+                <exclusion>
+                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
+                    <groupId>com.squareup.okhttp3</groupId>
+                    <artifactId>okhttp</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
@@ -147,6 +154,18 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-otlp-http-metrics</artifactId>
+            <exclusions>
+                <exclusion>
+                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
+                    <groupId>com.squareup.okhttp3</groupId>
+                    <artifactId>okhttp</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
+                    <groupId>com.squareup.okio</groupId>
+                    <artifactId>okio</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
@@ -155,6 +174,18 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-otlp-http-trace</artifactId>
+            <exclusions>
+                <exclusion>
+                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
+                    <groupId>com.squareup.okhttp3</groupId>
+                    <artifactId>okhttp</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
+                    <groupId>com.squareup.okio</groupId>
+                    <artifactId>okio</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
@@ -166,6 +197,11 @@
             <artifactId>simpleclient_httpserver</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>okhttp-api</artifactId>
+            <version>4.9.3-105.vb96869f8ac3a</version>
+        </dependency>
         <dependency> <!-- see maskClasses config -->
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
