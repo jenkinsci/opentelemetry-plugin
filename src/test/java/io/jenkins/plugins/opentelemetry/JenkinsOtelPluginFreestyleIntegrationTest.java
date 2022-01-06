@@ -249,7 +249,6 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     @Test
     public void testFreestyleJob_with_git() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        // See https://github.com/abayer/jenkins/blob/914963c22317e7d72cf7e3e7d9ed8ab57709ccb0/test/src/test/java/hudson/model/AbstractBuildTest.java#L135-L150
 
         final String jobName = "test-freestyle-git-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
@@ -263,5 +262,8 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Run", jobName);
+
+        // TODO: verify if the git scm span exists
+        // TODO: verify span attributes for the scm span once it's supported
     }
 }
