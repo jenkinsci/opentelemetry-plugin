@@ -23,7 +23,6 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import jenkins.model.Jenkins;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;

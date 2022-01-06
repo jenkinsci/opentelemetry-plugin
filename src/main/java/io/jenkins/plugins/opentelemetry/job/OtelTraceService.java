@@ -123,7 +123,7 @@ public class OtelTraceService {
     @Nonnull
     public Span getSpan(@Nonnull AbstractBuild build, @Nonnull BuildStep buildStep) {
 
-        RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromBuild(build);
+        RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromAbstractBuild(build);
         FreestyleRunSpans freestyleRunSpans = freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans()); // absent when Jenkins restarts during build
         LOGGER.log(Level.FINEST, () -> "getSpan(" + build.getFullDisplayName() + ", BuildStep[name" + buildStep.getClass().getSimpleName() + ") -  " + freestyleRunSpans);
 
@@ -264,7 +264,7 @@ public class OtelTraceService {
     }
 
     public void removeBuildStepSpan(@Nonnull AbstractBuild build, @Nonnull BuildStep buildStep, @Nonnull Span span) {
-        RunIdentifier runIdentifier = RunIdentifier.fromBuild(build);
+        RunIdentifier runIdentifier = RunIdentifier.fromAbstractBuild(build);
         FreestyleRunSpans freestyleRunSpans = this.freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans()); // absent when Jenkins restarts during build
 
         Span lastSpan = Iterables.getLast(freestyleRunSpans.runPhasesSpans, null);
@@ -295,7 +295,7 @@ public class OtelTraceService {
     }
 
     public void putSpan(@Nonnull AbstractBuild build, @Nonnull Span span) {
-        RunIdentifier runIdentifier = RunIdentifier.fromBuild(build);
+        RunIdentifier runIdentifier = RunIdentifier.fromAbstractBuild(build);
         FreestyleRunSpans runSpans = freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans());
         runSpans.runPhasesSpans.add(span);
 
@@ -477,7 +477,11 @@ public class OtelTraceService {
             return fromBuild(run.getParent(), run.getNumber());
         }
 
-        static RunIdentifier fromBuild(@Nonnull AbstractBuild build) {
+        static RunIdentifier fromAbstractBuild(@Nonnull AbstractBuild build) {
+            return fromBuild(build.getParent(), build.getNumber());
+        }
+
+        static RunIdentifier fromBuild(@Nonnull Run<?,?> build) {
             return fromBuild(build.getParent(), build.getNumber());
         }
 

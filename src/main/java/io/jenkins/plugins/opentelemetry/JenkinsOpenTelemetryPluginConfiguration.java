@@ -10,6 +10,7 @@ import hudson.Extension;
 import hudson.PluginWrapper;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import hudson.scm.SCM;
 import hudson.tasks.BuildStep;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
@@ -339,8 +340,18 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nullable
+    private Descriptor<? extends Describable> getScmDescriptor(@Nonnull SCM scm) {
+        return Jenkins.get().getDescriptor((Class<? extends Describable>) scm.getClass());
+    }
+
+    @Nullable
     private Descriptor<? extends Describable> getBuildStepDescriptor(@Nonnull BuildStep buildStep) {
         return Jenkins.get().getDescriptor((Class<? extends Describable>) buildStep.getClass());
+    }
+
+    @Nonnull
+    public StepPlugin findStepPluginOrDefault(@Nonnull String scmName, @Nonnull SCM scm) {
+        return findStepPluginOrDefault(scmName, getScmDescriptor(scm));
     }
 
     @Nonnull
@@ -381,6 +392,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Nonnull
     public String findSymbolOrDefault(@Nonnull String buildStepName, @Nonnull BuildStep buildStep) {
         return findSymbolOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
+    }
+
+    @Nonnull
+    public String findSymbolOrDefault(@Nonnull String scmName, @Nonnull SCM scm) {
+        return findSymbolOrDefault(scmName, getScmDescriptor(scm));
     }
 
     @Nonnull
