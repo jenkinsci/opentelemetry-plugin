@@ -261,7 +261,10 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         jenkinsRule.buildAndAssertSuccess(project);
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "Phase: Run", jobName);
+        checkChainOfSpans(spans, "Phase: Start");
+        checkChainOfSpans(spans, "Phase: Run");
+        checkChainOfSpans(spans, "GitSCM");
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
 
         // TODO: verify if the git scm span exists
         // TODO: verify span attributes for the scm span once it's supported
