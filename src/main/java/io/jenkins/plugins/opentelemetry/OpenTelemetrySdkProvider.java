@@ -111,26 +111,8 @@ public class OpenTelemetrySdkProvider {
                 ResourceBuilder resourceBuilder = Resource.builder()
                     .put(ResourceAttributes.SERVICE_VERSION, OtelUtils.getJenkinsVersion())
                     .put(JenkinsOtelSemanticAttributes.JENKINS_URL, jenkinsLocationConfiguration.getUrl())
-                    .putAll(resource);
-
-                // mimic i.o.s.a.OpenTelemetryResourceAutoConfiguration.configureResource(ConfigProperties, BiFunction<? super Resource,ConfigProperties,? extends Resource>)
-                // waiting for this feature to support specifying the classloader
-                {
-                    Set<String> disabledProviders =
-                        new HashSet<>(configProperties.getList("otel.java.disabled.resource.providers"));
-                    LOGGER.log(Level.FINER, () -> "Disabled providers: " + disabledProviders);
-                    ClassLoader serviceClassLoader =
-                        AutoConfiguredOpenTelemetrySdkBuilder.class.getClassLoader();
-                    for (ResourceProvider resourceProvider : ServiceLoader.load(ResourceProvider.class, serviceClassLoader)) {
-                        Resource extensionResources = resourceProvider.createResource(configProperties);
-                        if (disabledProviders.contains(resourceProvider.getClass().getName())) {
-                            continue;
-                        }
-                        LOGGER.log(Level.FINER, () -> "ResourceProvider: " + resourceProvider + " - add resources " + extensionResources.getAttributes().asMap().entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
-                        resourceBuilder.putAll(extensionResources);
-                    }
-                }
-                resourceBuilder.putAll(configuration.toOpenTelemetryResource());
+                    .putAll(resource)
+                    .putAll(configuration.toOpenTelemetryResource());
                 return resourceBuilder.build();
             }
         );

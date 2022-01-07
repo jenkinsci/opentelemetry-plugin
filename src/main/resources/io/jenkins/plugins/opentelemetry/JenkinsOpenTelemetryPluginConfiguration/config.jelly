@@ -27,7 +27,7 @@
                 />
             </f:entry>
             <f:advanced>
-                <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format). Metrics exporter get disabled for the moment when feature is used. Aka OTEL_EXPORTER_OTLP_CERTIFICATE">
+                <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format)">
                     <f:textarea />
                 </f:entry>
                 <f:entry title="Service name" field="serviceName" description="e.g. 'my-jenkins.example.com', the Logical name of the service. Aka OTEL_SERVICE_NAME">

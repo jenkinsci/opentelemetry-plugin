@@ -22,8 +22,8 @@
         <jenkins.version>2.277.1</jenkins.version>
         <java.level>8</java.level>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.10.0-rc.2</opentelemetry.version>
-        <opentelemetry-alpha.version>1.10.0-alpha-rc.2</opentelemetry-alpha.version>
+        <opentelemetry.version>1.10.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.10.0-alpha</opentelemetry-alpha.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Publish Jenkins metrics to an OpenTelemetry endpoint, including distributed traces of job executions and health metrics of the controller.</description>
