@@ -23,7 +23,14 @@ public class JenkinsResourceProvider implements ResourceProvider {
         ResourceBuilder resourceBuilder = Resource.builder();
         resourceBuilder.put(ResourceAttributes.SERVICE_NAME, JenkinsOtelSemanticAttributes.JENKINS);
         resourceBuilder.put(ResourceAttributes.SERVICE_NAMESPACE, JenkinsOtelSemanticAttributes.JENKINS);
-        // resourceBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_URL, Jenkins.get().getRootUrl()); FIXME GET JENKINS URL
+
+        String jenkinsVersion = config.getString(JenkinsOtelSemanticAttributes.JENKINS_VERSION.getKey());
+        // Allow service.version to be overwritten and also report jenkins.version
+        resourceBuilder.put(ResourceAttributes.SERVICE_VERSION, jenkinsVersion);
+        resourceBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_VERSION.getKey(), jenkinsVersion);
+
+        String jenkinsUrl = config.getString(JenkinsOtelSemanticAttributes.JENKINS_URL.getKey());
+        resourceBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_URL, jenkinsUrl);
         final Resource resource = resourceBuilder.build();
         LOGGER.log(Level.FINER, () -> "Jenkins resource: " + resource);
         return resource;
