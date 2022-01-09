@@ -40,53 +40,51 @@ public class OpenTelemetrySdkProviderTest {
     }
 
     private void testDefaultConfigurationOverwrite(String serviceNameDefinedInConfig, String serviceNamespaceDefinedInConfig, String expectedServiceName, String expectedServiceNamespace) {
-        // clean "jenkins.url" property as ci.jenkins.io may specify it
-        String jenkinsUrlSysPropBefore = System.clearProperty("jenkins.url");
-        try {
-            Map<String, String> configurationProperties = new HashMap<>();
-            configurationProperties.put("jenkins.version", "1.2.3");
-            configurationProperties.put("jenkins.url", "https://jenkins.example.com/");
+        Map<String, String> configurationProperties = new HashMap<>();
+        configurationProperties.put("jenkins.version", "1.2.3");
+        configurationProperties.put("jenkins.url", "https://jenkins.example.com/");
 
-            OpenTelemetryConfiguration openTelemetryConfiguration = new OpenTelemetryConfiguration(
-                Optional.of("http://localhost:4317/"),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.ofNullable(serviceNameDefinedInConfig),
-                Optional.ofNullable(serviceNamespaceDefinedInConfig),
-                Optional.empty(),
-                configurationProperties);
+        OpenTelemetryConfiguration openTelemetryConfiguration = new OpenTelemetryConfiguration(
+            Optional.of("http://localhost:4317/"),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.ofNullable(serviceNameDefinedInConfig),
+            Optional.ofNullable(serviceNamespaceDefinedInConfig),
+            Optional.empty(),
+            configurationProperties);
 
-            OpenTelemetrySdkProvider openTelemetrySdkProvider = new OpenTelemetrySdkProvider();
-            openTelemetrySdkProvider.postConstruct();
-            openTelemetrySdkProvider.initialize(openTelemetryConfiguration);
+        OpenTelemetrySdkProvider openTelemetrySdkProvider = new OpenTelemetrySdkProvider();
+        openTelemetrySdkProvider.postConstruct();
+        openTelemetrySdkProvider.initialize(openTelemetryConfiguration);
 
-            Resource resource = openTelemetrySdkProvider.getResource();
-            // resource.getAttributes().forEach((key, value)-> System.out.println(key + ": " + value));
+        Resource resource = openTelemetrySdkProvider.getResource();
+        // resource.getAttributes().forEach((key, value)-> System.out.println(key + ": " + value));
 
-            MatcherAssert.assertThat(
-                resource.getAttribute(ResourceAttributes.SERVICE_NAME),
-                CoreMatchers.is(expectedServiceName));
-            MatcherAssert.assertThat(
-                resource.getAttribute(ResourceAttributes.SERVICE_NAMESPACE),
-                CoreMatchers.is(expectedServiceNamespace));
+        MatcherAssert.assertThat(
+            resource.getAttribute(ResourceAttributes.SERVICE_NAME),
+            CoreMatchers.is(expectedServiceName));
+        MatcherAssert.assertThat(
+            resource.getAttribute(ResourceAttributes.SERVICE_NAMESPACE),
+            CoreMatchers.is(expectedServiceNamespace));
+        if (System.getenv("JENKINS_URL") == null && System.getProperty("jenkins.url") == null) {
             MatcherAssert.assertThat(
                 resource.getAttribute(JenkinsOtelSemanticAttributes.JENKINS_URL),
                 CoreMatchers.is("https://jenkins.example.com/"));
-            MatcherAssert.assertThat(
-                resource.getAttribute(JenkinsOtelSemanticAttributes.JENKINS_VERSION),
-                CoreMatchers.is("1.2.3"));
-            MatcherAssert.assertThat(
-                resource.getAttribute(ResourceAttributes.SERVICE_VERSION),
-                CoreMatchers.is("1.2.3"));
-
-
-            openTelemetrySdkProvider.preDestroy();
-        } finally {
-            if (jenkinsUrlSysPropBefore != null) {
-                System.setProperty("jenkins.url", jenkinsUrlSysPropBefore);
-            }
+        } else {
+            // on ci.jenkins.io, the JENKINS_URL environment variable is set to 'https://ci.jenkins.io", breaking the check
+            System.out.println(getClass().getName() + "#testDefaultConfigurationOverwrite: skip verification of Resource['jenkins.url'] " +
+                "because the environment variable or the system property is specified");
         }
+        MatcherAssert.assertThat(
+            resource.getAttribute(JenkinsOtelSemanticAttributes.JENKINS_VERSION),
+            CoreMatchers.is("1.2.3"));
+        MatcherAssert.assertThat(
+            resource.getAttribute(ResourceAttributes.SERVICE_VERSION),
+            CoreMatchers.is("1.2.3"));
+
+
+        openTelemetrySdkProvider.preDestroy();
     }
 }
