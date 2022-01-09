@@ -35,6 +35,7 @@ public class OpenTelemetrySdkProviderTest {
         String expectedServiceName = "my-jenkins";
         String expectedServiceNamespace = "my-namespace";
 
+        System.out.println(getClass().getName() + "#testDefaultConfig: systemProperty[jenkins.url]: " + System.getProperty("jenkins.url") + ", env[JENKINS_URL]: " + System.getenv("JENKINS_URL"));
         testDefaultConfigurationOverwrite(serviceNameDefinedInConfig, serviceNamespaceDefinedInConfig, expectedServiceName, expectedServiceNamespace);
     }
 
