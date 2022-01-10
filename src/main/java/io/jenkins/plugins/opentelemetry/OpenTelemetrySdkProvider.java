@@ -10,7 +10,6 @@ import com.google.common.base.Preconditions;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
@@ -19,20 +18,13 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
 import io.opentelemetry.sdk.extension.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
-import jenkins.model.JenkinsLocationConfiguration;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import java.util.HashSet;
-import java.util.ServiceLoader;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -109,8 +101,6 @@ public class OpenTelemetrySdkProvider {
         // RESOURCE
         sdkBuilder.addResourceCustomizer((resource, configProperties) -> {
                 ResourceBuilder resourceBuilder = Resource.builder()
-                    .put(ResourceAttributes.SERVICE_VERSION, OtelUtils.getJenkinsVersion())
-                    .put(JenkinsOtelSemanticAttributes.JENKINS_URL, jenkinsLocationConfiguration.getUrl())
                     .putAll(resource)
                     .putAll(configuration.toOpenTelemetryResource());
                 return resourceBuilder.build();
@@ -151,12 +141,5 @@ public class OpenTelemetrySdkProvider {
 
         this.meter = openTelemetry.getMeterProvider().get("jenkins");
         LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
-    }
-
-    private JenkinsLocationConfiguration jenkinsLocationConfiguration;
-
-    @Inject
-    public void setJenkinsLocationConfiguration(@Nonnull JenkinsLocationConfiguration jenkinsLocationConfiguration) {
-        this.jenkinsLocationConfiguration = jenkinsLocationConfiguration;
     }
 }

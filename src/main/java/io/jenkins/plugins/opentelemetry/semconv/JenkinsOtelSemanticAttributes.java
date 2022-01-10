@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.semconv;
 
 import hudson.PluginWrapper;
 import hudson.model.Computer;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.opentelemetry.api.common.AttributeKey;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -58,6 +59,10 @@ public final class JenkinsOtelSemanticAttributes {
      * @see Jenkins#getRootUrl()
      */
     public static final AttributeKey<String>        JENKINS_URL = AttributeKey.stringKey("jenkins.url");
+    /**
+     * @see OtelUtils#getJenkinsVersion()
+     */
+    public static final AttributeKey<String>        JENKINS_VERSION = AttributeKey.stringKey("jenkins.version");
     /**
      * @see StepDescriptor#getDisplayName()
      */

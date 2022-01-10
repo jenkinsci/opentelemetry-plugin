@@ -18,9 +18,11 @@ import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
+import jenkins.model.JenkinsLocationConfiguration;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.structs.SymbolLookup;
@@ -132,6 +134,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             LOGGER.log(Level.WARNING, "Exception parsing configuration properties", e);
         }
         Map<String, String> configurationProperties = new HashMap(properties);
+        configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_VERSION.getKey(), OtelUtils.getJenkinsVersion());
+        configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_URL.getKey(), this.jenkinsLocationConfiguration.getUrl());
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(
             Optional.ofNullable(this.getEndpoint()),
             Optional.ofNullable(this.getTrustedCertificatesPem()),
@@ -304,6 +308,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT, Integer.toString(this.exporterTimeoutMillis));
         }
         return environmentVariables;
+    }
+
+    private JenkinsLocationConfiguration jenkinsLocationConfiguration;
+
+    @Inject
+    public void setJenkinsLocationConfiguration(@Nonnull JenkinsLocationConfiguration jenkinsLocationConfiguration) {
+        this.jenkinsLocationConfiguration = jenkinsLocationConfiguration;
     }
 
     /**
