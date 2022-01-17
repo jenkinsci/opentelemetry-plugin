@@ -470,7 +470,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.9.0</version>
                 <configuration>
                     <!--
                     https://stackoverflow.com/questions/49939398/maven-compiler-plugin-null-pointer
