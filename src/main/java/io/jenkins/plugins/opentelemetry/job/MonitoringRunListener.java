@@ -36,6 +36,7 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.sdk.trace.ReadWriteSpan;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -241,7 +242,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         Span rootSpan = rootSpanBuilder.startSpan();
         String traceId = rootSpan.getSpanContext().getTraceId();
         String spanId = rootSpan.getSpanContext().getSpanId();
-        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId);
+        // TODO better pattern to retrieve the name of the created root span
+        String rootSpanName = rootSpan instanceof ReadWriteSpan? ((ReadWriteSpan) rootSpan).getName() : null; // when tracer is no-op, span is NOT a ReadWriteSpan
+        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId, rootSpanName);
         run.addAction(monitoringAction);
 
         this.getTraceService().putSpan(run, rootSpan);
