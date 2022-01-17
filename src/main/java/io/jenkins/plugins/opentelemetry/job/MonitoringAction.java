@@ -9,9 +9,7 @@ import hudson.ExtensionList;
 import hudson.model.Action;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
-import io.jenkins.plugins.opentelemetry.job.runhandler.DefaultRunHandler;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
@@ -34,15 +32,17 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
 
     final String traceId;
     final String spanId;
+    final String rootSpanName;
     Map<String, Map<String, String>> contextPerNodeId = new HashMap<>();
     Map<String, String> rootContext = new HashMap<>();
 
     transient Run run;
     transient JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
 
-    public MonitoringAction(String traceId, String spanId) {
+    public MonitoringAction(String traceId, String spanId, String rootSpanName) {
         this.traceId = traceId;
         this.spanId = spanId;
+        this.rootSpanName = rootSpanName;
     }
 
     @Override
@@ -100,6 +100,9 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         return rootContext;
     }
 
+    /**
+     * See `io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator#inject(io.opentelemetry.context.Context, java.lang.Object, io.opentelemetry.context.propagation.TextMapSetter)`
+     */
     public void addRootContext(@Nonnull Map<String, String> context) {
         this.rootContext = context;
     }
@@ -125,8 +128,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         }
         Map<String, Object> binding = new HashMap<>();
         binding.put("serviceName", Objects.requireNonNull(JenkinsOpenTelemetryPluginConfiguration.get().getServiceName()));
-        // FIXME retrieve root span name
-        binding.put("rootSpanName", "FIXME");
+        binding.put("rootSpanName", this.rootSpanName);
         binding.put("traceId", this.traceId);
         binding.put("spanId", this.spanId);
         binding.put("startTime", Instant.ofEpochMilli(run.getStartTimeInMillis()));

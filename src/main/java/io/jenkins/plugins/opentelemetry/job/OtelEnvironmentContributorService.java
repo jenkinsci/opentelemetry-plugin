@@ -39,13 +39,16 @@ public class OtelEnvironmentContributorService {
             TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
             W3CTraceContextPropagator.getInstance().inject(Context.current(), envs, setter);
         }
-
-        MonitoringAction action = new MonitoringAction(traceId, spanId);
-        action.onAttached(run);
-        for (MonitoringAction.ObservabilityBackendLink link : action.getLinks()) {
-            // Default backend link got an empty environment variable.
-            if (link.getEnvironmentVariableName() != null) {
-                envs.put(link.getEnvironmentVariableName(), link.getUrl());
+        MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
+        if (monitoringAction == null) {
+            LOGGER.log(Level.INFO, () -> "MonitoringAction NOT found on run " + run);
+        } else {
+            // TODO do we really need to add the links as environment variables?
+            for (MonitoringAction.ObservabilityBackendLink link : monitoringAction.getLinks()) {
+                // Default backend link got an empty environment variable.
+                if (link.getEnvironmentVariableName() != null) {
+                    envs.put(link.getEnvironmentVariableName(), link.getUrl());
+                }
             }
         }
 
