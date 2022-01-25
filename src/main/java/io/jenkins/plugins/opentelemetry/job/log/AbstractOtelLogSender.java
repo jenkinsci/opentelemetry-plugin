@@ -6,7 +6,9 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.console.LineTransformationOutputStream;
+import hudson.console.PlainTextConsoleOutputStream;
 import hudson.model.BuildListener;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.util.JenkinsJVM;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -17,23 +19,20 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java
  */
-abstract class OtelLogAbstractSender implements BuildListener, Closeable {
+abstract class AbstractOtelLogSender implements BuildListener, Closeable {
     protected final Logger LOGGER = Logger.getLogger(getClass().getName());
     @CheckForNull
     transient PrintStream logger;
 
-    final LogEmitter logEmitter; // FIXME check if transient is needed. If so, what deserialization strategy
     final BuildInfo buildInfo;
 
-    public OtelLogAbstractSender(BuildInfo buildInfo, LogEmitter logEmitter) {
-        this.logEmitter = logEmitter;
+    public AbstractOtelLogSender(BuildInfo buildInfo) {
         this.buildInfo = buildInfo;
     }
 
@@ -42,7 +41,7 @@ abstract class OtelLogAbstractSender implements BuildListener, Closeable {
     public synchronized final PrintStream getLogger() {
         if (logger == null) {
             try {
-                logger = new PrintStream(new OtelLogOutputStream(buildInfo, logEmitter), false, "UTF-8");
+                logger = new PrintStream(new PlainTextConsoleOutputStream(new OtelLogOutputStream(buildInfo)), false, "UTF-8");
             } catch (UnsupportedEncodingException e) {
                 throw new AssertionError(e);
             }
@@ -62,23 +61,23 @@ abstract class OtelLogAbstractSender implements BuildListener, Closeable {
     /**
      * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/master/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L79
      */
-    static final class MasterSender extends OtelLogAbstractSender {
+    static final class MasterOtelLogSender extends AbstractOtelLogSender {
         private static final long serialVersionUID = 1;
 
-        public MasterSender(BuildInfo buildInfo, LogEmitter logEmitter) {
-            super(buildInfo, logEmitter);
+        public MasterOtelLogSender(BuildInfo buildInfo) {
+            super(buildInfo);
         }
     }
 
     /**
      * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/master/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L108
      */
-    static final class NodeSender extends OtelLogAbstractSender {
+    static final class NodeOtelLogSender extends AbstractOtelLogSender {
         private static final long serialVersionUID = 1;
         final FlowNode node;
 
-        public NodeSender(BuildInfo buildInfo, FlowNode node, LogEmitter logEmitter) {
-            super(buildInfo, logEmitter);
+        public NodeOtelLogSender(BuildInfo buildInfo, FlowNode node) {
+            super(buildInfo);
             this.node = node;
         }
 
@@ -96,22 +95,32 @@ abstract class OtelLogAbstractSender implements BuildListener, Closeable {
      */
     private class OtelLogOutputStream extends LineTransformationOutputStream {
         final BuildInfo buildInfo;
-        final LogEmitter logEmitter;
+        transient LogEmitter logEmitter;
 
-        public OtelLogOutputStream(BuildInfo buildInfo, LogEmitter logEmitter) {
+        public OtelLogOutputStream(BuildInfo buildInfo) {
             this.buildInfo = buildInfo;
-            this.logEmitter = logEmitter;
+        }
+
+        public LogEmitter getLogEmitter() {
+            if (logEmitter == null) {
+                logEmitter = OpenTelemetrySdkProvider.get().getLogEmitter();
+            }
+            return logEmitter;
         }
 
         @Override
         protected void eol(byte[] bytes, int len) throws IOException {
-            String logLine = new String(bytes, 0, len, StandardCharsets.UTF_8);
-            logEmitter.logBuilder()
+            if (len == 0) {
+                return;
+            }
+            String message = new String (bytes, 0, len - 1); //remove trailing line feed
+
+            getLogEmitter().logBuilder()
                 .setAttributes(buildInfo.toAttributes())
-                .setBody(logLine)
+                .setBody(message)
                 // .setContext() TODO trace correlation
                 .emit();
-            LOGGER.log(Level.INFO, () -> buildInfo + " - emit " + logLine); // FIXME change log level
+            LOGGER.log(Level.INFO, () -> buildInfo + " - emit '" + message + "'"); // FIXME change log level
         }
 
         @Override

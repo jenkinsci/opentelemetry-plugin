@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import hudson.Extension;
+import hudson.ExtensionList;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -151,5 +152,9 @@ public class OpenTelemetrySdkProvider {
         this.meter = openTelemetry.getMeterProvider().get("jenkins");
         this.logEmitter = SdkLogEmitterProvider.builder().build().get("noop"); // FIXME tear down
         LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
+    }
+
+    static public OpenTelemetrySdkProvider get() {
+        return ExtensionList.lookupSingleton(OpenTelemetrySdkProvider.class);
     }
 }
