@@ -80,6 +80,12 @@ public class OpenTelemetrySdkProvider {
         return Preconditions.checkNotNull(config);
     }
 
+
+    public boolean isOtelLogsEnabled(){
+        String otelLogsExporter = config.getString("otel.logs.exporter");
+        return otelLogsExporter != null && !otelLogsExporter.equals("none");
+    }
+
     @Nonnull
     public LogEmitter getLogEmitter() {
         return Preconditions.checkNotNull(this.logEmitter);

@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.Main;
@@ -13,6 +14,8 @@ import hudson.model.BuildListener;
 import hudson.model.Queue;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
@@ -46,10 +49,13 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
 
     ConcurrentMap<BuildInfo, LogStorage> logStoragesByBuild = new ConcurrentHashMap<>();
 
+    OpenTelemetrySdkProvider openTelemetrySdkProvider;
+
     @Nullable
     @Override
     public LogStorage forBuild(@Nonnull final FlowExecutionOwner owner) {
-        if (Main.isUnitTest) {
+        if (Main.isUnitTest || !openTelemetrySdkProvider.isOtelLogsEnabled()) {
+            LOGGER.log(Level.FINE, () -> "forBuild(): null" );
             return null;
         }
         try {
@@ -72,6 +78,11 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         if (removed == null) {
             LOGGER.log(Level.WARNING, () -> "Failure to close log storage for " + buildInfo + ", storage not found");
         }
+    }
+
+    @Inject
+    public void setOpenTelemetrySdkProvider(OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+        this.openTelemetrySdkProvider = openTelemetrySdkProvider;
     }
 
     static class OtelLogStorage implements LogStorage {
