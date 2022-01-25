@@ -19,6 +19,8 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.extension.resources.ProcessResourceProvider;
+import io.opentelemetry.sdk.logs.LogEmitter;
+import io.opentelemetry.sdk.logs.SdkLogEmitterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 
@@ -46,6 +48,7 @@ public class OpenTelemetrySdkProvider {
     protected transient Meter meter;
     protected transient Resource resource;
     protected transient ConfigProperties config;
+    protected transient LogEmitter logEmitter;
 
     public OpenTelemetrySdkProvider() {
     }
@@ -74,6 +77,11 @@ public class OpenTelemetrySdkProvider {
     @Nonnull
     public ConfigProperties getConfig() {
         return Preconditions.checkNotNull(config);
+    }
+
+    @Nonnull
+    public LogEmitter getLogEmitter() {
+        return Preconditions.checkNotNull(this.logEmitter);
     }
 
     @VisibleForTesting
@@ -118,6 +126,7 @@ public class OpenTelemetrySdkProvider {
         this.openTelemetry = this.openTelemetrySdk;
         this.tracer.setDelegate(openTelemetry.getTracer("jenkins-opentelemetry", OtelUtils.getOpentelemetryPluginVersion()));
 
+        this.logEmitter = openTelemetrySdk.getSdkLogEmitterProvider().get("jenkins-opentelemetry");
         this.meter = openTelemetry.getMeterProvider().get("jenkins-opentelemetry");
 
         LOGGER.log(Level.INFO, () -> "OpenTelemetry initialized: " + ConfigPropertiesUtils.prettyPrintConfiguration(autoConfiguredOpenTelemetrySdk.getConfig()));
@@ -140,6 +149,7 @@ public class OpenTelemetrySdkProvider {
         }
 
         this.meter = openTelemetry.getMeterProvider().get("jenkins");
+        this.logEmitter = SdkLogEmitterProvider.builder().build().get("noop"); // FIXME tear down
         LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
     }
 }
