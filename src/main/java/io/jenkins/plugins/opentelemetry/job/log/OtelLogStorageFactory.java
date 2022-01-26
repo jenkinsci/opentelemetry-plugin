@@ -98,7 +98,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         @Nonnull
         @Override
         public BuildListener overallListener() {
-            return new OtelLogSender(buildInfo, buildInfo.context);
+            return new OtelLogSenderBuildListener(buildInfo, buildInfo.context);
         }
 
         @Nonnull
@@ -119,7 +119,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
                     LOGGER.log(Level.INFO, () -> "FlowNode context found for " + buildInfo + " - " + node);
                     context = flowNodeContext;
                 }
-                return new OtelLogSender(buildInfo, context);
+                return new OtelLogSenderBuildListener(buildInfo, context);
             } else {
                 throw new IllegalStateException();
             }

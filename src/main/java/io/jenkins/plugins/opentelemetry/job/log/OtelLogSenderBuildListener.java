@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 /**
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java
  */
-class OtelLogSender implements BuildListener, Closeable {
+class OtelLogSenderBuildListener implements BuildListener, Closeable {
     protected final Logger LOGGER = Logger.getLogger(getClass().getName());
     @CheckForNull
     transient PrintStream logger;
@@ -39,7 +39,7 @@ class OtelLogSender implements BuildListener, Closeable {
 
     final Map<String, String> context;
 
-    public OtelLogSender(BuildInfo buildInfo, Map<String, String> context) {
+    public OtelLogSenderBuildListener(BuildInfo buildInfo, Map<String, String> context) {
         this.buildInfo = buildInfo;
         this.context = context;
     }
