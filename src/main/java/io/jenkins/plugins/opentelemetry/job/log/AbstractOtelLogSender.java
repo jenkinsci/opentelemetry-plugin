@@ -9,6 +9,7 @@ import hudson.console.LineTransformationOutputStream;
 import hudson.console.PlainTextConsoleOutputStream;
 import hudson.model.BuildListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.util.JenkinsJVM;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -91,21 +92,30 @@ abstract class AbstractOtelLogSender implements BuildListener, Closeable {
     }
 
     /**
+     * TODO support Pipeline Step Context {@link Context} in addition to supporting run root context
      * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L162
      */
     private class OtelLogOutputStream extends LineTransformationOutputStream {
         final BuildInfo buildInfo;
         transient LogEmitter logEmitter;
+        transient Context context;
 
         public OtelLogOutputStream(BuildInfo buildInfo) {
             this.buildInfo = buildInfo;
         }
 
-        public LogEmitter getLogEmitter() {
+        LogEmitter getLogEmitter() {
             if (logEmitter == null) {
                 logEmitter = OpenTelemetrySdkProvider.get().getLogEmitter();
             }
             return logEmitter;
+        }
+
+        Context getContext() {
+            if (context == null) {
+                context = buildInfo.toContext();
+            }
+            return context;
         }
 
         @Override
@@ -118,7 +128,7 @@ abstract class AbstractOtelLogSender implements BuildListener, Closeable {
             getLogEmitter().logBuilder()
                 .setAttributes(buildInfo.toAttributes())
                 .setBody(message)
-                // .setContext() TODO trace correlation
+                .setContext(getContext())
                 .emit();
             LOGGER.log(Level.INFO, () -> buildInfo + " - emit '" + message + "'"); // FIXME change log level
         }

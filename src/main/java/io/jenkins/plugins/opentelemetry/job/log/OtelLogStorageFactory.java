@@ -14,8 +14,9 @@ import hudson.model.BuildListener;
 import hudson.model.Queue;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
+import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
@@ -50,20 +51,22 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
     ConcurrentMap<BuildInfo, LogStorage> logStoragesByBuild = new ConcurrentHashMap<>();
 
     OpenTelemetrySdkProvider openTelemetrySdkProvider;
+    OtelTraceService otelTraceService;
 
     @Nullable
     @Override
     public LogStorage forBuild(@Nonnull final FlowExecutionOwner owner) {
         if (Main.isUnitTest || !openTelemetrySdkProvider.isOtelLogsEnabled()) {
-            LOGGER.log(Level.FINE, () -> "forBuild(): null" );
+            LOGGER.log(Level.FINE, () -> "forBuild(): null");
             return null;
         }
         try {
             Queue.Executable exec = owner.getExecutable();
             if (exec instanceof Run) {
                 Run<?, ?> run = (Run<?, ?>) exec;
-                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getId());
-                LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")" );
+                MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
+                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getId(), monitoringAction.getRootContext());
+                LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
                 return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo));
             } else {
                 return null;
@@ -73,7 +76,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         }
     }
 
-    void close (BuildInfo buildInfo) {
+    void close(BuildInfo buildInfo) {
         Object removed = this.logStoragesByBuild.remove(buildInfo);
         if (removed == null) {
             LOGGER.log(Level.WARNING, () -> "Failure to close log storage for " + buildInfo + ", storage not found");
@@ -85,12 +88,17 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
     }
 
+    @Inject
+    public void setOtelTraceService(OtelTraceService otelTraceService) {
+        this.otelTraceService = otelTraceService;
+    }
+
     static class OtelLogStorage implements LogStorage {
 
         final BuildInfo buildInfo;
 
         public OtelLogStorage(@Nonnull BuildInfo buildInfo) {
-            this.buildInfo= buildInfo;
+            this.buildInfo = buildInfo;
         }
 
         @Nonnull
