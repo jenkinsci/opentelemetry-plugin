@@ -9,33 +9,39 @@ import hudson.console.LineTransformationOutputStream;
 import hudson.console.PlainTextConsoleOutputStream;
 import hudson.model.BuildListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.util.JenkinsJVM;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java
  */
-abstract class AbstractOtelLogSender implements BuildListener, Closeable {
+class OtelLogSender implements BuildListener, Closeable {
     protected final Logger LOGGER = Logger.getLogger(getClass().getName());
     @CheckForNull
     transient PrintStream logger;
 
     final BuildInfo buildInfo;
 
-    public AbstractOtelLogSender(BuildInfo buildInfo) {
+    final Map<String, String> context;
+
+    public OtelLogSender(BuildInfo buildInfo, Map<String, String> context) {
         this.buildInfo = buildInfo;
+        this.context = context;
     }
 
     @Nonnull
@@ -43,7 +49,7 @@ abstract class AbstractOtelLogSender implements BuildListener, Closeable {
     public synchronized final PrintStream getLogger() {
         if (logger == null) {
             try {
-                logger = new PrintStream(new PlainTextConsoleOutputStream(new OtelLogOutputStream(buildInfo)), false, "UTF-8");
+                logger = new PrintStream(new PlainTextConsoleOutputStream(new OtelLogOutputStream(buildInfo, context)), false, "UTF-8");
             } catch (UnsupportedEncodingException e) {
                 throw new AssertionError(e);
             }
@@ -58,39 +64,11 @@ abstract class AbstractOtelLogSender implements BuildListener, Closeable {
             LOGGER.log(Level.INFO, () -> getClass().getName() + "#close(" + buildInfo + ")");
             logger = null;
         }
-    }
-
-    /**
-     * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/master/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L79
-     */
-    static final class RootOtelLogSender extends AbstractOtelLogSender {
-        private static final long serialVersionUID = 1;
-
-        public RootOtelLogSender(BuildInfo buildInfo) {
-            super(buildInfo);
+        if (JenkinsJVM.isJenkinsJVM()) { // TODO why
+            OtelLogStorageFactory.get().close(buildInfo);
         }
     }
 
-    /**
-     * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/master/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L108
-     */
-    static final class FlowNodeOtelLogSender extends AbstractOtelLogSender {
-        private static final long serialVersionUID = 1;
-        final FlowNode node;
-
-        public FlowNodeOtelLogSender(BuildInfo buildInfo, FlowNode node) {
-            super(buildInfo);
-            this.node = node;
-        }
-
-        @Override
-        public void close() throws IOException {
-            super.close();
-            if (JenkinsJVM.isJenkinsJVM()) { // TODO why
-                OtelLogStorageFactory.get().close(buildInfo);
-            }
-        }
-    }
 
     /**
      * TODO support Pipeline Step Context {@link Context} in addition to supporting run root context
@@ -98,11 +76,17 @@ abstract class AbstractOtelLogSender implements BuildListener, Closeable {
      */
     private class OtelLogOutputStream extends LineTransformationOutputStream {
         final BuildInfo buildInfo;
+        final Map<String, String> contextAsMap;
         transient LogEmitter logEmitter;
         transient Context context;
 
-        public OtelLogOutputStream(BuildInfo buildInfo) {
+        /**
+         * @param buildInfo
+         * @param context   see {@link Context} and
+         */
+        public OtelLogOutputStream(BuildInfo buildInfo, Map<String, String> context) {
             this.buildInfo = buildInfo;
+            this.contextAsMap = context;
         }
 
         LogEmitter getLogEmitter() {
@@ -114,7 +98,18 @@ abstract class AbstractOtelLogSender implements BuildListener, Closeable {
 
         Context getContext() {
             if (context == null) {
-                context = buildInfo.toContext();
+                context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.contextAsMap, new TextMapGetter<Map<String, String>>() {
+                    @Override
+                    public Iterable<String> keys(Map<String, String> carrier) {
+                        return carrier.keySet();
+                    }
+
+                    @Nullable
+                    @Override
+                    public String get(@Nullable Map<String, String> carrier, String key) {
+                        return carrier == null ? null : carrier.get(key);
+                    }
+                });
             }
             return context;
         }
@@ -124,14 +119,14 @@ abstract class AbstractOtelLogSender implements BuildListener, Closeable {
             if (len == 0) {
                 return;
             }
-            String message = new String (bytes, 0, len - 1, StandardCharsets.UTF_8); //remove trailing line feed
+            String message = new String(bytes, 0, len - 1, StandardCharsets.UTF_8); //remove trailing line feed
 
             getLogEmitter().logBuilder()
                 .setAttributes(buildInfo.toAttributes())
                 .setBody(message)
                 .setContext(getContext())
                 .emit();
-            LOGGER.log(Level.INFO, () -> buildInfo + " - emit '" + message + "'"); // FIXME change log level
+            LOGGER.log(Level.FINE, () -> buildInfo + " - emit '" + message + "'"); // FIXME change log level
         }
 
         @Override

@@ -16,7 +16,6 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
-import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
@@ -28,6 +27,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -51,7 +51,6 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
     ConcurrentMap<BuildInfo, LogStorage> logStoragesByBuild = new ConcurrentHashMap<>();
 
     OpenTelemetrySdkProvider openTelemetrySdkProvider;
-    OtelTraceService otelTraceService;
 
     @Nullable
     @Override
@@ -88,11 +87,6 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
     }
 
-    @Inject
-    public void setOtelTraceService(OtelTraceService otelTraceService) {
-        this.otelTraceService = otelTraceService;
-    }
-
     static class OtelLogStorage implements LogStorage {
 
         final BuildInfo buildInfo;
@@ -104,14 +98,31 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         @Nonnull
         @Override
         public BuildListener overallListener() {
-            return new AbstractOtelLogSender.RootOtelLogSender(buildInfo);
+            return new OtelLogSender(buildInfo, buildInfo.context);
         }
 
         @Nonnull
         @Override
-        public TaskListener nodeListener(@Nonnull FlowNode node) {
-
-            return new AbstractOtelLogSender.FlowNodeOtelLogSender(buildInfo, node);
+        public TaskListener nodeListener(@Nonnull FlowNode node) throws IOException {
+            FlowExecutionOwner owner = node.getExecution().getOwner();
+            Queue.Executable executable = owner.getExecutable();
+            if (executable instanceof Run) {
+                Run run = (Run) executable;
+                MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
+                // FIXME there are no FlowNode contexts in the MonitoringAction, need to find elsewhere
+                Map<String, String> flowNodeContext = monitoringAction.getContext(node.getId());
+                Map<String, String> context;
+                if (flowNodeContext == null) {
+                    LOGGER.log(Level.INFO, () -> "NO FlowNode context found for " + buildInfo + " - " + node +", default to build root context");
+                    context = this.buildInfo.context;
+                } else {
+                    LOGGER.log(Level.INFO, () -> "FlowNode context found for " + buildInfo + " - " + node);
+                    context = flowNodeContext;
+                }
+                return new OtelLogSender(buildInfo, context);
+            } else {
+                throw new IllegalStateException();
+            }
         }
 
         @Nonnull
