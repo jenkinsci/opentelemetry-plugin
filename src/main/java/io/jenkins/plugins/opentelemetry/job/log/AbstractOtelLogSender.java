@@ -20,6 +20,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -123,7 +124,7 @@ abstract class AbstractOtelLogSender implements BuildListener, Closeable {
             if (len == 0) {
                 return;
             }
-            String message = new String (bytes, 0, len - 1); //remove trailing line feed
+            String message = new String (bytes, 0, len - 1, StandardCharsets.UTF_8); //remove trailing line feed
 
             getLogEmitter().logBuilder()
                 .setAttributes(buildInfo.toAttributes())

@@ -16,19 +16,22 @@ import java.util.Map;
 
 final class BuildInfo {
     final String jobFullName;
-    final String runId;
+    final int runNumber;
+    /**
+     * @see Context
+     */
     final Map<String, String> context;
 
-    BuildInfo(String jobFullName, String runId, Map<String, String> context) {
+    BuildInfo(String jobFullName, int runNumber, Map<String, String> context) {
         this.jobFullName = jobFullName;
-        this.runId = runId;
+        this.runNumber = runNumber;
         this.context = context;
     }
 
     Attributes toAttributes(){
         return Attributes.builder()
-            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, jobFullName)
-            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, runId) // FIXME use CI_PIPELINE_RUN_NUMBER
+            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
+            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, runNumber)
             .build();
     }
 
@@ -51,7 +54,7 @@ final class BuildInfo {
     public String toString() {
         return "BuildInfo{" +
             "jobFullName='" + jobFullName + '\'' +
-            ", runId='" + runId + '\'' +
+            ", runId='" + runNumber + '\'' +
             '}';
     }
 }

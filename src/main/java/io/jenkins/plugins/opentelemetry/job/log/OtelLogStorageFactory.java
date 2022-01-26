@@ -65,7 +65,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
             if (exec instanceof Run) {
                 Run<?, ?> run = (Run<?, ?>) exec;
                 MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getId(), monitoringAction.getRootContext());
+                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getRootContext());
                 LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
                 return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo));
             } else {
