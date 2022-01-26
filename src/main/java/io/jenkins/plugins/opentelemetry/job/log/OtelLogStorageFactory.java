@@ -27,7 +27,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -55,7 +54,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
     @Nullable
     @Override
     public LogStorage forBuild(@Nonnull final FlowExecutionOwner owner) {
-        if (Main.isUnitTest || !openTelemetrySdkProvider.isOtelLogsEnabled()) {
+        if (Main.isUnitTest || !getOpenTelemetrySdkProvider().isOtelLogsEnabled()) {
             LOGGER.log(Level.FINE, () -> "forBuild(): null");
             return null;
         }
@@ -82,9 +81,14 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         }
     }
 
-    @Inject
-    public void setOpenTelemetrySdkProvider(OpenTelemetrySdkProvider openTelemetrySdkProvider) {
-        this.openTelemetrySdkProvider = openTelemetrySdkProvider;
+    /**
+     * Workaround dependency injection problem. @Inject doesn't work here
+     */
+    private OpenTelemetrySdkProvider getOpenTelemetrySdkProvider() {
+        if (openTelemetrySdkProvider == null) {
+            openTelemetrySdkProvider = OpenTelemetrySdkProvider.get();
+        }
+        return openTelemetrySdkProvider;
     }
 
     static class OtelLogStorage implements LogStorage {
@@ -103,26 +107,11 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
 
         @Nonnull
         @Override
-        public TaskListener nodeListener(@Nonnull FlowNode node) throws IOException {
-            FlowExecutionOwner owner = node.getExecution().getOwner();
-            Queue.Executable executable = owner.getExecutable();
-            if (executable instanceof Run) {
-                Run run = (Run) executable;
-                MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-                // FIXME there are no FlowNode contexts in the MonitoringAction, need to find elsewhere
-                Map<String, String> flowNodeContext = monitoringAction.getContext(node.getId());
-                Map<String, String> context;
-                if (flowNodeContext == null) {
-                    LOGGER.log(Level.INFO, () -> "NO FlowNode context found for " + buildInfo + " - " + node +", default to build root context");
-                    context = this.buildInfo.context;
-                } else {
-                    LOGGER.log(Level.INFO, () -> "FlowNode context found for " + buildInfo + " - " + node);
-                    context = flowNodeContext;
-                }
-                return new OtelLogSenderBuildListener(buildInfo, context);
-            } else {
-                throw new IllegalStateException();
-            }
+        public TaskListener nodeListener(@Nonnull FlowNode flowNode) throws IOException {
+            // TODO get the Span or Context of the Span associated with the given FlowNode
+            // ((Run)node.getExecution().getOwner().getExecutable()).getAction(MonitoringAction.class).getContext(flowNode.getId()) returns null
+            // this suggest that OtelLogStorage.nodeListener(flowNode) may be invoked before the FlowNode span has been created.
+            return new OtelLogSenderBuildListener(buildInfo, buildInfo.context);
         }
 
         @Nonnull
