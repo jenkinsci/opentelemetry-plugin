@@ -28,7 +28,7 @@ final class BuildInfo {
     Attributes toAttributes(){
         return Attributes.builder()
             .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, jobFullName)
-            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, runId)
+            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, runId) // FIXME use CI_PIPELINE_RUN_NUMBER
             .build();
     }
 

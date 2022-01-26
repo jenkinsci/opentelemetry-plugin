@@ -104,13 +104,14 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         @Nonnull
         @Override
         public BuildListener overallListener() {
-            return new AbstractOtelLogSender.MasterOtelLogSender(buildInfo);
+            return new AbstractOtelLogSender.RootOtelLogSender(buildInfo);
         }
 
         @Nonnull
         @Override
         public TaskListener nodeListener(@Nonnull FlowNode node) {
-            return new AbstractOtelLogSender.NodeOtelLogSender(buildInfo, node);
+
+            return new AbstractOtelLogSender.FlowNodeOtelLogSender(buildInfo, node);
         }
 
         @Nonnull

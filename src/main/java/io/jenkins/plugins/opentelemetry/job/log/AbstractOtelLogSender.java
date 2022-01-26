@@ -62,10 +62,10 @@ abstract class AbstractOtelLogSender implements BuildListener, Closeable {
     /**
      * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/master/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L79
      */
-    static final class MasterOtelLogSender extends AbstractOtelLogSender {
+    static final class RootOtelLogSender extends AbstractOtelLogSender {
         private static final long serialVersionUID = 1;
 
-        public MasterOtelLogSender(BuildInfo buildInfo) {
+        public RootOtelLogSender(BuildInfo buildInfo) {
             super(buildInfo);
         }
     }
@@ -73,11 +73,11 @@ abstract class AbstractOtelLogSender implements BuildListener, Closeable {
     /**
      * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/master/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L108
      */
-    static final class NodeOtelLogSender extends AbstractOtelLogSender {
+    static final class FlowNodeOtelLogSender extends AbstractOtelLogSender {
         private static final long serialVersionUID = 1;
         final FlowNode node;
 
-        public NodeOtelLogSender(BuildInfo buildInfo, FlowNode node) {
+        public FlowNodeOtelLogSender(BuildInfo buildInfo, FlowNode node) {
             super(buildInfo);
             this.node = node;
         }
