@@ -27,7 +27,7 @@ class OtelLogStorage implements LogStorage {
     final BuildInfo buildInfo;
 
     public OtelLogStorage(@Nonnull BuildInfo buildInfo) {
-        this.buildInfo= buildInfo;
+        this.buildInfo = buildInfo;
     }
 
     @Nonnull

@@ -105,6 +105,7 @@ public class OpenTelemetryConfiguration {
             properties.put("otel.traces.exporter", "testing");
             properties.put("otel.metrics.exporter", "testing");
             properties.put("otel.imr.export.interval", "10ms");
+            properties.put("otel.logs.exporter", "testing");
         } else if (this.getEndpoint().isPresent()) {
             this.getEndpoint().ifPresent(endpoint -> { // prepare of Optional.ifPResentOrElse()
                 properties.put("otel.traces.exporter", "otlp");

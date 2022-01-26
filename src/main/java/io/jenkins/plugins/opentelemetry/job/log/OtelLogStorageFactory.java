@@ -34,16 +34,20 @@ import java.util.logging.Logger;
 @Extension
 public final class OtelLogStorageFactory implements LogStorageFactory {
 
+    private final static Logger LOGGER = Logger.getLogger(OtelLogStorageFactory.class.getName());
+
     static {
         // Make sure JENKINS-52165 is enabled, or performance will be awful for remote shell steps.
         System.setProperty("org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep.USE_WATCHING", "true");
     }
 
-    private final static Logger LOGGER = Logger.getLogger(OtelLogStorageFactory.class.getName());
-
     ConcurrentMap<BuildInfo, LogStorage> logStoragesByBuild = new ConcurrentHashMap<>();
 
     OpenTelemetrySdkProvider openTelemetrySdkProvider;
+
+    static OtelLogStorageFactory get() {
+        return ExtensionList.lookupSingleton(OtelLogStorageFactory.class);
+    }
 
     @Nullable
     @Override
@@ -83,10 +87,6 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
             openTelemetrySdkProvider = OpenTelemetrySdkProvider.get();
         }
         return openTelemetrySdkProvider;
-    }
-
-    static OtelLogStorageFactory get() {
-        return ExtensionList.lookupSingleton(OtelLogStorageFactory.class);
     }
 
 }

@@ -3,14 +3,12 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import hudson.console.LineTransformationOutputStream;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.logs.LogEmitter;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,9 +18,9 @@ import java.util.logging.Logger;
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L162
  */
 public class OtelLogOutputStream extends LineTransformationOutputStream {
-    private final Logger LOGGER = Logger.getLogger(getClass().getName());
     @Nonnull
     final BuildInfo buildInfo;
+    private final Logger LOGGER = Logger.getLogger(getClass().getName());
     transient LogEmitter logEmitter;
     transient Context context;
 
@@ -49,13 +47,13 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
         if (len == 0) {
             return;
         }
-        String message = new String (bytes, 0, len - 1, StandardCharsets.UTF_8); //remove trailing line feed
+        String message = new String(bytes, 0, len - 1, StandardCharsets.UTF_8); //remove trailing line feed
         getLogEmitter().logBuilder()
             .setAttributes(Attributes.builder().putAll(ConsoleNotes.parse(bytes, len)).putAll(buildInfo.toAttributes()).build())
             .setBody(message)
             .setContext(getContext())
             .emit();
-        LOGGER.log(Level.FINE, () -> buildInfo + " - emit '" + message + "'"); // FIXME change log level
+        LOGGER.log(Level.FINE, () -> buildInfo + " - emit '" + message + "'");
     }
 
     @Override

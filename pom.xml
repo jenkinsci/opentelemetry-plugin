@@ -344,6 +344,12 @@
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>elasticsearch-rest-high-level-client</artifactId>
             <version>${elasticstack.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.sf.jopt-simple</groupId>
+                    <artifactId>jopt-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
@@ -466,6 +472,22 @@
             <version>1.3</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>1.16.3</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-compress</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -476,6 +498,9 @@
                     <!-- JENKINS-50520: since we need a custom version of Guava -->
                     <maskClasses>com.google.common.</maskClasses>
                     <minimumJavaVersion>8</minimumJavaVersion>
+                    <loggers>
+                        <io.jenkins.plugins.opentelemetry>FINE</io.jenkins.plugins.opentelemetry>
+                    </loggers>
                 </configuration>
             </plugin>
             <plugin>

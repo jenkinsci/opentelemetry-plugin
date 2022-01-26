@@ -334,6 +334,14 @@ public class ElasticBackend extends ObservabilityBackend {
         }
 
         @RequirePOST
+        public FormValidation doCheckIndexPattern(@QueryParameter String indexPattern) {
+            if (StringUtils.isEmpty(indexPattern)) {
+                return FormValidation.warning("The index pattern is required.");
+            }
+            return FormValidation.ok();
+        }
+
+        @RequirePOST
         public FormValidation doValidate(@QueryParameter String credentialsId, @QueryParameter String elasticsearchUrl,
                                          @QueryParameter String indexPattern) {
             FormValidation elasticsearchUrlValidation = doCheckElasticsearchUrl(elasticsearchUrl);
