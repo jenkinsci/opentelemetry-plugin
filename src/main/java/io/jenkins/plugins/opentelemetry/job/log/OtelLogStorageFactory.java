@@ -91,61 +91,6 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         return openTelemetrySdkProvider;
     }
 
-    static class OtelLogStorage implements LogStorage {
-
-        final BuildInfo buildInfo;
-
-        public OtelLogStorage(@Nonnull BuildInfo buildInfo) {
-            this.buildInfo = buildInfo;
-        }
-
-        @Nonnull
-        @Override
-        public BuildListener overallListener() {
-            return new OtelLogSenderBuildListener(buildInfo, buildInfo.context);
-        }
-
-        @Nonnull
-        @Override
-        public TaskListener nodeListener(@Nonnull FlowNode flowNode) throws IOException {
-            // TODO get the Span or Context of the Span associated with the given FlowNode
-            // ((Run)node.getExecution().getOwner().getExecutable()).getAction(MonitoringAction.class).getContext(flowNode.getId()) returns null
-            // this suggest that OtelLogStorage.nodeListener(flowNode) may be invoked before the FlowNode span has been created.
-            return new OtelLogSenderBuildListener(buildInfo, buildInfo.context);
-        }
-
-        @Nonnull
-        @Override
-        public AnnotatedLargeText<FlowExecutionOwner.Executable> overallLog(@Nonnull FlowExecutionOwner.Executable build, boolean complete) {
-            ByteBuffer buffer = new ByteBuffer();
-            try {
-                buffer.write("FIXME".getBytes(StandardCharsets.UTF_8));// FIXME
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-            return new AnnotatedLargeText<>(buffer, StandardCharsets.UTF_8, true, build);
-        }
-
-        @Nonnull
-        @Override
-        public AnnotatedLargeText<FlowNode> stepLog(@Nonnull FlowNode node, boolean complete) {
-            ByteBuffer buffer = new ByteBuffer();
-            try {
-                buffer.write("FIXME".getBytes(StandardCharsets.UTF_8));// FIXME
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-            return new AnnotatedLargeText<>(buffer, StandardCharsets.UTF_8, true, node);
-        }
-
-        @Override
-        public String toString() {
-            return "OtelLogStorage{" +
-                "buildInfo=" + buildInfo +
-                '}';
-        }
-    }
-
     static OtelLogStorageFactory get() {
         return ExtensionList.lookupSingleton(OtelLogStorageFactory.class);
     }
