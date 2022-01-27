@@ -78,7 +78,7 @@ public class OtelLogRetriever {
         }
         try (Writer w = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
             // FIXME check context values to search for
-            SearchResponse searchResponse = retriever.search(buildInfo.toContext().toString(), nodeId);
+            SearchResponse searchResponse = retriever.search(buildInfo.getContext().get("KEY"), nodeId);
             String scrollId = searchResponse.getScrollId();
             SearchHit[] searchHits = searchResponse.getHits().getHits();
             writeOutput(w, searchHits);

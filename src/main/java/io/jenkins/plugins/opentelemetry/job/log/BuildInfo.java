@@ -9,9 +9,10 @@ import com.google.common.base.Objects;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.context.Context;
+import org.yaml.snakeyaml.nodes.CollectionNode;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.Map;
 
 public final class BuildInfo {
@@ -34,6 +35,19 @@ public final class BuildInfo {
             .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, runNumber)
             .build();
+        //FIXME should we add the context as attributes?
+    }
+
+    public String getJobFullName() {
+        return jobFullName;
+    }
+
+    public int getRunNumber() {
+        return runNumber;
+    }
+
+    public Map<String, String> getContext() {
+        return Collections.unmodifiableMap(context);
     }
 
     @Override
@@ -41,6 +55,7 @@ public final class BuildInfo {
         return "BuildInfo{" +
             "jobFullName='" + jobFullName + '\'' +
             ", runId='" + runNumber + '\'' +
+            ", context='" + context != null ? context.toString() : "NA" + '\'' +
             '}';
     }
 

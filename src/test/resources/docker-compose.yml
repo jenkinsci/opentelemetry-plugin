@@ -1,0 +1,68 @@
+---
+version: "2.4"
+networks:
+  default:
+    name: integration-testing
+services:
+  elasticsearch:
+    environment:
+      - bootstrap.memory_lock=true
+      - cluster.name=docker-cluster
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-XX:UseAVX=2 -Xms1g -Xmx1g
+      - xpack.security.enabled=true
+      - xpack.license.self_generated.type=trial
+      - ELASTIC_PASSWORD=changeme
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    ports:
+      - "127.0.0.1:9200:9200"
+    healthcheck:
+      interval: 20s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - curl -s -k http://localhost:9200/_cluster/health | grep -vq '"status":"red"'
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib-dev:latest
+    command:
+      - /otelcol
+      - --config=/otel-collector.yml
+      - --log-level=DEBUG
+      - --log-profile=dev
+    ports:
+      - "127.0.0.1:4317:4317"
+    volumes:
+      - ./otel-collector.yml:/otel-collector.yml
+  kibana:
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_PASSWORD: changeme
+      ELASTICSEARCH_USERNAME: elastic
+      SERVER_HOST: 0.0.0.0
+      SERVER_NAME: kibana.example.org
+      STATUS_ALLOWANONYMOUS: 'true'
+      TELEMETRY_ENABLED: 'false'
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: fhjskloppd678ehkdfdlliverpoolfcr
+      XPACK_SECURITY_ENCRYPTIONKEY: fhjskloppd678ehkdfdlliverpoolfcr
+      XPACK_XPACK_MAIN_TELEMETRY_ENABLED: 'false'
+    image: docker.elastic.co/kibana/kibana:7.16.3
+    ports:
+      - "127.0.0.1:5601:5601"
+    healthcheck:
+      interval: 10s
+      retries: 20
+      test:
+        - CMD
+        - curl
+        - --write-out
+        - '''HTTP %{http_code}'''
+        - -k
+        - --fail
+        - --silent
+        - --output
+        - /dev/null
+        - http://kibana:5601/api/status

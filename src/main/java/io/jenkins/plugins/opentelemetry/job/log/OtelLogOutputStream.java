@@ -3,12 +3,16 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import hudson.console.LineTransformationOutputStream;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.logs.LogEmitter;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,12 +24,18 @@ import java.util.logging.Logger;
 public class OtelLogOutputStream extends LineTransformationOutputStream {
     @Nonnull
     final BuildInfo buildInfo;
-    private final Logger LOGGER = Logger.getLogger(getClass().getName());
+    final Map<String, String> contextAsMap;
+    private final Logger LOGGER = Logger.getLogger(OtelLogOutputStream.class.getName());
     transient LogEmitter logEmitter;
     transient Context context;
 
-    public OtelLogOutputStream(BuildInfo buildInfo) {
+    /**
+     * @param buildInfo
+     * @param context   see {@link Context} and
+     */
+    public OtelLogOutputStream(BuildInfo buildInfo, Map<String, String> context) {
         this.buildInfo = buildInfo;
+        this.contextAsMap = context;
     }
 
     private LogEmitter getLogEmitter() {
@@ -37,7 +47,18 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
 
     private Context getContext() {
         if (context == null) {
-            context = buildInfo.toContext();
+            context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.contextAsMap, new TextMapGetter<Map<String, String>>() {
+                @Override
+                public Iterable<String> keys(Map<String, String> carrier) {
+                    return carrier.keySet();
+                }
+
+                @Nullable
+                @Override
+                public String get(@Nullable Map<String, String> carrier, String key) {
+                    return carrier == null ? null : carrier.get(key);
+                }
+            });
         }
         return context;
     }

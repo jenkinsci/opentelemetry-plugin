@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import com.google.inject.Inject;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.Main;
