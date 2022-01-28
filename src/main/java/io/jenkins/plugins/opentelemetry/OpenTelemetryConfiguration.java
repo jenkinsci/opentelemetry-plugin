@@ -15,11 +15,7 @@ import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nonnull;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 
 public class OpenTelemetryConfiguration {
@@ -105,7 +101,6 @@ public class OpenTelemetryConfiguration {
             properties.put("otel.traces.exporter", "testing");
             properties.put("otel.metrics.exporter", "testing");
             properties.put("otel.imr.export.interval", "10ms");
-            properties.put("otel.logs.exporter", "testing");
         } else if (this.getEndpoint().isPresent()) {
             this.getEndpoint().ifPresent(endpoint -> { // prepare of Optional.ifPResentOrElse()
                 properties.put("otel.traces.exporter", "otlp");

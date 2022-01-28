@@ -70,7 +70,7 @@ public class ElasticStackConfigurationITTest {
         assertEquals(FormValidation.Kind.OK, descriptor.doValidate(CRED_ID, esContainer.getUrl(), INDEX_PATTERN).kind);
         assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "pattern").kind);
         assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "").kind);
-        assertEquals(FormValidation.Kind.WARNING, descriptor.doValidate(CRED_ID, "", "pattern").kind);
+        assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, "", "pattern").kind);
     }
 
     @Test

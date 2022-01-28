@@ -24,7 +24,7 @@ public class ElasticStackConfigurationFormTest {
     public void testDoCheckElasticsearchUrl() {
         ElasticBackend.DescriptorImpl config = new ElasticBackend.DescriptorImpl();
         assertEquals(config.doCheckElasticsearchUrl("http://example.com:1000").kind, FormValidation.Kind.OK);
-        assertEquals(config.doCheckElasticsearchUrl("").kind, FormValidation.Kind.WARNING);
+        assertEquals(config.doCheckElasticsearchUrl("").kind, FormValidation.Kind.OK);
         assertEquals(config.doCheckElasticsearchUrl("foo").kind, FormValidation.Kind.ERROR);
     }
 }

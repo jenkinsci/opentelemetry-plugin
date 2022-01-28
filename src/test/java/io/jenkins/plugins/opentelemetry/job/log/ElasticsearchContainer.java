@@ -18,6 +18,7 @@ import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.xcontent.XContentType;
 import org.testcontainers.containers.GenericContainer;
 
 import java.io.IOException;
@@ -97,7 +98,7 @@ public class ElasticsearchContainer extends GenericContainer {
 
     private IndexRequest newBulk(int lineNumber, String buildID) throws IOException {
         //FIXME not implemented
-        return null;
+        return new IndexRequest(INDEX).source(XContentType.JSON, "KEY", "foo");
       /*
     return new IndexRequest(INDEX).source(XContentType.JSON, Retriever.JOB_BUILD, buildID, Retriever.TIMESTAMP,
                                           Retriever.now(), Retriever.JOB_NAME, JOB_NAME_VALUE, Retriever.JOB_URL,
