@@ -35,7 +35,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 /**
  * This class retrieve logs from Elasticsearch.
  */
-public class Retriever {
+public class ElasticsearchRetriever {
     public static final String JOB_BUILD = "job.build";
     public static final String TIMESTAMP = "@timestamp";
     public static final String JOB_NAME = "job.name";
@@ -58,7 +58,7 @@ public class Retriever {
      * @param password password to access Elasticsearch.
      * @param index    index or index pattern where the logs are.
      */
-    public Retriever(@Nonnull String url, @Nonnull String username, @Nonnull String password, @Nonnull String index) {
+    public ElasticsearchRetriever(@Nonnull String url, @Nonnull String username, @Nonnull String password, @Nonnull String index) {
         this.url = url;
         this.index = index;
         this.credentialsProvider = new BasicCredentialsProvider();

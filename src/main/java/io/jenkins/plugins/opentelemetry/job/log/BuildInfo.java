@@ -9,7 +9,6 @@ import com.google.common.base.Objects;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.context.Context;
-import org.yaml.snakeyaml.nodes.CollectionNode;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;

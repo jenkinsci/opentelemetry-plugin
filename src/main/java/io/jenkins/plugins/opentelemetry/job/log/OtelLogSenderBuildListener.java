@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.model.BuildListener;
 import jenkins.util.JenkinsJVM;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -14,6 +15,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,6 +34,15 @@ class OtelLogSenderBuildListener implements BuildListener, Closeable {
     public OtelLogSenderBuildListener(BuildInfo buildInfo, Map<String, String> context) {
         this.buildInfo = buildInfo;
         this.context = context;
+    }
+
+    public OtelLogSenderBuildListener(BuildInfo buildInfo, FlowNode node) {
+        this(buildInfo, Collections.emptyMap());
+        //FIXME use or not the flownode
+    }
+
+    public OtelLogSenderBuildListener(BuildInfo buildInfo) {
+        this(buildInfo, Collections.emptyMap());
     }
 
     @Nonnull

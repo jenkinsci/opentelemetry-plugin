@@ -8,6 +8,7 @@ import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import hudson.ExtensionList;
 import hudson.console.AnnotatedLargeText;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
+import io.jenkins.plugins.opentelemetry.job.log.es.ElasticsearchRetriever;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -65,11 +66,11 @@ public class OtelLogRetriever {
         if (StringUtils.isBlank(elasticsearchUrl) || StringUtils.isBlank(indexPattern)) {
             throw new IOException("some configuration parameters are incorrect, check the plugin configuration");
         }
-        io.jenkins.plugins.opentelemetry.job.log.es.Retriever retriever = new io.jenkins.plugins.opentelemetry.job.log.es.Retriever(
+        ElasticsearchRetriever elasticsearchRetriever = new ElasticsearchRetriever(
             elasticsearchUrl, username, password,
             indexPattern
         );
-        if (!retriever.indexExists()) {
+        if (!elasticsearchRetriever.indexExists()) {
             try (Writer w = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
                 w.write("The index pattern configured does not exists\n");
                 w.flush();
@@ -78,20 +79,20 @@ public class OtelLogRetriever {
         }
         try (Writer w = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
             // FIXME check context values to search for
-            SearchResponse searchResponse = retriever.search(buildInfo.getContext().get("KEY"), nodeId);
+            SearchResponse searchResponse = elasticsearchRetriever.search(buildInfo.getContext().get("KEY"), nodeId);
             String scrollId = searchResponse.getScrollId();
             SearchHit[] searchHits = searchResponse.getHits().getHits();
             writeOutput(w, searchHits);
 
             while (searchHits.length > 0) {
-                searchResponse = retriever.next(scrollId);
+                searchResponse = elasticsearchRetriever.next(scrollId);
                 scrollId = searchResponse.getScrollId();
                 searchHits = searchResponse.getHits().getHits();
                 writeOutput(w, searchHits);
             }
 
             if (searchResponse.getHits().getTotalHits().value != 0) {
-                retriever.clear(scrollId);
+                elasticsearchRetriever.clear(scrollId);
             }
             w.flush();
         }

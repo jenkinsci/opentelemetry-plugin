@@ -17,17 +17,14 @@ import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.opentelemetry.job.log.es.Retriever;
+import io.jenkins.plugins.opentelemetry.job.log.es.ElasticsearchRetriever;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.core.MainResponse;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -360,17 +357,10 @@ public class ElasticBackend extends ObservabilityBackend {
                 builder.setHttpClientConfigCallback(
                     httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
 
-                try (RestHighLevelClient client = new RestHighLevelClient(builder)) {
-                    MainResponse response = client.info(RequestOptions.DEFAULT);
-                    if (StringUtils.isNotBlank(response.getVersion().getNumber())) {
-                        return FormValidation.ok("success connected to " + response.getVersion().getNumber());
-                    }
-                }
-
-                Retriever retriever = new Retriever(elasticsearchUrl, jenkinsCredentials.getUsername(),
+                ElasticsearchRetriever elasticsearchRetriever = new ElasticsearchRetriever(elasticsearchUrl, jenkinsCredentials.getUsername(),
                     jenkinsCredentials.getPassword().getPlainText(), indexPattern
                 );
-                if (retriever.indexExists()) {
+                if (elasticsearchRetriever.indexExists()) {
                     return FormValidation.ok("success");
                 }
             } catch (NoSuchElementException e) {
