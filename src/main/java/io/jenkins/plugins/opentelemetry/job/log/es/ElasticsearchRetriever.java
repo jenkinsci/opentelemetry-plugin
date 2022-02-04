@@ -29,6 +29,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
 
+import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.SPAN_ID;
+import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.TRACE_ID;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 
@@ -63,7 +65,7 @@ public class ElasticsearchRetriever {
         this.index = index;
         this.credentialsProvider = new BasicCredentialsProvider();
         org.apache.http.auth.UsernamePasswordCredentials credentials = new org.apache.http.auth.UsernamePasswordCredentials(
-            username, password);
+                username, password);
         this.credentialsProvider.setCredentials(AuthScope.ANY, credentials);
     }
 
@@ -92,23 +94,23 @@ public class ElasticsearchRetriever {
     /**
      * Search the log lines of a build ID.
      *
-     * @param buildID build ID to search for the logs.
+     * @param traceId build ID to search for the logs.
      * @return A page with log lines the results of the search. The object contains the scrollID to use in {@link #next(String)} requests.
      * @throws IOException
      */
-    public SearchResponse search(@Nonnull String buildID) throws IOException {
-        return search(buildID, null);
+    public SearchResponse search(@Nonnull String traceId) throws IOException {
+        return search(traceId, null);
     }
 
     /**
      * Search the log lines of a build ID and Node ID.
      *
-     * @param buildID build ID to search for the logs.
-     * @param nodeID  A page with log lines the results of the search.
+     * @param traceId build ID to search for the logs.
+     * @param spanId  A page with log lines the results of the search.
      * @return A page with log lines the results of the search. The object contains the scrollID to use in {@link #next(String)} requests.
      * @throws IOException
      */
-    public SearchResponse search(@Nonnull String buildID, @CheckForNull String nodeID) throws IOException {
+    public SearchResponse search(@Nonnull String traceId, @CheckForNull String spanId) throws IOException {
         try (RestHighLevelClient client = new RestHighLevelClient(getBuilder())) {
             final Scroll scroll = new Scroll(DEFAULT_TIMEVALUE);
             SearchRequest searchRequest = new SearchRequest(index);
@@ -116,10 +118,10 @@ public class ElasticsearchRetriever {
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.size(PAGE_SIZE);
             searchSourceBuilder.sort(new FieldSortBuilder(TIMESTAMP).order(SortOrder.ASC));
-            if (StringUtils.isBlank(nodeID)) {
-                searchSourceBuilder.query(matchQuery(JOB_ID, buildID));
+            if (StringUtils.isBlank(spanId)) {
+                searchSourceBuilder.query(matchQuery(TRACE_ID, traceId));
             } else {
-                searchSourceBuilder.query(boolQuery().must(matchQuery(JOB_ID, buildID)).must(matchQuery(JOB_NODE, nodeID)));
+                searchSourceBuilder.query(boolQuery().must(matchQuery(TRACE_ID, traceId)).must(matchQuery(SPAN_ID, spanId)));
             }
             searchRequest.source(searchSourceBuilder);
 
