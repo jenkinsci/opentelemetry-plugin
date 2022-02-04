@@ -5,8 +5,8 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
-import hudson.ExtensionList;
 import hudson.console.AnnotatedLargeText;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.job.log.es.ElasticsearchRetriever;
 import net.sf.json.JSONObject;
@@ -57,14 +57,18 @@ public class OtelLogRetriever {
      * @param nodeId if defined, limit output to that coming from this node
      */
     private void stream(@Nonnull OutputStream os, @CheckForNull String nodeId) throws IOException {
-        ElasticBackend elasticStackConfiguration = ExtensionList.lookupSingleton(ElasticBackend.class);
+        JenkinsOpenTelemetryPluginConfiguration config = JenkinsOpenTelemetryPluginConfiguration.get();
+        ElasticBackend elasticStackConfiguration = (ElasticBackend) config.getObservabilityBackends().stream().filter(it -> it instanceof ElasticBackend).findFirst().get();
+        if (elasticStackConfiguration == null) {
+            throw new IOException("The logs configuration is incorrect, check the OpenTelemetry plugin configuration");
+        }
         UsernamePasswordCredentials creds = elasticStackConfiguration.getCredentials();
         String elasticsearchUrl = elasticStackConfiguration.getElasticsearchUrl();
         String indexPattern = elasticStackConfiguration.getIndexPattern();
         String username = creds.getUsername();
         String password = creds.getPassword().getPlainText();
         if (StringUtils.isBlank(elasticsearchUrl) || StringUtils.isBlank(indexPattern)) {
-            throw new IOException("some configuration parameters are incorrect, check the plugin configuration");
+            throw new IOException("The logs configuration is incorrect, check the OpenTelemetry plugin configuration");
         }
         ElasticsearchRetriever elasticsearchRetriever = new ElasticsearchRetriever(
             elasticsearchUrl, username, password,
@@ -78,8 +82,7 @@ public class OtelLogRetriever {
             return;
         }
         try (Writer w = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
-            // FIXME check context values to search for
-            SearchResponse searchResponse = elasticsearchRetriever.search(buildInfo.getContext().get("KEY"), nodeId);
+            SearchResponse searchResponse = elasticsearchRetriever.search(buildInfo.getTraceId(), buildInfo.getSpanId());
             String scrollId = searchResponse.getScrollId();
             SearchHit[] searchHits = searchResponse.getHits().getHits();
             writeOutput(w, searchHits);

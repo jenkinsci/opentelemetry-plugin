@@ -7,33 +7,47 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import hudson.ExtensionList;
+import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
-import io.jenkins.plugins.opentelemetry.job.log.es.Retriever;
+import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
+import io.jenkins.plugins.opentelemetry.job.log.es.ElasticsearchRetriever;
 import org.elasticsearch.action.search.SearchResponse;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.*;
-import org.jvnet.hudson.test.JenkinsRule;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.DockerComposeContainer;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
+import static io.jenkins.plugins.opentelemetry.job.log.ElasticsearchContainer.*;
 import static org.junit.Assume.assumeTrue;
 
 public class PipelineTest {
 
     public static final String CRED_ID = "credID";
+    public static final int OTEL_PORT = 8200;
+    public static final int KIBANA_PORT = 5601;
+    public static final int ELASTICSEARCH_PORT = 9200;
+    @ClassRule
+    public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
     @ClassRule
     public static DockerComposeContainer environment = new DockerComposeContainer(
-        new File("src/test/resources/docker-compose.yml"));
-    @Rule
-    public JenkinsRule r = new JenkinsRule();
-    private ElasticBackend elasticStackConfiguration;
-    private ElasticBackend.DescriptorImpl descriptor;
-    private Retriever retriever;
+        new File("src/test/resources/docker-compose.yml"))
+        .withExposedService("fleet-server_1", OTEL_PORT)
+        .withExposedService("kibana_1", KIBANA_PORT)
+        .withExposedService("elasticsearch_1", ELASTICSEARCH_PORT);
+    static OpenTelemetrySdkProvider openTelemetrySdkProvider;
+    private ElasticsearchRetriever elasticsearchRetriever;
 
     @BeforeClass
     public static void requiresDocker() {
@@ -41,43 +55,62 @@ public class PipelineTest {
     }
 
     @Before
-    public void setUp() throws Exception {
-        elasticStackConfiguration = ExtensionList.lookupSingleton(ElasticBackend.class);
-        descriptor = ((ElasticBackend.DescriptorImpl) elasticStackConfiguration.getDescriptor());
-        SystemCredentialsProvider.getInstance().getCredentials().add(
-            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, CRED_ID, "", ElasticsearchContainer.USER_NAME,
-                ElasticsearchContainer.PASSWORD
-            ));
-        elasticStackConfiguration.setElasticsearchUrl("http://localhost:5601");
-        elasticStackConfiguration.setElasticsearcCredentialsId(CRED_ID);
-        elasticStackConfiguration.setIndexPattern(ElasticsearchContainer.INDEX_PATTERN);
+    public void setup() throws Exception {
+        String otelEndpoint = "http://localhost:" + environment.getServicePort("fleet-server_1", OTEL_PORT);
+        String esEndpoint = "http://localhost:" + environment.getServicePort("elasticsearch_1", ELASTICSEARCH_PORT);
+        String kibanaEndpoint = "http://localhost:" + environment.getServicePort("kibana_1", KIBANA_PORT);
 
-        retriever = new Retriever(elasticStackConfiguration.getElasticsearchUrl(), ElasticsearchContainer.USER_NAME,
-            ElasticsearchContainer.PASSWORD, elasticStackConfiguration.getIndexPattern()
+        SystemCredentialsProvider.getInstance().getCredentials().add(
+            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, CRED_ID, "", USER_NAME, PASSWORD)
         );
+
+        JenkinsOpenTelemetryPluginConfiguration config = JenkinsOpenTelemetryPluginConfiguration.get();
+        String properties = String.join(System.getProperty("line.separator"),
+            "otel.traces.exporter=otlp",
+            "otel.metrics.exporter=otlp",
+            "otel.logs.exporter=otlp"
+        );
+        config.setConfigurationProperties(properties);
+        config.setEndpoint(otelEndpoint);
+        config.setExporterIntervalMillis(10);
+        config.setServiceName("OtelJenkinsTest");
+        config.setServiceNamespace("OtelLogTest");
+        List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
+        ElasticBackend esBackend = new ElasticBackend();
+        esBackend.setElasticsearchUrl(esEndpoint);
+        esBackend.setIndexPattern(INDEX_PATTERN);
+        esBackend.setKibanaBaseUrl(kibanaEndpoint);
+        esBackend.setElasticsearcCredentialsId(CRED_ID);
+        observabilityBackends.add(esBackend);
+        config.setObservabilityBackends(observabilityBackends);
+        config.initializeOpenTelemetry();
+
+        elasticsearchRetriever = new ElasticsearchRetriever(esEndpoint, USER_NAME, PASSWORD, INDEX_PATTERN);
     }
 
     @Test
     public void test() throws Exception {
-        r.createSlave("remote", null, null);
-        WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p");
+        jenkinsRule.createSlave("remote", null, null);
+        WorkflowJob p = jenkinsRule.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node('remote') {\n" + "  echo 'Hello'\n" + "}", true));
-        WorkflowRun run = r.buildAndAssertSuccess(p);
+        WorkflowRun run = jenkinsRule.buildAndAssertSuccess(p);
         waitForLogs(run);
-        r.assertLogContains("Hello", run);
+        jenkinsRule.assertLogContains("Hello", run);
     }
 
-    private void waitForLogs(WorkflowRun run) {
-        BuildInfo buildInfo = new BuildInfo(run.getFullDisplayName(), 1, null);
+    private void waitForLogs(WorkflowRun run) throws InterruptedException {
         long counter = 0;
+        MonitoringAction action = run.getAction(MonitoringAction.class);
+        String traceId = action.getTraceId();
+        String spanId = action.getSpanId();
         do {
             try {
-                //FIXME check search string is correct
-                SearchResponse searchResponse = retriever.search(buildInfo.getContext().get("KEY"));
+                SearchResponse searchResponse = elasticsearchRetriever.search(traceId, spanId);
                 counter = searchResponse.getHits().getTotalHits().value;
             } catch (Throwable e) {
                 //NOOP
             }
-        } while (counter < 5);
+            Thread.sleep(1000);
+        } while (counter < 5000);
     }
 }
