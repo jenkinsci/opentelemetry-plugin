@@ -4,6 +4,7 @@
  */
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.client.CredentialsProvider;
@@ -23,6 +24,9 @@ import org.testcontainers.containers.GenericContainer;
 
 import java.io.IOException;
 import java.time.Duration;
+
+import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.SPAN_ID;
+import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.TRACE_ID;
 
 /**
  * Elasticsearch container used on the tests.
@@ -95,7 +99,6 @@ public class ElasticsearchContainer extends GenericContainer {
     }
 
     private IndexRequest newBulk(int lineNumber, String buildID) throws IOException {
-        //FIXME not implemented
-        return new IndexRequest(INDEX).source(XContentType.JSON, "KEY", "foo");
+        return new IndexRequest(INDEX).source(XContentType.JSON, TRACE_ID, "foo", SPAN_ID, "bar");
     }
 }
