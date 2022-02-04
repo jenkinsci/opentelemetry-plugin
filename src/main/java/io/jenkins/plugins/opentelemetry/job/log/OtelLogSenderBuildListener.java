@@ -15,7 +15,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,18 +30,15 @@ class OtelLogSenderBuildListener implements BuildListener, Closeable {
     @CheckForNull
     transient PrintStream logger;
 
-    public OtelLogSenderBuildListener(BuildInfo buildInfo, Map<String, String> context) {
+    public OtelLogSenderBuildListener(@Nonnull BuildInfo buildInfo) {
         this.buildInfo = buildInfo;
-        this.context = context;
+        this.context = buildInfo.getContext();
     }
 
-    public OtelLogSenderBuildListener(BuildInfo buildInfo, FlowNode node) {
-        this(buildInfo, Collections.emptyMap());
-        //FIXME use or not the flownode
-    }
-
-    public OtelLogSenderBuildListener(BuildInfo buildInfo) {
-        this(buildInfo, Collections.emptyMap());
+    public OtelLogSenderBuildListener(@Nonnull BuildInfo buildInfo, @Nonnull FlowNode node) {
+        buildInfo.setFlowNode(node.getId());
+        this.buildInfo = buildInfo;
+        this.context = buildInfo.getContext();
     }
 
     @Nonnull

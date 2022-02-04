@@ -94,4 +94,10 @@ public final class BuildInfo {
         }
         return ret;
     }
+
+    public void setFlowNode(String flowNodeId) {
+        if(context != null){
+            context.put("flowNode", flowNodeId);
+        }
+    }
 }
