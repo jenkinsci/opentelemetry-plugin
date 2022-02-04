@@ -9,13 +9,16 @@ import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.testcontainers.DockerClientFactory;
 
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Test the class to retrieve the logs from Elasticsearch.
@@ -24,6 +27,11 @@ public class RetrieverTest {
 
     @Rule
     public ElasticsearchContainer esContainer = new ElasticsearchContainer();
+
+    @BeforeClass
+    public static void requiresDocker() {
+        assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+    }
 
     @Before
     public void setUp() throws Exception {
