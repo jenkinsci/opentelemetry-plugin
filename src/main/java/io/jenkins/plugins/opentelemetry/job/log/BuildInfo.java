@@ -9,10 +9,15 @@ import com.google.common.base.Objects;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.context.Context;
+import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Map;
+
+import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.SPAN_ID;
+import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.TRACE_ID;
 
 public final class BuildInfo {
     final String jobFullName;
@@ -69,5 +74,24 @@ public final class BuildInfo {
     @Override
     public int hashCode() {
         return Objects.hashCode(jobFullName, runNumber, context);
+    }
+
+    @CheckForNull
+    public String getTraceId() {
+        return getContextKey(TRACE_ID);
+    }
+
+    @CheckForNull
+    public String getSpanId() {
+        return getContextKey(SPAN_ID);
+    }
+
+    @Nullable
+    private String getContextKey(@Nonnull String key) {
+        String ret = null;
+        if (context != null) {
+            ret = context.get(key);
+        }
+        return ret;
     }
 }

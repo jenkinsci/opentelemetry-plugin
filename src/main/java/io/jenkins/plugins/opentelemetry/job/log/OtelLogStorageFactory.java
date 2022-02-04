@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.Extension;
 import hudson.ExtensionList;
-import hudson.Main;
 import hudson.model.Queue;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
@@ -20,10 +19,14 @@ import org.jenkinsci.plugins.workflow.log.LogStorageFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.SPAN_ID;
+import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.TRACE_ID;
 
 /**
  * Binds Otel Logs to Pipeline logs.
@@ -51,7 +54,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
     @Nullable
     @Override
     public LogStorage forBuild(@Nonnull final FlowExecutionOwner owner) {
-        if (Main.isUnitTest || !getOpenTelemetrySdkProvider().isOtelLogsEnabled()) {
+        if (!getOpenTelemetrySdkProvider().isOtelLogsEnabled()) {
             LOGGER.log(Level.FINE, () -> "forBuild(): null");
             return null;
         }
@@ -60,7 +63,11 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
             if (exec instanceof Run) {
                 Run<?, ?> run = (Run<?, ?>) exec;
                 MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getRootContext());
+                Map<String, String> extContext = monitoringAction.getRootContext();
+                //FIXME check if the TRACE_ID and
+                extContext.put(TRACE_ID, monitoringAction.getTraceId());
+                extContext.put(SPAN_ID, monitoringAction.getSpanId());
+                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), extContext);
                 LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
                 return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo));
             } else {
