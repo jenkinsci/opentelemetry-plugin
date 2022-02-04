@@ -304,7 +304,7 @@ public class ElasticBackend extends ObservabilityBackend {
         }
 
         @RequirePOST
-        public ListBoxModel doFillCredentialsIdItems(Item context, @QueryParameter String elasticsearcCredentialsId) {
+        public ListBoxModel doFillElasticsearcCredentialsIdItems(Item context, @QueryParameter String elasticsearcCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
                 || context != null && !context.hasPermission(context.CONFIGURE)) {
                 return new StandardListBoxModel();
@@ -316,7 +316,7 @@ public class ElasticBackend extends ObservabilityBackend {
         }
 
         @RequirePOST
-        public FormValidation doCheckCredentialsId(Item context, @QueryParameter String elasticsearcCredentialsId) {
+        public FormValidation doCheckElasticsearcCredentialsId(Item context, @QueryParameter String elasticsearcCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
                 || context != null && !context.hasPermission(context.CONFIGURE)) {
                 return FormValidation.ok();
