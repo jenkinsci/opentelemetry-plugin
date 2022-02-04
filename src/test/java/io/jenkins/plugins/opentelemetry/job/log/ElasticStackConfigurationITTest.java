@@ -75,13 +75,13 @@ public class ElasticStackConfigurationITTest {
 
     @Test
     public void testDoFillCredentialsIdItems() {
-        assertFalse(descriptor.doFillCredentialsIdItems(null, CRED_ID).isEmpty());
+        assertFalse(descriptor.doFillElasticsearcCredentialsIdItems(null, CRED_ID).isEmpty());
     }
 
     @Test
     public void testDoCheckCredentialsId() {
-        assertEquals(descriptor.doCheckCredentialsId(null, CRED_ID).kind, FormValidation.Kind.OK);
-        assertEquals(descriptor.doCheckCredentialsId(null, "foo").kind, FormValidation.Kind.WARNING);
+        assertEquals(descriptor.doCheckElasticsearcCredentialsId(null, CRED_ID).kind, FormValidation.Kind.OK);
+        assertEquals(descriptor.doCheckElasticsearcCredentialsId(null, "foo").kind, FormValidation.Kind.WARNING);
     }
 
     @Test
