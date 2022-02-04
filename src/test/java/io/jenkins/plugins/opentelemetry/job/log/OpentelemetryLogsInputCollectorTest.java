@@ -95,6 +95,5 @@ public class OpentelemetryLogsInputCollectorTest {
         for (int i = 0; i < 20; i++) {
             assertTrue(otelCollector.getLogs().contains("Body: bar" + i));
         }
-        //TODO implement checks over the /tmp/tests.json traces file
     }
 }

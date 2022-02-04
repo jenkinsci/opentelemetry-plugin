@@ -111,6 +111,6 @@ public class PipelineTest {
                 //NOOP
             }
             Thread.sleep(1000);
-        } while (counter < 5000);
+        } while (counter < 10);
     }
 }
