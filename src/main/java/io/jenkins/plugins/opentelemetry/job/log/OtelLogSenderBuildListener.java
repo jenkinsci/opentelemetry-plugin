@@ -6,6 +6,8 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.model.BuildListener;
+import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
+import io.opentelemetry.context.Context;
 import jenkins.util.JenkinsJVM;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
@@ -37,6 +39,9 @@ class OtelLogSenderBuildListener implements BuildListener, Closeable {
 
     public OtelLogSenderBuildListener(@Nonnull BuildInfo buildInfo, @Nonnull FlowNode node) {
         buildInfo.setFlowNode(node.getId());
+        //TODO the action is always null, Is there a way to grab the step context here.
+        MonitoringAction monitoringAction  = node.getAction(MonitoringAction.class);
+        Context context = Context.current();
         this.buildInfo = buildInfo;
         this.context = buildInfo.getContext();
     }
@@ -61,7 +66,7 @@ class OtelLogSenderBuildListener implements BuildListener, Closeable {
             LOGGER.log(Level.INFO, () -> getClass().getName() + "#close(" + buildInfo + ")");
             logger = null;
         }
-        if (JenkinsJVM.isJenkinsJVM()) { // TODO why
+        if (JenkinsJVM.isJenkinsJVM()) { // TODO why, it is possible because in th Agent the close of channel kill all the resources but on the Jenkins controller not.
             OtelLogStorageFactory.get().close(buildInfo);
         }
     }

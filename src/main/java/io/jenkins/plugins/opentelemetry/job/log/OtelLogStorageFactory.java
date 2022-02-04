@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.SPAN_ID;
-import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.TRACE_ID;
+import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.SPAN_ID;
+import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.TRACE_ID;
 
 /**
  * Binds Otel Logs to Pipeline logs.
@@ -64,7 +64,6 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
                 Run<?, ?> run = (Run<?, ?>) exec;
                 MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
                 Map<String, String> extContext = monitoringAction.getRootContext();
-                //FIXME check if the TRACE_ID and
                 extContext.put(TRACE_ID, monitoringAction.getTraceId());
                 extContext.put(SPAN_ID, monitoringAction.getSpanId());
                 BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), extContext);

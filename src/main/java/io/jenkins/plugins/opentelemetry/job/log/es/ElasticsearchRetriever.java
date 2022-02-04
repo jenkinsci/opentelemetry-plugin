@@ -29,8 +29,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
 
-import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.SPAN_ID;
-import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.TRACE_ID;
+import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.SPAN_ID;
+import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.TRACE_ID;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 
@@ -119,7 +119,7 @@ public class ElasticsearchRetriever {
             searchSourceBuilder.size(PAGE_SIZE);
             searchSourceBuilder.sort(new FieldSortBuilder(TIMESTAMP).order(SortOrder.ASC));
             if (StringUtils.isBlank(spanId)) {
-                searchSourceBuilder.query(matchQuery(TRACE_ID, traceId));
+                searchSourceBuilder.query(matchQuery(SPAN_ID, traceId));
             } else {
                 searchSourceBuilder.query(boolQuery().must(matchQuery(TRACE_ID, traceId)).must(matchQuery(SPAN_ID, spanId)));
             }

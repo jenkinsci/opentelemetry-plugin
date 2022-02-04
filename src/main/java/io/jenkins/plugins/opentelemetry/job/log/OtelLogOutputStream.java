@@ -2,6 +2,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.console.LineTransformationOutputStream;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
@@ -15,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes.MESSAGE_KEY;
 
 /**
  * Process the output stream and send it to OpenTelemetry.
@@ -69,9 +72,11 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
             return;
         }
         String message = new String(bytes, 0, len - 1, StandardCharsets.UTF_8); //remove trailing line feed
+        Attributes parsedMessage = ConsoleNotes.parse(bytes, len);
+        String plainMsg = parsedMessage.get(AttributeKey.stringKey(MESSAGE_KEY));
         getLogEmitter().logBuilder()
-            .setAttributes(Attributes.builder().putAll(ConsoleNotes.parse(bytes, len)).putAll(buildInfo.toAttributes()).build())
-            .setBody(message)
+            .setAttributes(Attributes.builder().putAll(parsedMessage).putAll(buildInfo.toAttributes()).build())
+            .setBody(plainMsg)
             .setContext(getContext())
             .emit();
         LOGGER.log(Level.FINE, () -> buildInfo + " - emit '" + message + "'");

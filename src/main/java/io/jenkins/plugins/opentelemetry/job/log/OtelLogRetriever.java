@@ -25,6 +25,10 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
+import static io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes.ANNOTATIONS_KEY;
+import static io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes.MESSAGE_KEY;
+import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.LABELS;
+
 /**
  * Retrieve the logs from Elasticsearch.
  */
@@ -104,7 +108,13 @@ public class OtelLogRetriever {
     private void writeOutput(Writer w, SearchHit[] searchHits) throws IOException {
         for (SearchHit line : searchHits) {
             JSONObject json = JSONObject.fromObject(line.getSourceAsMap());
-            ConsoleNotes.write(w, json);
+            //Retrieve the label message and annotations to show the formatted message in Jenkins.
+            JSONObject labels = (JSONObject) json.get(LABELS);
+            if(labels != null && labels.get(ANNOTATIONS_KEY) != null && labels.get(MESSAGE_KEY) != null){
+                ConsoleNotes.write(w, labels);
+            } else {
+                ConsoleNotes.write(w, json);
+            }
         }
     }
 }

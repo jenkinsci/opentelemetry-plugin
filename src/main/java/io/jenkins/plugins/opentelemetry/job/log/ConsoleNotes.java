@@ -24,10 +24,10 @@ import java.util.Map;
  */
 class ConsoleNotes {
 
-    private static final String MESSAGE_KEY = "message";
-    private static final String ANNOTATIONS_KEY = "annotations";
-    private static final String POSITION_KEY = "position";
-    private static final String NOTE_KEY = "note";
+    public static final String MESSAGE_KEY = "message";
+    public static final String ANNOTATIONS_KEY = "annotations";
+    public static final String POSITION_KEY = "position";
+    public static final String NOTE_KEY = "note";
 
     private ConsoleNotes() {
     }

@@ -39,7 +39,6 @@ class OtelLogStorage implements LogStorage {
     @Nonnull
     @Override
     public TaskListener nodeListener(@Nonnull FlowNode node) {
-        //FIXME avoid to pass the node
         return new OtelLogSenderBuildListener(buildInfo, node);
     }
 
@@ -64,6 +63,7 @@ class OtelLogStorage implements LogStorage {
         }
     }
 
+    /*
     //TODO check if it is really needed to download the plain text console log
     @Nonnull
     @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST", justification = "forBuild only accepts Run")
@@ -88,7 +88,7 @@ class OtelLogStorage implements LogStorage {
             LOGGER.log(Level.WARNING, null, x);
         }
         return f;
-    }
+    }*/
 
     @Override
     public String toString() {

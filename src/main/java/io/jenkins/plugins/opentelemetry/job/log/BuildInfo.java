@@ -16,8 +16,8 @@ import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Map;
 
-import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.SPAN_ID;
-import static io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions.TRACE_ID;
+import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.SPAN_ID;
+import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.TRACE_ID;
 
 public final class BuildInfo {
     final String jobFullName;
@@ -39,7 +39,6 @@ public final class BuildInfo {
             .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, runNumber)
             .build();
-        //FIXME should we add the context as attributes?
     }
 
     public String getJobFullName() {
