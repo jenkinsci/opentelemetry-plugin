@@ -28,13 +28,11 @@ import java.time.Duration;
  * Elasticsearch container used on the tests.
  */
 public class ElasticsearchContainer extends GenericContainer {
-    public static final String INDEX_PATTERN = "filebeat-*";
-    public static final String USER_NAME = "elastic";
+    public static final String INDEX_PATTERN = "logs-*";
+    public static final String USER_NAME = "admin";
     public static final String PASSWORD = "changeme";
-    public static final String INDEX = "filebeat-001";
+    public static final String INDEX = "logs-001";
     public static final int ES_PORT = 9200;
-    public static final String JOB_URL_VALUE = "http://jenkins.example.org/job/test";
-    public static final String JOB_NAME_VALUE = "test";
 
     public ElasticsearchContainer() {
         super("docker.elastic.co/elasticsearch/elasticsearch:7.16.3");
@@ -99,12 +97,5 @@ public class ElasticsearchContainer extends GenericContainer {
     private IndexRequest newBulk(int lineNumber, String buildID) throws IOException {
         //FIXME not implemented
         return new IndexRequest(INDEX).source(XContentType.JSON, "KEY", "foo");
-      /*
-    return new IndexRequest(INDEX).source(XContentType.JSON, Retriever.JOB_BUILD, buildID, Retriever.TIMESTAMP,
-                                          Retriever.now(), Retriever.JOB_NAME, JOB_NAME_VALUE, Retriever.JOB_URL,
-                                          JOB_URL_VALUE, Retriever.JOB_ID, BuildInfo.getKey(JOB_URL_VALUE, buildID),
-                                          Retriever.JOB_NODE, lineNumber % 2 == 0 ? "1" : null, Retriever.MESSAGE,
-                                          "Line " + lineNumber
-                                         );*/
     }
 }
