@@ -72,7 +72,7 @@ class ConsoleNotes {
             }
             buf.append(line, pos, line.length()); // append tail
             attributes.put(MESSAGE_KEY, buf.toString());
-            attributes.put(ANNOTATIONS_KEY, JSONObject.fromObject(annotations).toString());
+            attributes.put(ANNOTATIONS_KEY, JSONArray.fromObject(annotations).toString());
         }
         return attributes.build();
     }
