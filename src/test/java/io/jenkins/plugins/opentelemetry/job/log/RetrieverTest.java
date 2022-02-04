@@ -4,7 +4,7 @@
  */
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import io.jenkins.plugins.opentelemetry.job.log.es.Retriever;
+import io.jenkins.plugins.opentelemetry.job.log.es.ElasticsearchRetriever;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -32,46 +32,46 @@ public class RetrieverTest {
 
     @Test
     public void testRetrieve() throws IOException {
-        Retriever retriever = new Retriever(esContainer.getUrl(), ElasticsearchContainer.USER_NAME,
+        ElasticsearchRetriever elasticsearchRetriever = new ElasticsearchRetriever(esContainer.getUrl(), ElasticsearchContainer.USER_NAME,
             ElasticsearchContainer.PASSWORD, ElasticsearchContainer.INDEX
         );
         //FIXME check the search string is correct.
-        SearchResponse searchResponse = retriever.search(new BuildInfo("foo", 0, null).getContext().get("KEY"));
+        SearchResponse searchResponse = elasticsearchRetriever.search(new BuildInfo("foo", 0, null).getContext().get("KEY"));
         String scrollId = searchResponse.getScrollId();
         SearchHit[] searchHits = searchResponse.getHits().getHits();
         int counter = searchHits.length;
 
         while (searchHits != null && searchHits.length > 0) {
-            searchResponse = retriever.next(scrollId);
+            searchResponse = elasticsearchRetriever.next(scrollId);
             scrollId = searchResponse.getScrollId();
             searchHits = searchResponse.getHits().getHits();
             counter += searchHits.length;
         }
 
-        ClearScrollResponse clearScrollResponse = retriever.clear(scrollId);
+        ClearScrollResponse clearScrollResponse = elasticsearchRetriever.clear(scrollId);
         assertTrue(clearScrollResponse.isSucceeded());
         assertEquals(counter, 100);
     }
 
     @Test
     public void testRetrieveNodeId() throws IOException {
-        Retriever retriever = new Retriever(esContainer.getUrl(), ElasticsearchContainer.USER_NAME,
+        ElasticsearchRetriever elasticsearchRetriever = new ElasticsearchRetriever(esContainer.getUrl(), ElasticsearchContainer.USER_NAME,
             ElasticsearchContainer.PASSWORD, ElasticsearchContainer.INDEX
         );
         //FIXME set the correct search string
-        SearchResponse searchResponse = retriever.search(new BuildInfo("foo", 0, null).getContext().get("KEY"));
+        SearchResponse searchResponse = elasticsearchRetriever.search(new BuildInfo("foo", 0, null).getContext().get("KEY"));
         String scrollId = searchResponse.getScrollId();
         SearchHit[] searchHits = searchResponse.getHits().getHits();
         int counter = searchHits.length;
 
         while (searchHits != null && searchHits.length > 0) {
-            searchResponse = retriever.next(scrollId);
+            searchResponse = elasticsearchRetriever.next(scrollId);
             scrollId = searchResponse.getScrollId();
             searchHits = searchResponse.getHits().getHits();
             counter += searchHits.length;
         }
 
-        ClearScrollResponse clearScrollResponse = retriever.clear(scrollId);
+        ClearScrollResponse clearScrollResponse = elasticsearchRetriever.clear(scrollId);
         assertTrue(clearScrollResponse.isSucceeded());
         assertEquals(counter, 50);
     }
