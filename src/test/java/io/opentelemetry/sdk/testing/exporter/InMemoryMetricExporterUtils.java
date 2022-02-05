@@ -6,7 +6,6 @@
 package io.opentelemetry.sdk.testing.exporter;
 
 import io.opentelemetry.sdk.metrics.data.MetricData;
-import io.opentelemetry.sdk.metrics.testing.InMemoryMetricExporter;
 
 import javax.annotation.Nonnull;
 import java.util.HashMap;
