@@ -8,7 +8,6 @@ package io.opentelemetry.sdk.testing.exporter;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
-import io.opentelemetry.sdk.metrics.testing.InMemoryMetricExporter;
 
 public class InMemoryMetricExporterProvider implements ConfigurableMetricExporterProvider {
 
