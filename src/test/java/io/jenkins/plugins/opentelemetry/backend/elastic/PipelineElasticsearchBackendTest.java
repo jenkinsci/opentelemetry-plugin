@@ -2,7 +2,7 @@
  * Copyright The Original Author or Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package io.jenkins.plugins.opentelemetry.job.log;
+package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
@@ -13,7 +13,6 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
-import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchRetriever;
 import org.elasticsearch.action.search.SearchResponse;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -29,10 +28,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.jenkins.plugins.opentelemetry.job.log.ElasticsearchContainer.*;
 import static org.junit.Assume.assumeTrue;
 
-public class PipelineTest {
+public class PipelineElasticsearchBackendTest {
 
     public static final String CRED_ID = "credID";
     public static final int OTEL_PORT = 8200;
@@ -61,7 +59,7 @@ public class PipelineTest {
         String kibanaEndpoint = "http://localhost:" + environment.getServicePort("kibana_1", KIBANA_PORT);
 
         SystemCredentialsProvider.getInstance().getCredentials().add(
-            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, CRED_ID, "", USER_NAME, PASSWORD)
+            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, CRED_ID, "", ElasticsearchContainer.USER_NAME, ElasticsearchContainer.PASSWORD)
         );
 
         JenkinsOpenTelemetryPluginConfiguration config = JenkinsOpenTelemetryPluginConfiguration.get();
@@ -78,14 +76,14 @@ public class PipelineTest {
         List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
         ElasticBackend esBackend = new ElasticBackend();
         esBackend.setElasticsearchUrl(esEndpoint);
-        esBackend.setIndexPattern(INDEX_PATTERN);
+        esBackend.setIndexPattern(ElasticsearchContainer.INDEX_PATTERN);
         esBackend.setKibanaBaseUrl(kibanaEndpoint);
         esBackend.setElasticsearcCredentialsId(CRED_ID);
         observabilityBackends.add(esBackend);
         config.setObservabilityBackends(observabilityBackends);
         config.initializeOpenTelemetry();
 
-        elasticsearchRetriever = new ElasticsearchRetriever(esEndpoint, USER_NAME, PASSWORD, INDEX_PATTERN);
+        elasticsearchRetriever = new ElasticsearchRetriever(esEndpoint, ElasticsearchContainer.USER_NAME, ElasticsearchContainer.PASSWORD, ElasticsearchContainer.INDEX_PATTERN);
     }
 
     @Test

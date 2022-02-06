@@ -4,7 +4,6 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import com.google.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
