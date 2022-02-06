@@ -8,7 +8,7 @@ import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import hudson.console.AnnotatedLargeText;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
-import io.jenkins.plugins.opentelemetry.job.log.es.ElasticsearchRetriever;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchRetriever;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -30,7 +30,9 @@ import static io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes.MESSAGE_KEY;
 import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.LABELS;
 
 /**
- * Retrieve the logs from Elasticsearch.
+ * Retrieve the logs from the logs backend.
+ *
+ * TODO extract Elasticsearch specific code and add abstraction layer for a backend agnostic Log Retriever
  */
 public class OtelLogRetriever {
 

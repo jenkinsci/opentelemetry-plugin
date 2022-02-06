@@ -2,7 +2,7 @@
  * Copyright The Original Author or Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package io.jenkins.plugins.opentelemetry.job.log;
+package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
@@ -17,9 +17,6 @@ import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.testcontainers.DockerClientFactory;
 
-import java.io.IOException;
-
-import static io.jenkins.plugins.opentelemetry.job.log.ElasticsearchContainer.INDEX_PATTERN;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
@@ -57,17 +54,17 @@ public class ElasticStackConfigurationITTest {
 
     @Test
     public void testCredentialsDoValidate() {
-        assertEquals(descriptor.doValidate(CRED_ID, esContainer.getUrl(), INDEX_PATTERN).kind, FormValidation.Kind.OK);
+        assertEquals(descriptor.doValidate(CRED_ID, esContainer.getUrl(), ElasticsearchContainer.INDEX_PATTERN).kind, FormValidation.Kind.OK);
 
-        assertEquals(descriptor.doValidate(WRONG_CREDS, esContainer.getUrl(), INDEX_PATTERN).kind,
+        assertEquals(descriptor.doValidate(WRONG_CREDS, esContainer.getUrl(), ElasticsearchContainer.INDEX_PATTERN).kind,
             FormValidation.Kind.ERROR
         );
-        assertEquals(descriptor.doValidate(CRED_ID, "nowhere", INDEX_PATTERN).kind, FormValidation.Kind.ERROR);
+        assertEquals(descriptor.doValidate(CRED_ID, "nowhere", ElasticsearchContainer.INDEX_PATTERN).kind, FormValidation.Kind.ERROR);
     }
 
     @Test
-    public void testIndexPatternDoValidate() throws IOException {
-        assertEquals(FormValidation.Kind.OK, descriptor.doValidate(CRED_ID, esContainer.getUrl(), INDEX_PATTERN).kind);
+    public void testIndexPatternDoValidate()  {
+        assertEquals(FormValidation.Kind.OK, descriptor.doValidate(CRED_ID, esContainer.getUrl(), ElasticsearchContainer.INDEX_PATTERN).kind);
         assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "pattern").kind);
         assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "").kind);
         assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, "", "pattern").kind);

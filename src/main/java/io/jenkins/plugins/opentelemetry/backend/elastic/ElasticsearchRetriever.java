@@ -2,7 +2,7 @@
  * Copyright The Original Author or Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package io.jenkins.plugins.opentelemetry.job.log.es;
+package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import org.apache.commons.lang.StringUtils;
@@ -72,7 +72,7 @@ public class ElasticsearchRetriever {
     /**
      * @return the current timestamp on a valid format to Elasticsearch.
      */
-    public static final String now() {
+    private static final String now() {
         ZonedDateTime date = ZonedDateTime.now(TimeZone.getTimeZone("UTC").toZoneId());
         return DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").format(date);
     }
@@ -80,7 +80,7 @@ public class ElasticsearchRetriever {
     /**
      * @return the RestClientBuilder to create the Elasticsearch REST client.
      */
-    public RestClientBuilder getBuilder() {
+    private RestClientBuilder getBuilder() {
         RestClientBuilder builder = RestClient.builder(HttpHost.create(url));
         builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
             @Override
@@ -98,7 +98,7 @@ public class ElasticsearchRetriever {
      * @return A page with log lines the results of the search. The object contains the scrollID to use in {@link #next(String)} requests.
      * @throws IOException
      */
-    public SearchResponse search(@Nonnull String traceId) throws IOException {
+    SearchResponse search(@Nonnull String traceId) throws IOException {
         return search(traceId, null);
     }
 
