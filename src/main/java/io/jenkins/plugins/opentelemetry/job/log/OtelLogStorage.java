@@ -1,20 +1,16 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.console.AnnotatedLargeText;
 import hudson.model.BuildListener;
-import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
+import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.util.logging.Level;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
 /**
@@ -25,9 +21,11 @@ class OtelLogStorage implements LogStorage {
 
     private final static Logger LOGGER = Logger.getLogger(OtelLogStorage.class.getName());
     final BuildInfo buildInfo;
+    final LogStorageRetriever logStorageRetriever;
 
-    public OtelLogStorage(@Nonnull BuildInfo buildInfo) {
+    public OtelLogStorage(@Nonnull BuildInfo buildInfo, LogStorageRetriever logStorageRetriever) {
         this.buildInfo = buildInfo;
+        this.logStorageRetriever = logStorageRetriever;
     }
 
     @Nonnull
@@ -44,10 +42,10 @@ class OtelLogStorage implements LogStorage {
 
     @Nonnull
     @Override
-    public AnnotatedLargeText<FlowExecutionOwner.Executable> overallLog(
-        @Nonnull FlowExecutionOwner.Executable build, boolean complete) {
+    public AnnotatedLargeText<FlowExecutionOwner.Executable> overallLog(@Nonnull FlowExecutionOwner.Executable build, boolean complete) {
         try {
-            return new OtelLogRetriever(buildInfo).overallLog(build, complete);
+            ByteBuffer byteBuffer = logStorageRetriever.overallLog(buildInfo.getTraceId(), buildInfo.getSpanId());
+            return new AnnotatedLargeText<>(byteBuffer, StandardCharsets.UTF_8, complete, build);
         } catch (Exception x) {
             return new BrokenLogStorage(x).overallLog(build, complete);
         }
@@ -57,7 +55,8 @@ class OtelLogStorage implements LogStorage {
     @Override
     public AnnotatedLargeText<FlowNode> stepLog(@Nonnull FlowNode flowNode, boolean complete) {
         try {
-            return new OtelLogRetriever(buildInfo).stepLog(flowNode, complete);
+            ByteBuffer byteBuffer = logStorageRetriever.stepLog(buildInfo.getTraceId(), buildInfo.getSpanId());
+            return new AnnotatedLargeText<>(byteBuffer, StandardCharsets.UTF_8, complete, flowNode);
         } catch (Exception x) {
             return new BrokenLogStorage(x).stepLog(flowNode, complete);
         }

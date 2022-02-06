@@ -71,7 +71,7 @@ public class ElasticBackend extends ObservabilityBackend {
     @CheckForNull
     private String elasticsearchUrl;
     @CheckForNull
-    private String elasticsearcCredentialsId;
+    private String elasticsearchCredentialsId;
     @CheckForNull
     private String indexPattern = "logs-*";
 
@@ -191,8 +191,8 @@ public class ElasticBackend extends ObservabilityBackend {
     }
 
     @DataBoundSetter
-    public void setElasticsearcCredentialsId(@CheckForNull String elasticsearcCredentialsId) {
-        this.elasticsearcCredentialsId = elasticsearcCredentialsId;
+    public void setElasticsearchCredentialsId(@CheckForNull String elasticsearchCredentialsId) {
+        this.elasticsearchCredentialsId = elasticsearchCredentialsId;
     }
 
     @CheckForNull
@@ -206,13 +206,13 @@ public class ElasticBackend extends ObservabilityBackend {
     }
 
     @CheckForNull
-    public String getElasticsearcCredentialsId() {
-        return elasticsearcCredentialsId;
+    public String getElasticsearchCredentialsId() {
+        return elasticsearchCredentialsId;
     }
 
     @Nonnull
     public UsernamePasswordCredentials getCredentials() throws NoSuchElementException {
-        return getCredentials(elasticsearcCredentialsId);
+        return getCredentials(elasticsearchCredentialsId);
     }
 
     @Nonnull
@@ -247,12 +247,12 @@ public class ElasticBackend extends ObservabilityBackend {
             Objects.equals(kibanaDashboardTitle, that.kibanaDashboardTitle) &&
             Objects.equals(kibanaDashboardUrlParameters, that.kibanaDashboardUrlParameters)
             &&  Objects.equals(elasticsearchUrl, that.elasticsearchUrl)
-            &&  Objects.equals(elasticsearcCredentialsId, that.elasticsearcCredentialsId);
+            &&  Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(displayKibanaDashboardLink, kibanaBaseUrl, kibanaSpaceIdentifier, kibanaDashboardTitle, kibanaDashboardUrlParameters, elasticsearchUrl, elasticsearcCredentialsId);
+        return Objects.hash(displayKibanaDashboardLink, kibanaBaseUrl, kibanaSpaceIdentifier, kibanaDashboardTitle, kibanaDashboardUrlParameters, elasticsearchUrl, elasticsearchCredentialsId);
     }
 
     @Extension
@@ -304,7 +304,7 @@ public class ElasticBackend extends ObservabilityBackend {
         }
 
         @RequirePOST
-        public ListBoxModel doFillElasticsearcCredentialsIdItems(Item context, @QueryParameter String elasticsearcCredentialsId) {
+        public ListBoxModel doFillElasticsearchCredentialsIdItems(Item context, @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
                 || context != null && !context.hasPermission(context.CONFIGURE)) {
                 return new StandardListBoxModel();
@@ -312,18 +312,18 @@ public class ElasticBackend extends ObservabilityBackend {
 
             return new StandardListBoxModel().includeEmptyValue()
                 .includeAs(ACL.SYSTEM, context, StandardUsernameCredentials.class)
-                .includeCurrentValue(elasticsearcCredentialsId);
+                .includeCurrentValue(elasticsearchCredentialsId);
         }
 
         @RequirePOST
-        public FormValidation doCheckElasticsearcCredentialsId(Item context, @QueryParameter String elasticsearcCredentialsId) {
+        public FormValidation doCheckElasticsearchCredentialsId(Item context, @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
                 || context != null && !context.hasPermission(context.CONFIGURE)) {
                 return FormValidation.ok();
             }
 
             try {
-                getCredentials(elasticsearcCredentialsId);
+                getCredentials(elasticsearchCredentialsId);
             } catch (NoSuchElementException e) {
                 return FormValidation.warning("The credentials are not valid.");
             }

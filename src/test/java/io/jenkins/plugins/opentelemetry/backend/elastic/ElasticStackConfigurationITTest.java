@@ -47,7 +47,7 @@ public class ElasticStackConfigurationITTest {
             ));
         SystemCredentialsProvider.getInstance().getCredentials().add(
             new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, WRONG_CREDS, "", "foo", "bar"));
-        elasticStackConfiguration.setElasticsearcCredentialsId(CRED_ID);
+        elasticStackConfiguration.setElasticsearchCredentialsId(CRED_ID);
         elasticStackConfiguration.setElasticsearchUrl(esContainer.getUrl());
         esContainer.createLogIndex();
     }
@@ -72,7 +72,7 @@ public class ElasticStackConfigurationITTest {
 
     @Test
     public void testDoFillCredentialsIdItems() {
-        assertFalse(descriptor.doFillElasticsearcCredentialsIdItems(null, CRED_ID).isEmpty());
+        assertFalse(descriptor.doFillElasticsearchCredentialsIdItems(null, CRED_ID).isEmpty());
     }
 
     @Test

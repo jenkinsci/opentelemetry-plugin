@@ -37,12 +37,10 @@
                               with="elasticsearchUrl,elasticsearchCredentialsId"/>
             <f:entry title="${%Logs Index pattern}" field="indexPattern"
                      description="${%Index pattern that match to logs indices.}">
-                <f:textbox checkMethod="post" />
-            </f:entry>
-        </f:section>
-        <f:section>
+                <f:textbox default="logs-*" checkMethod="post" />
+            </f:entry>s
             <f:validateButton title="${%Validate configuration}" progress="Validating..." method="validate/"
                               with="elasticsearchUrl,elasticsearchCredentialsId,indexPattern"/>
         </f:section>
-    </f:advanced>
+    </f:advanced>ElasticsearchLogStorageRetriever
 </j:jelly>

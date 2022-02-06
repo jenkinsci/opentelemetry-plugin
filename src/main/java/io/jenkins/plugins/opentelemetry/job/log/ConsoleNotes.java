@@ -2,6 +2,7 @@
  * Copyright The Original Author or Authors
  * SPDX-License-Identifier: Apache-2.0
  */
+
 package io.jenkins.plugins.opentelemetry.job.log;
 
 import com.google.common.collect.ImmutableMap;
@@ -22,7 +23,7 @@ import java.util.Map;
  * Utilities for extracting and reinserting {@link ConsoleNote}s.
  * copied from https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin
  */
-class ConsoleNotes {
+public class ConsoleNotes {
 
     public static final String MESSAGE_KEY = "message";
     public static final String ANNOTATIONS_KEY = "annotations";
@@ -32,7 +33,7 @@ class ConsoleNotes {
     private ConsoleNotes() {
     }
 
-    static Attributes parse(byte[] bytes, int len) {
+    public static Attributes parse(byte[] bytes, int len) {
         assert len > 0 && len <= bytes.length;
         AttributesBuilder attributes = Attributes.builder();
         int eol = len;
@@ -77,7 +78,7 @@ class ConsoleNotes {
         return attributes.build();
     }
 
-    static void write(Writer w, JSONObject json) throws IOException {
+    public static void write(Writer w, JSONObject json) throws IOException {
         String message = json.getString(MESSAGE_KEY);
         // FIXME probably we have to deserialized it
         JSONArray annotations = json.optJSONArray(ANNOTATIONS_KEY);
@@ -99,5 +100,4 @@ class ConsoleNotes {
         }
         w.write('\n');
     }
-
 }

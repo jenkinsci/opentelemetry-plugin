@@ -78,7 +78,7 @@ public class PipelineElasticsearchBackendTest {
         esBackend.setElasticsearchUrl(esEndpoint);
         esBackend.setIndexPattern(ElasticsearchContainer.INDEX_PATTERN);
         esBackend.setKibanaBaseUrl(kibanaEndpoint);
-        esBackend.setElasticsearcCredentialsId(CRED_ID);
+        esBackend.setElasticsearchCredentialsId(CRED_ID);
         observabilityBackends.add(esBackend);
         config.setObservabilityBackends(observabilityBackends);
         config.initializeOpenTelemetry();
