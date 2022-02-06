@@ -2,9 +2,8 @@
  * Copyright The Original Author or Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-package io.jenkins.plugins.opentelemetry.job.log;
+package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import io.jenkins.plugins.opentelemetry.job.log.es.ElasticsearchRetriever;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -23,7 +22,7 @@ import static org.junit.Assume.assumeTrue;
 /**
  * Test the class to retrieve the logs from Elasticsearch.
  */
-public class RetrieverTest {
+public class ElasticsearchRetrieverTest {
 
     @Rule
     public ElasticsearchContainer esContainer = new ElasticsearchContainer();

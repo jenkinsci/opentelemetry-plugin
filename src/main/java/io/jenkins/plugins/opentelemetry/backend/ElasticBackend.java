@@ -17,7 +17,7 @@ import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.opentelemetry.job.log.es.ElasticsearchRetriever;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchRetriever;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;

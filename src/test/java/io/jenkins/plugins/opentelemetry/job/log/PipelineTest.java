@@ -13,7 +13,7 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
-import io.jenkins.plugins.opentelemetry.job.log.es.ElasticsearchRetriever;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchRetriever;
 import org.elasticsearch.action.search.SearchResponse;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
