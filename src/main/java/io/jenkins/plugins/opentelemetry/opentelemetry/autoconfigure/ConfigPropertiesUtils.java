@@ -23,7 +23,8 @@ public class ConfigPropertiesUtils {
             "otel.traces.exporter", "otel.metrics.exporter", "otel.exporter.otlp.endpoint"
             , "otel.exporter.otlp.traces.endpoint", "otel.exporter.otlp.metrics.endpoint",
             "otel.exporter.jaeger.endpoint",
-            "otel.exporter.prometheus.port");
+            "otel.exporter.prometheus.port",
+            "otel.logs.exporter");
 
         Map<String, String> message = new LinkedHashMap<>();
         for (String attributeName: attributeNames) {
