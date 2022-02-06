@@ -5,26 +5,18 @@
 
 package io.jenkins.plugins.opentelemetry.backend;
 
-import com.cloudbees.plugins.credentials.Credentials;
-import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
-import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchRetriever;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever;
+import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -32,7 +24,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -154,6 +146,16 @@ public class ElasticBackend extends ObservabilityBackend {
         }
     }
 
+    @Nullable
+    @Override
+    public LogStorageRetriever getLogStorageRetriever() {
+        if (StringUtils.isNotBlank(this.elasticsearchUrl)) {
+            return new ElasticsearchLogStorageRetriever(this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId), indexPattern);
+        } else {
+            return null;
+        }
+    }
+
     public String getKibanaSpaceIdentifier() {
         return Objects.toString(kibanaSpaceIdentifier, DEFAULT_KIBANA_SPACE_IDENTIFIER);
     }
@@ -208,22 +210,6 @@ public class ElasticBackend extends ObservabilityBackend {
     @CheckForNull
     public String getElasticsearchCredentialsId() {
         return elasticsearchCredentialsId;
-    }
-
-    @Nonnull
-    public UsernamePasswordCredentials getCredentials() throws NoSuchElementException {
-        return getCredentials(elasticsearchCredentialsId);
-    }
-
-    @Nonnull
-    public static UsernamePasswordCredentials getCredentials(String credentialsId) throws NoSuchElementException {
-        Optional<Credentials> optionalCredentials = SystemCredentialsProvider.getInstance().getCredentials().stream()
-            .filter(credentials ->
-                (credentials instanceof UsernamePasswordCredentials)
-                    && ((IdCredentials) credentials)
-                    .getId().equals(credentialsId))
-            .findAny();
-        return (UsernamePasswordCredentials) optionalCredentials.get();
     }
 
     @CheckForNull
@@ -323,7 +309,7 @@ public class ElasticBackend extends ObservabilityBackend {
             }
 
             try {
-                getCredentials(elasticsearchCredentialsId);
+                ElasticsearchLogStorageRetriever.getCredentials(elasticsearchCredentialsId);
             } catch (NoSuchElementException e) {
                 return FormValidation.warning("The credentials are not valid.");
             }
@@ -347,28 +333,17 @@ public class ElasticBackend extends ObservabilityBackend {
             }
 
             try {
-                UsernamePasswordCredentials jenkinsCredentials = getCredentials(credentialsId);
-                BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-                org.apache.http.auth.UsernamePasswordCredentials credentials = new org.apache.http.auth.UsernamePasswordCredentials(
-                    jenkinsCredentials.getUsername(), jenkinsCredentials.getPassword().getPlainText());
-                credentialsProvider.setCredentials(AuthScope.ANY, credentials);
+                ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(credentialsId), indexPattern);
 
-                RestClientBuilder builder = RestClient.builder(HttpHost.create(elasticsearchUrl));
-                builder.setHttpClientConfigCallback(
-                    httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
-
-                ElasticsearchRetriever elasticsearchRetriever = new ElasticsearchRetriever(elasticsearchUrl, jenkinsCredentials.getUsername(),
-                    jenkinsCredentials.getPassword().getPlainText(), indexPattern
-                );
-                if (elasticsearchRetriever.indexExists()) {
+                if (elasticsearchLogStorageRetriever.indexExists()) {
                     return FormValidation.ok("success");
                 }
             } catch (NoSuchElementException e) {
                 return FormValidation.error("Invalid credentials.");
             } catch (IllegalArgumentException e) {
-                return FormValidation.error(e, "Invalid Argument.");
+                return FormValidation.error(e, e.getMessage());
             } catch (IOException e) {
-                return FormValidation.error(e, "Unable to connect.");
+                return FormValidation.error(e, e.getMessage());
             } catch (Exception e) {
                 return FormValidation.error(e, e.getMessage());
             }

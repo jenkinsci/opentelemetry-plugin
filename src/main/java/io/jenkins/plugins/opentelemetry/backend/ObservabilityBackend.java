@@ -7,17 +7,14 @@ package io.jenkins.plugins.opentelemetry.backend;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Maps;
-import groovy.lang.Binding;
 import groovy.lang.MissingPropertyException;
-import groovy.lang.Writable;
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
 import hudson.DescriptorExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import io.opentelemetry.api.common.AttributeKey;
+import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.opentelemetry.sdk.resources.Resource;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -25,10 +22,8 @@ import org.kohsuke.stapler.DataBoundSetter;
 import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -62,6 +57,14 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
 
     @Override
     public abstract int hashCode();
+
+    /**
+     * @return the {@link LogStorageRetriever} of this backend if the backend is configured to retrieve logs. {@code null} otherwise.
+     */
+    @CheckForNull
+    public LogStorageRetriever getLogStorageRetriever() {
+        return null;
+    }
 
     /**
      * For extensions
@@ -118,7 +121,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
         }
         Map<String, String> resourceMap =
             resource.getAttributes().asMap().entrySet().stream()
-            .collect(Collectors.toMap(entry -> entry.getKey().getKey(), entry -> Objects.toString(entry.getValue())));
+                .collect(Collectors.toMap(entry -> entry.getKey().getKey(), entry -> Objects.toString(entry.getValue())));
         Map<String, Object> mergedBindings = mergeBindings(Collections.singletonMap("resource", resourceMap));
 
         try {

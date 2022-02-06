@@ -9,6 +9,7 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Queue;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
@@ -69,8 +70,8 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
                 extContext.put(SPAN_ID, monitoringAction.getSpanId());
                 BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), extContext);
                 LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
-                // FIXME inject LogStorageRetriever from config
-                final ElasticsearchLogStorageRetriever logStorageRetriever = new ElasticsearchLogStorageRetriever();
+
+                LogStorageRetriever logStorageRetriever = JenkinsOpenTelemetryPluginConfiguration.get().getObservabilityBackends().stream().filter(backend -> backend.getLogStorageRetriever() != null).findFirst().get().getLogStorageRetriever();
                 return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo, logStorageRetriever));
             } else {
                 return null;

@@ -13,6 +13,8 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.elasticsearch.action.search.SearchResponse;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -45,7 +47,7 @@ public class PipelineElasticsearchBackendTest {
         .withExposedService("kibana_1", KIBANA_PORT)
         .withExposedService("elasticsearch_1", ELASTICSEARCH_PORT);
     static OpenTelemetrySdkProvider openTelemetrySdkProvider;
-    private ElasticsearchRetriever elasticsearchRetriever;
+    private ElasticsearchLogStorageRetriever elasticsearchRetriever;
 
     @BeforeClass
     public static void requiresDocker() {
@@ -83,7 +85,8 @@ public class PipelineElasticsearchBackendTest {
         config.setObservabilityBackends(observabilityBackends);
         config.initializeOpenTelemetry();
 
-        elasticsearchRetriever = new ElasticsearchRetriever(esEndpoint, ElasticsearchContainer.USER_NAME, ElasticsearchContainer.PASSWORD, ElasticsearchContainer.INDEX_PATTERN);
+        Credentials credentials = new UsernamePasswordCredentials(ElasticsearchContainer.USER_NAME, ElasticsearchContainer.PASSWORD);
+        elasticsearchRetriever = new ElasticsearchLogStorageRetriever(esEndpoint, credentials, ElasticsearchContainer.INDEX_PATTERN);
     }
 
     @Test

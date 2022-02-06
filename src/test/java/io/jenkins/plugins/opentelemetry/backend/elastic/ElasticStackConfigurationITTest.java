@@ -77,8 +77,8 @@ public class ElasticStackConfigurationITTest {
 
     @Test
     public void testDoCheckCredentialsId() {
-        assertEquals(descriptor.doCheckElasticsearcCredentialsId(null, CRED_ID).kind, FormValidation.Kind.OK);
-        assertEquals(descriptor.doCheckElasticsearcCredentialsId(null, "foo").kind, FormValidation.Kind.WARNING);
+        assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, CRED_ID).kind, FormValidation.Kind.OK);
+        assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, "foo").kind, FormValidation.Kind.WARNING);
     }
 
     @Test
