@@ -4,6 +4,7 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -39,10 +40,12 @@ public class ElasticsearchRetrieverTest {
 
     @Test
     public void testRetrieve() throws IOException {
-        ElasticsearchRetriever elasticsearchRetriever = new ElasticsearchRetriever(esContainer.getUrl(), ElasticsearchContainer.USER_NAME,
-            ElasticsearchContainer.PASSWORD, ElasticsearchContainer.INDEX
-        );
-        SearchResponse searchResponse = elasticsearchRetriever.search("foo");
+        ElasticsearchLogStorageRetriever elasticsearchRetriever = new ElasticsearchLogStorageRetriever(
+            esContainer.getUrl(),
+            new UsernamePasswordCredentials(ElasticsearchContainer.USER_NAME,
+            ElasticsearchContainer.PASSWORD),
+            ElasticsearchContainer.INDEX);
+        SearchResponse searchResponse = elasticsearchRetriever.search("foo", null);
         String scrollId = searchResponse.getScrollId();
         SearchHit[] searchHits = searchResponse.getHits().getHits();
         int counter = searchHits.length;

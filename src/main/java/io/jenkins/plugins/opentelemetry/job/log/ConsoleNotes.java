@@ -2,6 +2,7 @@
  * Copyright The Original Author or Authors
  * SPDX-License-Identifier: Apache-2.0
  */
+
 package io.jenkins.plugins.opentelemetry.job.log;
 
 import com.google.common.collect.ImmutableMap;
@@ -11,6 +12,7 @@ import io.opentelemetry.api.common.AttributesBuilder;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +24,7 @@ import java.util.Map;
  * Utilities for extracting and reinserting {@link ConsoleNote}s.
  * copied from https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin
  */
-class ConsoleNotes {
+public class ConsoleNotes {
 
     public static final String MESSAGE_KEY = "message";
     public static final String ANNOTATIONS_KEY = "annotations";
@@ -32,7 +34,7 @@ class ConsoleNotes {
     private ConsoleNotes() {
     }
 
-    static Attributes parse(byte[] bytes, int len) {
+    public static Attributes parse(byte[] bytes, int len) {
         assert len > 0 && len <= bytes.length;
         AttributesBuilder attributes = Attributes.builder();
         int eol = len;
@@ -77,27 +79,30 @@ class ConsoleNotes {
         return attributes.build();
     }
 
-    static void write(Writer w, JSONObject json) throws IOException {
+    public static void write(Writer w, JSONObject json) throws IOException {
         String message = json.getString(MESSAGE_KEY);
         // FIXME probably we have to deserialized it
         JSONArray annotations = json.optJSONArray(ANNOTATIONS_KEY);
+        write(w, message, annotations);
+    }
+
+    public static void write(Writer writer, String message, @Nullable JSONArray annotations) throws IOException {
         if (annotations == null) {
-            w.write(message);
+            writer.write(message);
         } else {
             int pos = 0;
             for (Object o : annotations) {
                 JSONObject annotation = (JSONObject) o;
                 int position = annotation.getInt(POSITION_KEY);
                 String note = annotation.getString(NOTE_KEY);
-                w.write(message, pos, position - pos);
-                w.write(ConsoleNote.PREAMBLE_STR);
-                w.write(note);
-                w.write(ConsoleNote.POSTAMBLE_STR);
+                writer.write(message, pos, position - pos);
+                writer.write(ConsoleNote.PREAMBLE_STR);
+                writer.write(note);
+                writer.write(ConsoleNote.POSTAMBLE_STR);
                 pos = position;
             }
-            w.write(message, pos, message.length() - pos);
+            writer.write(message, pos, message.length() - pos);
         }
-        w.write('\n');
+        writer.write('\n');
     }
-
 }

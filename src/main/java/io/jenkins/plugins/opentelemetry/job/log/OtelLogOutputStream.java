@@ -72,11 +72,11 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
             return;
         }
         String message = new String(bytes, 0, len - 1, StandardCharsets.UTF_8); //remove trailing line feed
-        Attributes parsedMessage = ConsoleNotes.parse(bytes, len);
-        String plainMsg = parsedMessage.get(AttributeKey.stringKey(MESSAGE_KEY));
+        Attributes logLineAttributes = ConsoleNotes.parse(bytes, len);
+        String plainLogLine = logLineAttributes.get(AttributeKey.stringKey(ConsoleNotes.MESSAGE_KEY));
         getLogEmitter().logBuilder()
-            .setAttributes(Attributes.builder().putAll(parsedMessage).putAll(buildInfo.toAttributes()).build())
-            .setBody(plainMsg)
+            .setAttributes(Attributes.builder().putAll(logLineAttributes).putAll(buildInfo.toAttributes()).build())
+            .setBody(plainLogLine)
             .setContext(getContext())
             .emit();
         LOGGER.log(Level.FINE, () -> buildInfo + " - emit '" + message + "'");
