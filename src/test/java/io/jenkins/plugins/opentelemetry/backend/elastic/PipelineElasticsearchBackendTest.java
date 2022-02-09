@@ -13,9 +13,9 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
+import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.elasticsearch.action.search.SearchResponse;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -100,18 +100,19 @@ public class PipelineElasticsearchBackendTest {
     }
 
     private void waitForLogs(WorkflowRun run) throws InterruptedException {
-        long counter = 0;
+        // volume of retrieved logs in bytes
+        long logsLength = 0;
         MonitoringAction action = run.getAction(MonitoringAction.class);
         String traceId = action.getTraceId();
         String spanId = action.getSpanId();
         do {
             try {
-                SearchResponse searchResponse = elasticsearchRetriever.search(traceId, spanId);
-                counter = searchResponse.getHits().getTotalHits().value;
+                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(traceId, spanId, null);
+                logsLength = logsQueryResult.getByteBuffer().length();
             } catch (Throwable e) {
                 //NOOP
             }
             Thread.sleep(1000);
-        } while (counter < 10);
+        } while (logsLength < 10);
     }
 }

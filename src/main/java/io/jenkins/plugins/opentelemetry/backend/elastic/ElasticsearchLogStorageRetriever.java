@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.core.ScrollRequest;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -51,6 +52,7 @@ import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemant
 
 /**
  * Retrieve the logs from Elasticsearch.
+ * FIXME graceful shutdown
  */
 public class ElasticsearchLogStorageRetriever implements LogStorageRetriever {
     public static final String TIMESTAMP = "@timestamp";
@@ -64,8 +66,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever {
 
     @Nonnull
     final transient ElasticsearchClient elasticsearchClient;
-    @Nonnull
-    final transient RestClientTransport elasticsearchTransport;
+
 
     /**
      * TODO verify unsername:password auth vs apiKey auth
@@ -85,7 +86,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever {
         RestClient restClient = RestClient.builder(HttpHost.create(elasticsearchUrl))
             .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
             .build();
-        this.elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+        RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
         this.elasticsearchClient = new ElasticsearchClient(elasticsearchTransport);
     }
 
@@ -112,10 +113,10 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever {
             SearchResponse<JsonObject> searchResponse = this.elasticsearchClient.search(searchRequest, JsonObject.class);
             newScrollId = searchResponse.scrollId();
             List<JsonObject> documents = searchResponse.documents();
-            complete = documents.size() == 0;
             try (Writer w = new OutputStreamWriter(byteBuffer, charset)) {
                 writeOutput(w, documents);
             }
+            complete = documents.size() == 0;
         } else {
             ScrollRequest scrollRequest = new ScrollRequest.Builder()
                 .scrollId(((ElasticsearchLogsQueryContext) logsQueryContext).scrollId)
@@ -127,6 +128,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever {
             try (Writer w = new OutputStreamWriter(byteBuffer, charset)) {
                 writeOutput(w, documents);
             }
+            complete = documents.size() == 0;
         }
 
         // FIXME when do we clear scroll
@@ -182,7 +184,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever {
         if (StringUtils.isBlank(this.indexPattern)) {
             return false;
         } else {
-            ElasticsearchIndicesClient indicesClient = new ElasticsearchIndicesClient(this.elasticsearchTransport);
+            ElasticsearchIndicesClient indicesClient = this.elasticsearchClient.indices();
             return indicesClient.existsIndexTemplate(builder -> builder.name(indexPattern)).value();
         }
     }
