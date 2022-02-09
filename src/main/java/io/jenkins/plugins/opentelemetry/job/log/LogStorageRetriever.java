@@ -5,9 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import hudson.console.AnnotatedLargeText;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 
 public interface LogStorageRetriever {
@@ -18,8 +20,8 @@ public interface LogStorageRetriever {
     String NOTE_KEY = "note";
 
     @Nonnull
-    ByteBuffer overallLog(@Nonnull String traceId, @Nonnull String spanId) throws IOException;
+    LogsQueryResult overallLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable LogsQueryContext logsQueryContext) throws IOException;
 
 
-    @Nonnull ByteBuffer stepLog(@Nonnull String traceId, @Nonnull String spanId) throws IOException;
+    @Nonnull LogsQueryResult stepLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable LogsQueryContext logsQueryContext) throws IOException;
 }
