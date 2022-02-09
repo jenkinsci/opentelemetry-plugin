@@ -11,7 +11,6 @@ import co.elastic.clients.elasticsearch.core.ScrollRequest;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -56,7 +55,7 @@ import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemant
  */
 public class ElasticsearchLogStorageRetriever implements LogStorageRetriever {
     public static final String TIMESTAMP = "@timestamp";
-    public static final Time SCROLL_TTL = Time.of(builder -> builder.offset(30_000));
+    public static final Time SCROLL_TTL =  Time.of(builder -> builder.time("30S"));
     public static final int PAGE_SIZE = 1000;
 
     private final static Logger logger = Logger.getLogger(ElasticsearchLogStorageRetriever.class.getName());
