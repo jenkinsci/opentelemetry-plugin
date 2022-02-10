@@ -13,7 +13,7 @@ import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageScrollingRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
@@ -150,7 +150,7 @@ public class ElasticBackend extends ObservabilityBackend {
     @Override
     public LogStorageRetriever getLogStorageRetriever() {
         if (StringUtils.isNotBlank(this.elasticsearchUrl)) {
-            return new ElasticsearchLogStorageRetriever(this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId), indexPattern);
+            return new ElasticsearchLogStorageScrollingRetriever(this.elasticsearchUrl, ElasticsearchLogStorageScrollingRetriever.getCredentials(this.elasticsearchCredentialsId), indexPattern);
         } else {
             return null;
         }
@@ -309,7 +309,7 @@ public class ElasticBackend extends ObservabilityBackend {
             }
 
             try {
-                ElasticsearchLogStorageRetriever.getCredentials(elasticsearchCredentialsId);
+                ElasticsearchLogStorageScrollingRetriever.getCredentials(elasticsearchCredentialsId);
             } catch (NoSuchElementException e) {
                 return FormValidation.warning("The credentials are not valid.");
             }
@@ -333,7 +333,10 @@ public class ElasticBackend extends ObservabilityBackend {
             }
 
             try {
-                ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(credentialsId), indexPattern);
+                ElasticsearchLogStorageScrollingRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageScrollingRetriever(
+                    elasticsearchUrl,
+                    ElasticsearchLogStorageScrollingRetriever.getCredentials(credentialsId),
+                    indexPattern);
 
                 if (elasticsearchLogStorageRetriever.indexExists()) {
                     return FormValidation.ok("success");

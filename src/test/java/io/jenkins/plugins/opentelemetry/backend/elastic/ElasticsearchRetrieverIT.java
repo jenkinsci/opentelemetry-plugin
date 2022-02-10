@@ -5,15 +5,15 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import io.jenkins.plugins.opentelemetry.job.log.LogsQueryContext;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
-import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.Properties;
 
 public class ElasticsearchRetrieverIT {
@@ -25,15 +25,24 @@ public class ElasticsearchRetrieverIT {
         Properties env = new Properties();
         env.load(envAsStream);
 
-        String url = env.getProperty("elasticsearch.url"); ;
-        String username = env.getProperty("elasticsearch.username"); ;
-        String password = env.getProperty("elasticsearch.password"); ;
+        String url = env.getProperty("elasticsearch.url");
+        String username = env.getProperty("elasticsearch.username");
+        String password = env.getProperty("elasticsearch.password");
         String indexPattern = "logs-apm.app-*";
 
-        ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
+        LogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageScrollingRetriever(
             url,
             new UsernamePasswordCredentials(username, password),
             indexPattern);
-        LogsQueryResult logsQueryResult = elasticsearchLogStorageRetriever.overallLog("ed4e940f4a2f817e9449ed2d3d7248cb", "", null);
+
+        int counter = 0;
+        LogsQueryContext logsQueryContext = null;
+        LogsQueryResult logsQueryResult;
+        do {
+            //System.out.println("Request " + counter);
+            logsQueryResult = elasticsearchLogStorageRetriever.overallLog("ed4e940f4a2f817e9449ed2d3d7248cb", "", logsQueryContext);
+            logsQueryContext = logsQueryResult.getLogsQueryContext();
+            counter++;
+        } while (!logsQueryResult.isComplete());
     }
 }

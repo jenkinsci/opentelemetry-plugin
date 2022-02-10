@@ -9,10 +9,10 @@ import io.jenkins.plugins.opentelemetry.job.log.LogsQueryContext;
 
 import java.util.Objects;
 
-public class ElasticsearchLogsQueryContext implements LogsQueryContext {
+public class ElasticsearchLogsQueryScrollingContext implements LogsQueryContext {
     final String scrollId;
 
-    public ElasticsearchLogsQueryContext(String scrollId) {
+    public ElasticsearchLogsQueryScrollingContext(String scrollId) {
         this.scrollId = scrollId;
     }
 
@@ -20,7 +20,7 @@ public class ElasticsearchLogsQueryContext implements LogsQueryContext {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ElasticsearchLogsQueryContext that = (ElasticsearchLogsQueryContext) o;
+        ElasticsearchLogsQueryScrollingContext that = (ElasticsearchLogsQueryScrollingContext) o;
         return Objects.equals(scrollId, that.scrollId);
     }
 

@@ -11,7 +11,6 @@ import hudson.model.Queue;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
-import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
