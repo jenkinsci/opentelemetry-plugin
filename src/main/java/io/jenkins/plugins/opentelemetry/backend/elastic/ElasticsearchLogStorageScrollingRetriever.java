@@ -87,6 +87,27 @@ public class ElasticsearchLogStorageScrollingRetriever implements LogStorageRetr
             .build();
         RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
         this.elasticsearchClient = new ElasticsearchClient(elasticsearchTransport);
+
+        // logger.log(Level.WARNING, () -> "troubleshoot json library classpath");
+        // try {
+        //     JacksonJsonProvider jacksonJsonProvider = new JacksonJsonProvider();
+        //     logger.log(Level.WARNING, () -> "jacksonJsonProvider: " + jacksonJsonProvider);
+        // } catch (Exception e) {
+        //     logger.log( Level.WARNING, "Failure to instantiate co.elastic.clients.json.jackson.JacksonJsonProvider", e);
+        // }
+        // try {
+        //     JsonProvider jsonProvider = JsonProvider.provider();
+        //     logger.log(Level.WARNING, () -> "jsonProvider: " + jsonProvider + "-" + (jsonProvider == null ? null : jsonProvider.getClass()));
+        // } catch (Exception e) {
+        //     logger.log( Level.WARNING, "Failure to execute jakarta.json.spi.JsonProvider.provider()", e);
+        // }
+        // ServiceLoader<JsonProvider> loader = ServiceLoader.load(JsonProvider.class);
+        // JsonProvider jsonProviderViaSPI = Iterators.getNext(loader.iterator(), null);
+        // logger.log(Level.INFO, "JsonProvider obtained by SPI: " + jsonProviderViaSPI+ "-" + (jsonProviderViaSPI == null ? null : jsonProviderViaSPI.getClass()));
+//
+        // ServiceLoader<JsonProvider> loaderViaCurrentClassLoader = ServiceLoader.load(JsonProvider.class, getClass().getClassLoader());
+        // JsonProvider jsonProviderViaSPIAndClassLoader = Iterators.getNext(loaderViaCurrentClassLoader.iterator(), null);
+        // logger.log(Level.INFO, "JsonProvider obtained by SPI using class loader of this class: " + jsonProviderViaSPIAndClassLoader + "-" + (jsonProviderViaSPIAndClassLoader == null ? null : jsonProviderViaSPIAndClassLoader.getClass()));
     }
 
     @Nonnull
@@ -95,10 +116,11 @@ public class ElasticsearchLogStorageScrollingRetriever implements LogStorageRetr
         // https://www.elastic.co/guide/en/elasticsearch/reference/7.17/scroll-api.html
 
         Charset charset = StandardCharsets.UTF_8;
-        boolean complete;
+        boolean completed;
         String newScrollId;
         List<Hit<ObjectNode>> hits;
-        if (logsQueryContext == null) {
+        ElasticsearchLogsQueryScrollingContext context = (ElasticsearchLogsQueryScrollingContext) logsQueryContext;
+        if (context == null) {
             SearchRequest searchRequest = new SearchRequest.Builder()
                 .scroll(builder -> builder.time("30s"))
                 .size(PAGE_SIZE)
@@ -113,18 +135,22 @@ public class ElasticsearchLogStorageScrollingRetriever implements LogStorageRetr
             SearchResponse<ObjectNode> searchResponse = this.elasticsearchClient.search(searchRequest, ObjectNode.class);
             hits = searchResponse.hits().hits();
             newScrollId = searchResponse.scrollId();
+        } else if (context.scrollId == null) {
+            // FIXME WHY wasn't the fetching stopped?
+            logger.log(Level.INFO, "return empty logs");
+            return new LogsQueryResult(new ByteBuffer(), charset, true, new ElasticsearchLogsQueryScrollingContext(null));
         } else {
-            ElasticsearchLogsQueryScrollingContext context = (ElasticsearchLogsQueryScrollingContext) logsQueryContext;
             logger.log(Level.INFO, "Retrieve logs with scrollId: " + context.scrollId + " for traceId: " + traceId);
             ScrollRequest scrollRequest = ScrollRequest.of(builder -> builder.scrollId(context.scrollId));
             ScrollResponse<ObjectNode> scrollResponse = this.elasticsearchClient.scroll(scrollRequest, ObjectNode.class);
             hits = scrollResponse.hits().hits();
             newScrollId = context.scrollId; // TODO why doesn't the scroll response hold a new scrollId? scrollResponse.scrollId();
         }
-        complete = hits.size() != PAGE_SIZE; // TODO is there smarter?
+        completed = hits.size() != PAGE_SIZE; // TODO is there smarter?
 
-        if (complete) {
+        if (completed) {
             logger.log(Level.INFO, () -> "Clear scrollId: " + newScrollId + " for trace: " + traceId + ", span: " + spanId);
+
             ClearScrollRequest clearScrollRequest = ClearScrollRequest.of(builder -> builder.scrollId(newScrollId));
             elasticsearchClient.clearScroll(clearScrollRequest);
         }
@@ -135,7 +161,8 @@ public class ElasticsearchLogStorageScrollingRetriever implements LogStorageRetr
             writeOutput(w, hits);
         }
 
-        return new LogsQueryResult(byteBuffer, charset, complete, new ElasticsearchLogsQueryScrollingContext(newScrollId));
+        // if completed, then scrollId is closed, don't return it to ensure it's no longer used
+        return new LogsQueryResult(byteBuffer, charset, completed, new ElasticsearchLogsQueryScrollingContext(completed ? null : newScrollId));
     }
 
     /**
@@ -168,16 +195,16 @@ public class ElasticsearchLogStorageScrollingRetriever implements LogStorageRetr
             } else if (labels.findValue(MESSAGE_KEY) != null && labels.findValue(ANNOTATIONS_KEY) != null) {
                 message = labels.get(MESSAGE_KEY).asText(null);
                 annotations = JSONArray.fromObject(labels.get(ANNOTATIONS_KEY).asText());
-            } else if (source.get(MESSAGE_KEY) != null){
+            } else if (source.get(MESSAGE_KEY) != null) {
                 // FIXME why is labels[message] a wrong value when labels[annotations] is null
                 message = source.get(MESSAGE_KEY).asText();
                 annotations = null;
             } else {
                 // TODO WHY DO WE HAVE SUCH RESULT
-                logger.log(Level.INFO, () -> "Skip document " + hit.index() + " - " + hit.id());
+                logger.log(Level.FINER, () -> "Skip document " + hit.index() + " - " + hit.id());
                 continue;
             }
-            logger.log(Level.INFO, "Add " + message);
+            System.out.println(message);
             ConsoleNotes.write(writer, message, annotations);
         }
     }

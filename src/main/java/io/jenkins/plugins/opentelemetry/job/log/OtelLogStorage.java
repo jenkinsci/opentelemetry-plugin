@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -22,7 +23,7 @@ import java.util.logging.Logger;
  */
 class OtelLogStorage implements LogStorage {
 
-    private final static Logger LOGGER = Logger.getLogger(OtelLogStorage.class.getName());
+    private final static Logger logger = Logger.getLogger(OtelLogStorage.class.getName());
     final BuildInfo buildInfo;
     final LogStorageRetriever logStorageRetriever;
     final Map<TraceAndSpanId, LogsQueryContext> logsQueryContexts = new ConcurrentHashMap<>();
@@ -93,6 +94,7 @@ class OtelLogStorage implements LogStorage {
     @Nonnull
     @Override
     public AnnotatedLargeText<FlowExecutionOwner.Executable> overallLog(@Nonnull FlowExecutionOwner.Executable build, boolean complete) {
+        logger.log(Level.INFO, ()-> "overallLog(" + buildInfo);
         try {
             TraceAndSpanId traceAndSpanId = new TraceAndSpanId(buildInfo.getTraceId(), buildInfo.getSpanId());
             LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(buildInfo.getTraceId(), buildInfo.getSpanId(), logsQueryContexts.get(traceAndSpanId));

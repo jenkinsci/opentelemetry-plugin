@@ -11,10 +11,10 @@ import javax.annotation.Nonnull;
 import java.nio.charset.Charset;
 
 public class LogsQueryResult {
-    public LogsQueryResult(@Nonnull ByteBuffer byteBuffer, @Nonnull Charset charset, boolean complete, @Nonnull LogsQueryContext newLogsQueryContext) {
+    public LogsQueryResult(@Nonnull ByteBuffer byteBuffer, @Nonnull Charset charset, boolean completed, @Nonnull LogsQueryContext newLogsQueryContext) {
         this.byteBuffer = byteBuffer;
         this.charset = charset;
-        this.complete = complete;
+        this.complete = completed;
         this.logsQueryContext = newLogsQueryContext;
     }
 
