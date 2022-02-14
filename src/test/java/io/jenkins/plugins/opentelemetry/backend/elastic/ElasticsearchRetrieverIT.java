@@ -30,7 +30,7 @@ public class ElasticsearchRetrieverIT {
         String password = env.getProperty("elasticsearch.password");
         String indexPattern = "logs-apm.app-*";
 
-        LogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageScrollingRetriever(
+        LogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
             url,
             new UsernamePasswordCredentials(username, password),
             indexPattern);

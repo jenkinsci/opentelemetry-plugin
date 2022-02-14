@@ -9,23 +9,25 @@ import io.jenkins.plugins.opentelemetry.job.log.LogsQueryContext;
 
 import java.util.Objects;
 
-public class ElasticsearchLogsQueryScrollingContext implements LogsQueryContext {
-    final String scrollId;
+public class ElasticsearchLogsQueryContext implements LogsQueryContext {
+    final String pitId;
+    final int pageNo;
 
-    public ElasticsearchLogsQueryScrollingContext(String scrollId) {
-        this.scrollId = scrollId;
+    public ElasticsearchLogsQueryContext(String pitId, int pageNo) {
+        this.pitId = pitId;
+        this.pageNo = pageNo;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ElasticsearchLogsQueryScrollingContext that = (ElasticsearchLogsQueryScrollingContext) o;
-        return Objects.equals(scrollId, that.scrollId);
+        ElasticsearchLogsQueryContext that = (ElasticsearchLogsQueryContext) o;
+        return Objects.equals(pitId, that.pitId) && pageNo == that.pageNo;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(scrollId);
+        return Objects.hash(pitId, pageNo);
     }
 }

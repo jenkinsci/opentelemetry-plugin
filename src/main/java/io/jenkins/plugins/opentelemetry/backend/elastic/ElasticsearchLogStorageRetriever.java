@@ -5,11 +5,9 @@
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
-import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
-import co.elastic.clients.elasticsearch.core.ScrollRequest;
-import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -20,10 +18,13 @@ import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import io.jenkins.plugins.opentelemetry.job.log.LogsQueryContext;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Scope;
 import net.sf.json.JSONArray;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
@@ -53,24 +54,27 @@ import java.util.logging.Logger;
  * Retrieve the logs from Elasticsearch.
  * FIXME graceful shutdown
  */
-public class ElasticsearchLogStorageScrollingRetriever implements LogStorageRetriever {
-    public static final String TIMESTAMP = "@timestamp";
-    public static final Time POINT_IN_TIME_TTL = Time.of(builder -> builder.time("30s"));
+public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<ElasticsearchLogsQueryContext> {
+    public static final String FIELD_TIMESTAMP = "@timestamp";
+    public static final String FIELD_TRACE_ID = "trace.id";
+    public static final Time POINT_IN_TIME_KEEP_ALIVE = Time.of(builder -> builder.time("30s"));
     public static final int PAGE_SIZE = 100; // FIXME
+    public static final String INDEX_PATTERN = "logs-apm.app-*";
 
-    private final static Logger logger = Logger.getLogger(ElasticsearchLogStorageScrollingRetriever.class.getName());
+    private final static Logger logger = Logger.getLogger(ElasticsearchLogStorageRetriever.class.getName());
 
     @Nonnull
     private final String indexPattern;
 
     @Nonnull
-    final transient ElasticsearchClient elasticsearchClient;
+    final transient ElasticsearchClient esClient;
 
+    final transient Tracer tracer;
 
     /**
      * TODO verify unsername:password auth vs apiKey auth
      */
-    public ElasticsearchLogStorageScrollingRetriever(String elasticsearchUrl, Credentials elasticsearchCredentials, String indexPattern) {
+    public ElasticsearchLogStorageRetriever(String elasticsearchUrl, Credentials elasticsearchCredentials, String indexPattern) {
         if (StringUtils.isBlank(elasticsearchUrl)) {
             throw new IllegalArgumentException("Elasticsearch url cannot be blank");
         }
@@ -86,83 +90,82 @@ public class ElasticsearchLogStorageScrollingRetriever implements LogStorageRetr
             .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
             .build();
         RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
-        this.elasticsearchClient = new ElasticsearchClient(elasticsearchTransport);
-
-        // logger.log(Level.WARNING, () -> "troubleshoot json library classpath");
-        // try {
-        //     JacksonJsonProvider jacksonJsonProvider = new JacksonJsonProvider();
-        //     logger.log(Level.WARNING, () -> "jacksonJsonProvider: " + jacksonJsonProvider);
-        // } catch (Exception e) {
-        //     logger.log( Level.WARNING, "Failure to instantiate co.elastic.clients.json.jackson.JacksonJsonProvider", e);
-        // }
-        // try {
-        //     JsonProvider jsonProvider = JsonProvider.provider();
-        //     logger.log(Level.WARNING, () -> "jsonProvider: " + jsonProvider + "-" + (jsonProvider == null ? null : jsonProvider.getClass()));
-        // } catch (Exception e) {
-        //     logger.log( Level.WARNING, "Failure to execute jakarta.json.spi.JsonProvider.provider()", e);
-        // }
-        // ServiceLoader<JsonProvider> loader = ServiceLoader.load(JsonProvider.class);
-        // JsonProvider jsonProviderViaSPI = Iterators.getNext(loader.iterator(), null);
-        // logger.log(Level.INFO, "JsonProvider obtained by SPI: " + jsonProviderViaSPI+ "-" + (jsonProviderViaSPI == null ? null : jsonProviderViaSPI.getClass()));
-//
-        // ServiceLoader<JsonProvider> loaderViaCurrentClassLoader = ServiceLoader.load(JsonProvider.class, getClass().getClassLoader());
-        // JsonProvider jsonProviderViaSPIAndClassLoader = Iterators.getNext(loaderViaCurrentClassLoader.iterator(), null);
-        // logger.log(Level.INFO, "JsonProvider obtained by SPI using class loader of this class: " + jsonProviderViaSPIAndClassLoader + "-" + (jsonProviderViaSPIAndClassLoader == null ? null : jsonProviderViaSPIAndClassLoader.getClass()));
+        this.esClient = new ElasticsearchClient(elasticsearchTransport);
+        this.tracer = OpenTelemetrySdkProvider.get().getTracer();
     }
 
     @Nonnull
     @Override
-    public LogsQueryResult overallLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable LogsQueryContext logsQueryContext) throws IOException {
-        // https://www.elastic.co/guide/en/elasticsearch/reference/7.17/scroll-api.html
+    public LogsQueryResult overallLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable ElasticsearchLogsQueryContext context) throws IOException {
+        // https://www.elastic.co/guide/en/elasticsearch/reference/7.17/point-in-time-api.html
+        Span span = tracer.spanBuilder("elasticsearch.search")
+            .startSpan();
+        try (Scope scope = span.makeCurrent()) {
 
-        Charset charset = StandardCharsets.UTF_8;
-        boolean completed;
-        String newScrollId;
-        List<Hit<ObjectNode>> hits;
-        ElasticsearchLogsQueryScrollingContext context = (ElasticsearchLogsQueryScrollingContext) logsQueryContext;
-        if (context == null) {
+            final Charset charset = StandardCharsets.UTF_8;
+            final boolean completed;
+            final List<Hit<ObjectNode>> hits;
+
+            final String pitId;
+            final int pageNo;
+
+            if (context == null) {
+                // Initial request: open a point in time to have consistent pagination results
+                pitId = esClient.openPointInTime(pit -> pit.index(INDEX_PATTERN).keepAlive(POINT_IN_TIME_KEEP_ALIVE)).id();
+                pageNo = 0;
+            } else if (context.pitId == null) {
+                logger.log(Level.WARNING, () -> "Skip unexpected request to stream more pipeline logs");
+                span.setAttribute("info", "Skip unexpected request to stream more pipeline logs");
+                return new LogsQueryResult(new ByteBuffer(), charset, true, new ElasticsearchLogsQueryContext(null, -1));
+            } else {
+                // Get PIT id and page number from context
+                pitId = context.pitId;
+                pageNo = context.pageNo;
+            }
+
+
+            span.setAttribute("query.index", INDEX_PATTERN)
+                .setAttribute("query.size", PAGE_SIZE)
+                .setAttribute("pitId", pitId)
+                .setAttribute("query.from", pageNo * PAGE_SIZE);
+
             SearchRequest searchRequest = new SearchRequest.Builder()
-                .scroll(builder -> builder.time("30s"))
+                .pit(pit -> pit.id(pitId).keepAlive(POINT_IN_TIME_KEEP_ALIVE))
+                .from(pageNo * PAGE_SIZE)
                 .size(PAGE_SIZE)
-                .sort(sortBuilder -> sortBuilder.field(fieldBuilder -> fieldBuilder.field(TIMESTAMP).order(SortOrder.Asc)))
-                .query(queryBuilder ->
-                    queryBuilder.match(
-                        matchQueryBuilder -> matchQueryBuilder.field("trace.id").query(
-                            fieldValueBuilder -> fieldValueBuilder.stringValue(traceId))))
+                .sort(s -> s.field(f -> f.field(FIELD_TIMESTAMP).order(SortOrder.Asc)))
+                .query(q -> q.match(m -> m.field(FIELD_TRACE_ID).query(FieldValue.of(traceId))))
                 // .fields() TODO narrow down the list fields to retrieve - we probably have to look at a source filter
                 .build();
+
             logger.log(Level.INFO, "Retrieve logs for traceId: " + traceId);
-            SearchResponse<ObjectNode> searchResponse = this.elasticsearchClient.search(searchRequest, ObjectNode.class);
+            SearchResponse<ObjectNode> searchResponse = this.esClient.search(searchRequest, ObjectNode.class);
             hits = searchResponse.hits().hits();
-            newScrollId = searchResponse.scrollId();
-        } else if (context.scrollId == null) {
-            // FIXME WHY wasn't the fetching stopped?
-            logger.log(Level.INFO, "return empty logs");
-            return new LogsQueryResult(new ByteBuffer(), charset, true, new ElasticsearchLogsQueryScrollingContext(null));
-        } else {
-            logger.log(Level.INFO, "Retrieve logs with scrollId: " + context.scrollId + " for traceId: " + traceId);
-            ScrollRequest scrollRequest = ScrollRequest.of(builder -> builder.scrollId(context.scrollId));
-            ScrollResponse<ObjectNode> scrollResponse = this.elasticsearchClient.scroll(scrollRequest, ObjectNode.class);
-            hits = scrollResponse.hits().hits();
-            newScrollId = context.scrollId; // TODO why doesn't the scroll response hold a new scrollId? scrollResponse.scrollId();
+            span.setAttribute("results", hits.size());
+            completed = hits.size() != PAGE_SIZE; // TODO is there smarter?
+
+            if (completed) {
+                logger.log(Level.INFO, () -> "Clear scrollId: " + pitId + " for trace: " + traceId + ", span: " + spanId);
+                esClient.closePointInTime(p -> p.id(pitId));
+            }
+
+            ByteBuffer byteBuffer = new ByteBuffer();
+            try (Writer w = new OutputStreamWriter(byteBuffer, charset)) {
+                writeOutput(w, hits);
+            }
+
+            String newPitId = completed ? null : pitId;
+            logger.log(Level.INFO, () -> "overallLog(completed: " + completed + ", page: " + pageNo + ", written.length: " + byteBuffer.length() + ", pit.hash: " + pitId.hashCode() + ")");
+            return new LogsQueryResult(
+                byteBuffer, charset, completed,
+                new ElasticsearchLogsQueryContext(newPitId, pageNo + 1)
+            );
+        } catch (IOException | RuntimeException e) {
+            span.recordException(e);
+            throw e;
+        } finally {
+            span.end();
         }
-        completed = hits.size() != PAGE_SIZE; // TODO is there smarter?
-
-        if (completed) {
-            logger.log(Level.INFO, () -> "Clear scrollId: " + newScrollId + " for trace: " + traceId + ", span: " + spanId);
-
-            ClearScrollRequest clearScrollRequest = ClearScrollRequest.of(builder -> builder.scrollId(newScrollId));
-            elasticsearchClient.clearScroll(clearScrollRequest);
-        }
-
-
-        ByteBuffer byteBuffer = new ByteBuffer();
-        try (Writer w = new OutputStreamWriter(byteBuffer, charset)) {
-            writeOutput(w, hits);
-        }
-
-        // if completed, then scrollId is closed, don't return it to ensure it's no longer used
-        return new LogsQueryResult(byteBuffer, charset, completed, new ElasticsearchLogsQueryScrollingContext(completed ? null : newScrollId));
     }
 
     /**
@@ -176,7 +179,7 @@ public class ElasticsearchLogStorageScrollingRetriever implements LogStorageRetr
      */
     @Nonnull
     @Override
-    public LogsQueryResult stepLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable LogsQueryContext logsQueryContext) throws IOException {
+    public LogsQueryResult stepLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable ElasticsearchLogsQueryContext logsQueryContext) throws IOException {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
@@ -204,7 +207,7 @@ public class ElasticsearchLogStorageScrollingRetriever implements LogStorageRetr
                 logger.log(Level.FINER, () -> "Skip document " + hit.index() + " - " + hit.id());
                 continue;
             }
-            System.out.println(message);
+            logger.log(Level.FINER, () -> "Write: " + message + ", id: " + hit.id());
             ConsoleNotes.write(writer, message, annotations);
         }
     }
@@ -220,7 +223,7 @@ public class ElasticsearchLogStorageScrollingRetriever implements LogStorageRetr
         if (StringUtils.isBlank(this.indexPattern)) {
             return false;
         } else {
-            ElasticsearchIndicesClient indicesClient = this.elasticsearchClient.indices();
+            ElasticsearchIndicesClient indicesClient = this.esClient.indices();
             return indicesClient.existsIndexTemplate(builder -> builder.name(indexPattern)).value();
         }
     }

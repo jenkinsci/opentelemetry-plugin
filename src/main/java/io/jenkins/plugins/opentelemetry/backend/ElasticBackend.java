@@ -13,7 +13,7 @@ import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageScrollingRetriever;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
@@ -31,7 +31,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -124,7 +127,7 @@ public class ElasticBackend extends ObservabilityBackend {
     @CheckForNull
     @Override
     public String getMetricsVisualizationUrlTemplate() {
-        if (! displayKibanaDashboardLink) {
+        if (!displayKibanaDashboardLink) {
             return null;
         }
         // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
@@ -149,10 +152,14 @@ public class ElasticBackend extends ObservabilityBackend {
     @Nullable
     @Override
     public LogStorageRetriever getLogStorageRetriever() {
-        if (StringUtils.isNotBlank(this.elasticsearchUrl)) {
-            return new ElasticsearchLogStorageScrollingRetriever(this.elasticsearchUrl, ElasticsearchLogStorageScrollingRetriever.getCredentials(this.elasticsearchCredentialsId), indexPattern);
-        } else {
+        if (StringUtils.isBlank(this.elasticsearchUrl)) {
             return null;
+        } else {
+            String urlTemplate = kibanaBaseUrl + "/app/logs/stream?" +
+                "logPosition=(end:now,start:now-1d,streamLive:!f)&" +
+                "logFilter=(language:kuery,query:%27trace.id:${traceId}%27)";
+            return new CustomLogStorageRetriever(urlTemplate, "View pipeline logs in Kibana");
+            // return new ElasticsearchLogStorageRetriever(this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId), indexPattern);
         }
     }
 
@@ -232,8 +239,8 @@ public class ElasticBackend extends ObservabilityBackend {
             Objects.equals(kibanaSpaceIdentifier, that.kibanaSpaceIdentifier) &&
             Objects.equals(kibanaDashboardTitle, that.kibanaDashboardTitle) &&
             Objects.equals(kibanaDashboardUrlParameters, that.kibanaDashboardUrlParameters)
-            &&  Objects.equals(elasticsearchUrl, that.elasticsearchUrl)
-            &&  Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
+            && Objects.equals(elasticsearchUrl, that.elasticsearchUrl)
+            && Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
     }
 
     @Override
@@ -309,7 +316,7 @@ public class ElasticBackend extends ObservabilityBackend {
             }
 
             try {
-                ElasticsearchLogStorageScrollingRetriever.getCredentials(elasticsearchCredentialsId);
+                ElasticsearchLogStorageRetriever.getCredentials(elasticsearchCredentialsId);
             } catch (NoSuchElementException e) {
                 return FormValidation.warning("The credentials are not valid.");
             }
@@ -333,9 +340,9 @@ public class ElasticBackend extends ObservabilityBackend {
             }
 
             try {
-                ElasticsearchLogStorageScrollingRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageScrollingRetriever(
+                ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
-                    ElasticsearchLogStorageScrollingRetriever.getCredentials(credentialsId),
+                    ElasticsearchLogStorageRetriever.getCredentials(credentialsId),
                     indexPattern);
 
                 if (elasticsearchLogStorageRetriever.indexExists()) {

@@ -19,6 +19,7 @@ import org.jenkinsci.plugins.workflow.log.LogStorageFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,7 +72,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
                 LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
 
                 LogStorageRetriever logStorageRetriever = JenkinsOpenTelemetryPluginConfiguration.get().getObservabilityBackends().stream().filter(backend -> backend.getLogStorageRetriever() != null).findFirst().get().getLogStorageRetriever();
-                return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo, logStorageRetriever));
+                return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo, logStorageRetriever, getOpenTelemetrySdkProvider().getTracer()));
             } else {
                 return null;
             }

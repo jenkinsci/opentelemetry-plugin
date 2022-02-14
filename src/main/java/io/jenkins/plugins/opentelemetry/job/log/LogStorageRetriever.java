@@ -12,7 +12,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 
-public interface LogStorageRetriever {
+public interface LogStorageRetriever<C extends LogsQueryContext> {
 
     String MESSAGE_KEY = "message";
     String ANNOTATIONS_KEY = "annotations";
@@ -20,8 +20,8 @@ public interface LogStorageRetriever {
     String NOTE_KEY = "note";
 
     @Nonnull
-    LogsQueryResult overallLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable LogsQueryContext logsQueryContext) throws IOException;
+    LogsQueryResult overallLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable C logsQueryContext) throws IOException;
 
 
-    @Nonnull LogsQueryResult stepLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable LogsQueryContext logsQueryContext) throws IOException;
+    @Nonnull LogsQueryResult stepLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable C logsQueryContext) throws IOException;
 }

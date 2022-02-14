@@ -47,7 +47,7 @@ public class PipelineElasticsearchBackendTest {
         .withExposedService("kibana_1", KIBANA_PORT)
         .withExposedService("elasticsearch_1", ELASTICSEARCH_PORT);
     static OpenTelemetrySdkProvider openTelemetrySdkProvider;
-    private ElasticsearchLogStorageScrollingRetriever elasticsearchRetriever;
+    private ElasticsearchLogStorageRetriever elasticsearchRetriever;
 
     @BeforeClass
     public static void requiresDocker() {
@@ -86,7 +86,7 @@ public class PipelineElasticsearchBackendTest {
         config.initializeOpenTelemetry();
 
         Credentials credentials = new UsernamePasswordCredentials(ElasticsearchContainer.USER_NAME, ElasticsearchContainer.PASSWORD);
-        elasticsearchRetriever = new ElasticsearchLogStorageScrollingRetriever(esEndpoint, credentials, ElasticsearchContainer.INDEX_PATTERN);
+        elasticsearchRetriever = new ElasticsearchLogStorageRetriever(esEndpoint, credentials, ElasticsearchContainer.INDEX_PATTERN);
     }
 
     @Test
