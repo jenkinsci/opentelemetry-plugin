@@ -24,7 +24,6 @@ import java.time.Duration;
  * FI£XME
  */
 public class ElasticsearchContainer extends GenericContainer {
-    public static final String INDEX_PATTERN = "logs-*";
     public static final String USER_NAME = "admin";
     public static final String PASSWORD = "changeme";
     public static final String INDEX = "logs-001";

@@ -8,10 +8,8 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import hudson.console.AnnotatedLargeText;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
-import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
@@ -55,7 +53,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public void doProgressiveText(StaplerRequest req, StaplerResponse rsp) throws IOException {
-        logger.log(Level.INFO, () -> "doProgressiveText(buffer.length" + this.byteBuffer.length() + ")");
+        logger.log(Level.FINE, () -> "doProgressiveText(buffer.length" + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.doProgressiveText")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
@@ -71,7 +69,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public long writeLogTo(long start, Writer w) throws IOException {
-        logger.log(Level.INFO, () -> "writeLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
+        logger.log(Level.FINE, () -> "writeLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.writeLogTo")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
@@ -87,7 +85,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public long writeLogTo(long start, OutputStream out) throws IOException {
-        logger.log(Level.INFO, () -> "writeLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
+        logger.log(Level.FINE, () -> "writeLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.writeLogTo")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
@@ -98,7 +96,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public long writeRawLogTo(long start, OutputStream out) throws IOException {
-        logger.log(Level.INFO, () -> "writeRawLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
+        logger.log(Level.FINE, () -> "writeRawLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.writeRawLogTo")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
@@ -114,7 +112,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public long writeHtmlTo(long start, Writer w) throws IOException {
-        logger.log(Level.INFO, () -> "writeHtmlTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
+        logger.log(Level.FINE, () -> "writeHtmlTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
 
         Span span = tracer.spanBuilder("OverallLog.writeHtmlTo")
             .startSpan();
@@ -131,7 +129,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public Reader readAll() throws IOException {
-        logger.log(Level.INFO, () -> "readAll("+ ", buffer.length: " + this.byteBuffer.length() + ")");
+        logger.log(Level.FINE, () -> "readAll("+ ", buffer.length: " + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.readAll")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
@@ -147,7 +145,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public void doProgressText(StaplerRequest req, StaplerResponse rsp) throws IOException {
-        logger.log(Level.INFO, () -> "doProgressText("+ ", buffer.length: " + this.byteBuffer.length() + ")");
+        logger.log(Level.FINE, () -> "doProgressText("+ ", buffer.length: " + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.doProgressText")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {

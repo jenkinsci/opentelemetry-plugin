@@ -13,8 +13,10 @@ import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import io.opentelemetry.api.trace.Tracer;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
@@ -67,8 +69,6 @@ public class ElasticBackend extends ObservabilityBackend {
     private String elasticsearchUrl;
     @CheckForNull
     private String elasticsearchCredentialsId;
-    @CheckForNull
-    private String indexPattern = "logs-*";
 
     @DataBoundConstructor
     public ElasticBackend() {
@@ -78,7 +78,7 @@ public class ElasticBackend extends ObservabilityBackend {
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
-        mergedBindings.put("kibanaBaseUrl", this.kibanaBaseUrl);
+        mergedBindings.put("kibanaBaseUrl", this.getKibanaBaseUrl());
         mergedBindings.put("kibanaDashboardTitle", this.kibanaDashboardTitle);
         mergedBindings.put("kibanaSpaceIdentifier", this.kibanaSpaceIdentifier);
         return mergedBindings;
@@ -98,6 +98,9 @@ public class ElasticBackend extends ObservabilityBackend {
     }
 
     public String getKibanaBaseUrl() {
+        if (kibanaBaseUrl != null && kibanaBaseUrl.endsWith("/")) {
+            kibanaBaseUrl = kibanaBaseUrl.substring(0, kibanaBaseUrl.length()-1);
+        }
         return kibanaBaseUrl;
     }
 
@@ -155,11 +158,18 @@ public class ElasticBackend extends ObservabilityBackend {
         if (StringUtils.isBlank(this.elasticsearchUrl)) {
             return null;
         } else {
-            String urlTemplate = kibanaBaseUrl + "/app/logs/stream?" +
-                "logPosition=(end:now,start:now-1d,streamLive:!f)&" +
-                "logFilter=(language:kuery,query:%27trace.id:${traceId}%27)";
-            return new CustomLogStorageRetriever(urlTemplate, "View pipeline logs in Kibana");
-            // return new ElasticsearchLogStorageRetriever(this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId), indexPattern);
+            String kibanaSpaceBaseUrl;
+            if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
+                kibanaSpaceBaseUrl = getKibanaBaseUrl();
+            } else {
+                try {
+                    kibanaSpaceBaseUrl = getKibanaBaseUrl()+ "/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8.name());
+                } catch (UnsupportedEncodingException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+            Tracer tracer = OpenTelemetrySdkProvider.get().getTracer();
+            return new ElasticsearchLogStorageRetriever(this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId), kibanaSpaceBaseUrl, tracer);
         }
     }
 
@@ -202,16 +212,6 @@ public class ElasticBackend extends ObservabilityBackend {
     @DataBoundSetter
     public void setElasticsearchCredentialsId(@CheckForNull String elasticsearchCredentialsId) {
         this.elasticsearchCredentialsId = elasticsearchCredentialsId;
-    }
-
-    @CheckForNull
-    public String getIndexPattern() {
-        return indexPattern;
-    }
-
-    @DataBoundSetter
-    public void setIndexPattern(@CheckForNull String indexPattern) {
-        this.indexPattern = indexPattern;
     }
 
     @CheckForNull
@@ -324,29 +324,24 @@ public class ElasticBackend extends ObservabilityBackend {
         }
 
         @RequirePOST
-        public FormValidation doCheckIndexPattern(@QueryParameter String indexPattern) {
-            if (StringUtils.isEmpty(indexPattern)) {
-                return FormValidation.warning("The index pattern is required.");
-            }
-            return FormValidation.ok();
-        }
-
-        @RequirePOST
-        public FormValidation doValidate(@QueryParameter String credentialsId, @QueryParameter String elasticsearchUrl,
-                                         @QueryParameter String indexPattern) {
+        public FormValidation doValidate(@QueryParameter String elasticsearchUrl, @QueryParameter String elasticsearchCredentialsId, @QueryParameter String kibanaBaseUrl) {
             FormValidation elasticsearchUrlValidation = doCheckElasticsearchUrl(elasticsearchUrl);
             if (elasticsearchUrlValidation.kind != FormValidation.Kind.OK) {
                 return elasticsearchUrlValidation;
             }
 
             try {
+                Tracer tracer = OpenTelemetrySdkProvider.get().getTracer();
                 ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
-                    ElasticsearchLogStorageRetriever.getCredentials(credentialsId),
-                    indexPattern);
+                    ElasticsearchLogStorageRetriever.getCredentials(elasticsearchCredentialsId),
+                    kibanaBaseUrl,
+                    tracer);
 
-                if (elasticsearchLogStorageRetriever.indexExists()) {
+                if (elasticsearchLogStorageRetriever.indexTemplateExists()) {
                     return FormValidation.ok("success");
+                } else {
+                    return FormValidation.error("Logs index pattern not found. Verify you use Elastic 8.0+ with data streams for APM");
                 }
             } catch (NoSuchElementException e) {
                 return FormValidation.error("Invalid credentials.");
@@ -357,7 +352,6 @@ public class ElasticBackend extends ObservabilityBackend {
             } catch (Exception e) {
                 return FormValidation.error(e, e.getMessage());
             }
-            return FormValidation.error("Index pattern not found.");
         }
     }
 }

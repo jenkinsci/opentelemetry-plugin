@@ -54,17 +54,19 @@ public class ElasticStackConfigurationITTest {
 
     @Test
     public void testCredentialsDoValidate() {
-        assertEquals(descriptor.doValidate(CRED_ID, esContainer.getUrl(), ElasticsearchContainer.INDEX_PATTERN).kind, FormValidation.Kind.OK);
+        String kibanaBaseUrl = "http://kibana.example.com"; // FIXME get kibana url
+        assertEquals(descriptor.doValidate(CRED_ID, esContainer.getUrl(), kibanaBaseUrl).kind, FormValidation.Kind.OK);
 
-        assertEquals(descriptor.doValidate(WRONG_CREDS, esContainer.getUrl(), ElasticsearchContainer.INDEX_PATTERN).kind,
+        assertEquals(descriptor.doValidate(WRONG_CREDS, esContainer.getUrl(), kibanaBaseUrl).kind,
             FormValidation.Kind.ERROR
         );
-        assertEquals(descriptor.doValidate(CRED_ID, "nowhere", ElasticsearchContainer.INDEX_PATTERN).kind, FormValidation.Kind.ERROR);
+        assertEquals(descriptor.doValidate(CRED_ID, "nowhere", kibanaBaseUrl).kind, FormValidation.Kind.ERROR);
     }
 
     @Test
     public void testIndexPatternDoValidate()  {
-        assertEquals(FormValidation.Kind.OK, descriptor.doValidate(CRED_ID, esContainer.getUrl(), ElasticsearchContainer.INDEX_PATTERN).kind);
+        String kibanaBaseUrl = "http://kibana.example.com"; // FIXME get kibana url
+        assertEquals(FormValidation.Kind.OK, descriptor.doValidate(CRED_ID, esContainer.getUrl(), kibanaBaseUrl).kind);
         assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "pattern").kind);
         assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "").kind);
         assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, "", "pattern").kind);
@@ -79,11 +81,5 @@ public class ElasticStackConfigurationITTest {
     public void testDoCheckCredentialsId() {
         assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, CRED_ID).kind, FormValidation.Kind.OK);
         assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, "foo").kind, FormValidation.Kind.WARNING);
-    }
-
-    @Test
-    public void testDoCheckIndexPattern() {
-        assertEquals(descriptor.doCheckIndexPattern("foo").kind, FormValidation.Kind.OK);
-        assertEquals(descriptor.doCheckIndexPattern("").kind, FormValidation.Kind.WARNING);
     }
 }

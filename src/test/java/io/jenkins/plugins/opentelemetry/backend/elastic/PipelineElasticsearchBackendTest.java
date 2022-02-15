@@ -14,6 +14,7 @@ import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
+import io.opentelemetry.api.OpenTelemetry;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -78,7 +79,6 @@ public class PipelineElasticsearchBackendTest {
         List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
         ElasticBackend esBackend = new ElasticBackend();
         esBackend.setElasticsearchUrl(esEndpoint);
-        esBackend.setIndexPattern(ElasticsearchContainer.INDEX_PATTERN);
         esBackend.setKibanaBaseUrl(kibanaEndpoint);
         esBackend.setElasticsearchCredentialsId(CRED_ID);
         observabilityBackends.add(esBackend);
@@ -86,7 +86,8 @@ public class PipelineElasticsearchBackendTest {
         config.initializeOpenTelemetry();
 
         Credentials credentials = new UsernamePasswordCredentials(ElasticsearchContainer.USER_NAME, ElasticsearchContainer.PASSWORD);
-        elasticsearchRetriever = new ElasticsearchLogStorageRetriever(esEndpoint, credentials, ElasticsearchContainer.INDEX_PATTERN);
+        elasticsearchRetriever = new ElasticsearchLogStorageRetriever(esEndpoint, credentials, kibanaEndpoint,
+            OpenTelemetry.noop().getTracer("test"));
     }
 
     @Test
@@ -105,9 +106,10 @@ public class PipelineElasticsearchBackendTest {
         MonitoringAction action = run.getAction(MonitoringAction.class);
         String traceId = action.getTraceId();
         String spanId = action.getSpanId();
+        boolean complete = true;
         do {
             try {
-                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(traceId, spanId, null);
+                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(traceId, spanId, complete, null);
                 logsLength = logsQueryResult.getByteBuffer().length();
             } catch (Throwable e) {
                 //NOOP

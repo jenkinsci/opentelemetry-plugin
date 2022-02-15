@@ -63,7 +63,7 @@ class OtelLogSenderBuildListener implements BuildListener, Closeable {
     @Override
     public void close() throws IOException {
         if (logger != null) {
-            LOGGER.log(Level.INFO, () -> getClass().getName() + "#close(" + buildInfo + ")");
+            LOGGER.log(Level.FINE, () -> getClass().getName() + "#close(" + buildInfo + ")");
             logger = null;
         }
         if (JenkinsJVM.isJenkinsJVM()) { // TODO why, it is possible because in th Agent the close of channel kill all the resources but on the Jenkins controller not.

@@ -106,7 +106,7 @@ class OtelLogStorage implements LogStorage {
     @Nonnull
     @Override
     public AnnotatedLargeText<FlowExecutionOwner.Executable> overallLog(@Nonnull FlowExecutionOwner.Executable build, boolean complete) {
-        logger.log(Level.INFO, "overallLog(" + buildInfo + ")");
+        logger.log(Level.FINE, () ->"overallLog(" + buildInfo + ")");
         Span span = tracer.spanBuilder("OtelLogStorage.overallLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
@@ -114,7 +114,7 @@ class OtelLogStorage implements LogStorage {
             .startSpan();
         try (Scope scope = span.makeCurrent()){
             TraceAndSpanId traceAndSpanId = new TraceAndSpanId(buildInfo.getTraceId(), buildInfo.getSpanId());
-            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(buildInfo.getTraceId(), buildInfo.getSpanId(), logsQueryContexts.get(traceAndSpanId));
+            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(buildInfo.getTraceId(), buildInfo.getSpanId(), complete, logsQueryContexts.get(traceAndSpanId));
             logsQueryContexts.put(traceAndSpanId, logsQueryResult.getLogsQueryContext());
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());
@@ -153,7 +153,7 @@ class OtelLogStorage implements LogStorage {
     @Deprecated
     @Override
     public File getLogFile(FlowExecutionOwner.Executable build, boolean complete) {
-        logger.log(Level.INFO, "getLogFile(complete: " + complete + ")");
+        logger.log(Level.FINE, "getLogFile(complete: " + complete + ")");
         Span span = tracer.spanBuilder("OtelLogStorage.getLogFile")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)

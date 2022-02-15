@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.backend;
+package io.jenkins.plugins.opentelemetry.backend.custom;
 
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
 
 public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogStorageRetriever.CustomLogsQueryContext> {
 
@@ -37,7 +36,7 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
 
     @Nonnull
     @Override
-    public LogsQueryResult overallLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable CustomLogStorageRetriever.CustomLogsQueryContext logsQueryContext) throws IOException {
+    public LogsQueryResult overallLog(@Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nullable CustomLogsQueryContext logsQueryContext) throws IOException {
         return getLogsQueryResult(traceId, spanId);
     }
 
@@ -56,7 +55,10 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
         bindings.put("spanId", spanId);
 
         String url = pipelineLogsVisualizationUrlTemplate.make(bindings).toString();
+
+        // FIXME emit hyperlink that actually renders as hyperlink in Jenkins console
         String out = "[view in <a href=\"" + url + "\" target=\"_blank\">" + visualizationTitle + "</a>\n";
+        // HyperlinkNote.encodeTo(url, visualizationTitle)
         byteBuffer.write(out.getBytes(StandardCharsets.UTF_8));
 
         return new LogsQueryResult(byteBuffer, StandardCharsets.UTF_8, true, new CustomLogsQueryContext());
