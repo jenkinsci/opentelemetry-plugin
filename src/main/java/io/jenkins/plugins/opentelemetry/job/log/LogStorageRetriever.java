@@ -5,21 +5,27 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import org.kohsuke.stapler.framework.io.ByteBuffer;
-
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 
-public interface LogStorageRetriever {
+public interface LogStorageRetriever<C extends LogsQueryContext> {
 
     String MESSAGE_KEY = "message";
     String ANNOTATIONS_KEY = "annotations";
     String POSITION_KEY = "position";
     String NOTE_KEY = "note";
 
+    /**
+     *
+     * @param traceId
+     * @param spanId
+     * @param complete if true, we claim to be serving the complete log for a build, so implementations should be sure to retrieve final log lines
+     * @param logsQueryContext
+     */
     @Nonnull
-    ByteBuffer overallLog(@Nonnull String traceId, @Nonnull String spanId) throws IOException;
+    LogsQueryResult overallLog(@Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nullable C logsQueryContext) throws IOException;
 
 
-    @Nonnull ByteBuffer stepLog(@Nonnull String traceId, @Nonnull String spanId) throws IOException;
+    @Nonnull LogsQueryResult stepLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable C logsQueryContext) throws IOException;
 }

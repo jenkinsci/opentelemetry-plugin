@@ -13,13 +13,18 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.SPAN_ID;
 import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.TRACE_ID;
 
-public final class BuildInfo {
+public final class BuildInfo implements Serializable {
+
+    static final long serialVersionUID = 1L;
+
     final String jobFullName;
     final int runNumber;
     /**
@@ -31,6 +36,12 @@ public final class BuildInfo {
         this.jobFullName = jobFullName;
         this.runNumber = runNumber;
         this.context = context;
+    }
+
+    public BuildInfo(BuildInfo buildInfo) {
+        this.jobFullName = buildInfo.jobFullName;
+        this.runNumber = buildInfo.runNumber;
+        this.context = new HashMap<>(buildInfo.context);
     }
 
     @Nonnull
@@ -58,7 +69,7 @@ public final class BuildInfo {
         return "BuildInfo{" +
             "jobFullName='" + jobFullName + '\'' +
             ", runId='" + runNumber + '\'' +
-            ", context='" + context != null ? context.toString() : "NA" + '\'' +
+            ", context='" + context + '\'' +
             '}';
     }
 

@@ -4,35 +4,26 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.core.TimeValue;
-import org.elasticsearch.xcontent.XContentType;
 import org.testcontainers.containers.GenericContainer;
 
 import java.io.IOException;
 import java.time.Duration;
 
-import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.SPAN_ID;
-import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.TRACE_ID;
-
 /**
  * Elasticsearch container used on the tests.
+ * FI£XME
  */
 public class ElasticsearchContainer extends GenericContainer {
-    public static final String INDEX_PATTERN = "logs-*";
     public static final String USER_NAME = "admin";
     public static final String PASSWORD = "changeme";
     public static final String INDEX = "logs-001";
@@ -59,12 +50,7 @@ public class ElasticsearchContainer extends GenericContainer {
         credentialsProvider.setCredentials(AuthScope.ANY, credentials);
 
         RestClientBuilder builder = RestClient.builder(HttpHost.create(getUrl()));
-        builder.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
-            @Override
-            public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
-                return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-            }
-        });
+        builder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
         return builder;
     }
 
@@ -81,24 +67,29 @@ public class ElasticsearchContainer extends GenericContainer {
      * @throws IOException
      */
     public void createLogIndex() throws IOException {
-        try (RestHighLevelClient client = new RestHighLevelClient(getBuilder())) {
-            CreateIndexRequest request = new CreateIndexRequest(INDEX);
-            client.indices().create(request, RequestOptions.DEFAULT);
+        RestClient restClient = getBuilder().build();
+        RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+        ElasticsearchClient client = new ElasticsearchClient(elasticsearchTransport);
 
-            BulkRequest bulkRequest = new BulkRequest();
-            for (int n = 0; n < 100; n++) {
-                bulkRequest.add(newBulk(n, "1"));
-                bulkRequest.add(newBulk(n, "2"));
-                bulkRequest.add(newBulk(n, "3"));
-            }
-            bulkRequest.timeout(TimeValue.timeValueMinutes(2));
-            bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
+        client.indices().create(new CreateIndexRequest.Builder().index(INDEX).build());
 
-            client.bulk(bulkRequest, RequestOptions.DEFAULT);
-        }
+        // BulkOperation bulkOperation =
+        //    BulkRequest bulkRequest = new BulkRequest();
+        //    for (int n = 0; n < 100; n++) {
+        //        bulkRequest.add(newBulk(n, "1"));
+        //        bulkRequest.add(newBulk(n, "2"));
+        //        bulkRequest.add(newBulk(n, "3"));
+        //    }
+        //    List<Operations>
+        //BulkRequest bulkRequest = new BulkRequest.Builder().operations()
+        //    bulkRequest.timeout(TimeValue.timeValueMinutes(2));
+        //    bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
+//
+        //    client.bulk(bulkRequest, RequestOptions.DEFAULT);
+        //}
     }
 
-    private IndexRequest newBulk(int lineNumber, String buildID) throws IOException {
-        return new IndexRequest(INDEX).source(XContentType.JSON, TRACE_ID, "foo", SPAN_ID, "bar");
-    }
+    // private IndexRequest newBulk(int lineNumber, String buildID) throws IOException {
+    //    return new IndexRequest(INDEX).source(XContentType.JSON, TRACE_ID, "foo", SPAN_ID, "bar");
+    //
 }

@@ -25,7 +25,7 @@
         <opentelemetry.version>1.11.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.11.0-alpha</opentelemetry-alpha.version>
         <useBeta>true</useBeta>
-        <elasticstack.version>7.16.3</elasticstack.version>
+        <elasticstack.version>8.0.0</elasticstack.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Publish Jenkins metrics to an OpenTelemetry endpoint, including distributed traces of job executions and health metrics of the controller.</description>
@@ -58,16 +58,6 @@
                 <groupId>io.prometheus</groupId>
                 <artifactId>simpleclient_bom</artifactId>
                 <version>0.14.1</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <!--
-                conflict between io.opentelemetry:opentelemetry-sdk-extension-aws and io.jenkins.configuration-as-code:test-harness
-                -->
-                <groupId>com.fasterxml.jackson</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>2.13.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -231,6 +221,10 @@
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>jackson2-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials</artifactId>
         </dependency>
         <dependency>
@@ -341,16 +335,11 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.elasticsearch.client</groupId>
-            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <groupId>co.elastic.clients</groupId>
+            <artifactId>elasticsearch-java</artifactId>
             <version>${elasticstack.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>net.sf.jopt-simple</groupId>
-                    <artifactId>jopt-simple</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
+
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-testing</artifactId>
@@ -443,12 +432,6 @@
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-databind</artifactId>
                 </exclusion>
-                <!--
-                <exclusion>
-                    <groupId>org.jenkins-ci.plugins</groupId>
-                    <artifactId>jackson2-api</artifactId>
-                </exclusion>
-                -->
                 <exclusion>
                     <groupId>com.fasterxml.jackson.datatype</groupId>
                     <artifactId>jackson-datatype-json-org</artifactId>

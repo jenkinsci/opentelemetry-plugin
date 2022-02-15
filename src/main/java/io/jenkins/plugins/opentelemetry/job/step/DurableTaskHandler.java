@@ -24,7 +24,7 @@ import java.util.Objects;
  * Customization of spans for shell step: ({@code sh}, {@code cmd}, and {@code powershell}).
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
-public class DurableTaskHandler implements StepHandler {
+public class  DurableTaskHandler implements StepHandler {
     @Override
     public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
         return flowNode instanceof StepAtomNode && ((StepAtomNode) flowNode).getDescriptor() instanceof DurableTaskStep.DurableTaskStepDescriptor;
@@ -32,7 +32,7 @@ public class DurableTaskHandler implements StepHandler {
 
     @Nonnull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull  WorkflowRun run, @Nonnull Tracer tracer) {
+    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer) {
         final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
         final String displayFunctionName = node.getDisplayFunctionName();
         final String label = Objects.toString(arguments.get("label"), null);

@@ -26,23 +26,23 @@ import java.util.logging.Logger;
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java
  */
 class OtelLogSenderBuildListener implements BuildListener, Closeable {
-    protected final Logger LOGGER = Logger.getLogger(getClass().getName());
+
+    static final long serialVersionUID = 1L;
+
+    protected final static Logger LOGGER = Logger.getLogger(OtelLogSenderBuildListener.class.getName());
     final BuildInfo buildInfo;
     final Map<String, String> context;
     @CheckForNull
     transient PrintStream logger;
 
     public OtelLogSenderBuildListener(@Nonnull BuildInfo buildInfo) {
-        this.buildInfo = buildInfo;
+        this.buildInfo = new BuildInfo(buildInfo);
         this.context = buildInfo.getContext();
     }
 
     public OtelLogSenderBuildListener(@Nonnull BuildInfo buildInfo, @Nonnull FlowNode node) {
-        buildInfo.setFlowNode(node.getId());
-        //TODO the action is always null, Is there a way to grab the step context here.
-        MonitoringAction monitoringAction  = node.getAction(MonitoringAction.class);
-        Context context = Context.current();
-        this.buildInfo = buildInfo;
+        this.buildInfo = new BuildInfo(buildInfo);
+        this.buildInfo.setFlowNode(node.getId());
         this.context = buildInfo.getContext();
     }
 
@@ -63,7 +63,7 @@ class OtelLogSenderBuildListener implements BuildListener, Closeable {
     @Override
     public void close() throws IOException {
         if (logger != null) {
-            LOGGER.log(Level.INFO, () -> getClass().getName() + "#close(" + buildInfo + ")");
+            LOGGER.log(Level.FINE, () -> getClass().getName() + "#close(" + buildInfo + ")");
             logger = null;
         }
         if (JenkinsJVM.isJenkinsJVM()) { // TODO why, it is possible because in th Agent the close of channel kill all the resources but on the Jenkins controller not.
