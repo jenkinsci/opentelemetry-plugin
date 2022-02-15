@@ -32,6 +32,9 @@ import jakarta.json.stream.JsonParsingException;
 import java.io.IOException;
 
 /**
+ * Fork of  co.elastic.clients.json.jackson.JsonValueParser to work around a classloader issue using
+ * co.elastic.clients.json.jackson.JsonProviderUtils
+ * ---
  * Reads a Jsonp value/object/array from a Jackson parser. The parser's current token should be the start of the
  * object (e.g. START_OBJECT, VALUE_NUMBER, etc).
  */
