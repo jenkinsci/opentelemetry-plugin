@@ -18,6 +18,7 @@ import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import hudson.console.HyperlinkNote;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
@@ -165,6 +166,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
                     "logPosition=(end:now,start:now-1d,streamLive:!f)&" +
                     "logFilter=(language:kuery,query:%27trace.id:" + traceId + "%27)&";
                 if (pageNo == 0) {
+                    String logsInKibana = HyperlinkNote.encodeTo(logsVisualizationUrl, "View logs in Kibana");
                     w.write("View logs in Kibana: " + logsVisualizationUrl + "\n\n");
                 }
                 writeOutput(w, hits);

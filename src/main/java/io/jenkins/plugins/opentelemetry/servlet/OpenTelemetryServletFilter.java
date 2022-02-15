@@ -45,7 +45,6 @@ public class OpenTelemetryServletFilter implements Filter {
 
     public void _doFilter(HttpServletRequest servletRequest, HttpServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
 
-        // FIXME extract variables parts to get a low cardinality
         if (servletRequest.getPathInfo().startsWith("/job/")) {
             // e.g /job/my-war/job/master/lastBuild/console
             // e.g /job/my-war/job/master/2/console
