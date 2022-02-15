@@ -74,12 +74,16 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
         String message = new String(bytes, 0, len - 1, StandardCharsets.UTF_8); //remove trailing line feed
         Attributes logLineAttributes = ConsoleNotes.parse(bytes, len);
         String plainLogLine = logLineAttributes.get(AttributeKey.stringKey(ConsoleNotes.MESSAGE_KEY));
-        getLogEmitter().logBuilder()
-            .setAttributes(Attributes.builder().putAll(logLineAttributes).putAll(buildInfo.toAttributes()).build())
-            .setBody(plainLogLine)
-            .setContext(getContext())
-            .emit();
-        LOGGER.log(Level.FINE, () -> buildInfo + " - emit '" + message + "'");
+        if (plainLogLine == null || plainLogLine.isEmpty()) {
+            LOGGER.log(Level.FINER, () -> buildInfo + " - skip empty log line");
+        } else {
+            getLogEmitter().logBuilder()
+                .setAttributes(Attributes.builder().putAll(logLineAttributes).putAll(buildInfo.toAttributes()).build())
+                .setBody(plainLogLine)
+                .setContext(getContext())
+                .emit();
+            LOGGER.log(Level.FINE, () -> buildInfo + " - emit '" + message + "'");
+        }
     }
 
     @Override
