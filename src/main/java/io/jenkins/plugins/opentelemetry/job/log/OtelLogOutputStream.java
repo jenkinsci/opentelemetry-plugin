@@ -4,10 +4,12 @@ import hudson.console.LineTransformationOutputStream;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.logs.LogEmitter;
+import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -16,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes.MESSAGE_KEY;
 
@@ -71,18 +74,22 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
         if (len == 0) {
             return;
         }
-        String message = new String(bytes, 0, len - 1, StandardCharsets.UTF_8); //remove trailing line feed
-        Attributes logLineAttributes = ConsoleNotes.parse(bytes, len);
-        String plainLogLine = logLineAttributes.get(AttributeKey.stringKey(ConsoleNotes.MESSAGE_KEY));
+        ConsoleNotes.TextAndAnnotations textAndAnnotations = ConsoleNotes.parse(bytes, len);
+        String plainLogLine = textAndAnnotations.text;
         if (plainLogLine == null || plainLogLine.isEmpty()) {
             LOGGER.log(Level.FINER, () -> buildInfo + " - skip empty log line");
         } else {
+             AttributesBuilder attributesBuilder = Attributes.builder();
+             if (textAndAnnotations.annotations != null) {
+                 attributesBuilder.put(ConsoleNotes.ANNOTATIONS_KEY, textAndAnnotations.annotations.toString());
+             }
+            attributesBuilder.putAll(buildInfo.toAttributes());
             getLogEmitter().logBuilder()
-                .setAttributes(Attributes.builder().putAll(logLineAttributes).putAll(buildInfo.toAttributes()).build())
+                .setAttributes(attributesBuilder.build())
                 .setBody(plainLogLine)
                 .setContext(getContext())
                 .emit();
-            LOGGER.log(Level.FINE, () -> buildInfo + " - emit '" + message + "'");
+            LOGGER.log(Level.INFO, () -> buildInfo.jobFullName + "#" + buildInfo.runNumber + " - emit body: '" + StringUtils.abbreviate(plainLogLine, 30));
         }
     }
 

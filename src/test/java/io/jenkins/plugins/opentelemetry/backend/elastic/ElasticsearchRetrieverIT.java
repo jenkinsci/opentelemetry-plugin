@@ -45,7 +45,7 @@ public class ElasticsearchRetrieverIT {
         boolean complete = true;
         do {
             System.out.println("Request " + counter);
-            logsQueryResult = elasticsearchLogStorageRetriever.overallLog("ed4e940f4a2f817e9449ed2d3d7248cb", "", complete, (ElasticsearchLogsQueryContext) logsQueryContext);
+            logsQueryResult = elasticsearchLogStorageRetriever.overallLog("fa7f988173099adddda39ff9707e2dff", "", complete, (ElasticsearchLogsQueryContext) logsQueryContext);
             logsQueryContext = logsQueryResult.getLogsQueryContext();
             complete = false;
             counter++;

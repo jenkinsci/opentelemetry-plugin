@@ -11,11 +11,6 @@ import java.io.IOException;
 
 public interface LogStorageRetriever<C extends LogsQueryContext> {
 
-    String MESSAGE_KEY = "message";
-    String ANNOTATIONS_KEY = "annotations";
-    String POSITION_KEY = "position";
-    String NOTE_KEY = "note";
-
     /**
      *
      * @param traceId

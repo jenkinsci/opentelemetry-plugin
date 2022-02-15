@@ -7,11 +7,13 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import com.google.common.collect.ImmutableMap;
 import hudson.console.ConsoleNote;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Writer;
@@ -26,15 +28,15 @@ import java.util.Map;
  */
 public class ConsoleNotes {
 
-    public static final String MESSAGE_KEY = "message";
-    public static final String ANNOTATIONS_KEY = "annotations";
+    public static final AttributeKey<String> MESSAGE_KEY = AttributeKey.stringKey("message");
+    public static final AttributeKey<String> ANNOTATIONS_KEY = AttributeKey.stringKey("annotations");
     public static final String POSITION_KEY = "position";
     public static final String NOTE_KEY = "note";
 
     private ConsoleNotes() {
     }
 
-    public static Attributes parse(byte[] bytes, int len) {
+    public static TextAndAnnotations parse(byte[] bytes, int len) {
         assert len > 0 && len <= bytes.length;
         AttributesBuilder attributes = Attributes.builder();
         int eol = len;
@@ -51,7 +53,7 @@ public class ConsoleNotes {
         // especially since there is no standard library method to do offset searches like String has.
         if (!line.contains(ConsoleNote.PREAMBLE_STR)) {
             // Shortcut for the common case that we have no notes.
-            attributes.put(MESSAGE_KEY, line);
+            return new TextAndAnnotations(line, null);
         } else {
             StringBuilder buf = new StringBuilder();
             List<Map<String, Object>> annotations = new ArrayList<>();
@@ -73,17 +75,19 @@ public class ConsoleNotes {
                 pos = postamble + ConsoleNote.POSTAMBLE_STR.length();
             }
             buf.append(line, pos, line.length()); // append tail
-            attributes.put(MESSAGE_KEY, buf.toString());
-            attributes.put(ANNOTATIONS_KEY, JSONArray.fromObject(annotations).toString());
+            return new TextAndAnnotations(buf.toString(), JSONArray.fromObject(annotations));
         }
-        return attributes.build();
     }
 
-    public static void write(Writer w, JSONObject json) throws IOException {
-        String message = json.getString(MESSAGE_KEY);
-        // FIXME probably we have to deserialized it
-        JSONArray annotations = json.optJSONArray(ANNOTATIONS_KEY);
-        write(w, message, annotations);
+    static class TextAndAnnotations {
+        final String text;
+        @CheckForNull
+        final JSONArray annotations;
+
+        public TextAndAnnotations(String text, @Nullable JSONArray annotations) {
+            this.text = text;
+            this.annotations = annotations;
+        }
     }
 
     public static void write(Writer writer, String message, @Nullable JSONArray annotations) throws IOException {

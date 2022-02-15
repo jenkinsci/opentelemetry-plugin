@@ -17,6 +17,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import hudson.console.HyperlinkNote;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
@@ -55,8 +56,13 @@ import java.util.logging.Logger;
  * FIXME graceful shutdown
  */
 public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<ElasticsearchLogsQueryContext> {
-    public static final String FIELD_TIMESTAMP = "@timestamp";
+    /**
+     * Field used by the Elastic <-> Otel mapping to store the {@link io.opentelemetry.sdk.logs.LogBuilder#setBody(String)}
+     */
+    public static final String FIELD_MESSAGE = "message";
     public static final String FIELD_TRACE_ID = "trace.id";
+
+    public static final String FIELD_TIMESTAMP = "@timestamp";
     public static final Time POINT_IN_TIME_KEEP_ALIVE = Time.of(builder -> builder.time("30s"));
     public static final int PAGE_SIZE = 100; // FIXME
     public static final String INDEX_TEMPLATE_PATTERNS = "logs-apm.app-*";
@@ -210,23 +216,23 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
             ObjectNode source = hit.source();
             ObjectNode labels = (ObjectNode) source.findValue("labels");
             //Retrieve the label message and annotations to show the formatted message in Jenkins.
-            String message;
-            JSONArray annotations;
+            JsonNode messageAsJsonNode = source.findValue(FIELD_MESSAGE);
+            if (messageAsJsonNode == null) {
+                logger.log(Level.FINE, () -> "Skip log with no message (document id: " + hit.id() + ")");
+                continue;
+            }
+            String message = messageAsJsonNode.asText();
 
+            JSONArray annotations;
             if (labels == null) {
-                message = Objects.toString(source.get(MESSAGE_KEY));
-                annotations = null;
-            } else if (labels.findValue(MESSAGE_KEY) != null && labels.findValue(ANNOTATIONS_KEY) != null) {
-                message = labels.get(MESSAGE_KEY).asText(null);
-                annotations = JSONArray.fromObject(labels.get(ANNOTATIONS_KEY).asText());
-            } else if (source.get(MESSAGE_KEY) != null) {
-                // FIXME why is labels[message] a wrong value when labels[annotations] is null
-                message = source.get(MESSAGE_KEY).asText();
                 annotations = null;
             } else {
-                // TODO WHY DO WE HAVE SUCH RESULT
-                logger.log(Level.FINER, () -> "Skip document " + hit.index() + " - " + hit.id());
-                continue;
+                JsonNode annotationsAsText = labels.get(ConsoleNotes.ANNOTATIONS_KEY.getKey());
+                if (annotationsAsText == null) {
+                    annotations = null;
+                } else {
+                    annotations = JSONArray.fromObject(annotationsAsText.asText());
+                }
             }
             logger.log(Level.FINER, () -> "Write: " + message + ", id: " + hit.id());
             ConsoleNotes.write(writer, message, annotations);
@@ -241,8 +247,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
      * @throws IOException
      */
     public boolean indexTemplateExists() throws IOException {
-         ElasticsearchIndicesClient indicesClient = this.esClient.indices();
-        return indicesClient.existsIndexTemplate(b-> b.name(INDEX_TEMPLATE_NAME)).value();
+        ElasticsearchIndicesClient indicesClient = this.esClient.indices();
+        return indicesClient.existsIndexTemplate(b -> b.name(INDEX_TEMPLATE_NAME)).value();
     }
 
     /**
