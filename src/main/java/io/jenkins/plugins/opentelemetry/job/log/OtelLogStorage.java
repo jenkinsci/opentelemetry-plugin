@@ -113,8 +113,13 @@ class OtelLogStorage implements LogStorage {
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()){
-            TraceAndSpanId traceAndSpanId = new TraceAndSpanId(buildInfo.getTraceId(), buildInfo.getSpanId());
-            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(buildInfo.getTraceId(), buildInfo.getSpanId(), complete, logsQueryContexts.get(traceAndSpanId));
+            String traceId = buildInfo.getTraceId();
+            String spanId = buildInfo.getSpanId();
+            if (traceId == null || spanId == null) {
+                throw new IllegalStateException("traceId or spanId is null for " + buildInfo);
+            }
+            TraceAndSpanId traceAndSpanId = new TraceAndSpanId(traceId, spanId);
+            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(traceId, spanId, complete, logsQueryContexts.get(traceAndSpanId));
             logsQueryContexts.put(traceAndSpanId, logsQueryResult.getLogsQueryContext());
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());
@@ -136,8 +141,13 @@ class OtelLogStorage implements LogStorage {
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()){
-            TraceAndSpanAndFlowNodeId traceAndSpanAndFlowNodeId = new TraceAndSpanAndFlowNodeId(buildInfo.getTraceId(), buildInfo.getSpanId(), flowNode.getId());
-            LogsQueryResult logsQueryResult = logStorageRetriever.stepLog(buildInfo.getTraceId(), buildInfo.getSpanId(), logsQueryContexts.get(traceAndSpanAndFlowNodeId));
+            String traceId = buildInfo.getTraceId();
+            String spanId = buildInfo.getSpanId();
+            if (traceId == null || spanId == null) {
+                throw new IllegalStateException("traceId or spanId is null for " + buildInfo);
+            }
+            TraceAndSpanAndFlowNodeId traceAndSpanAndFlowNodeId = new TraceAndSpanAndFlowNodeId(traceId, spanId, flowNode.getId());
+            LogsQueryResult logsQueryResult = logStorageRetriever.stepLog(traceId, spanId, logsQueryContexts.get(traceAndSpanAndFlowNodeId));
             logsQueryContexts.put(traceAndSpanAndFlowNodeId, logsQueryResult.getLogsQueryContext());
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());

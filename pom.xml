@@ -61,18 +61,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!--
-            <dependency>
-                <!- -
-                conflict between io.opentelemetry:opentelemetry-sdk-extension-aws and io.jenkins.configuration-as-code:test-harness
-                - ->
-                <groupId>com.fasterxml.jackson</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>2.13.1</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            -->
             <dependency>
                 <!-- okhttp:4.9.3 -> okio:2.8.0 versus okhttp:4.9.3 -> okio:2.8.0 - kotlin-stdlib-->
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -444,12 +432,6 @@
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-databind</artifactId>
                 </exclusion>
-                <!--
-                <exclusion>
-                    <groupId>org.jenkins-ci.plugins</groupId>
-                    <artifactId>jackson2-api</artifactId>
-                </exclusion>
-                -->
                 <exclusion>
                     <groupId>com.fasterxml.jackson.datatype</groupId>
                     <artifactId>jackson-datatype-json-org</artifactId>

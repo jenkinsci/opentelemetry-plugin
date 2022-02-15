@@ -21,6 +21,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -65,10 +66,18 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
             if (exec instanceof Run) {
                 Run<?, ?> run = (Run<?, ?>) exec;
                 MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-                Map<String, String> extContext = monitoringAction.getRootContext();
-                extContext.put(TRACE_ID, monitoringAction.getTraceId());
-                extContext.put(SPAN_ID, monitoringAction.getSpanId());
-                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), extContext);
+                if (monitoringAction == null) {
+                    throw new IllegalStateException("No MonitoringAction found for " + run);
+                }
+                // root context contains traceparent
+                Map<String, String> rootContext = monitoringAction.getRootContext();
+                if (rootContext == null) {
+                    throw new IllegalStateException("MonitoringAction.rootContext is null for " + run);
+                }
+                Map<String, String> buildInfoContext = new HashMap<>(rootContext);
+                buildInfoContext.put(TRACE_ID, monitoringAction.getTraceId());
+                buildInfoContext.put(SPAN_ID, monitoringAction.getSpanId());
+                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), buildInfoContext);
                 LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
 
                 LogStorageRetriever logStorageRetriever = JenkinsOpenTelemetryPluginConfiguration.get().getObservabilityBackends().stream().filter(backend -> backend.getLogStorageRetriever() != null).findFirst().get().getLogStorageRetriever();
