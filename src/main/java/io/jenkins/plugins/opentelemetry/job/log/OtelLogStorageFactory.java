@@ -91,6 +91,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
     }
 
     void close(BuildInfo buildInfo) {
+        LOGGER.log(Level.INFO, () -> "Close logStorage for " + buildInfo.jobFullName + "#" + buildInfo.runNumber);
         Object removed = this.logStoragesByBuild.remove(buildInfo);
         if (removed == null) {
             LOGGER.log(Level.WARNING, () -> "Failure to close log storage for " + buildInfo + ", storage not found");

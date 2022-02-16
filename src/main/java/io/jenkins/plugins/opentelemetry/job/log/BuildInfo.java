@@ -68,8 +68,7 @@ public final class BuildInfo implements Serializable {
     public String toString() {
         return "BuildInfo{" +
             "jobFullName='" + jobFullName + '\'' +
-            ", runId='" + runNumber + '\'' +
-            ", context='" + context + '\'' +
+            ", runNumber='" + runNumber + '\'' +
             '}';
     }
 

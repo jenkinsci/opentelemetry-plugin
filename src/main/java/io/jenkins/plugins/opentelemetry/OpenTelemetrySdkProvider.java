@@ -102,6 +102,7 @@ public class OpenTelemetrySdkProvider {
         if (this.openTelemetrySdk != null) {
             this.openTelemetrySdk.getSdkTracerProvider().shutdown();
             this.openTelemetrySdk.getSdkMeterProvider().shutdown();
+            this.openTelemetrySdk.getSdkLogEmitterProvider().shutdown();
         }
         GlobalOpenTelemetry.resetForTest();
     }

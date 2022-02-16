@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import hudson.MarkupText;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -39,4 +40,16 @@ public class ConsoleNotesTest {
         String actualMessage = textAndAnnotations.text;
         Assert.assertEquals(expectedMessage, actualMessage);
     }
+
+    @Test
+    public void testHyperlinkNote() {
+        MarkupText text = new MarkupText("[Pipeline] node\n");
+        text.addMarkup(
+            11,
+            18,
+            "<a href='/jenkins/computer/(master)/' class='model-link'>",
+            "</a>");
+    }
 }
+
+

@@ -10,6 +10,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
@@ -27,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
@@ -64,32 +64,91 @@ public class OpenTelemetryServletFilter implements Filter {
 
 
         String rootPath = pathInfoTokens.get(0);
+        // The matched route (path template).
+        String httpRoute;
 
-        if (rootPath.equals("static") || rootPath.equals("adjuncts") || rootPath.equals("scripts")) {
+        if (rootPath.equals("static") || rootPath.equals("adjuncts") || rootPath.equals("scripts") || rootPath.equals("plugin")) {
             // skip
+            filterChain.doFilter(servletRequest, servletResponse);
+        } else if (rootPath.equals("$stapler")) {
+            // TODO handle URL pattern /$stapler/bound/ec328aeb-26be-43da-94a3-59f2d683131c/news
             filterChain.doFilter(servletRequest, servletResponse);
         } else {
             SpanBuilder spanBuilder;
             if (rootPath.equals("job")) {
                 // e.g /job/my-war/job/master/lastBuild/console
                 // e.g /job/my-war/job/master/2/console
-                ParsedJobUrl parsedJobUrl = parseJobUrl(pathInfoTokens.subList(1, pathInfoTokens.size()));
+                ParsedJobUrl parsedJobUrl = parseJobUrl(pathInfoTokens);
+                httpRoute = parsedJobUrl.urlPattern;
                 spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedJobUrl.urlPattern)
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedJobUrl.jobName);
                 if (parsedJobUrl.runNumber != null) {
                     spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedJobUrl.runNumber);
                 }
+            } else if (rootPath.equals("administrativeMonitor")) {
+                // eg GET /administrativeMonitor/hudson.diagnosis.ReverseProxySetupMonitor/testForReverseProxySetup/http://localhost:8080/jenkins/manage/
+                httpRoute = "/administrativeMonitor/:administrativeMonitor/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/administrativeMonitor/");
+                if (pathInfoTokens.size() > 1) {
+                    spanBuilder.setAttribute("administrativeMonitor", pathInfoTokens.get(1));
+                }
+            } else if (rootPath.equals("asynchPeople")) {
+                httpRoute = "/asynchPeople";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/asynchPeople");
+            } else if (rootPath.equals("computer")) {
+                // /computer/(master)/
+                httpRoute = "/computer/:computer/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/computer/*");
+                // TODO more details
+            } else if (rootPath.equals("credentials")) {
+                // eg /credentials/store/system/domain/_/
+                httpRoute = "/credentials/store/:store/domain/:domain/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/credentials/*");
+                // TODO more details
             } else if (rootPath.equals("descriptorByName")) {
+                httpRoute = "/descriptorByName/:descriptor/*";
                 spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/descriptorByName/");
-                spanBuilder.setAttribute("descriptor", pathInfo.substring("/descriptorByName/".length()));
+                if (pathInfoTokens.size() > 1) {
+                    spanBuilder.setAttribute("descriptor", pathInfoTokens.get(1));
+                }
+            } else if (rootPath.equals("extensionList")) {
+                // eg /extensionList/hudson.diagnosis.MemoryUsageMonitor/0/heap/graph
+                httpRoute = "/extensionList/:extension/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/extensionList/");
+                if (pathInfoTokens.size() > 1) {
+                    spanBuilder.setAttribute("extension", pathInfoTokens.get(1));
+                }
             } else if (rootPath.equals("fingerprint")) {
+                httpRoute = "/fingerprint/:fingerprint";
                 spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/fingerprint/");
                 spanBuilder.setAttribute("fingerprint", pathInfo.substring("/fingerprint/".length()));
+                if (pathInfoTokens.size() > 1) {
+                    spanBuilder.setAttribute("fingerprint", pathInfoTokens.get(1));
+                }
+            } else if (rootPath.equals("user")) {
+                //eg /user/cyrille.leclerc/ /user/cyrille.leclerc/configure /user/cyrille.leclerc/my-views/view/all/
+                httpRoute = "/user/:user/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/user/*");
+                if (pathInfoTokens.size() > 1) {
+                    spanBuilder.setAttribute("user", pathInfoTokens.get(1));
+                }
             } else {
+                httpRoute = "/" + rootPath + "/*";
                 spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + pathInfo);
             }
+            String httpTarget = servletRequest.getRequestURI();
+            String queryString = servletRequest.getQueryString();
+            if (queryString != null && !queryString.isEmpty()) {
+                httpTarget += queryString;
+            }
             Span span = spanBuilder
-                .setAttribute("http.method", servletRequest.getMethod())
+                .setAttribute(SemanticAttributes.HTTP_CLIENT_IP, servletRequest.getRemoteAddr())
+                .setAttribute(SemanticAttributes.HTTP_SCHEME, servletRequest.getScheme())
+                .setAttribute(SemanticAttributes.HTTP_SERVER_NAME, servletRequest.getServerName())
+                .setAttribute(SemanticAttributes.HTTP_HOST, servletRequest.getServerName() + ":" + servletRequest.getServerPort())
+                .setAttribute(SemanticAttributes.HTTP_METHOD, servletRequest.getMethod())
+                .setAttribute(SemanticAttributes.HTTP_TARGET, httpTarget)
+                .setAttribute(SemanticAttributes.HTTP_ROUTE, httpRoute)
                 .startSpan();
             try (Scope scope = span.makeCurrent()) {
                 filterChain.doFilter(servletRequest, servletResponse);
@@ -100,30 +159,31 @@ public class OpenTelemetryServletFilter implements Filter {
         }
     }
 
-    ParsedJobUrl parseJobUrl(List<String> pathInfoTokens) {
+    ParsedJobUrl parseJobUrl(List<String> pathInfo) {
         // e.g /job/my-war/job/master/lastBuild/console
         // e.g /job/my-war/job/master/2/console
-        // TODO http://localhost:8080/jenkins/job/my-war/job/master/113/execution/node/3/
-        // TODO http://localhost:8080/jenkins/job/my-war/job/master/114/artifact/target/my-war-1.0-SNAPSHOT.war
+        // TODO /job/my-war/job/master/113/execution/node/3/
+        // TODO /job/my-war/job/master/114/artifact/target/my-war-1.0-SNAPSHOT.war
+        // TODO /job/my-war/descriptorByName/org.jenkinsci.plugins.github_branch_source.OriginPullRequestDiscoveryTrait/fillStrategyIdItems
 
-        if (pathInfoTokens.isEmpty()) {
+        if (pathInfo.isEmpty()) {
             throw new IllegalArgumentException("Job URL cannot be empty");
         }
 
-        Iterator<String> pathInfoTokensIt = pathInfoTokens.listIterator();
-        String firstToken = pathInfoTokens.get(0);
+        Iterator<String> pathInfoTokensIt = pathInfo.listIterator();
+        String firstToken = pathInfo.get(0);
         if (!"job".equals(firstToken)) {
-            throw new IllegalArgumentException("Job URL doesn't start with '/job'" + pathInfoTokens.stream().collect(Collectors.joining("/")));
+            throw new IllegalArgumentException("Job URL.pathInfo doesn't start with '/job': " + pathInfo.stream().collect(Collectors.joining("/")));
         }
 
         List<String> jobName = new ArrayList<>(5);
-        List<String> jobUrlPattern = new ArrayList<>(Arrays.asList("job", "{job.fullName}"));
+        List<String> jobUrlPattern = new ArrayList<>(Arrays.asList("job", ":jobFullName"));
         int idx = 0;
         // EXTRACT JOB NAME
         while (pathInfoTokensIt.hasNext()) {
             String token = pathInfoTokensIt.next();
-            String previousToken = idx == 0 ? null : pathInfoTokens.get(idx -1);
-            String nextToken = pathInfoTokensIt.hasNext() ? pathInfoTokens.get(idx +1) : null;
+            String previousToken = idx == 0 ? null : pathInfo.get(idx - 1);
+            String nextToken = pathInfoTokensIt.hasNext() ? pathInfo.get(idx + 1) : null;
             if ("job".equals(previousToken)) {
                 jobName.add(token);
                 if ("job".equals(nextToken)) {
@@ -135,34 +195,44 @@ public class OpenTelemetryServletFilter implements Filter {
             } else if ("job".equals(token)) {
                 // skip
             } else {
-                throw new IllegalStateException("Unexpected token '" + token + "' with previousToken '" + previousToken + "' and nextToken '" + nextToken + "' in " + pathInfoTokens.stream().collect(Collectors.joining("/")));
+                throw new IllegalStateException("Unexpected token '" + token + "' with previousToken '" + previousToken + "' and nextToken '" + nextToken + "' in " + pathInfo.stream().collect(Collectors.joining("/")));
             }
             idx++;
         }
         // EXTRACT TRAILING PATH
-        Long runNumber;
-        if (pathInfoTokensIt.hasNext()) {
-            String token = pathInfoTokensIt.next();
-            if ("lastBuild".equals(token)) {
-                runNumber = null;
-                jobUrlPattern.add("lastBuild");
-            } else if (StringUtils.isNumeric(token)) {
-                runNumber = Long.parseLong(token);
-                jobUrlPattern.add("{run.number}");
-                pathInfoTokensIt.forEachRemaining(jobUrlPattern::add);
-            } else {
-                jobUrlPattern.add(token);
-                runNumber = null;
-            }
-            pathInfoTokensIt.forEachRemaining(jobUrlPattern::add);
-        } else {
-            runNumber = null;
+        if (!pathInfoTokensIt.hasNext()) {
+            return new ParsedJobUrl(jobName, null, jobUrlPattern);
         }
-
-        return new ParsedJobUrl(jobName.stream().collect(Collectors.joining("/")), runNumber, "/" + jobUrlPattern.stream().collect(Collectors.joining("/")));
+        Long runNumber;
+        String token = pathInfoTokensIt.next();
+        if ("lastBuild".equals(token)) {
+            jobUrlPattern.add("lastBuild");
+            pathInfoTokensIt.forEachRemaining(jobUrlPattern::add);
+            return new ParsedJobUrl(jobName, null, jobUrlPattern);
+        } else if (StringUtils.isNumeric(token)) {
+            runNumber = Long.parseLong(token);
+            jobUrlPattern.add(":runNumber");
+            pathInfoTokensIt.forEachRemaining(jobUrlPattern::add);
+            return new ParsedJobUrl(jobName, runNumber, jobUrlPattern);
+        } else if ("descriptorByName".equals(token)) {
+            jobUrlPattern.add("descriptorByName");
+            jobUrlPattern.add(":descriptor");
+            jobUrlPattern.add("*");
+            return new ParsedJobUrl(jobName, null, jobUrlPattern);
+        } else {
+            jobUrlPattern.add(token);
+            pathInfoTokensIt.forEachRemaining(jobUrlPattern::add);
+            return new ParsedJobUrl(jobName, null, jobUrlPattern);
+        }
     }
 
     public static class ParsedJobUrl {
+        public ParsedJobUrl(List<String> jobName, @Nullable Long runNumber, List<String> urlPattern) {
+            this(jobName.stream().
+                collect(Collectors.joining("/")), runNumber, "/" + urlPattern.stream().
+                collect(Collectors.joining("/")));
+        }
+
         public ParsedJobUrl(String jobName, @Nullable Long runNumber, String urlPattern) {
             this.jobName = jobName;
             this.urlPattern = urlPattern;
@@ -195,6 +265,7 @@ public class OpenTelemetryServletFilter implements Filter {
         public int hashCode() {
             return Objects.hash(jobName, runNumber, urlPattern);
         }
+
     }
 
     @Override

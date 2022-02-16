@@ -66,7 +66,7 @@ class OtelLogSenderBuildListener implements BuildListener, Closeable {
             LOGGER.log(Level.FINE, () -> getClass().getName() + "#close(" + buildInfo + ")");
             logger = null;
         }
-        if (JenkinsJVM.isJenkinsJVM()) { // TODO why, it is possible because in th Agent the close of channel kill all the resources but on the Jenkins controller not.
+        if (JenkinsJVM.isJenkinsJVM()) { // TODO why, it is possible because in the Agent closing of channel kill all the resources but on the Jenkins controller not.
             OtelLogStorageFactory.get().close(buildInfo);
         }
     }
