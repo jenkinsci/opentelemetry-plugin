@@ -9,6 +9,11 @@ import io.opentelemetry.api.OpenTelemetry;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.StringTokenizer;
+import java.util.stream.Collectors;
+
 public class OpenTelemetryServletFilterTest {
 
     @Test
@@ -25,7 +30,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobUrlLastBuild(){
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "my-war/master", null, "/job/{job.fullName}/lastBuild/");
+            "my-war/master", null, "/job/{job.fullName}/lastBuild");
         String pathInfo = "/job/my-war/job/master/lastBuild/";
         verifyJobUrlParsing(expected, pathInfo);
     }
@@ -59,14 +64,19 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobUrl(){
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "my-war/master", null, "/job/{job.fullName}/");
+            "my-war/master", null, "/job/{job.fullName}");
         String pathInfo = "/job/my-war/job/master/";
         verifyJobUrlParsing(expected, pathInfo);
     }
 
     private void verifyJobUrlParsing(OpenTelemetryServletFilter.ParsedJobUrl expected, String pathInfo) {
-        OpenTelemetryServletFilter.ParsedJobUrl actual = new OpenTelemetryServletFilter(OpenTelemetry.noop().getTracer("test")).parseJobUrl(pathInfo);
+        List<String> pathInfoTokens = Collections.list(new StringTokenizer(pathInfo, "/")).stream()
+            .map(token -> (String) token)
+            .filter(t -> !t.isEmpty())
+            .collect(Collectors.toList());
+
+        OpenTelemetryServletFilter.ParsedJobUrl actual = new OpenTelemetryServletFilter(OpenTelemetry.noop().getTracer("test")).parseJobUrl(pathInfoTokens);
         System.out.println(actual);
-        Assert.assertEquals(actual, expected);
+        Assert.assertEquals(expected, actual);
     }
 }
