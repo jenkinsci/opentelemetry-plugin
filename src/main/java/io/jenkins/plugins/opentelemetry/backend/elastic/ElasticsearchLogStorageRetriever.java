@@ -19,11 +19,12 @@ import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import hudson.console.HyperlinkNote;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import net.sf.json.JSONArray;
@@ -46,7 +47,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,9 +60,12 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
      * Field used by the Elastic <-> Otel mapping to store the {@link io.opentelemetry.sdk.logs.LogBuilder#setBody(String)}
      */
     public static final String FIELD_MESSAGE = "message";
+    /**
+     * Mapping for {@link SpanContext#getTraceId()}
+     */
     public static final String FIELD_TRACE_ID = "trace.id";
-
     public static final String FIELD_TIMESTAMP = "@timestamp";
+
     public static final Time POINT_IN_TIME_KEEP_ALIVE = Time.of(builder -> builder.time("30s"));
     public static final int PAGE_SIZE = 100; // FIXME
     public static final String INDEX_TEMPLATE_PATTERNS = "logs-apm.app-*";
@@ -172,12 +175,13 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
                     "logPosition=(end:now,start:now-1d,streamLive:!f)&" +
                     "logFilter=(language:kuery,query:%27trace.id:" + traceId + "%27)&";
                 if (pageNo == 0) {
-                    String logsInKibana = HyperlinkNote.encodeTo(logsVisualizationUrl, "View logs in Kibana");
                     w.write("View logs in Kibana: " + logsVisualizationUrl + "\n\n");
                 }
                 writeOutput(w, hits);
-                if (!completed) {
-                    w.write("\n\n... see rest of logs on Kibana " + logsVisualizationUrl);
+                if (completed) {
+                    w.write("\n\nView logs on Kibana " + logsVisualizationUrl);
+                }else {
+                    w.write("...\n\nView the rest of logs on Kibana " + logsVisualizationUrl);
                 }
             }
 
@@ -227,7 +231,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
             if (labels == null) {
                 annotations = null;
             } else {
-                JsonNode annotationsAsText = labels.get(ConsoleNotes.ANNOTATIONS_KEY.getKey());
+                JsonNode annotationsAsText = labels.get(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS.getKey());
                 if (annotationsAsText == null) {
                     annotations = null;
                 } else {

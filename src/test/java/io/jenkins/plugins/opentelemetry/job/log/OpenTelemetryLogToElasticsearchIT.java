@@ -13,7 +13,6 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -116,9 +115,9 @@ public class OpenTelemetryLogToElasticsearchIT {
                 System.err.println("Invalid number of log messages: actual: " + hits.size() + ", expected: " + LOG_MESSAGE_COUNT);
             }
 
-            for(Hit<ObjectNode> hit: hits) {
+            for (Hit<ObjectNode> hit : hits) {
 
-                ObjectNode source =  hit.source();
+                ObjectNode source = hit.source();
                 ObjectNode labels = (ObjectNode) source.findValue("labels");
                 ObjectNode numericLabels = (ObjectNode) source.findValue("numeric_labels");
 
@@ -130,11 +129,7 @@ public class OpenTelemetryLogToElasticsearchIT {
                 } catch (Exception e) {
                     System.err.println("Error parsing " + source);
                 }
-
             }
-
-
         }
-
     }
 }

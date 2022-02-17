@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import com.google.common.collect.ImmutableMap;
 import hudson.console.ConsoleNote;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -27,11 +28,6 @@ import java.util.Map;
  * copied from https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin
  */
 public class ConsoleNotes {
-
-    public static final AttributeKey<String> MESSAGE_KEY = AttributeKey.stringKey("message");
-    public static final AttributeKey<String> ANNOTATIONS_KEY = AttributeKey.stringKey("annotations");
-    public static final String POSITION_KEY = "position";
-    public static final String NOTE_KEY = "note";
 
     private ConsoleNotes() {
     }
@@ -71,7 +67,7 @@ public class ConsoleNotes {
                 }
                 buf.append(line, pos, preamble);
                 annotations.add(
-                    ImmutableMap.of(POSITION_KEY, buf.length(), NOTE_KEY, line.substring(endOfPreamble, postamble)));
+                    ImmutableMap.of(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD, buf.length(), JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD, line.substring(endOfPreamble, postamble)));
                 pos = postamble + ConsoleNote.POSTAMBLE_STR.length();
             }
             buf.append(line, pos, line.length()); // append tail
@@ -97,8 +93,8 @@ public class ConsoleNotes {
             int pos = 0;
             for (Object o : annotations) {
                 JSONObject annotation = (JSONObject) o;
-                int position = annotation.getInt(POSITION_KEY);
-                String note = annotation.getString(NOTE_KEY);
+                int position = annotation.getInt(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD);
+                String note = annotation.getString(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD);
                 writer.write(message, pos, position - pos);
                 writer.write(ConsoleNote.PREAMBLE_STR);
                 writer.write(note);

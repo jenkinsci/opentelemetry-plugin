@@ -2,6 +2,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.console.LineTransformationOutputStream;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
@@ -23,6 +24,8 @@ import java.util.logging.Logger;
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L162
  */
 public class OtelLogOutputStream extends LineTransformationOutputStream {
+    public static boolean ENABLE_LOG_FORMATTING = Boolean.valueOf(System.getProperty("pipeline.log.elastic.enable.log.formatting", "false"));
+
     @Nonnull
     final BuildInfo buildInfo;
     final Map<String, String> contextAsMap;
@@ -75,8 +78,8 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
             LOGGER.log(Level.FINER, () -> buildInfo + " - skip empty log line");
         } else {
             AttributesBuilder attributesBuilder = Attributes.builder();
-            if (textAndAnnotations.annotations != null) {
-                attributesBuilder.put(ConsoleNotes.ANNOTATIONS_KEY, textAndAnnotations.annotations.toString());
+            if (ENABLE_LOG_FORMATTING && textAndAnnotations.annotations != null) {
+                attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS, textAndAnnotations.annotations.toString());
             }
             attributesBuilder.putAll(buildInfo.toAttributes());
             getLogEmitter().logBuilder()
