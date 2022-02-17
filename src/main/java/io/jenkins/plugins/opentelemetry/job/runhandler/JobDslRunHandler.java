@@ -69,7 +69,7 @@ public class JobDslRunHandler implements RunHandler {
             spanName = collapseJobName ? "Job from seed '" + templateFullName + "'" : job.getFullName();
         }
 
-        SpanBuilder spanBuilder = tracer.spanBuilder(spanName);
+        SpanBuilder spanBuilder = tracer.spanBuilder("BUILD" + spanName);
         if (templateFullName != null) {
             spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TEMPLATE_ID, templateFullName);
         }

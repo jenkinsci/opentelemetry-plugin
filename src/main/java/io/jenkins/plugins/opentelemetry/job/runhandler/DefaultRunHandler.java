@@ -46,7 +46,7 @@ public class DefaultRunHandler implements RunHandler {
         } else {
             spanName = run.getParent().getFullName();
         }
-        SpanBuilder spanBuilder = tracer.spanBuilder(spanName);
+        SpanBuilder spanBuilder = tracer.spanBuilder("BUILD " + spanName);
 
         return spanBuilder;
     }
