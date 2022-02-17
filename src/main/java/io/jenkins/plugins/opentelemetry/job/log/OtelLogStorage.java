@@ -94,13 +94,13 @@ class OtelLogStorage implements LogStorage {
     @Nonnull
     @Override
     public BuildListener overallListener() {
-        return new OtelLogSenderBuildListener(buildInfo);
+        return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo);
     }
 
     @Nonnull
     @Override
     public TaskListener nodeListener(@Nonnull FlowNode node) {
-        return new OtelLogSenderBuildListener(buildInfo, node);
+        return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, node);
     }
 
     @Nonnull
@@ -135,7 +135,7 @@ class OtelLogStorage implements LogStorage {
     @Nonnull
     @Override
     public AnnotatedLargeText<FlowNode> stepLog(@Nonnull FlowNode flowNode, boolean complete) {
-        Span span = tracer.spanBuilder("OtelLogStorage.overallLog")
+        Span span = tracer.spanBuilder("OtelLogStorage.stepLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
             .setAttribute("complete", complete)

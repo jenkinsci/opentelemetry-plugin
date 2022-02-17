@@ -123,7 +123,9 @@ public class OpenTelemetrySdkProvider {
             }
         );
 
-        sdkBuilder.setResultAsGlobal(true); // ensure GlobalOpenTelemetry.set() is invoked
+        sdkBuilder
+            .registerShutdownHook(false) // SDK closed by io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider.preDestroy()
+            .setResultAsGlobal(true); // ensure GlobalOpenTelemetry.set() is invoked
         AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = sdkBuilder.build();
         this.openTelemetrySdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
         this.resource = autoConfiguredOpenTelemetrySdk.getResource();

@@ -75,9 +75,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
                     throw new IllegalStateException("MonitoringAction.rootContext is null for " + run);
                 }
                 Map<String, String> buildInfoContext = new HashMap<>(rootContext);
-                buildInfoContext.put(TRACE_ID, monitoringAction.getTraceId());
-                buildInfoContext.put(SPAN_ID, monitoringAction.getSpanId());
-                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), buildInfoContext);
+                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getTraceId(), monitoringAction.getSpanId(), buildInfoContext);
                 LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
 
                 LogStorageRetriever logStorageRetriever = JenkinsOpenTelemetryPluginConfiguration.get().getObservabilityBackends().stream().filter(backend -> backend.getLogStorageRetriever() != null).findFirst().get().getLogStorageRetriever();

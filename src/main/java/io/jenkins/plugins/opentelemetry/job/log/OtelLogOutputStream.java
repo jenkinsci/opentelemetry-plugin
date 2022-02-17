@@ -1,7 +1,6 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.console.LineTransformationOutputStream;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -28,30 +27,31 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
 
     @Nonnull
     final BuildInfo buildInfo;
-    final Map<String, String> contextAsMap;
+    /**
+     * {@link Map} version of the {@link Context} used to associate log message with the right {@link Span}
+     */
+    final Map<String, String> w3cTraceContext;
     private final Logger LOGGER = Logger.getLogger(OtelLogOutputStream.class.getName());
     transient LogEmitter logEmitter;
     transient Context context;
 
     /**
      * @param buildInfo
-     * @param context   see {@link Context} and
+     * @param w3cTraceContext Serializable version of the {@link Context} used to associate log messages with {@link io.opentelemetry.api.trace.Span}s
      */
-    public OtelLogOutputStream(BuildInfo buildInfo, Map<String, String> context) {
+    public OtelLogOutputStream(BuildInfo buildInfo, Map<String, String> w3cTraceContext, LogEmitter logEmitter) {
         this.buildInfo = buildInfo;
-        this.contextAsMap = context;
+        this.w3cTraceContext = w3cTraceContext;
+        this.logEmitter = logEmitter;
     }
 
     private LogEmitter getLogEmitter() {
-        if (logEmitter == null) {
-            logEmitter = OpenTelemetrySdkProvider.get().getLogEmitter();
-        }
         return logEmitter;
     }
 
     private Context getContext() {
         if (context == null) {
-            context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.contextAsMap, new TextMapGetter<Map<String, String>>() {
+            context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.w3cTraceContext, new TextMapGetter<Map<String, String>>() {
                 @Override
                 public Iterable<String> keys(Map<String, String> carrier) {
                     return carrier.keySet();
@@ -98,5 +98,6 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
 
     @Override
     public void close() throws IOException {
+        // TODO anything to do? cyrille: probably not
     }
 }

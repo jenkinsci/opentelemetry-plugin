@@ -44,6 +44,7 @@ public class AuditingSecurityListener extends SecurityListener  {
 
 
 
+    @Deprecated
     @Override
     protected void authenticated(@NonNull UserDetails details) {
         super.authenticated(details);

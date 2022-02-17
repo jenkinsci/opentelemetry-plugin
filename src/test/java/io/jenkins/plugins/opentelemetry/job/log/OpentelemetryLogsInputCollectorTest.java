@@ -8,7 +8,11 @@ import hudson.ExtensionList;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
@@ -75,7 +79,7 @@ public class OpentelemetryLogsInputCollectorTest {
 
     @Test
     public void testLog() throws IOException, InterruptedException {
-        OtelLogOutputStream input = new OtelLogOutputStream(new BuildInfo("foo", 1, null), null);
+        OtelLogOutputStream input = new OtelLogOutputStream(new BuildInfo("foo", 1, null, null, null), null, openTelemetrySdkProvider.getLogEmitter());
         input.write("foo00\n".getBytes(StandardCharsets.UTF_8));
         Thread.sleep(1000);
         assertTrue(otelCollector.getLogs().contains("Body: foo00"));
