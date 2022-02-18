@@ -7,6 +7,7 @@ import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.sdk.common.Clock;
 import io.opentelemetry.sdk.logs.LogEmitter;
 import org.apache.commons.lang.StringUtils;
 
@@ -14,6 +15,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -22,8 +24,9 @@ import java.util.logging.Logger;
  * TODO support Pipeline Step Context {@link Context} in addition to supporting run root context
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L162
  */
-public class OtelLogOutputStream extends LineTransformationOutputStream {
+final class OtelLogOutputStream extends LineTransformationOutputStream {
     public static boolean ENABLE_LOG_FORMATTING = Boolean.valueOf(System.getProperty("pipeline.log.elastic.enable.log.formatting", "false"));
+    private final static Logger LOGGER = Logger.getLogger(OtelLogOutputStream.class.getName());
 
     @Nonnull
     final BuildInfo buildInfo;
@@ -31,40 +34,31 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
      * {@link Map} version of the {@link Context} used to associate log message with the right {@link Span}
      */
     final Map<String, String> w3cTraceContext;
-    private final Logger LOGGER = Logger.getLogger(OtelLogOutputStream.class.getName());
-    transient LogEmitter logEmitter;
-    transient Context context;
+    final LogEmitter logEmitter;
+    final Context context;
+    final Clock clock;
 
     /**
      * @param buildInfo
      * @param w3cTraceContext Serializable version of the {@link Context} used to associate log messages with {@link io.opentelemetry.api.trace.Span}s
      */
-    public OtelLogOutputStream(BuildInfo buildInfo, Map<String, String> w3cTraceContext, LogEmitter logEmitter) {
+    public OtelLogOutputStream(BuildInfo buildInfo, Map<String, String> w3cTraceContext, LogEmitter logEmitter, Clock clock) {
         this.buildInfo = buildInfo;
-        this.w3cTraceContext = w3cTraceContext;
         this.logEmitter = logEmitter;
-    }
+        this.clock = clock;
+        this.w3cTraceContext = w3cTraceContext;
+        this.context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.w3cTraceContext, new TextMapGetter<Map<String, String>>() {
+            @Override
+            public Iterable<String> keys(Map<String, String> carrier) {
+                return carrier.keySet();
+            }
 
-    private LogEmitter getLogEmitter() {
-        return logEmitter;
-    }
-
-    private Context getContext() {
-        if (context == null) {
-            context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.w3cTraceContext, new TextMapGetter<Map<String, String>>() {
-                @Override
-                public Iterable<String> keys(Map<String, String> carrier) {
-                    return carrier.keySet();
-                }
-
-                @Nullable
-                @Override
-                public String get(@Nullable Map<String, String> carrier, String key) {
-                    return carrier == null ? null : carrier.get(key);
-                }
-            });
-        }
-        return context;
+            @Nullable
+            @Override
+            public String get(@Nullable Map<String, String> carrier, String key) {
+                return carrier == null ? null : carrier.get(key);
+            }
+        });
     }
 
     @Override
@@ -82,12 +76,13 @@ public class OtelLogOutputStream extends LineTransformationOutputStream {
                 attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS, textAndAnnotations.annotations.toString());
             }
             attributesBuilder.putAll(buildInfo.toAttributes());
-            getLogEmitter().logBuilder()
-                .setAttributes(attributesBuilder.build())
+            logEmitter.logBuilder()
                 .setBody(plainLogLine)
-                .setContext(getContext())
+                .setAttributes(attributesBuilder.build())
+                .setContext(context)
+                .setEpoch(clock.now(), TimeUnit.NANOSECONDS)
                 .emit();
-            LOGGER.log(Level.INFO, () -> buildInfo.jobFullName + "#" + buildInfo.runNumber + " - emit body: '" + StringUtils.abbreviate(plainLogLine, 30) + "'");
+            LOGGER.log(Level.FINER, () -> buildInfo.jobFullName + "#" + buildInfo.runNumber + " - emit body: '" + StringUtils.abbreviate(plainLogLine, 30) + "'");
         }
     }
 

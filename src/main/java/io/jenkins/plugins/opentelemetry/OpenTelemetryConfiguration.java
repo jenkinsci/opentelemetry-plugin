@@ -9,13 +9,18 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 public class OpenTelemetryConfiguration {
@@ -143,6 +148,8 @@ public class OpenTelemetryConfiguration {
 
         this.getServiceNamespace().ifPresent(serviceNamespace ->
             resourceBuilder.put(ResourceAttributes.SERVICE_NAMESPACE, serviceNamespace));
+
+        resourceBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION, OtelUtils.getOpentelemetryPluginVersion());
 
         return resourceBuilder.build();
     }

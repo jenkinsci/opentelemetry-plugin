@@ -5,13 +5,19 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import com.google.common.collect.Lists;
 import hudson.Plugin;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
 import hudson.util.VersionNumber;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
@@ -23,6 +29,9 @@ import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,10 +39,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.io.UnsupportedEncodingException;
 import java.util.stream.Collectors;
 
 public class OtelUtils {
@@ -48,7 +55,7 @@ public class OtelUtils {
     public static final String CHANGE_REQUEST = "change_request";
     public static final String TAG = "tag";
     public static final String JENKINS_CORE = "jenkins-core";
-    public static final String UNKNOWN_VALUE ="#unknown";
+    public static final String UNKNOWN_VALUE = "#unknown";
 
     @CheckForNull
     public static String getSystemPropertyOrEnvironmentVariable(String environmentVariableName) {
@@ -108,11 +115,11 @@ public class OtelUtils {
                 ReadableSpan readableSpan = (ReadableSpan) span;
                 SpanData spanData = readableSpan.toSpanData();
                 return "span(" +
-                        "name: " + readableSpan.getName() + ", "+
-                        "spanId: " + spanData.getSpanId() + ", " +
-                        "parentSpanId: " + spanData.getParentSpanId() + ", " +
-                        "traceId: " + spanData.getTraceId() + ", " +
-                         ")";
+                    "name: " + readableSpan.getName() + ", " +
+                    "spanId: " + spanData.getSpanId() + ", " +
+                    "parentSpanId: " + spanData.getParentSpanId() + ", " +
+                    "traceId: " + spanData.getTraceId() + ", " +
+                    ")";
             } else {
                 return span.toString();
             }
@@ -255,5 +262,45 @@ public class OtelUtils {
         }
         final Plugin opentelemetryPlugin = instance.getPlugin("opentelemetry");
         return opentelemetryPlugin == null ? UNKNOWN_VALUE : opentelemetryPlugin.getWrapper().getVersion();
+    }
+
+    public static String prettyPrintOtelSdkConfig(AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk) {
+        return "SDK [" +
+            "config: " + prettyPrintConfiguration(autoConfiguredOpenTelemetrySdk.getConfig()) + ", "+
+            "resource: " + prettyPrintResource(autoConfiguredOpenTelemetrySdk.getResource()) +
+            "]";
+    }
+    public static String prettyPrintConfiguration(ConfigProperties config) {
+        List<String> attributeNames = Lists.newArrayList(
+            "otel.resource.attributes", "otel.service.name",
+            "otel.traces.exporter", "otel.metrics.exporter", "otel.exporter.otlp.endpoint"
+            , "otel.exporter.otlp.traces.endpoint", "otel.exporter.otlp.metrics.endpoint",
+            "otel.exporter.jaeger.endpoint",
+            "otel.exporter.prometheus.port",
+            "otel.logs.exporter");
+
+        Map<String, String> message = new LinkedHashMap<>();
+        for (String attributeName : attributeNames) {
+            final String attributeValue = config.getString(attributeName);
+            if (attributeValue != null) {
+                message.put(attributeName, attributeValue);
+            }
+        }
+        return message.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).collect(Collectors.joining(", "));
+    }
+
+    public static String prettyPrintResource(Resource resource) {
+        List<AttributeKey> attributeKeys =Arrays.asList(
+            ResourceAttributes.SERVICE_NAME, ResourceAttributes.SERVICE_NAMESPACE, ResourceAttributes.SERVICE_VERSION
+        ) ;
+
+        Map<String, String> message = new LinkedHashMap<>();
+        for (AttributeKey attributeKey : attributeKeys) {
+            Object attributeValue = resource.getAttribute(attributeKey);
+            if (attributeValue != null) {
+                message.put(attributeKey.getKey(), Objects.toString(attributeValue, "#null#"));
+            }
+        }
+        return message.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).collect(Collectors.joining(", "));
     }
 }

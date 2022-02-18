@@ -125,8 +125,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return true;
     }
 
-    @PostConstruct
-    public void initializeOpenTelemetry() {
+    @Nonnull
+    public OpenTelemetryConfiguration toOpenTelemetryConfiguration() {
         Properties properties = new Properties();
         try {
             properties.load(new StringReader(Objects.toString(this.configurationProperties)));
@@ -136,7 +136,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         Map<String, String> configurationProperties = new HashMap(properties);
         configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_VERSION.getKey(), OtelUtils.getJenkinsVersion());
         configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_URL.getKey(), this.jenkinsLocationConfiguration.getUrl());
-        OpenTelemetryConfiguration newOpenTelemetryConfiguration = new OpenTelemetryConfiguration(
+        return new OpenTelemetryConfiguration(
             Optional.ofNullable(this.getEndpoint()),
             Optional.ofNullable(this.getTrustedCertificatesPem()),
             Optional.ofNullable(this.getAuthentication()),
@@ -146,6 +146,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             Optional.ofNullable(this.getServiceNamespace()),
             Optional.ofNullable(this.getDisabledResourceProviders()),
             configurationProperties);
+    }
+    @PostConstruct
+    public void initializeOpenTelemetry() {
+        OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;

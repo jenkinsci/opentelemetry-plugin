@@ -123,8 +123,10 @@ public final class JenkinsOtelSemanticAttributes {
      */
     public static final String STEP_NAME = "step";
 
+    public static final AttributeKey<String> JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION = AttributeKey.stringKey("jenkins.opentelemetry.plugin.version");
 
     public static final AttributeKey<String>        ELASTIC_TRANSACTION_TYPE = AttributeKey.stringKey("type");
+
     public static final AttributeKey<String> JENKINS_ANSI_ANNOTATIONS = AttributeKey.stringKey("jenkins.ansi.annotations");
     public static final String JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD = "position";
     public static final String JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD = "note";

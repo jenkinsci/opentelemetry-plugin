@@ -5,7 +5,11 @@ import hudson.console.AnnotatedLargeText;
 import hudson.model.BuildListener;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
@@ -18,6 +22,7 @@ import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -94,13 +99,20 @@ class OtelLogStorage implements LogStorage {
     @Nonnull
     @Override
     public BuildListener overallListener() {
-        return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo);
+        OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
+        Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
+        Map<String, String> otelResourceAttributes = new HashMap<>();
+        otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
+        return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, otelConfigurationProperties, otelResourceAttributes);
     }
 
+    /**
+     * FIXME implement `TaskListener nodeListener(@Nonnull FlowNode node)`
+     */
     @Nonnull
     @Override
     public TaskListener nodeListener(@Nonnull FlowNode node) {
-        return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, node);
+        return overallListener();
     }
 
     @Nonnull

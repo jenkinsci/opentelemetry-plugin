@@ -7,18 +7,22 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.model.BuildListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
+import io.jenkins.plugins.opentelemetry.opentelemetry.common.OffsetClock;
+import io.opentelemetry.sdk.common.Clock;
 import io.opentelemetry.sdk.logs.LogEmitter;
-import io.opentelemetry.sdk.logs.SdkLogEmitterProvider;
 import jenkins.util.JenkinsJVM;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,23 +37,29 @@ import java.util.logging.Logger;
  */
 abstract class OtelLogSenderBuildListener implements BuildListener, Closeable {
 
-    static final long serialVersionUID = 1L;
-
     protected final static Logger LOGGER = Logger.getLogger(OtelLogSenderBuildListener.class.getName());
     final BuildInfo buildInfo;
     final Map<String, String> w3cTraceContext;
+    final Map<String, String> otelConfigProperties;
+    final Map<String, String> otelResourceAttributes;
+    /**
+     * Timestamps of the logs emitted by the Jenkins Agents must be chronologically ordered with the timestamps of
+     * the logs & traces emitted on the Jenkins controller even if the system clock are not perfectly synchronized
+     */
+    transient Clock clock;
+
     @CheckForNull
     transient PrintStream logger;
 
-    public OtelLogSenderBuildListener(@Nonnull BuildInfo buildInfo) {
+    public OtelLogSenderBuildListener(@Nonnull BuildInfo buildInfo, @Nonnull Map<String, String> otelConfigProperties, @Nonnull Map<String, String> otelResourceAttributes) {
         this.buildInfo = new BuildInfo(buildInfo);
         this.w3cTraceContext = buildInfo.getW3cTraceContext();
-    }
-
-    public OtelLogSenderBuildListener(@Nonnull BuildInfo buildInfo, @Nonnull FlowNode node) {
-        this.buildInfo = new BuildInfo(buildInfo);
-        this.buildInfo.setFlowNode(node.getId());
-        this.w3cTraceContext = buildInfo.getW3cTraceContext();
+        this.otelConfigProperties = otelConfigProperties;
+        this.otelResourceAttributes = otelResourceAttributes;
+        this.clock = Clock.getDefault();
+        // Constructor must always be invoked on the Jenkins Controller.
+        // Instantiation on the Jenkins Agents is done via deserialization.
+        JenkinsJVM.checkJenkinsJVM();
     }
 
     @Nonnull
@@ -57,12 +67,11 @@ abstract class OtelLogSenderBuildListener implements BuildListener, Closeable {
     public synchronized final PrintStream getLogger() {
         if (logger == null) {
             try {
-                logger = new PrintStream(new OtelLogOutputStream(buildInfo, w3cTraceContext, getLogEmitter()), false, "UTF-8");
+                logger = new PrintStream(new OtelLogOutputStream(buildInfo, w3cTraceContext, getLogEmitter(), clock), false, "UTF-8");
             } catch (UnsupportedEncodingException e) {
                 throw new AssertionError(e);
             }
         }
-
         return logger;
     }
 
@@ -86,26 +95,31 @@ abstract class OtelLogSenderBuildListener implements BuildListener, Closeable {
     static final class OtelLogSenderBuildListenerOnController extends OtelLogSenderBuildListener {
         private static final long serialVersionUID = 1;
 
-        transient LogEmitter logEmitter;
+        private final static Logger logger = Logger.getLogger(OtelLogSenderBuildListenerOnController.class.getName());
 
-        public OtelLogSenderBuildListenerOnController(@Nonnull BuildInfo buildInfo) {
-            super(buildInfo);
-        }
-
-        public OtelLogSenderBuildListenerOnController(@Nonnull BuildInfo buildInfo, @Nonnull FlowNode node) {
-            super(buildInfo, node);
+        public OtelLogSenderBuildListenerOnController(@Nonnull BuildInfo buildInfo, @Nonnull Map<String, String> otelConfigProperties, @Nonnull Map<String, String> otelResourceAttributes) {
+            super(buildInfo, otelConfigProperties, otelResourceAttributes);
+            logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnController()");
+            JenkinsJVM.checkJenkinsJVM();
         }
 
         @Override
         public LogEmitter getLogEmitter() {
-            if (logEmitter == null) {
-                logEmitter = OpenTelemetrySdkProvider.get().getLogEmitter();
-            }
-            return logEmitter;
+            JenkinsJVM.checkJenkinsJVM();
+            return OpenTelemetrySdkProvider.get().getLogEmitter();
         }
 
+        /**
+         * Java serialization to send the {@link OtelLogSenderBuildListener} from the Jenkins Controller to a Jenkins Agent.
+         * Swap the instance from a {@link OtelLogSenderBuildListenerOnController} to a {@link OtelLogSenderBuildListenerOnAgent}
+         * to change the implementation of {@link #getLogEmitter()}.
+         *
+         * See https://docs.oracle.com/en/java/javase/11/docs/specs/serialization/output.html#the-writereplace-method
+         */
         private Object writeReplace() throws IOException {
-            return new OtelLogSenderBuildListenerOnAgent(buildInfo);
+            logger.log(Level.FINEST, () -> "writeReplace()");
+            JenkinsJVM.checkJenkinsJVM();
+            return new OtelLogSenderBuildListenerOnAgent(buildInfo, otelConfigProperties, otelResourceAttributes);
         }
     }
 
@@ -114,20 +128,72 @@ abstract class OtelLogSenderBuildListener implements BuildListener, Closeable {
      * that retrieves the {@link LogEmitter} instantiating an {@link io.opentelemetry.sdk.OpenTelemetrySdk} with
      * configuration parameters transmitted via Jenkins remoting serialization
      */
-    public static class OtelLogSenderBuildListenerOnAgent extends OtelLogSenderBuildListener {
+    private static class OtelLogSenderBuildListenerOnAgent extends OtelLogSenderBuildListener {
         private static final long serialVersionUID = 1;
 
-        private final static Logger LOGGER = Logger.getLogger(OtelLogSenderBuildListenerOnAgent.class.getName());
-        transient LogEmitter logEmitter;
+        private final static Logger logger = Logger.getLogger(OtelLogSenderBuildListenerOnAgent.class.getName());
 
-        public OtelLogSenderBuildListenerOnAgent(@Nonnull BuildInfo buildInfo) {
-            super(buildInfo);
+        /**
+         * Used to determine the clock adjustment on the Jenkins Agent.
+         */
+        private long instantInNanosOnJenkinsControllerBeforeSerialization;
+
+        /**
+         * Intended to be exclusively called on the Jenkins Controller by {@link OtelLogSenderBuildListenerOnController#writeReplace()}.
+         */
+        private OtelLogSenderBuildListenerOnAgent(@Nonnull BuildInfo buildInfo, @Nonnull Map<String, String> otelConfigProperties, @Nonnull Map<String, String> otelResourceAttributes) {
+            super(buildInfo, otelConfigProperties, otelResourceAttributes);
+            logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnAgent()");
+            JenkinsJVM.checkJenkinsJVM();
         }
 
+        /**
+         *
+         * @return
+         */
         @Override
         public LogEmitter getLogEmitter() {
-            // will return a noop LogEmitter
-            return SdkLogEmitterProvider.builder().build().get("jenkins-on-agent");
+            JenkinsJVM.checkNotJenkinsJVM();
+            return GlobalOpenTelemetrySdk.getLogEmitter();
+        }
+
+        private void writeObject(ObjectOutputStream stream) throws IOException {
+            logger.log(Level.FINEST, () -> "writeObject(): set instantInNanosOnJenkinsControllerBeforeSerialization");
+            JenkinsJVM.checkJenkinsJVM();
+            this.instantInNanosOnJenkinsControllerBeforeSerialization = Clock.getDefault().now();
+            stream.defaultWriteObject();
+        }
+
+
+        private Object readResolve() {
+            adjustClock();
+            GlobalOpenTelemetrySdk.configure(
+                otelConfigProperties,
+                otelResourceAttributes,
+                true /* register shutdown hook when on the Jenkins agents */);
+            return this;
+        }
+
+        /**
+         * Timestamps of the logs emitted by the Jenkins Agents must be chronologically ordered with the timestamps of
+         * the logs & traces emitted on the Jenkins controller even if the system clock are not perfectly synchronized
+         */
+        private void adjustClock() {
+            JenkinsJVM.checkNotJenkinsJVM();
+            if (instantInNanosOnJenkinsControllerBeforeSerialization == 0) {
+                logger.log(Level.INFO, () -> "adjustClock(): unexpected timeBeforeSerialization of 0ns, don't adjust the clock");
+                this.clock = Clock.getDefault();
+            } else {
+                long instantInNanosOnJenkinsAgentAtDeserialization = Clock.getDefault().now();
+                long offsetInNanosOnJenkinsAgent = instantInNanosOnJenkinsControllerBeforeSerialization - instantInNanosOnJenkinsAgentAtDeserialization;
+                logger.log(Level.INFO, () ->
+                    "adjustClock(): " +
+                        "offsetInNanos: " + TimeUnit.MILLISECONDS.convert(offsetInNanosOnJenkinsAgent, TimeUnit.NANOSECONDS) + "ms / " + offsetInNanosOnJenkinsAgent + "ns. "+
+                        "A negative offset of few milliseconds is expected due to the latency of the communication from the Jenkins Controller to the Jenkins Agent. " +
+                        "Higher offsets indicate a synchronization gap of the system clocks between the Jenkins Controller that will be work arounded by the clock adjustment."
+                );
+                this.clock = OffsetClock.offsetClock(offsetInNanosOnJenkinsAgent);
+            }
         }
     }
 }
