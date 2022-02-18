@@ -19,7 +19,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobUrlLatestBuildConsole(){
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "my-war/master", null, "/job/{job.fullName}/lastBuild/console");
+            "my-war/master", null, "/job/:jobFullName/lastBuild/console");
         String pathInfo = "/job/my-war/job/master/lastBuild/console";
         verifyJobUrlParsing(expected, pathInfo);
     }
@@ -30,7 +30,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobUrlLastBuild(){
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "my-war/master", null, "/job/{job.fullName}/lastBuild");
+            "my-war/master", null, "/job/:jobFullName/lastBuild");
         String pathInfo = "/job/my-war/job/master/lastBuild/";
         verifyJobUrlParsing(expected, pathInfo);
     }
@@ -40,7 +40,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobUrlLastBuildNoTrailingSlash(){
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "my-war/master", null, "/job/{job.fullName}/lastBuild");
+            "my-war/master", null, "/job/:jobFullName/lastBuild");
         String pathInfo = "/job/my-war/job/master/lastBuild";
         verifyJobUrlParsing(expected, pathInfo);
     }
@@ -48,7 +48,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobUrlBuildNoTrailingSlash(){
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "my-war/master", 3l, "/job/{job.fullName}/{run.number}");
+            "my-war/master", 3l, "/job/:jobFullName/:runNumber");
         String pathInfo = "/job/my-war/job/master/3";
         verifyJobUrlParsing(expected, pathInfo);
     }
@@ -56,7 +56,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobUrlBuildConsole(){
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "my-war/master", 3l, "/job/{job.fullName}/{run.number}/console");
+            "my-war/master", 3l, "/job/:jobFullName/:runNumber/console");
         String pathInfo = "/job/my-war/job/master/3/console";
         verifyJobUrlParsing(expected, pathInfo);
     }
@@ -64,7 +64,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobUrl(){
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "my-war/master", null, "/job/{job.fullName}");
+            "my-war/master", null, "/job/:jobFullName");
         String pathInfo = "/job/my-war/job/master/";
         verifyJobUrlParsing(expected, pathInfo);
     }

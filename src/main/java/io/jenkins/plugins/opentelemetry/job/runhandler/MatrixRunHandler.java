@@ -46,7 +46,7 @@ public class MatrixRunHandler implements RunHandler {
 
             MatrixProject matrixProject = matrixConfiguration.getParent();
             String spanName = expandJobName ? run.getParent().getFullName() : matrixProject.getFullName() + "/execution";
-            SpanBuilder spanBuilder = tracer.spanBuilder("BUILD" + spanName);
+            SpanBuilder spanBuilder = tracer.spanBuilder(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
             Combination combination = matrixConfiguration.getCombination();
             List<String> axisNames = new ArrayList<>();
             List<String> axisValues = new ArrayList<>();
@@ -62,7 +62,7 @@ public class MatrixRunHandler implements RunHandler {
             return spanBuilder;
         } else if (run instanceof MatrixBuild) {
             MatrixBuild matrixBuild = (MatrixBuild) run;
-            return tracer.spanBuilder("BUILD" + matrixBuild.getParent().getFullName());
+            return tracer.spanBuilder(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + matrixBuild.getParent().getFullName());
         } else {
             throw new IllegalStateException("Unsupported run type " + run);
         }

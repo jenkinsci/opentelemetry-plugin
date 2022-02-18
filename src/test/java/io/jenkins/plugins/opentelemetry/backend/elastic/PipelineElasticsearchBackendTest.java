@@ -23,6 +23,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.DockerComposeContainer;
@@ -33,6 +34,7 @@ import java.util.List;
 
 import static org.junit.Assume.assumeTrue;
 
+@Ignore
 public class PipelineElasticsearchBackendTest {
 
     public static final String CRED_ID = "credID";
