@@ -45,13 +45,19 @@
                 <f:entry field="ignoredSteps" title="Steps to be ignored (comma-separated)" description="e.g. 'dir,echo,println'">
                     <f:textbox />
                 </f:entry>
-                <f:entry field="disabledResourceProviders" title="Disabled Resource Providers" description="Coma separated list of class names. Aka 'OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS'">
+                <f:entry field="disabledResourceProviders" title="Disabled resource providers" description="Coma separated list of class names. Aka 'OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS'">
                     <f:textbox />
                 </f:entry>
-                <f:entry title="Configuration Properties" field="configurationProperties" description="OpenTelemetry configuration properties">
+                <f:entry title="Configuration properties" field="configurationProperties" description="Additional OpenTelemetry SDK configuration properties.">
                     <f:textarea />
                 </f:entry>
-                <f:entry title="Resource Attributes" description="See 'OTEL_RESOURCE_ATTRIBUTES'. OpenTelemetry Resource Attributes are added to spans and metrics as contextual data">
+                <f:entry title="Noteworthy active configuration properties" description="Noteworthy config properties of the active OpenTelemetry SDK.">
+                    <textarea rows="10" cols="100" wrap="off" readonly="readonly" style="overflow:scroll;background-color:lightgrey">
+                        ${instance.noteworthyConfigPropertiesAsText}
+                    </textarea>
+                </f:entry>
+
+                <f:entry title="Active resource attributes" description="Resource attributes of the active OpenTelemetry SDK. See 'OTEL_RESOURCE_ATTRIBUTES'.">
                     <textarea rows="10" cols="100" wrap="off" readonly="readonly" style="overflow:scroll;background-color:lightgrey">
                         ${instance.resourceAsText}
                     </textarea>

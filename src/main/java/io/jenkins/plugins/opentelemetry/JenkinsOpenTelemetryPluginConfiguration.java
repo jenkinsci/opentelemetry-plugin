@@ -15,10 +15,11 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
@@ -93,8 +94,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     /**
      * Interruption causes that should mark the span as error because they are external interruptions.
-     *
+     * <p>
      * TODO make this list configurable and accessible through {@link io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties#getList(String)}
+     *
      * @see CauseOfInterruption
      * @see org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
      */
@@ -133,9 +135,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Exception parsing configuration properties", e);
         }
-        Map<String, String> configurationProperties = new HashMap(properties);
+
+        Map<String, String> configurationProperties = new HashMap();
+        getObservabilityBackends().forEach(backend -> configurationProperties.putAll(backend.getOtelConfigurationProperties()));
         configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_VERSION.getKey(), OtelUtils.getJenkinsVersion());
         configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_URL.getKey(), this.jenkinsLocationConfiguration.getUrl());
+        properties.forEach((k, v) -> configurationProperties.put(Objects.toString(k, "#null#"), Objects.toString(v, "#null#")));
+
         return new OpenTelemetryConfiguration(
             Optional.ofNullable(this.getEndpoint()),
             Optional.ofNullable(this.getTrustedCertificatesPem()),
@@ -147,6 +153,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             Optional.ofNullable(this.getDisabledResourceProviders()),
             configurationProperties);
     }
+
     @PostConstruct
     public void initializeOpenTelemetry() {
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
@@ -159,7 +166,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
-     *
      * @return {@code null} or endpoint URI prefixed by a protocol scheme ("http://", "https://"...)
      */
     @CheckForNull
@@ -325,8 +331,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * For visualisation in config.jelly
      */
     @Nonnull
-    public String getVisualisationObservabilityBackendsString(){
-        return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(d-> d.getDisplayName()).collect(Collectors.joining(", "));
+    public String getVisualisationObservabilityBackendsString() {
+        return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(d -> d.getDisplayName()).collect(Collectors.joining(", "));
     }
 
     @Nonnull
@@ -344,10 +350,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         if (descriptor instanceof CoreStep.DescriptorImpl) {
             Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
             if (arguments.get("delegate") instanceof UninstantiatedDescribable) {
-              UninstantiatedDescribable describable = (UninstantiatedDescribable) arguments.get("delegate");
-              if (describable != null) {
-                  return SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
-              }
+                UninstantiatedDescribable describable = (UninstantiatedDescribable) arguments.get("delegate");
+                if (describable != null) {
+                    return SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
+                }
             }
         }
         return descriptor;
@@ -376,16 +382,16 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Nonnull
     public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nullable Descriptor<? extends Describable> descriptor) {
         StepPlugin data = loadedStepsPlugins.get(stepName);
-        if (data!=null) {
+        if (data != null) {
             LOGGER.log(Level.FINEST, " found the plugin for the step '" + stepName + "' - " + data);
             return data;
         }
 
         data = new StepPlugin();
         Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins!=null && descriptor!=null) {
+        if (jenkins != null && descriptor != null) {
             PluginWrapper wrapper = jenkins.getPluginManager().whichPlugin(descriptor.clazz);
-            if (wrapper!=null) {
+            if (wrapper != null) {
                 data = new StepPlugin(wrapper.getShortName(), wrapper.getVersion());
                 addStepPlugin(stepName, data);
             }
@@ -435,11 +441,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nonnull
-    public Resource getResource(){
+    public Resource getResource() {
         if (this.openTelemetrySdkProvider == null) {
             return Resource.empty();
         } else {
-            return this.openTelemetrySdkProvider.resource;
+            return this.openTelemetrySdkProvider.getResource();
         }
     }
 
@@ -448,11 +454,32 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * cyrille doesn't know how to format the content with linebreaks in a html teaxtarea
      */
     @Nonnull
-    public String getResourceAsText(){
+    public String getResourceAsText() {
         return this.getResource().getAttributes().asMap().entrySet().stream().
             map(e -> e.getKey() + "=" + e.getValue()).
             collect(Collectors.joining("\r\n"));
     }
+
+    @Nonnull
+    public ConfigProperties getConfigProperties() {
+        if (this.openTelemetrySdkProvider == null) {
+            return ConfigPropertiesUtils.emptyConfig();
+        } else {
+            return this.openTelemetrySdkProvider.getConfig();
+        }
+    }
+
+    /**
+     * Used in io/jenkins/plugins/opentelemetry/JenkinsOpenTelemetryPluginConfiguration/config.jelly because
+     * cyrille doesn't know how to format the content with linebreaks in a html teaxtarea
+     */
+    @Nonnull
+    public String getNoteworthyConfigPropertiesAsText() {
+        return OtelUtils.noteworthyConfigProperties(getConfigProperties()).entrySet().stream().
+            map(e -> e.getKey() + "=" + e.getValue()).
+            collect(Collectors.joining("\r\n"));
+    }
+
 
     protected Object readResolve() {
         if (this.disabledResourceProviders == null) {
@@ -485,7 +512,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * @return ok if the form input was valid
      */
     public FormValidation doCheckExportOtelConfigurationAsEnvironmentVariables(@QueryParameter String value) {
-        if(value.equals("false")) {
+        if (value.equals("false")) {
             return FormValidation.ok();
         }
         return FormValidation.warning("Note that OpenTelemetry credentials, if configured, will be exposed as environment variables (likely in OTEL_EXPORTER_OTLP_HEADERS)");
@@ -521,9 +548,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         @Override
         public String toString() {
             return "StepPlugin{" +
-                    "name=" + name +
-                    ", version=" + version +
-                    '}';
+                "name=" + name +
+                ", version=" + version +
+                '}';
         }
     }
 }

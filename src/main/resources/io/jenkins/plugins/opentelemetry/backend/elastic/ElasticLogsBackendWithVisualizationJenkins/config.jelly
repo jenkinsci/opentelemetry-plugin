@@ -1,0 +1,19 @@
+<?jelly escape-by-default='true'?>
+<!--
+  ~ Copyright The Original Author or Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form"
+         xmlns:c="/lib/credentials">
+     <f:entry title="${%Elasticsearch URL}" field="elasticsearchUrl"
+                 description="e.g. 'https://elasticsearch.example.com:9200'">
+            <f:textbox checkMethod="post"/>
+        </f:entry>
+        <f:entry title="${%Elasticsearch credentials}" field="elasticsearchCredentialsId"
+                 description="Requires read permission on the 'logs-apm.app-*' index template">
+            <c:select checkMethod="post"/>
+        </f:entry>
+        <f:validateButton title="${%Validate Elasticsearch configuration}" progress="Validating..." method="validate/"
+                          with="elasticsearchUrl,elasticsearchCredentialsId"/>
+</j:jelly>

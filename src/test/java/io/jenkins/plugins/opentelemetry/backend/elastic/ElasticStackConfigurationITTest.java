@@ -37,49 +37,49 @@ public class ElasticStackConfigurationITTest {
         assumeTrue(DockerClientFactory.instance().isDockerAvailable());
     }
 
-    @Before
-    public void setUp() throws Exception {
-        elasticStackConfiguration = ExtensionList.lookupSingleton(ElasticBackend.class);
-        descriptor = ((ElasticBackend.DescriptorImpl) elasticStackConfiguration.getDescriptor());
-        SystemCredentialsProvider.getInstance().getCredentials().add(
-            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, CRED_ID, "", ElasticsearchContainer.USER_NAME,
-                ElasticsearchContainer.PASSWORD
-            ));
-        SystemCredentialsProvider.getInstance().getCredentials().add(
-            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, WRONG_CREDS, "", "foo", "bar"));
-        elasticStackConfiguration.setElasticsearchCredentialsId(CRED_ID);
-        elasticStackConfiguration.setElasticsearchUrl(esContainer.getUrl());
-        esContainer.createLogIndex();
-    }
-
-    @Test
-    public void testCredentialsDoValidate() {
-        String kibanaBaseUrl = "http://kibana.example.com"; // FIXME get kibana url
-        assertEquals(descriptor.doValidate(CRED_ID, esContainer.getUrl(), kibanaBaseUrl).kind, FormValidation.Kind.OK);
-
-        assertEquals(descriptor.doValidate(WRONG_CREDS, esContainer.getUrl(), kibanaBaseUrl).kind,
-            FormValidation.Kind.ERROR
-        );
-        assertEquals(descriptor.doValidate(CRED_ID, "nowhere", kibanaBaseUrl).kind, FormValidation.Kind.ERROR);
-    }
-
-    @Test
-    public void testIndexPatternDoValidate()  {
-        String kibanaBaseUrl = "http://kibana.example.com"; // FIXME get kibana url
-        assertEquals(FormValidation.Kind.OK, descriptor.doValidate(CRED_ID, esContainer.getUrl(), kibanaBaseUrl).kind);
-        assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "pattern").kind);
-        assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "").kind);
-        assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, "", "pattern").kind);
-    }
-
-    @Test
-    public void testDoFillCredentialsIdItems() {
-        assertFalse(descriptor.doFillElasticsearchCredentialsIdItems(null, CRED_ID).isEmpty());
-    }
-
-    @Test
-    public void testDoCheckCredentialsId() {
-        assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, CRED_ID).kind, FormValidation.Kind.OK);
-        assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, "foo").kind, FormValidation.Kind.WARNING);
-    }
+//    @Before
+//    public void setUp() throws Exception {
+//        elasticStackConfiguration = ExtensionList.lookupSingleton(ElasticBackend.class);
+//        descriptor = ((ElasticBackend.DescriptorImpl) elasticStackConfiguration.getDescriptor());
+//        SystemCredentialsProvider.getInstance().getCredentials().add(
+//            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, CRED_ID, "", ElasticsearchContainer.USER_NAME,
+//                ElasticsearchContainer.PASSWORD
+//            ));
+//        SystemCredentialsProvider.getInstance().getCredentials().add(
+//            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, WRONG_CREDS, "", "foo", "bar"));
+//        elasticStackConfiguration.setElasticsearchCredentialsId(CRED_ID);
+//        elasticStackConfiguration.setElasticsearchUrl(esContainer.getUrl());
+//        esContainer.createLogIndex();
+//    }
+//
+//    @Test
+//    public void testCredentialsDoValidate() {
+//        String kibanaBaseUrl = "http://kibana.example.com"; // FIXME get kibana url
+//        assertEquals(descriptor.doValidate(CRED_ID, esContainer.getUrl(), kibanaBaseUrl).kind, FormValidation.Kind.OK);
+//
+//        assertEquals(descriptor.doValidate(WRONG_CREDS, esContainer.getUrl(), kibanaBaseUrl).kind,
+//            FormValidation.Kind.ERROR
+//        );
+//        assertEquals(descriptor.doValidate(CRED_ID, "nowhere", kibanaBaseUrl).kind, FormValidation.Kind.ERROR);
+//    }
+//
+//    @Test
+//    public void testIndexPatternDoValidate()  {
+//        String kibanaBaseUrl = "http://kibana.example.com"; // FIXME get kibana url
+//        assertEquals(FormValidation.Kind.OK, descriptor.doValidate(CRED_ID, esContainer.getUrl(), kibanaBaseUrl).kind);
+//        assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "pattern").kind);
+//        assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "").kind);
+//        assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, "", "pattern").kind);
+//    }
+//
+//    @Test
+//    public void testDoFillCredentialsIdItems() {
+//        assertFalse(descriptor.doFillElasticsearchCredentialsIdItems(null, CRED_ID).isEmpty());
+//    }
+//
+//    @Test
+//    public void testDoCheckCredentialsId() {
+//        assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, CRED_ID).kind, FormValidation.Kind.OK);
+//        assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, "foo").kind, FormValidation.Kind.WARNING);
+//    }
 }

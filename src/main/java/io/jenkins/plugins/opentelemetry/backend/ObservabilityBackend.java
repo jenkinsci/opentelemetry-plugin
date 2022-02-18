@@ -20,6 +20,7 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
@@ -32,8 +33,6 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     private final static Logger LOGGER = Logger.getLogger(ObservabilityBackend.class.getName());
 
     private String name;
-
-    private boolean sendBuildLogsThroughOpenTelemetry;
 
     @CheckForNull
     public abstract String getTraceVisualisationUrlTemplate();
@@ -80,15 +79,6 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     @DataBoundSetter
     public void setName(String name) {
         this.name = name;
-    }
-
-    public boolean isSendBuildLogsThroughOpenTelemetry() {
-        return sendBuildLogsThroughOpenTelemetry;
-    }
-
-    @DataBoundSetter
-    public void setSendBuildLogsThroughOpenTelemetry(boolean sendBuildLogsThroughOpenTelemetry) {
-        this.sendBuildLogsThroughOpenTelemetry = sendBuildLogsThroughOpenTelemetry;
     }
 
     /**
@@ -155,6 +145,19 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
      */
     public static DescriptorExtensionList<ObservabilityBackend, ObservabilityBackendDescriptor> allDescriptors() {
         return Jenkins.get().getDescriptorList(ObservabilityBackend.class);
+    }
+
+    /**
+     * Extension point for Observability backends to contribute to the configuration properties used to instantiate the OpenTelemetry SDK.
+     */
+    @Nonnull
+    public Map<String, String> getOtelConfigurationProperties() {
+        LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
+        if (logStorageRetriever != null) {
+            LOGGER.log(Level.FINE, ()-> "Configure OpenTelemetry SDK to export logs");
+            return Collections.singletonMap("otel.logs.exporter", "otlp");
+        }
+        return Collections.emptyMap();
     }
 
     public static abstract class ObservabilityBackendDescriptor extends Descriptor<ObservabilityBackend> implements Comparable<ObservabilityBackendDescriptor> {

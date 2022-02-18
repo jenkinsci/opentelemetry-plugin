@@ -5,21 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry.backend;
 
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-import groovy.text.GStringTemplateEngine;
-import groovy.text.Template;
 import hudson.Extension;
-import hudson.Util;
-import hudson.model.Item;
-import hudson.security.ACL;
 import hudson.util.FormValidation;
-import hudson.util.ListBoxModel;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
-import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import io.opentelemetry.api.trace.Tracer;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -29,7 +18,6 @@ import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -37,7 +25,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -67,12 +54,7 @@ public class ElasticBackend extends ObservabilityBackend {
 
     private String kibanaDashboardUrlParameters;
 
-    @CheckForNull
-    private String elasticsearchUrl;
-    @CheckForNull
-    private String elasticsearchCredentialsId;
-
-    private Template buildLogsVisualizationUrlGTemplate;
+    private ElasticLogsBackend elasticLogsBackend;
 
     @DataBoundConstructor
     public ElasticBackend() {
@@ -156,47 +138,22 @@ public class ElasticBackend extends ObservabilityBackend {
         }
     }
 
-    public Template getBuildLogsVisualizationUrlTemplate() {
-        // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
+    public ElasticLogsBackend getElasticLogsBackend() {
+        return elasticLogsBackend;
+    }
 
-        if (this.buildLogsVisualizationUrlGTemplate == null) {
-            try {
-                String kibanaSpaceBaseUrl;
-                if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
-                    kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
-                } else {
-                    kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8.name());
-                }
-
-                String urlTemplate = kibanaSpaceBaseUrl + "/app/logs/stream?" +
-                    "logPosition=(end:now,start:now-1d,streamLive:!f)&" +
-                    "logFilter=(language:kuery,query:%27trace.id:${traceId}%27)&";
-                GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
-                try {
-                    this.buildLogsVisualizationUrlGTemplate = gStringTemplateEngine.createTemplate(urlTemplate);
-                } catch (IOException | ClassNotFoundException e) {
-                    LOGGER.log(Level.WARNING, "Invalid Trace Visualisation URL Template '" + this.getTraceVisualisationUrlTemplate() + "'", e);
-                    this.buildLogsVisualizationUrlGTemplate = ERROR_TEMPLATE;
-                }
-            } catch (UnsupportedEncodingException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-        return buildLogsVisualizationUrlGTemplate;
+    @DataBoundSetter
+    public void setElasticLogsBackend(ElasticLogsBackend elasticLogsBackend) {
+        this.elasticLogsBackend = elasticLogsBackend;
     }
 
     @Nullable
     @Override
     public LogStorageRetriever getLogStorageRetriever() {
-        if (!isSendBuildLogsThroughOpenTelemetry()) {
+        if (elasticLogsBackend == null) {
             return null;
-        }
-        Template buildLogsVisualizationUrlTemplate = getBuildLogsVisualizationUrlTemplate();
-        if (StringUtils.isBlank(elasticsearchUrl)) {
-            return null; // FIXME TODO
         } else {
-            Tracer tracer = OpenTelemetrySdkProvider.get().getTracer();
-            return new ElasticsearchLogStorageRetriever(this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId), buildLogsVisualizationUrlTemplate, tracer);
+            return elasticLogsBackend.getLogStorageRetriever();
         }
     }
 
@@ -236,26 +193,6 @@ public class ElasticBackend extends ObservabilityBackend {
         this.displayKibanaDashboardLink = displayKibanaDashboardLink;
     }
 
-    @DataBoundSetter
-    public void setElasticsearchCredentialsId(@CheckForNull String elasticsearchCredentialsId) {
-        this.elasticsearchCredentialsId = elasticsearchCredentialsId;
-    }
-
-    @CheckForNull
-    public String getElasticsearchCredentialsId() {
-        return elasticsearchCredentialsId;
-    }
-
-    @CheckForNull
-    public String getElasticsearchUrl() {
-        return elasticsearchUrl;
-    }
-
-    @DataBoundSetter
-    public void setElasticsearchUrl(@CheckForNull String elasticsearchUrl) {
-        this.elasticsearchUrl = Util.fixNull(elasticsearchUrl);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -266,13 +203,12 @@ public class ElasticBackend extends ObservabilityBackend {
             Objects.equals(kibanaSpaceIdentifier, that.kibanaSpaceIdentifier) &&
             Objects.equals(kibanaDashboardTitle, that.kibanaDashboardTitle) &&
             Objects.equals(kibanaDashboardUrlParameters, that.kibanaDashboardUrlParameters)
-            && Objects.equals(elasticsearchUrl, that.elasticsearchUrl)
-            && Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
+            && Objects.equals(elasticLogsBackend, that.elasticLogsBackend);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(displayKibanaDashboardLink, kibanaBaseUrl, kibanaSpaceIdentifier, kibanaDashboardTitle, kibanaDashboardUrlParameters, elasticsearchUrl, elasticsearchCredentialsId);
+        return Objects.hash(displayKibanaDashboardLink, kibanaBaseUrl, kibanaSpaceIdentifier, kibanaDashboardTitle, kibanaDashboardUrlParameters, elasticLogsBackend);
     }
 
     @Extension
@@ -308,77 +244,6 @@ public class ElasticBackend extends ObservabilityBackend {
                 return FormValidation.error(ERROR_MALFORMED_URL, e);
             }
             return FormValidation.ok();
-        }
-
-        @RequirePOST
-        public FormValidation doCheckElasticsearchUrl(@QueryParameter("elasticsearchUrl") String url) {
-            if (StringUtils.isEmpty(url)) {
-                return FormValidation.ok();
-            }
-            try {
-                new URL(url);
-            } catch (MalformedURLException e) {
-                return FormValidation.error(ERROR_MALFORMED_URL, e);
-            }
-            return FormValidation.ok();
-        }
-
-        @RequirePOST
-        public ListBoxModel doFillElasticsearchCredentialsIdItems(Item context, @QueryParameter String elasticsearchCredentialsId) {
-            if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
-                || context != null && !context.hasPermission(context.CONFIGURE)) {
-                return new StandardListBoxModel();
-            }
-
-            return new StandardListBoxModel().includeEmptyValue()
-                .includeAs(ACL.SYSTEM, context, StandardUsernameCredentials.class)
-                .includeCurrentValue(elasticsearchCredentialsId);
-        }
-
-        @RequirePOST
-        public FormValidation doCheckElasticsearchCredentialsId(Item context, @QueryParameter String elasticsearchCredentialsId) {
-            if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
-                || context != null && !context.hasPermission(context.CONFIGURE)) {
-                return FormValidation.ok();
-            }
-
-            try {
-                ElasticsearchLogStorageRetriever.getCredentials(elasticsearchCredentialsId);
-            } catch (NoSuchElementException e) {
-                return FormValidation.warning("The credentials are not valid.");
-            }
-            return FormValidation.ok();
-        }
-
-        @RequirePOST
-        public FormValidation doValidate(@QueryParameter String elasticsearchUrl, @QueryParameter String elasticsearchCredentialsId, @QueryParameter String kibanaBaseUrl) {
-            FormValidation elasticsearchUrlValidation = doCheckElasticsearchUrl(elasticsearchUrl);
-            if (elasticsearchUrlValidation.kind != FormValidation.Kind.OK) {
-                return elasticsearchUrlValidation;
-            }
-
-            try {
-                Tracer tracer = OpenTelemetrySdkProvider.get().getTracer();
-                ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
-                    elasticsearchUrl,
-                    ElasticsearchLogStorageRetriever.getCredentials(elasticsearchCredentialsId),
-                    ERROR_TEMPLATE, // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check index existence
-                    tracer);
-
-                if (elasticsearchLogStorageRetriever.indexTemplateExists()) {
-                    return FormValidation.ok("success");
-                } else {
-                    return FormValidation.error("Logs index pattern not found. Verify you use Elastic 8.0+ with data streams for APM");
-                }
-            } catch (NoSuchElementException e) {
-                return FormValidation.error("Invalid credentials.");
-            } catch (IllegalArgumentException e) {
-                return FormValidation.error(e, e.getMessage());
-            } catch (IOException e) {
-                return FormValidation.error(e, e.getMessage());
-            } catch (Exception e) {
-                return FormValidation.error(e, e.getMessage());
-            }
         }
     }
 }

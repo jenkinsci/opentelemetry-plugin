@@ -28,21 +28,13 @@
             </f:entry>
         </f:section>
         <f:section title="${%Store pipeline logs in Elastic Observability - Tech Preview}">
-            Store Jenkins build logs to Elastic Observability sending them through OpenTelemetry rather than storing them in on disk under the Jenkins Home.
-            <f:entry title="Store Jenkins pipeline logs in Elastic" field="sendBuildLogsThroughOpenTelemetry" description="⚠️ Requires Elastic Observability 8.0+ with APM Server using data streams and require to enable logs forwarding on all traversed OpenTelemetry Collectors">
-                <f:checkbox/>
-            </f:entry>
-        </f:section>
-        <f:section title="${%Render pipeline logs stored in Elastic through Jenkins screens - Tech Preview}">
-            When storing pipeline logs in Elastic, also display logs through the Jenkins log console
-            <f:entry title="${%Elasticsearch URL}" field="elasticsearchUrl" description="e.g. 'https://elasticsearch.example.com:9200'">
-                <f:textbox checkMethod="post" />
-            </f:entry>
-            <f:entry title="${%Elasticsearch credentials}" field="elasticsearchCredentialsId" description="Requires read permission on the 'logs-apm.app-*' index template">
-                <c:select checkMethod="post"/>
-            </f:entry>
-            <f:validateButton title="${%Validate Elasticsearch configuration}" progress="Validating..." method="validate/"
-                              with="elasticsearchUrl,elasticsearchCredentialsId,kibanaBaseUrl"/>
+            Store Jenkins build logs in Elastic Observability sending them through OpenTelemetry rather than storing them in on disk under the Jenkins Home.
+            <j:invokeStatic var="elasticLogsBackendDescriptors" className="io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend" method="all"/>
+            <f:hetero-radio
+                field="elasticLogsBackend"
+                descriptors="${elasticLogsBackendDescriptors}"
+                description="⚠️ Requires Elastic Observability 8.0+ with APM Server using data streams and require to enable logs forwarding on all traversed OpenTelemetry Collectors"
+            />
         </f:section>
     </f:advanced>
 </j:jelly>

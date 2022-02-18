@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -270,17 +271,20 @@ public class OtelUtils {
             "resource: " + prettyPrintResource(autoConfiguredOpenTelemetrySdk.getResource()) +
             "]";
     }
-    public static String prettyPrintConfiguration(ConfigProperties config) {
-        List<String> attributeNames = Lists.newArrayList(
-            "otel.resource.attributes", "otel.service.name",
-            "otel.traces.exporter", "otel.metrics.exporter", "otel.exporter.otlp.endpoint"
-            , "otel.exporter.otlp.traces.endpoint", "otel.exporter.otlp.metrics.endpoint",
-            "otel.exporter.jaeger.endpoint",
-            "otel.exporter.prometheus.port",
-            "otel.logs.exporter");
+    private final static List<String> noteworthyConfigurationPropertyNames = Arrays.asList(
+        "otel.resource.attributes", "otel.service.name",
+        "otel.traces.exporter", "otel.metrics.exporter", "otel.exporter.otlp.endpoint"
+        , "otel.exporter.otlp.traces.endpoint", "otel.exporter.otlp.metrics.endpoint",
+        "otel.exporter.jaeger.endpoint",
+        "otel.exporter.prometheus.port",
+        "otel.logs.exporter");
+    private final static List<AttributeKey> noteworthyResourceAttributeKeys = Arrays.asList(
+        ResourceAttributes.SERVICE_NAME, ResourceAttributes.SERVICE_NAMESPACE, ResourceAttributes.SERVICE_VERSION
+    ) ;
 
+    public static String prettyPrintConfiguration(ConfigProperties config) {
         Map<String, String> message = new LinkedHashMap<>();
-        for (String attributeName : attributeNames) {
+        for (String attributeName : noteworthyConfigurationPropertyNames) {
             final String attributeValue = config.getString(attributeName);
             if (attributeValue != null) {
                 message.put(attributeName, attributeValue);
@@ -289,13 +293,19 @@ public class OtelUtils {
         return message.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).collect(Collectors.joining(", "));
     }
 
-    public static String prettyPrintResource(Resource resource) {
-        List<AttributeKey> attributeKeys =Arrays.asList(
-            ResourceAttributes.SERVICE_NAME, ResourceAttributes.SERVICE_NAMESPACE, ResourceAttributes.SERVICE_VERSION
-        ) ;
+    public static Map<String, String> noteworthyConfigProperties(ConfigProperties configProperties) {
+        Map<String, String> noteworthyConfigProperties = new TreeMap<>();
+        noteworthyConfigurationPropertyNames.stream().forEach(k -> {
+            if (configProperties.getString(k) != null) {
+                noteworthyConfigProperties.put(k, configProperties.getString(k));
+            }
+        });
+        return noteworthyConfigProperties;
+    }
 
+    public static String prettyPrintResource(Resource resource) {
         Map<String, String> message = new LinkedHashMap<>();
-        for (AttributeKey attributeKey : attributeKeys) {
+        for (AttributeKey attributeKey : noteworthyResourceAttributeKeys) {
             Object attributeValue = resource.getAttribute(attributeKey);
             if (attributeValue != null) {
                 message.put(attributeKey.getKey(), Objects.toString(attributeValue, "#null#"));

@@ -6,6 +6,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithVisualizationJenkins;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -22,7 +23,7 @@ public class ElasticStackConfigurationFormTest {
 
     @Test
     public void testDoCheckElasticsearchUrl() {
-        ElasticBackend.DescriptorImpl config = new ElasticBackend.DescriptorImpl();
+        ElasticLogsBackendWithVisualizationJenkins.DescriptorImpl config = new ElasticLogsBackendWithVisualizationJenkins.DescriptorImpl();
         assertEquals(config.doCheckElasticsearchUrl("http://example.com:1000").kind, FormValidation.Kind.OK);
         assertEquals(config.doCheckElasticsearchUrl("").kind, FormValidation.Kind.OK);
         assertEquals(config.doCheckElasticsearchUrl("foo").kind, FormValidation.Kind.ERROR);
