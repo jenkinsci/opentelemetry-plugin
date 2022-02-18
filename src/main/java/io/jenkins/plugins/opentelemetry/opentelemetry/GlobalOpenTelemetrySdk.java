@@ -23,10 +23,14 @@ import io.opentelemetry.sdk.logs.LogEmitter;
 import io.opentelemetry.sdk.resources.Resource;
 import net.jcip.annotations.GuardedBy;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,141 +45,103 @@ public final class GlobalOpenTelemetrySdk {
 
     private final static Logger logger = Logger.getLogger(GlobalOpenTelemetrySdk.class.getName());
 
-    private static final Object mutex = new Object();
+    private static final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
-    @Nullable
-    private static volatile AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk;
+    /** Used for unit tests */
+    final static AtomicInteger configurationCounter = new AtomicInteger();
 
-    @GuardedBy("mutex")
-    @Nullable
-    private static String jenkinsPluginVersion;
-
-    @GuardedBy("mutex")
-    @Nullable
-    private static LogEmitter logEmitter;
-
-    @GuardedBy("mutex")
-    @Nullable
-    private static Meter meter;
-
-    @GuardedBy("mutex")
-    @Nullable
-    private static Tracer tracer;
-
-    @GuardedBy("mutex")
-    @Nullable
-    private static SdkConfigurationParameters sdkConfigurationParameters;
+    @GuardedBy("readWriteLock")
+    private static volatile OpenTelemetrySdkState openTelemetrySdkState = new NoopOpenTelemetrySdkState();
 
     /**
      * Configure if configuration has changed
-     *
-     * @param configurationProperties
-     * @param resourceAttributes
      */
     public static void configure(Map<String, String> configurationProperties, Map<String, String> resourceAttributes, boolean registerShutDownHook) {
         configure(new SdkConfigurationParameters(configurationProperties, resourceAttributes), registerShutDownHook);
     }
 
     private static void configure(SdkConfigurationParameters newSdkConfigurationParameters, boolean registerShutDownHook) {
-        SdkConfigurationParameters currentSdkConfigurationParameters = GlobalOpenTelemetrySdk.sdkConfigurationParameters;
-
-        if (Objects.equals(newSdkConfigurationParameters, currentSdkConfigurationParameters)) {
-            logger.log(Level.FINEST, () -> "OpenTelemetry SDK configuration has NOT changed, don't reinitialize SDK");
-        } else {
-            synchronized (mutex) {
-                currentSdkConfigurationParameters = GlobalOpenTelemetrySdk.sdkConfigurationParameters;
-                if (Objects.equals(newSdkConfigurationParameters, currentSdkConfigurationParameters)) {
-                    logger.log(Level.FINEST, () -> "OpenTelemetry SDK configuration has NOT changed");
-                } else {
-                    logger.log(Level.FINEST, () -> "Initialize/reinitialize OpenTelemetry SDK...");
-                    shutdown();
-                    autoConfiguredOpenTelemetrySdk = AutoConfiguredOpenTelemetrySdk.builder()
-                        .addPropertiesSupplier(() -> newSdkConfigurationParameters.configurationProperties)
-                        .addResourceCustomizer((resource, configProperties) -> {
-                            AttributesBuilder builder = Attributes.builder();
-                            newSdkConfigurationParameters.resourceAttributes.forEach(builder::put);
-                            return Resource.builder()
-                                .putAll(resource)
-                                .putAll(builder.build())
-                                .build();
-                        })
-                        .registerShutdownHook(registerShutDownHook)
-                        .build();
-                    logger.log(Level.INFO, () -> "OpenTelemetry SDK initialized: " + OtelUtils.prettyPrintOtelSdkConfig(autoConfiguredOpenTelemetrySdk));
-                    jenkinsPluginVersion = Objects.toString(autoConfiguredOpenTelemetrySdk.getResource().getAttribute(JenkinsOtelSemanticAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION), "unknown");
-                    logEmitter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLogEmitterProvider().get(INSTRUMENTATION_NAME);
-                    tracer = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getTracerProvider().get(INSTRUMENTATION_NAME, jenkinsPluginVersion);
-                    meter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getMeter(INSTRUMENTATION_NAME);
-                    sdkConfigurationParameters = newSdkConfigurationParameters;
-                }
+        Lock readLock = readWriteLock.readLock();
+        readLock.lock();
+        try {
+            // VERIFY IF CONFIGURATION HAS CHANGED
+            if (Objects.equals(newSdkConfigurationParameters, openTelemetrySdkState.getSdkConfigurationParameters())) {
+                logger.log(Level.FINEST, () -> "OpenTelemetry SDK configuration has NOT changed, don't reinitialize SDK");
+                return;
             }
+        } finally {
+            readLock.unlock();
         }
+        Lock writeLock = readWriteLock.writeLock();
+        writeLock.lock();
+        try {
+            if (Objects.equals(newSdkConfigurationParameters, openTelemetrySdkState.getSdkConfigurationParameters())) {
+                logger.log(Level.FINEST, () -> "OpenTelemetry SDK configuration has NOT changed");
+                return;
+            }
+            logger.log(Level.FINEST, () -> "Initialize/reinitialize OpenTelemetry SDK...");
+            shutdown();
+            final AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = AutoConfiguredOpenTelemetrySdk.builder()
+                .addPropertiesSupplier(() -> newSdkConfigurationParameters.configurationProperties)
+                .addResourceCustomizer((resource, configProperties) -> {
+                    AttributesBuilder attributesBuilder = Attributes.builder();
+                    newSdkConfigurationParameters.resourceAttributes.forEach(attributesBuilder::put);
+                    return Resource.builder()
+                        .putAll(resource)
+                        .putAll(attributesBuilder.build())
+                        .build();
+                })
+                .registerShutdownHook(registerShutDownHook)
+                .build();
+            openTelemetrySdkState = new OpenTelemetrySdkStateImpl(autoConfiguredOpenTelemetrySdk, newSdkConfigurationParameters);
+            logger.log(Level.INFO, () -> "OpenTelemetry SDK initialized: " + OtelUtils.prettyPrintOtelSdkConfig(autoConfiguredOpenTelemetrySdk));
+            configurationCounter.incrementAndGet();
+        } finally {
+            writeLock.unlock();
+        }
+
     }
 
     public static CompletableResultCode shutdown() {
-        AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = GlobalOpenTelemetrySdk.autoConfiguredOpenTelemetrySdk;
-        CompletableResultCode result;
-        if (autoConfiguredOpenTelemetrySdk == null) {
-            result = CompletableResultCode.ofSuccess();
-        } else {
-            synchronized (mutex) {
-                autoConfiguredOpenTelemetrySdk = GlobalOpenTelemetrySdk.autoConfiguredOpenTelemetrySdk;
-                if (autoConfiguredOpenTelemetrySdk == null) {
-                    result = CompletableResultCode.ofSuccess();
-                } else {
-                    logger.log(Level.INFO, () -> "Shutdown OpenTelemetry " +
-                        OtelUtils.prettyPrintOtelSdkConfig(GlobalOpenTelemetrySdk.autoConfiguredOpenTelemetrySdk) +
-                        "...");
-
-                    result = CompletableResultCode.ofAll(Arrays.asList(
-                        autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkTracerProvider().shutdown(),
-                        autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkMeterProvider().shutdown(),
-                        autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLogEmitterProvider().shutdown()));
-
-                    GlobalOpenTelemetrySdk.autoConfiguredOpenTelemetrySdk = null;
-                    GlobalOpenTelemetrySdk.sdkConfigurationParameters = null;
-                    GlobalOpenTelemetrySdk.jenkinsPluginVersion = null;
-                    GlobalOpenTelemetrySdk.tracer = null;
-                    GlobalOpenTelemetrySdk.meter = null;
-                    GlobalOpenTelemetrySdk.logEmitter = null;
-                    GlobalOpenTelemetry.resetForTest();
-                }
-            }
+        Lock writeLock = readWriteLock.writeLock();
+        writeLock.lock();
+        try {
+            final CompletableResultCode result = openTelemetrySdkState.shutDown();
+            openTelemetrySdkState = new NoopOpenTelemetrySdkState();
+            return result;
+        } finally {
+            writeLock.unlock();
         }
-        return result;
     }
 
     public static LogEmitter getLogEmitter() {
-        if (logEmitter == null) {
-            synchronized (mutex) {
-                if (logEmitter == null) {
-                    logEmitter = NoopLogEmitter.noop();
-                }
-            }
+        Lock readLock = readWriteLock.readLock();
+        readLock.lock();
+        try {
+            return openTelemetrySdkState.getLogEmitter();
+        } finally {
+            readLock.unlock();
         }
-        return logEmitter;
     }
 
     public static Meter getMeter() {
-        if (meter == null) {
-            synchronized (mutex) {
-                if (meter == null) {
-                    meter = MeterProvider.noop().get(INSTRUMENTATION_NAME);
-                }
-            }
+        Lock readLock = readWriteLock.readLock();
+        readLock.lock();
+        try {
+            return openTelemetrySdkState.getMeter();
+        } finally {
+            readLock.unlock();
         }
-        return meter;
     }
 
     public static Tracer getTracer() {
-        if (tracer == null) {
-            synchronized (mutex) {
-                if (tracer == null) {
-                    tracer = TracerProvider.noop().get(INSTRUMENTATION_NAME);
-                }
-            }
+        Lock readLock = readWriteLock.readLock();
+        readLock.lock();
+        try {
+            return openTelemetrySdkState.getTracer();
+        } finally {
+            readLock.unlock();
         }
-        return tracer;
     }
 
     /**
@@ -183,11 +149,12 @@ public final class GlobalOpenTelemetrySdk {
      * or an empty {@link Resource} if the sdk is not configured and noop.
      */
     public static Resource getResource() {
-        AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = GlobalOpenTelemetrySdk.autoConfiguredOpenTelemetrySdk;
-        if (autoConfiguredOpenTelemetrySdk == null) {
-            return Resource.empty();
-        } else {
-            return autoConfiguredOpenTelemetrySdk.getResource();
+        Lock readLock = readWriteLock.readLock();
+        readLock.lock();
+        try {
+            return openTelemetrySdkState.getResource();
+        } finally {
+            readLock.unlock();
         }
     }
 
@@ -196,14 +163,127 @@ public final class GlobalOpenTelemetrySdk {
      * or an empty {@link ConfigProperties} if the sdk is not configured and noop.
      */
     public static ConfigProperties getConfigProperties() {
-        AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = GlobalOpenTelemetrySdk.autoConfiguredOpenTelemetrySdk;
-        if (autoConfiguredOpenTelemetrySdk == null) {
-            return ConfigPropertiesUtils.emptyConfig();
-        } else {
-            return autoConfiguredOpenTelemetrySdk.getConfig();
+        Lock readLock = readWriteLock.readLock();
+        readLock.lock();
+        try {
+            return openTelemetrySdkState.getConfig();
+        } finally {
+            readLock.unlock();
         }
     }
 
+
+    private interface OpenTelemetrySdkState {
+        LogEmitter getLogEmitter();
+
+        Meter getMeter();
+
+        Tracer getTracer();
+
+        Resource getResource();
+
+        ConfigProperties getConfig();
+
+        SdkConfigurationParameters getSdkConfigurationParameters();
+
+        CompletableResultCode shutDown();
+    }
+
+    private static class NoopOpenTelemetrySdkState implements OpenTelemetrySdkState {
+        @Override
+        public LogEmitter getLogEmitter() {
+            return NoopLogEmitter.noop();
+        }
+
+        @Override
+        public Meter getMeter() {
+            return MeterProvider.noop().get(INSTRUMENTATION_NAME);
+        }
+
+        @Override
+        public Tracer getTracer() {
+            return TracerProvider.noop().get(INSTRUMENTATION_NAME);
+        }
+
+        @Override
+        public Resource getResource() {
+            return Resource.empty();
+        }
+
+        @Override
+        public ConfigProperties getConfig() {
+            return ConfigPropertiesUtils.emptyConfig();
+        }
+
+        @Override
+        public SdkConfigurationParameters getSdkConfigurationParameters() {
+            return new SdkConfigurationParameters(Collections.emptyMap(), Collections.emptyMap());
+        }
+
+        @Override
+        public CompletableResultCode shutDown() {
+            return CompletableResultCode.ofSuccess();
+        }
+    }
+
+    private static class OpenTelemetrySdkStateImpl implements OpenTelemetrySdkState {
+        private final AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk;
+        private final LogEmitter logEmitter;
+        private final Meter meter;
+        private final Tracer tracer;
+        private final SdkConfigurationParameters sdkConfigurationParameters;
+
+        OpenTelemetrySdkStateImpl(AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk, SdkConfigurationParameters sdkConfigurationParameters) {
+            this.autoConfiguredOpenTelemetrySdk = autoConfiguredOpenTelemetrySdk;
+            this.sdkConfigurationParameters = sdkConfigurationParameters;
+            String jenkinsPluginVersion = Objects.toString(autoConfiguredOpenTelemetrySdk.getResource().getAttribute(JenkinsOtelSemanticAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION), "#unknown#");
+            this.logEmitter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLogEmitterProvider().get(INSTRUMENTATION_NAME);
+            this.tracer = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getTracerProvider().get(INSTRUMENTATION_NAME, jenkinsPluginVersion);
+            this.meter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getMeter(INSTRUMENTATION_NAME);
+        }
+
+        @Override
+        public LogEmitter getLogEmitter() {
+            return logEmitter;
+        }
+
+        @Override
+        public Meter getMeter() {
+            return meter;
+        }
+
+        @Override
+        public Tracer getTracer() {
+            return tracer;
+        }
+
+        @Override
+        public Resource getResource() {
+            return autoConfiguredOpenTelemetrySdk.getResource();
+        }
+
+        @Override
+        public ConfigProperties getConfig() {
+            return autoConfiguredOpenTelemetrySdk.getConfig();
+        }
+
+        @Override
+        public SdkConfigurationParameters getSdkConfigurationParameters() {
+            return sdkConfigurationParameters;
+        }
+
+        @Override
+        public CompletableResultCode shutDown() {
+            logger.log(Level.INFO, "Shutdown OpenTelemetry " + OtelUtils.prettyPrintOtelSdkConfig(autoConfiguredOpenTelemetrySdk) + "...");
+            final CompletableResultCode result = CompletableResultCode.ofAll(Arrays.asList(
+                autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkTracerProvider().shutdown(),
+                autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkMeterProvider().shutdown(),
+                autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLogEmitterProvider().shutdown()));
+            GlobalOpenTelemetry.resetForTest();
+
+            return result;
+        }
+    }
 
     static class SdkConfigurationParameters {
         final Map<String, String> configurationProperties;

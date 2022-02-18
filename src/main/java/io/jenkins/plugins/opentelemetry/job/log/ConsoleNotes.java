@@ -34,7 +34,6 @@ public class ConsoleNotes {
 
     public static TextAndAnnotations parse(byte[] bytes, int len) {
         assert len > 0 && len <= bytes.length;
-        AttributesBuilder attributes = Attributes.builder();
         int eol = len;
         while (eol > 0) {
             byte c = bytes[eol - 1];
