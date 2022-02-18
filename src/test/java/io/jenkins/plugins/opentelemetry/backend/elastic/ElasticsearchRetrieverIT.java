@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryContext;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.opentelemetry.api.OpenTelemetry;
@@ -33,7 +34,7 @@ public class ElasticsearchRetrieverIT {
         ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
             url,
             new UsernamePasswordCredentials(username, password),
-            kibanaBaseUrl,
+            ObservabilityBackend.ERROR_TEMPLATE /* TODO better URL template */,
             OpenTelemetry.noop().getTracer("test"));
 
         Assert.assertTrue(elasticsearchLogStorageRetriever.indexTemplateExists());

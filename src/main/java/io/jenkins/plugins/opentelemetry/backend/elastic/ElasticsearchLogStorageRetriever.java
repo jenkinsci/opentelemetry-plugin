@@ -19,6 +19,7 @@ import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import groovy.text.Template;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
@@ -45,6 +46,7 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
@@ -73,11 +75,9 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
 
     private final static Logger logger = Logger.getLogger(ElasticsearchLogStorageRetriever.class.getName());
 
-    /**
-     * Space aware kibana base URL
-     */
+
     @Nonnull
-    private final String kibanaBaseUrl;
+    private final Template buildLogsVisualizationUrlTemplate;
 
     @Nonnull
     final transient ElasticsearchClient esClient;
@@ -87,7 +87,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
     /**
      * TODO verify unsername:password auth vs apiKey auth
      */
-    public ElasticsearchLogStorageRetriever(String elasticsearchUrl, Credentials elasticsearchCredentials, String kibanaBaseUrl, Tracer tracer) {
+    public ElasticsearchLogStorageRetriever(String elasticsearchUrl, Credentials elasticsearchCredentials, Template buildLogsVisualizationUrlTemplate, Tracer tracer) {
         if (StringUtils.isBlank(elasticsearchUrl)) {
             throw new IllegalArgumentException("Elasticsearch url cannot be blank");
         }
@@ -102,7 +102,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
         this.esClient = new ElasticsearchClient(elasticsearchTransport);
         this.tracer = tracer;
 
-        this.kibanaBaseUrl = kibanaBaseUrl;
+        this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
     }
 
     @Nonnull
@@ -140,7 +140,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
                 pageNo = context.pageNo;
             }
 
-
             span.setAttribute("query.index", INDEX_TEMPLATE_PATTERNS)
                 .setAttribute("query.size", PAGE_SIZE)
                 .setAttribute("pitId", pitId)
@@ -171,9 +170,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
             ByteBuffer byteBuffer = new ByteBuffer();
 
             try (Writer w = new OutputStreamWriter(byteBuffer, charset)) {
-                String logsVisualizationUrl = kibanaBaseUrl + "/app/logs/stream?" +
-                    "logPosition=(end:now,start:now-1d,streamLive:!f)&" +
-                    "logFilter=(language:kuery,query:%27trace.id:" + traceId + "%27)&";
+                String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(Collections.singletonMap("traceId", traceId)).toString();
                 if (pageNo == 0) {
                     w.write("View logs in Kibana: " + logsVisualizationUrl + "\n\n");
                 }

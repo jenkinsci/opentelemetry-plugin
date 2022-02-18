@@ -88,7 +88,7 @@ public class PipelineElasticsearchBackendTest {
         config.initializeOpenTelemetry();
 
         Credentials credentials = new UsernamePasswordCredentials(ElasticsearchContainer.USER_NAME, ElasticsearchContainer.PASSWORD);
-        elasticsearchRetriever = new ElasticsearchLogStorageRetriever(esEndpoint, credentials, kibanaEndpoint,
+        elasticsearchRetriever = new ElasticsearchLogStorageRetriever(esEndpoint, credentials, ObservabilityBackend.ERROR_TEMPLATE /* TODO  use a better template */,
             OpenTelemetry.noop().getTracer("test"));
     }
 

@@ -48,13 +48,11 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
     @Override
     public void onAttached(Run<?, ?> r) {
         this.run = r;
-        this.pluginConfiguration = ExtensionList.lookupSingleton(JenkinsOpenTelemetryPluginConfiguration.class);
     }
 
     @Override
     public void onLoad(Run<?, ?> r) {
         this.run = r;
-        this.pluginConfiguration = ExtensionList.lookupSingleton(JenkinsOpenTelemetryPluginConfiguration.class);
     }
 
     @Override
@@ -114,7 +112,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
 
     @Nonnull
     public List<ObservabilityBackendLink> getLinks() {
-        List<ObservabilityBackend> tracingCapableBackends = this.pluginConfiguration.getObservabilityBackends()
+        List<ObservabilityBackend> tracingCapableBackends = JenkinsOpenTelemetryPluginConfiguration.get().getObservabilityBackends()
             .stream()
             .filter(backend -> backend.getTraceVisualisationUrlTemplate() != null)
             .collect(Collectors.toList());

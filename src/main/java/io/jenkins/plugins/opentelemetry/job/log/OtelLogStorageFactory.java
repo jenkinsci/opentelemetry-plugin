@@ -11,6 +11,7 @@ import hudson.model.Queue;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.backend.custom.CustomLogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -61,6 +63,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
             LOGGER.log(Level.FINE, () -> "forBuild(): null");
             return null;
         }
+
         try {
             Queue.Executable exec = owner.getExecutable();
             if (exec instanceof Run) {
@@ -78,7 +81,15 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
                 BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getTraceId(), monitoringAction.getSpanId(), buildInfoContext);
                 LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
 
-                LogStorageRetriever logStorageRetriever = JenkinsOpenTelemetryPluginConfiguration.get().getObservabilityBackends().stream().filter(backend -> backend.getLogStorageRetriever() != null).findFirst().get().getLogStorageRetriever();
+                LogStorageRetriever logStorageRetriever = JenkinsOpenTelemetryPluginConfiguration.get().getObservabilityBackends()
+                    .stream()
+                    .filter(backend -> backend.getLogStorageRetriever() != null)
+                    .findFirst()
+                    .map(backend -> backend.getLogStorageRetriever())
+                    .orElseGet(() -> new CustomLogStorageRetriever(
+                        "No observability backend configured to display the build logs for build with traceId: ${traceId}. See documentation: ", "https://plugins.jenkins.io/opentelemetry/"));
+
+
                 return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo, logStorageRetriever, getOpenTelemetrySdkProvider().getTracer()));
             } else {
                 return null;

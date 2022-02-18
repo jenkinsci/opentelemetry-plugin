@@ -21,17 +21,21 @@ import java.util.Map;
 
 public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogStorageRetriever.CustomLogsQueryContext> {
 
-    private final Template pipelineLogsVisualizationUrlTemplate;
-    private final String visualizationTitle;
+    private final Template messageGTemplate;
+    private final Template urlGTemplate;
 
-    public CustomLogStorageRetriever(String pipelineLogsVisualizationUrlTemplate, String visualizationTitle) {
+    public CustomLogStorageRetriever(String messageTemplate, String urlTemplate) {
         GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
         try {
-            this.pipelineLogsVisualizationUrlTemplate = gStringTemplateEngine.createTemplate(pipelineLogsVisualizationUrlTemplate);
+            this.messageGTemplate = gStringTemplateEngine.createTemplate(messageTemplate);
         } catch (IOException | ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
-        this.visualizationTitle = visualizationTitle;
+        try {
+            this.urlGTemplate = gStringTemplateEngine.createTemplate(urlTemplate);
+        } catch (IOException | ClassNotFoundException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     @Nonnull
@@ -53,19 +57,14 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
         Map<String, Object> bindings = new HashMap<>();
         bindings.put("traceId", traceId);
         bindings.put("spanId", spanId);
-
-        String url = pipelineLogsVisualizationUrlTemplate.make(bindings).toString();
-
-        // FIXME emit hyperlink that actually renders as hyperlink in Jenkins console
-        String out = "[view in <a href=\"" + url + "\" target=\"_blank\">" + visualizationTitle + "</a>\n";
-        // HyperlinkNote.encodeTo(url, visualizationTitle)
+        String out =  messageGTemplate.make(bindings).toString() + " " + urlGTemplate.make(bindings).toString();
         byteBuffer.write(out.getBytes(StandardCharsets.UTF_8));
 
         return new LogsQueryResult(byteBuffer, StandardCharsets.UTF_8, true, new CustomLogsQueryContext());
     }
 
 
-    public static class CustomLogsQueryContext implements LogsQueryContext {
+    static class CustomLogsQueryContext implements LogsQueryContext {
 
     }
 }

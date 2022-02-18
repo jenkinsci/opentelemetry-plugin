@@ -33,6 +33,8 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
 
     private String name;
 
+    private boolean sendBuildLogsThroughOpenTelemetry;
+
     @CheckForNull
     public abstract String getTraceVisualisationUrlTemplate();
 
@@ -78,6 +80,15 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     @DataBoundSetter
     public void setName(String name) {
         this.name = name;
+    }
+
+    public boolean isSendBuildLogsThroughOpenTelemetry() {
+        return sendBuildLogsThroughOpenTelemetry;
+    }
+
+    @DataBoundSetter
+    public void setSendBuildLogsThroughOpenTelemetry(boolean sendBuildLogsThroughOpenTelemetry) {
+        this.sendBuildLogsThroughOpenTelemetry = sendBuildLogsThroughOpenTelemetry;
     }
 
     /**

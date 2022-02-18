@@ -7,6 +7,8 @@ package io.jenkins.plugins.opentelemetry.backend;
 
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import groovy.text.GStringTemplateEngine;
+import groovy.text.Template;
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.Item;
@@ -69,6 +71,8 @@ public class ElasticBackend extends ObservabilityBackend {
     private String elasticsearchUrl;
     @CheckForNull
     private String elasticsearchCredentialsId;
+
+    private Template buildLogsVisualizationUrlGTemplate;
 
     @DataBoundConstructor
     public ElasticBackend() {
@@ -152,24 +156,47 @@ public class ElasticBackend extends ObservabilityBackend {
         }
     }
 
+    public Template getBuildLogsVisualizationUrlTemplate() {
+        // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
+
+        if (this.buildLogsVisualizationUrlGTemplate == null) {
+            try {
+                String kibanaSpaceBaseUrl;
+                if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
+                    kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
+                } else {
+                    kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8.name());
+                }
+
+                String urlTemplate = kibanaSpaceBaseUrl + "/app/logs/stream?" +
+                    "logPosition=(end:now,start:now-1d,streamLive:!f)&" +
+                    "logFilter=(language:kuery,query:%27trace.id:${traceId}%27)&";
+                GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
+                try {
+                    this.buildLogsVisualizationUrlGTemplate = gStringTemplateEngine.createTemplate(urlTemplate);
+                } catch (IOException | ClassNotFoundException e) {
+                    LOGGER.log(Level.WARNING, "Invalid Trace Visualisation URL Template '" + this.getTraceVisualisationUrlTemplate() + "'", e);
+                    this.buildLogsVisualizationUrlGTemplate = ERROR_TEMPLATE;
+                }
+            } catch (UnsupportedEncodingException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return buildLogsVisualizationUrlGTemplate;
+    }
+
     @Nullable
     @Override
     public LogStorageRetriever getLogStorageRetriever() {
-        if (StringUtils.isBlank(this.elasticsearchUrl)) {
+        if (!isSendBuildLogsThroughOpenTelemetry()) {
             return null;
+        }
+        Template buildLogsVisualizationUrlTemplate = getBuildLogsVisualizationUrlTemplate();
+        if (StringUtils.isBlank(elasticsearchUrl)) {
+            return null; // FIXME TODO
         } else {
-            String kibanaSpaceBaseUrl;
-            if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
-                kibanaSpaceBaseUrl = getKibanaBaseUrl();
-            } else {
-                try {
-                    kibanaSpaceBaseUrl = getKibanaBaseUrl()+ "/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8.name());
-                } catch (UnsupportedEncodingException e) {
-                    throw new IllegalArgumentException(e);
-                }
-            }
             Tracer tracer = OpenTelemetrySdkProvider.get().getTracer();
-            return new ElasticsearchLogStorageRetriever(this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId), kibanaSpaceBaseUrl, tracer);
+            return new ElasticsearchLogStorageRetriever(this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId), buildLogsVisualizationUrlTemplate, tracer);
         }
     }
 
@@ -335,7 +362,7 @@ public class ElasticBackend extends ObservabilityBackend {
                 ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
                     ElasticsearchLogStorageRetriever.getCredentials(elasticsearchCredentialsId),
-                    kibanaBaseUrl,
+                    ERROR_TEMPLATE, // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check index existence
                     tracer);
 
                 if (elasticsearchLogStorageRetriever.indexTemplateExists()) {
