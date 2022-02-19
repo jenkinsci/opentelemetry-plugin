@@ -556,7 +556,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return FormValidation.warning("Note that OpenTelemetry credentials, if configured, will be exposed as environment variables (likely in OTEL_EXPORTER_OTLP_HEADERS)");
     }
 
-
     @PreDestroy
     public void preDestroy() throws IOException {
         if (logStorageRetriever != null && logStorageRetriever instanceof Closeable) {
@@ -564,6 +563,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             ((Closeable) logStorageRetriever).close();
         }
     }
+
     @Immutable
     public static class StepPlugin {
         final String name;
