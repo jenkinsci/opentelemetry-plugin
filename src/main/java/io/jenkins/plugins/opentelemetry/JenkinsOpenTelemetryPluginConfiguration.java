@@ -45,8 +45,10 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
@@ -554,6 +556,14 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return FormValidation.warning("Note that OpenTelemetry credentials, if configured, will be exposed as environment variables (likely in OTEL_EXPORTER_OTLP_HEADERS)");
     }
 
+
+    @PreDestroy
+    public void preDestroy() throws IOException {
+        if (logStorageRetriever != null && logStorageRetriever instanceof Closeable) {
+            LOGGER.log(Level.FINE, () -> "Close " + logStorageRetriever + "...");
+            ((Closeable) logStorageRetriever).close();
+        }
+    }
     @Immutable
     public static class StepPlugin {
         final String name;

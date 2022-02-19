@@ -41,6 +41,8 @@ import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.PreDestroy;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -59,9 +61,9 @@ import java.util.logging.Logger;
  * Retrieve the logs from Elasticsearch.
  * FIXME graceful shutdown
  */
-public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<ElasticsearchLogsQueryContext> {
+public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<ElasticsearchLogsQueryContext>, Closeable {
     /**
-     * Field used by the Elastic <-> Otel mapping to store the {@link io.opentelemetry.sdk.logs.LogBuilder#setBody(String)}
+     * Field used by the Elastic-Otel mapping to store the {@link io.opentelemetry.sdk.logs.LogBuilder#setBody(String)}
      */
     public static final String FIELD_MESSAGE = "message";
     /**
@@ -207,12 +209,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
 
     /**
      * FIXME implement
-     *
-     * @param traceId
-     * @param spanId
-     * @param logsQueryContext
-     * @return
-     * @throws IOException
      */
     @Nonnull
     @Override
@@ -253,11 +249,16 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
      * check if the configured index template exists.
      *
      * @return true if the index template exists.
-     * @throws IOException
      */
     public boolean indexTemplateExists() throws IOException {
         ElasticsearchIndicesClient indicesClient = this.esClient.indices();
         return indicesClient.existsIndexTemplate(b -> b.name(INDEX_TEMPLATE_NAME)).value();
+    }
+
+    @Override
+    public void close() throws IOException {
+        logger.log(Level.INFO, ()-> "Shutdown Elasticsearch client...");
+        this.esClient.shutdown();
     }
 
     @Override

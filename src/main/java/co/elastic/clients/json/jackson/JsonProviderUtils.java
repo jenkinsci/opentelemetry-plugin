@@ -9,7 +9,7 @@ import jakarta.json.spi.JsonProvider;
 
 /**
  * Workaround
- * <code><pre>
+ * {@code
  * java.lang.ClassNotFoundException: org.glassfish.json.JsonProviderImpl
  * 	at jenkins.util.AntClassLoader.findClassInComponents(AntClassLoader.java:1387)
  * 	at jenkins.util.AntClassLoader.findClass(AntClassLoader.java:1342)
@@ -56,7 +56,7 @@ import jakarta.json.spi.JsonProvider;
  * 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
  * 	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
  * 	at java.base/java.lang.reflect.Method.invoke(Method.java:566)
- * </pre></code>
+ * }
  */
 public class JsonProviderUtils {
     public static JsonProvider provider(ClassLoader classLoader) {
