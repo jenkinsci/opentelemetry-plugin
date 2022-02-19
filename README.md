@@ -60,7 +60,7 @@ You can look at this video tutorial to get started: [![Tracing Your Jenkins Pipe
 |------------------------------------------|-------|------------|
 | otel.instrumentation.jenkins.job.dsl.collapse.job.name | Boolean, default `false` | When using Job DSL generated jobs, make the pipeline run root span name a low cardinality name using the name "Job from seed '${job.jobDslSeedJob.fullName}'" rather than using "${job.fullName}". Useful when the Job DSL plugin creates a lot of jobs |
 | otel.instrumentation.jenkins.job.matrix.expand.job.name | Boolean, default `false` | When using Matrix Projects, the name of the combination jobs is by default collapsed to "${matrix-job-name}/execution" rather than using the full name that is generated joining the axis values of the combination |
-
+| otel.instrumentation.jenkins.web.enabled | Boolean, default `true` | Disable the instrumentation of Jenkins web requests (ie the instrumentation of Jenkins Stapler) |
 
 
 ## Configuration as code

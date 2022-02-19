@@ -27,11 +27,17 @@
                 />
             </f:entry>
             <f:advanced>
-                <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format)">
-                    <f:textarea />
-                </f:entry>
                 <f:entry title="Service name" field="serviceName" description="e.g. 'my-jenkins.example.com', the Logical name of the service. Aka OTEL_SERVICE_NAME">
                     <f:textbox />
+                </f:entry>
+                <f:entry field="disabledResourceProviders" title="Disabled resource providers" description="Coma separated list of class names. Aka 'OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS'">
+                    <f:textbox />
+                </f:entry>
+                <f:entry field="ignoredSteps" title="Steps to be ignored (comma-separated)" description="e.g. 'dir,echo,println'">
+                    <f:textbox />
+                </f:entry>
+                <f:entry title="Configuration properties" field="configurationProperties" description="Additional OpenTelemetry SDK configuration properties.">
+                    <f:textarea />
                 </f:entry>
                 <f:entry title="Service namespace" field="serviceNamespace" description="e.g. 'ci', a namespace for service name">
                     <f:textbox />
@@ -42,13 +48,7 @@
                 <f:entry field="exporterIntervalMillis" title="Exporter Interval (ms)" description="e.g. '60000'. Aka OTEL_IMR_EXPORT_INTERVAL">
                     <f:number clazz="required positive number" min="1" default="${exporterIntervalMillis}"/>
                 </f:entry>
-                <f:entry field="ignoredSteps" title="Steps to be ignored (comma-separated)" description="e.g. 'dir,echo,println'">
-                    <f:textbox />
-                </f:entry>
-                <f:entry field="disabledResourceProviders" title="Disabled resource providers" description="Coma separated list of class names. Aka 'OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS'">
-                    <f:textbox />
-                </f:entry>
-                <f:entry title="Configuration properties" field="configurationProperties" description="Additional OpenTelemetry SDK configuration properties.">
+                <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format)">
                     <f:textarea />
                 </f:entry>
                 <f:entry title="Noteworthy active configuration properties" description="Noteworthy config properties of the active OpenTelemetry SDK.">

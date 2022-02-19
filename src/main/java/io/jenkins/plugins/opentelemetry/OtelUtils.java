@@ -10,6 +10,7 @@ import hudson.Plugin;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
 import hudson.util.VersionNumber;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
@@ -273,11 +274,11 @@ public class OtelUtils {
     }
     private final static List<String> noteworthyConfigurationPropertyNames = Arrays.asList(
         "otel.resource.attributes", "otel.service.name",
-        "otel.traces.exporter", "otel.metrics.exporter", "otel.exporter.otlp.endpoint"
-        , "otel.exporter.otlp.traces.endpoint", "otel.exporter.otlp.metrics.endpoint",
-        "otel.exporter.jaeger.endpoint",
-        "otel.exporter.prometheus.port",
-        "otel.logs.exporter");
+        "otel.traces.exporter", "otel.metrics.exporter", "otel.logs.exporter",
+        "otel.exporter.otlp.endpoint"  , "otel.exporter.otlp.traces.endpoint", "otel.exporter.otlp.metrics.endpoint",
+        "otel.exporter.jaeger.endpoint", "otel.exporter.prometheus.port",
+        JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED);
+
     private final static List<AttributeKey> noteworthyResourceAttributeKeys = Arrays.asList(
         ResourceAttributes.SERVICE_NAME, ResourceAttributes.SERVICE_NAMESPACE, ResourceAttributes.SERVICE_VERSION
     ) ;

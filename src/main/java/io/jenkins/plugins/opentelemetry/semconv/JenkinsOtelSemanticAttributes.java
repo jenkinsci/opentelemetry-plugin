@@ -100,6 +100,11 @@ public final class JenkinsOtelSemanticAttributes {
      */
     public static final String JENKINS_COMPUTER_NAME_CONTROLLER = "#controller#";
 
+    /**
+     * Prefix of build root spans
+     */
+    public static final String CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX = "BUILD ";
+
     public static final String JENKINS_JOB_SPAN_PHASE_START_NAME = "Phase: Start";
     public static final String JENKINS_JOB_SPAN_PHASE_RUN_NAME = "Phase: Run";
     public static final String JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME = "Phase: Finalise";
@@ -131,5 +136,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final String JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD = "position";
     public static final String JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD = "note";
 
-    public static final String CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX = "BUILD ";
+    public static final String OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED =  "otel.instrumentation.jenkins.web.enabled";
+
+
 }

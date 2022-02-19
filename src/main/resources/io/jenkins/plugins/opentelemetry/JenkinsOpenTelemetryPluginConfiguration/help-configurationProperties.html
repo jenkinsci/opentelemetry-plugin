@@ -4,10 +4,42 @@
   -->
 
 <div>
-    <p>Additional configuration properties</p>
-    <p>See list of configuration properties: <a
+    <p>Additional OpenTelemetry configuration properties.</p>
+    <p>Jenkins OpenTelemetry configuration properties</p>
+    <table>
+        <thead>
+        <tr>
+            <th>Property</th>
+            <th>Default value</th>
+            <th>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><code>otel.instrumentation.jenkins.web.enabled</code></td>
+            <td>Boolean, default <code>true</code></td>
+            <td>Disable the instrumentation of Jenkins web requests (ie the instrumentation of Jenkins Stapler).</td>
+        </tr>
+        <tr>
+            <td><code>otel.instrumentation.jenkins.job.dsl.collapse.job.name</code></td>
+            <td>Boolean, default <code>false</code></td>
+            <td>When using Job DSL generated jobs, make the pipeline run root span name a low cardinality name using the
+                name "<code>Job from seed '${job.jobDslSeedJob.fullName}'</code>code>" rather than using
+                "<code>${job.fullName}"</code>code>".<br/>
+                Useful when the Job DSL plugin creates a lot of jobs.</td>
+        </tr>
+        <tr>
+            <td><code>otel.instrumentation.jenkins.job.matrix.expand.job.name</code></td>
+            <td>Boolean, default <code>false</code></td>
+            <td>When using Matrix Projects, the name of the combination jobs is by default collapsed to
+                <code>"${matrix-job-name}/execution"</code> rather than using the full name that is generated joining
+                the axis values of the combination</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p>The configuration properties of the OpenTelemetry SDK are also supported. See: <a
         href="https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md">
         OpenTelemetry SDK Autoconfigure</a>
     </p>
-
 </div>
