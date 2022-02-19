@@ -15,6 +15,8 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.jenkins.plugins.opentelemetry.backend.custom.CustomLogStorageRetriever;
+import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
@@ -82,6 +84,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
+    private transient LogStorageRetriever logStorageRetriever;
+
     private boolean exportOtelConfigurationAsEnvironmentVariables;
 
     private transient ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
@@ -119,13 +123,23 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Override
     public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
         req.bindJSON(this, json);
-        // stapler oddity, empty lists coming from the HTTP request are not set on bean by  "req.bindJSON(this, json)"
+        // stapler oddity, empty lists coming from the HTTP request are not set on bean by  `req.bindJSON(this, json)`
         this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
         this.endpoint = sanitizeOtlpEndpoint(this.endpoint);
         initializeOpenTelemetry();
+        this.logStorageRetriever = resolveLogStorageRetriever();
         save();
         return true;
     }
+
+    protected Object readResolve() {
+        if (this.disabledResourceProviders == null) {
+            this.disabledResourceProviders = OpenTelemetrySdkProvider.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+        }
+        this.logStorageRetriever = resolveLogStorageRetriever();
+        return this;
+    }
+
 
     @Nonnull
     public OpenTelemetryConfiguration toOpenTelemetryConfiguration() {
@@ -480,12 +494,34 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             collect(Collectors.joining("\r\n"));
     }
 
-
-    protected Object readResolve() {
-        if (this.disabledResourceProviders == null) {
-            this.disabledResourceProviders = OpenTelemetrySdkProvider.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+    @Nonnull
+    public LogStorageRetriever getLogStorageRetriever(){
+        if (logStorageRetriever == null) {
+            throw new IllegalStateException("logStorageRetriever NOT loaded");
         }
-        return this;
+        return logStorageRetriever;
+    }
+
+    @Nonnull
+    private LogStorageRetriever resolveLogStorageRetriever() {
+        LogStorageRetriever logStorageRetriever = null;
+        for (ObservabilityBackend backend : getObservabilityBackends()) {
+            if (backend instanceof TemplateBindingsProvider) {
+                TemplateBindingsProvider templateBindingsProvider = (TemplateBindingsProvider) backend;
+                logStorageRetriever = backend.getLogStorageRetriever(templateBindingsProvider);
+                if (logStorageRetriever != null) {
+                    break;
+                }
+            }
+        }
+        if (logStorageRetriever == null) {
+            logStorageRetriever = new CustomLogStorageRetriever(
+                "No observability backend configured to display the build logs for build with traceId: ${traceId}. See documentation: ", "https://plugins.jenkins.io/opentelemetry/");
+        }
+        if (LOGGER.isLoggable(Level.INFO)) {
+            LOGGER.log(Level.INFO, "resolveStorageRetriever: " + logStorageRetriever);
+        }
+        return logStorageRetriever;
     }
 
     public static JenkinsOpenTelemetryPluginConfiguration get() {

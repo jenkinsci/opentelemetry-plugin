@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.backend;
 
 import hudson.Extension;
 import hudson.util.FormValidation;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import org.apache.commons.lang.StringUtils;
@@ -24,13 +25,14 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension
-public class ElasticBackend extends ObservabilityBackend {
+public class ElasticBackend extends ObservabilityBackend implements TemplateBindingsProvider {
 
     private final static Logger LOGGER = Logger.getLogger(ElasticBackend.class.getName());
 
@@ -64,10 +66,17 @@ public class ElasticBackend extends ObservabilityBackend {
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
-        mergedBindings.put("kibanaBaseUrl", this.getKibanaBaseUrl());
-        mergedBindings.put("kibanaDashboardTitle", this.kibanaDashboardTitle);
-        mergedBindings.put("kibanaSpaceIdentifier", this.kibanaSpaceIdentifier);
+        mergedBindings.putAll(getBindings());
         return mergedBindings;
+    }
+
+    @Override
+    public Map<String, String> getBindings() {
+        Map<String, String> bindings = new LinkedHashMap<>();
+        bindings.put("kibanaBaseUrl", this.getKibanaBaseUrl());
+        bindings.put("kibanaDashboardTitle", this.kibanaDashboardTitle);
+        bindings.put("kibanaSpaceIdentifier", this.kibanaSpaceIdentifier);
+        return bindings;
     }
 
     @CheckForNull
@@ -149,11 +158,11 @@ public class ElasticBackend extends ObservabilityBackend {
 
     @Nullable
     @Override
-    public LogStorageRetriever getLogStorageRetriever() {
+    public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         if (elasticLogsBackend == null) {
             return null;
         } else {
-            return elasticLogsBackend.getLogStorageRetriever();
+            return elasticLogsBackend.getLogStorageRetriever(templateBindingsProvider);
         }
     }
 

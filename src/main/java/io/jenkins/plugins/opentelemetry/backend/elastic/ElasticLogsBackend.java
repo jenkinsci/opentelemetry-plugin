@@ -11,6 +11,7 @@ import hudson.DescriptorExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.Jenkins;
@@ -37,7 +38,7 @@ public abstract class ElasticLogsBackend implements Describable<ElasticLogsBacke
      * Returns {@code null} if the backend is not capable of retrieving logs(ie the {@link NoElasticLogsBackend}
      */
     @CheckForNull
-    public abstract LogStorageRetriever getLogStorageRetriever();
+    public abstract LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider);
 
     /**
      * Returns all the registered {@link ElasticLogsBackend} descriptors.

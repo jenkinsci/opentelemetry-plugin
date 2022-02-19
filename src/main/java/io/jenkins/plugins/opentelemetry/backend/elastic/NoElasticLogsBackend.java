@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -16,7 +17,7 @@ public class NoElasticLogsBackend extends ElasticLogsBackend{
     }
 
     @Override
-    public LogStorageRetriever getLogStorageRetriever() {
+    public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         return null;
     }
 

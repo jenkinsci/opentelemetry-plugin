@@ -14,6 +14,7 @@ import hudson.DescriptorExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.opentelemetry.sdk.resources.Resource;
 import jenkins.model.Jenkins;
@@ -63,7 +64,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
      * @return the {@link LogStorageRetriever} of this backend if the backend is configured to retrieve logs. {@code null} otherwise.
      */
     @CheckForNull
-    public LogStorageRetriever getLogStorageRetriever() {
+    public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         return null;
     }
 
@@ -152,7 +153,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
      */
     @Nonnull
     public Map<String, String> getOtelConfigurationProperties() {
-        LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
+        LogStorageRetriever logStorageRetriever = getLogStorageRetriever(TemplateBindingsProvider.empty());
         if (logStorageRetriever != null) {
             LOGGER.log(Level.FINE, ()-> "Configure OpenTelemetry SDK to export logs");
             return Collections.singletonMap("otel.logs.exporter", "otlp");

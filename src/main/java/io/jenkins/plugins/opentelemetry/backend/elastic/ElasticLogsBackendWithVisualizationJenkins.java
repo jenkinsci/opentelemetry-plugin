@@ -16,6 +16,7 @@ import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.opentelemetry.api.trace.Tracer;
@@ -43,13 +44,16 @@ public class ElasticLogsBackendWithVisualizationJenkins extends ElasticLogsBacke
     }
 
     @Override
-    public LogStorageRetriever getLogStorageRetriever() {
+    public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         Template buildLogsVisualizationUrlTemplate = getBuildLogsVisualizationUrlTemplate();
         if (StringUtils.isBlank(elasticsearchUrl)) {
             return null; // FIXME TODO
         } else {
             Tracer tracer = OpenTelemetrySdkProvider.get().getTracer();
-            return new ElasticsearchLogStorageRetriever(this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId), buildLogsVisualizationUrlTemplate, tracer);
+            return new ElasticsearchLogStorageRetriever(
+                this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId),
+                buildLogsVisualizationUrlTemplate, templateBindingsProvider,
+                tracer);
         }
     }
 
@@ -155,6 +159,7 @@ public class ElasticLogsBackendWithVisualizationJenkins extends ElasticLogsBacke
                     elasticsearchUrl,
                     ElasticsearchLogStorageRetriever.getCredentials(elasticsearchCredentialsId),
                     ObservabilityBackend.ERROR_TEMPLATE, // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check index existence
+                    TemplateBindingsProvider.empty(),
                     tracer);
 
                 if (elasticsearchLogStorageRetriever.indexTemplateExists()) {

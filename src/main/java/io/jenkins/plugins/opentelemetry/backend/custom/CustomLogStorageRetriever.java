@@ -63,6 +63,13 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
         return new LogsQueryResult(byteBuffer, StandardCharsets.UTF_8, true, new CustomLogsQueryContext());
     }
 
+    @Override
+    public String toString() {
+        return "CustomLogStorageRetriever{" +
+            "messageTemplate=" + messageGTemplate +
+            ", url Template=" + urlGTemplate +
+            '}';
+    }
 
     static class CustomLogsQueryContext implements LogsQueryContext {
 

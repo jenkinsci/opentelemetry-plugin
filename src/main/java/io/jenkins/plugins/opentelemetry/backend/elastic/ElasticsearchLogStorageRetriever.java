@@ -20,6 +20,7 @@ import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import groovy.text.Template;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
@@ -48,6 +49,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -75,19 +77,24 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
 
     private final static Logger logger = Logger.getLogger(ElasticsearchLogStorageRetriever.class.getName());
 
-
     @Nonnull
     private final Template buildLogsVisualizationUrlTemplate;
 
-    @Nonnull
-    final transient ElasticsearchClient esClient;
+    private final TemplateBindingsProvider templateBindingsProvider;
 
-    final transient Tracer tracer;
+    @Nonnull
+    private final ElasticsearchClient esClient;
+
+    private final Tracer tracer;
 
     /**
      * TODO verify unsername:password auth vs apiKey auth
      */
-    public ElasticsearchLogStorageRetriever(String elasticsearchUrl, Credentials elasticsearchCredentials, Template buildLogsVisualizationUrlTemplate, Tracer tracer) {
+    public ElasticsearchLogStorageRetriever(
+        String elasticsearchUrl, Credentials elasticsearchCredentials,
+        Template buildLogsVisualizationUrlTemplate, TemplateBindingsProvider templateBindingsProvider ,
+        Tracer tracer) {
+
         if (StringUtils.isBlank(elasticsearchUrl)) {
             throw new IllegalArgumentException("Elasticsearch url cannot be blank");
         }
@@ -103,6 +110,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
         this.tracer = tracer;
 
         this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
+        this.templateBindingsProvider = templateBindingsProvider;
     }
 
     @Nonnull
@@ -170,7 +178,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
             ByteBuffer byteBuffer = new ByteBuffer();
 
             try (Writer w = new OutputStreamWriter(byteBuffer, charset)) {
-                String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(Collections.singletonMap("traceId", traceId)).toString();
+                Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, Collections.singletonMap("traceId", traceId)).getBindings();
+                String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();
                 if (pageNo == 0) {
                     w.write("View logs in Kibana: " + logsVisualizationUrl + "\n\n");
                 }
@@ -211,7 +220,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-
     private void writeOutput(Writer writer, List<Hit<ObjectNode>> hits) throws IOException {
         for (Hit<ObjectNode> hit : hits) {
             ObjectNode source = hit.source();
@@ -250,6 +258,14 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
     public boolean indexTemplateExists() throws IOException {
         ElasticsearchIndicesClient indicesClient = this.esClient.indices();
         return indicesClient.existsIndexTemplate(b -> b.name(INDEX_TEMPLATE_NAME)).value();
+    }
+
+    @Override
+    public String toString() {
+        return "ElasticsearchLogStorageRetriever{" +
+            "buildLogsVisualizationUrlTemplate=" + buildLogsVisualizationUrlTemplate +
+            ", templateBindingsProvider=" + templateBindingsProvider +
+            '}';
     }
 
     /**
