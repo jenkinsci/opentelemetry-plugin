@@ -12,6 +12,7 @@ import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.opentelemetry.api.OpenTelemetry;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.Properties;
 
+@Ignore
 public class ElasticsearchRetrieverIT {
 
     @Test

@@ -6,6 +6,7 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.testcontainers.DockerClientFactory;
@@ -17,20 +18,22 @@ import static org.junit.Assume.assumeTrue;
 /**
  * Test the class to retrieve the logs from Elasticsearch.
  */
+
+@Ignore
 public class ElasticsearchRetrieverTest {
 
-    @Rule
-    public ElasticsearchContainer esContainer = new ElasticsearchContainer();
+    //@Rule
+    //public ElasticsearchContainer esContainer = new ElasticsearchContainer();
 
-    @BeforeClass
-    public static void requiresDocker() {
-        assumeTrue(DockerClientFactory.instance().isDockerAvailable());
-    }
+    //@BeforeClass
+    //public static void requiresDocker() {
+    //    assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+    //}
 
-    @Before
-    public void setUp() throws Exception {
-        esContainer.createLogIndex();
-    }
+    //@Before
+    //public void setUp() throws Exception {
+    //    esContainer.createLogIndex();
+    //}
 
     @Test
     public void testRetrieve() throws IOException {

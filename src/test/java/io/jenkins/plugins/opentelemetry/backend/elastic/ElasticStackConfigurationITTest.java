@@ -12,6 +12,7 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -21,6 +22,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
+@Ignore
 public class ElasticStackConfigurationITTest {
 
     public static final String WRONG_CREDS = "wrongCreds";
@@ -32,10 +34,10 @@ public class ElasticStackConfigurationITTest {
     private ElasticBackend elasticStackConfiguration;
     private ElasticBackend.DescriptorImpl descriptor;
 
-    @BeforeClass
-    public static void requiresDocker() {
-        assumeTrue(DockerClientFactory.instance().isDockerAvailable());
-    }
+    //@BeforeClass
+    //public static void requiresDocker() {
+    //    assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+    //}
 
 //    @Before
 //    public void setUp() throws Exception {
@@ -52,8 +54,8 @@ public class ElasticStackConfigurationITTest {
 //        esContainer.createLogIndex();
 //    }
 //
-//    @Test
-//    public void testCredentialsDoValidate() {
+    @Test
+    public void testCredentialsDoValidate() {
 //        String kibanaBaseUrl = "http://kibana.example.com"; // FIXME get kibana url
 //        assertEquals(descriptor.doValidate(CRED_ID, esContainer.getUrl(), kibanaBaseUrl).kind, FormValidation.Kind.OK);
 //
@@ -61,25 +63,25 @@ public class ElasticStackConfigurationITTest {
 //            FormValidation.Kind.ERROR
 //        );
 //        assertEquals(descriptor.doValidate(CRED_ID, "nowhere", kibanaBaseUrl).kind, FormValidation.Kind.ERROR);
-//    }
+    }
 //
-//    @Test
-//    public void testIndexPatternDoValidate()  {
+    @Test
+    public void testIndexPatternDoValidate()  {
 //        String kibanaBaseUrl = "http://kibana.example.com"; // FIXME get kibana url
 //        assertEquals(FormValidation.Kind.OK, descriptor.doValidate(CRED_ID, esContainer.getUrl(), kibanaBaseUrl).kind);
 //        assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "pattern").kind);
 //        assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, esContainer.getUrl(), "").kind);
 //        assertEquals(FormValidation.Kind.ERROR, descriptor.doValidate(CRED_ID, "", "pattern").kind);
-//    }
-//
-//    @Test
-//    public void testDoFillCredentialsIdItems() {
+    }
+
+    @Test
+    public void testDoFillCredentialsIdItems() {
 //        assertFalse(descriptor.doFillElasticsearchCredentialsIdItems(null, CRED_ID).isEmpty());
-//    }
-//
-//    @Test
-//    public void testDoCheckCredentialsId() {
+    }
+
+    @Test
+    public void testDoCheckCredentialsId() {
 //        assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, CRED_ID).kind, FormValidation.Kind.OK);
 //        assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, "foo").kind, FormValidation.Kind.WARNING);
-//    }
+    }
 }
