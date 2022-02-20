@@ -63,11 +63,14 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         jenkinsRule.waitUntilNoActivity();
         WorkflowRun b1 = p.getLastBuild();
         final String jobName = mbpName + "/" + branchName;
+
+        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "Phase: Start", jobName);
+        checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
         checkChainOfSpans(spans, "Stage: Declarative: Checkout SCM", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
-        checkChainOfSpans(spans, "Phase: Finalise", jobName);
+        checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);

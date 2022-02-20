@@ -6,23 +6,33 @@
 package io.jenkins.plugins.opentelemetry.backend;
 
 import hudson.Extension;
+import hudson.util.FormValidation;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
+import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension
-public class ElasticBackend extends ObservabilityBackend {
+public class ElasticBackend extends ObservabilityBackend implements TemplateBindingsProvider {
 
     private final static Logger LOGGER = Logger.getLogger(ElasticBackend.class.getName());
 
@@ -46,6 +56,8 @@ public class ElasticBackend extends ObservabilityBackend {
 
     private String kibanaDashboardUrlParameters;
 
+    private ElasticLogsBackend elasticLogsBackend;
+
     @DataBoundConstructor
     public ElasticBackend() {
 
@@ -54,10 +66,17 @@ public class ElasticBackend extends ObservabilityBackend {
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
-        mergedBindings.put("kibanaBaseUrl", this.kibanaBaseUrl);
-        mergedBindings.put("kibanaDashboardTitle", this.kibanaDashboardTitle);
-        mergedBindings.put("kibanaSpaceIdentifier", this.kibanaSpaceIdentifier);
+        mergedBindings.putAll(getBindings());
         return mergedBindings;
+    }
+
+    @Override
+    public Map<String, String> getBindings() {
+        Map<String, String> bindings = new LinkedHashMap<>();
+        bindings.put("kibanaBaseUrl", this.getKibanaBaseUrl());
+        bindings.put("kibanaDashboardTitle", this.kibanaDashboardTitle);
+        bindings.put("kibanaSpaceIdentifier", this.kibanaSpaceIdentifier);
+        return bindings;
     }
 
     @CheckForNull
@@ -74,6 +93,9 @@ public class ElasticBackend extends ObservabilityBackend {
     }
 
     public String getKibanaBaseUrl() {
+        if (kibanaBaseUrl != null && kibanaBaseUrl.endsWith("/")) {
+            kibanaBaseUrl = kibanaBaseUrl.substring(0, kibanaBaseUrl.length()-1);
+        }
         return kibanaBaseUrl;
     }
 
@@ -103,7 +125,7 @@ public class ElasticBackend extends ObservabilityBackend {
     @CheckForNull
     @Override
     public String getMetricsVisualizationUrlTemplate() {
-        if (! displayKibanaDashboardLink) {
+        if (!displayKibanaDashboardLink) {
             return null;
         }
         // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
@@ -122,6 +144,25 @@ public class ElasticBackend extends ObservabilityBackend {
                 "Exception formatting Kibana URL with kibanaSpaceIdentifier=" + getKibanaSpaceIdentifier() +
                     ", kibanaDashboardName=" + getKibanaDashboardTitle() + ": " + e);
             return null;
+        }
+    }
+
+    public ElasticLogsBackend getElasticLogsBackend() {
+        return elasticLogsBackend;
+    }
+
+    @DataBoundSetter
+    public void setElasticLogsBackend(ElasticLogsBackend elasticLogsBackend) {
+        this.elasticLogsBackend = elasticLogsBackend;
+    }
+
+    @Nullable
+    @Override
+    public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
+        if (elasticLogsBackend == null) {
+            return null;
+        } else {
+            return elasticLogsBackend.getLogStorageRetriever(templateBindingsProvider);
         }
     }
 
@@ -170,17 +211,20 @@ public class ElasticBackend extends ObservabilityBackend {
             Objects.equals(kibanaBaseUrl, that.kibanaBaseUrl) &&
             Objects.equals(kibanaSpaceIdentifier, that.kibanaSpaceIdentifier) &&
             Objects.equals(kibanaDashboardTitle, that.kibanaDashboardTitle) &&
-            Objects.equals(kibanaDashboardUrlParameters, that.kibanaDashboardUrlParameters);
+            Objects.equals(kibanaDashboardUrlParameters, that.kibanaDashboardUrlParameters)
+            && Objects.equals(elasticLogsBackend, that.elasticLogsBackend);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(displayKibanaDashboardLink, kibanaBaseUrl, kibanaSpaceIdentifier, kibanaDashboardTitle, kibanaDashboardUrlParameters);
+        return Objects.hash(displayKibanaDashboardLink, kibanaBaseUrl, kibanaSpaceIdentifier, kibanaDashboardTitle, kibanaDashboardUrlParameters, elasticLogsBackend);
     }
 
     @Extension
     @Symbol("elastic")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
+        private static final String ERROR_MALFORMED_URL = "The url is malformed.";
+
         @Override
         public String getDisplayName() {
             return DEFAULT_BACKEND_NAME;
@@ -196,6 +240,19 @@ public class ElasticBackend extends ObservabilityBackend {
 
         public String getDefaultKibanaSpaceIdentifier() {
             return DEFAULT_KIBANA_SPACE_IDENTIFIER;
+        }
+
+        @RequirePOST
+        public FormValidation doCheckKibanaUrl(@QueryParameter("kibanaBaseUrl") String url) {
+            if (StringUtils.isEmpty(url)) {
+                return FormValidation.ok();
+            }
+            try {
+                new URL(url);
+            } catch (MalformedURLException e) {
+                return FormValidation.error(ERROR_MALFORMED_URL, e);
+            }
+            return FormValidation.ok();
         }
     }
 }

@@ -24,6 +24,8 @@
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.11.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.11.0-alpha</opentelemetry-alpha.version>
+        <useBeta>true</useBeta>
+        <elasticstack.version>7.17.0</elasticstack.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Publish Jenkins metrics to an OpenTelemetry endpoint, including distributed traces of job executions and health metrics of the controller.</description>
@@ -56,16 +58,6 @@
                 <groupId>io.prometheus</groupId>
                 <artifactId>simpleclient_bom</artifactId>
                 <version>0.14.1</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <!--
-                conflict between io.opentelemetry:opentelemetry-sdk-extension-aws and io.jenkins.configuration-as-code:test-harness
-                -->
-                <groupId>com.fasterxml.jackson</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>2.13.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -191,12 +183,15 @@
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-logging</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp-logs</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient_httpserver</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>okhttp-api</artifactId>
@@ -222,6 +217,10 @@
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
             <version>3.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>jackson2-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -335,6 +334,21 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <!--
+            Use the old `org.elasticsearch.client:elasticsearch-rest-high-level-client` waiting for
+            `co.elastic.clients:elasticsearch-java` to fix https://github.com/elastic/elasticsearch-java/issues/163
+            -->
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>${elasticstack.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.elasticsearch</groupId>
+                    <artifactId>elasticsearch-cli</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-testing</artifactId>
             <scope>test</scope>
@@ -414,6 +428,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>ssh-slaves</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.jenkins.configuration-as-code</groupId>
             <artifactId>test-harness</artifactId>
             <scope>test</scope>
@@ -426,12 +445,6 @@
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-databind</artifactId>
                 </exclusion>
-                <!--
-                <exclusion>
-                    <groupId>org.jenkins-ci.plugins</groupId>
-                    <artifactId>jackson2-api</artifactId>
-                </exclusion>
-                -->
                 <exclusion>
                     <groupId>com.fasterxml.jackson.datatype</groupId>
                     <artifactId>jackson-datatype-json-org</artifactId>
@@ -460,6 +473,22 @@
             <version>1.3</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>1.16.3</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-compress</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -470,6 +499,9 @@
                     <!-- JENKINS-50520: since we need a custom version of Guava -->
                     <maskClasses>com.google.common.</maskClasses>
                     <minimumJavaVersion>8</minimumJavaVersion>
+                    <loggers>
+                        <io.jenkins.plugins.opentelemetry.job.log>FINE</io.jenkins.plugins.opentelemetry.job.log>
+                    </loggers>
                 </configuration>
             </plugin>
             <plugin>

@@ -9,12 +9,12 @@ import hudson.Extension;
 import hudson.model.AdministrativeMonitor;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.HttpResponse;
 import org.kohsuke.stapler.HttpResponses;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.interceptor.RequirePOST;
-import org.parboiled.common.StringUtils;
 
 import javax.inject.Inject;
 import java.io.IOException;

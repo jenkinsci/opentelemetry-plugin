@@ -1,6 +1,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core"
-         xmlns:f="/lib/form">
+         xmlns:f="/lib/form"
+         xmlns:c="/lib/credentials">
     <f:entry title="Kibana base URL" field="kibanaBaseUrl" description="e.g. 'https://kibana.example.com:5601'">
         <f:textbox/>
     </f:entry>
@@ -10,19 +11,30 @@
         <f:checkbox />
     </f:entry>
     <f:advanced>
-        <f:entry title="Display Name" field="name" description="Name used in Jenkins GUI">
-            <f:textbox default="${descriptor.displayName}"/>
-        </f:entry>
-        <f:entry title="Kibana dashboard title" field="kibanaDashboardTitle"
-                 description="Name of the Kibana dashboard used to monitor Jenkins. Default value is 'Jenkins Overview'.">
-            <f:textbox default="${descriptor.defaultKibanaDashboardTitle}"/>
-        </f:entry>
-        <f:entry title="Kibana space identifier" field="kibanaSpaceIdentifier"
-                 description="Identifier of the Kibana space in which the Jenkins monitoring dashboard is defined. The identifier for the default space is an empty string.">
-            <f:textbox default="${descriptor.defaultKibanaSpaceIdentifier}"/>
-        </f:entry>
-        <f:entry title="Kibana dashboard URL parameters" field="kibanaDashboardUrlParameters">
-            <f:textbox default="${descriptor.defaultKibanaDashboardUrlParameters}"/>
-        </f:entry>
+        <f:section title="${%Kibana dashboards}">
+            <f:entry title="Display Name" field="name" description="Name used in Jenkins GUI">
+                <f:textbox default="${descriptor.displayName}"/>
+            </f:entry>
+            <f:entry title="Kibana dashboard title" field="kibanaDashboardTitle"
+                     description="Name of the Kibana dashboard used to monitor Jenkins. Default value is 'Jenkins Overview'.">
+                <f:textbox default="${descriptor.defaultKibanaDashboardTitle}"/>
+            </f:entry>
+            <f:entry title="Kibana space identifier" field="kibanaSpaceIdentifier"
+                     description="Identifier of the Kibana space in which the Jenkins monitoring dashboard is defined. The identifier for the default space is an empty string.">
+                <f:textbox default="${descriptor.defaultKibanaSpaceIdentifier}"/>
+            </f:entry>
+            <f:entry title="Kibana dashboard URL parameters" field="kibanaDashboardUrlParameters">
+                <f:textbox default="${descriptor.defaultKibanaDashboardUrlParameters}"/>
+            </f:entry>
+        </f:section>
+        <f:section title="${%Store pipeline logs in Elastic Observability - Tech Preview}">
+            Store Jenkins build logs in Elastic Observability sending them through OpenTelemetry rather than storing them in on disk under the Jenkins Home.
+            <j:invokeStatic var="elasticLogsBackendDescriptors" className="io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend" method="all"/>
+            <f:hetero-radio
+                field="elasticLogsBackend"
+                descriptors="${elasticLogsBackendDescriptors}"
+                description="⚠️ Requires Elastic Observability 8.0+ with APM Server using data streams and require to enable logs forwarding on all traversed OpenTelemetry Collectors"
+            />
+        </f:section>
     </f:advanced>
 </j:jelly>
