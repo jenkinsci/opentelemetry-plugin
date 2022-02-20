@@ -129,6 +129,14 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
         this.endpoint = sanitizeOtlpEndpoint(this.endpoint);
         initializeOpenTelemetry();
+        if (logStorageRetriever != null && logStorageRetriever instanceof Closeable) {
+            LOGGER.log(Level.FINE, () -> "Close " + logStorageRetriever + "...");
+            try {
+                ((Closeable) logStorageRetriever).close();
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Exception closing currently setup logStorageRetriever: " + logStorageRetriever, e);
+            }
+        }
         this.logStorageRetriever = resolveLogStorageRetriever();
         save();
         return true;
