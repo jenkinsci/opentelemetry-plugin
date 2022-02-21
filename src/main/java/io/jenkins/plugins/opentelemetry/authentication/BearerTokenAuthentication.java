@@ -52,7 +52,7 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
                 CredentialsMatchers.withId(this.tokenId));
         String authenticationTokenValue;
         if (credentials == null) {
-            // TODO better handling
+            // TODO better handling of deleted credentials
             LOGGER.log(Level.WARNING, () -> "StringCredentials with id `" + tokenId + "` not found. Fall back to empty secret, an authentication error is likely to happen.");
             authenticationTokenValue = "";
         } else {
@@ -69,7 +69,7 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
 
     @Override
     public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
-        // TODO don't overwrite OTEL_EXPORTER_OTLP_HEADERS if already defined, just append to it
+        // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
         environmentVariables.put("OTEL_EXPORTER_OTLP_HEADERS", "authorization=Bearer " + this.getAuthenticationHeaderValue());
     }
 

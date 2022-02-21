@@ -43,7 +43,7 @@ public class OtelEnvironmentContributorService {
         if (monitoringAction == null) {
             LOGGER.log(Level.INFO, () -> "MonitoringAction NOT found on run " + run);
         } else {
-            // TODO do we really need to add the links as environment variables?
+            // Add visualization link as environment variables to provide visualization links in notifications (to GitHub, slack messages...)
             for (MonitoringAction.ObservabilityBackendLink link : monitoringAction.getLinks()) {
                 // Default backend link got an empty environment variable.
                 if (link.getEnvironmentVariableName() != null) {

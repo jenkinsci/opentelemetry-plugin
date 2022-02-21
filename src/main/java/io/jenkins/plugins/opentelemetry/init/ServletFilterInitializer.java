@@ -24,7 +24,7 @@ public class ServletFilterInitializer extends OpenTelemetryPluginAbstractInitial
     private static final Logger logger = Logger.getLogger(ServletFilterInitializer.class.getName());
 
     /**
-     * TODO better dependency handling
+     * TODO better initialization sequence handling.
      * Don't start just after `PLUGINS_STARTED` because it creates an initialization problem
      */
     @Initializer(after = InitMilestone.JOB_LOADED)

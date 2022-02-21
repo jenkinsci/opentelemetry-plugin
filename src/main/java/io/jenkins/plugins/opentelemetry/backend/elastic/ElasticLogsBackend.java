@@ -77,7 +77,7 @@ public abstract class ElasticLogsBackend implements Describable<ElasticLogsBacke
     }
 
     private String getKibanaSpaceIdentifier() {
-        // FIXME
+        // FIXME implement getKibanaSpaceIdentifier
         return "";
     }
 }

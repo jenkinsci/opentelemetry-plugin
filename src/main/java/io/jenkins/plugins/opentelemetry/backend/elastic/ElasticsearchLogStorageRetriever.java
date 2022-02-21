@@ -55,6 +55,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * TODO implement streaming of the logs results. As long as we don't know how to stream the results, we just grab the first lines of logs.
+ *
  * Use the old `org.elasticsearch.client:elasticsearch-rest-high-level-client` waiting for
  * `co.elastic.clients:elasticsearch-java` to fix https://github.com/elastic/elasticsearch-java/issues/163
  */
@@ -70,7 +72,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
     public static final String FIELD_TRACE_ID = "trace.id";
     public static final String FIELD_TIMESTAMP = "@timestamp";
 
-    public static final int PAGE_SIZE = 100; // FIXME
+    public static final int PAGE_SIZE = 100;
     public static final String INDEX_TEMPLATE_PATTERNS = "logs-apm.app-*";
     public static final String INDEX_TEMPLATE_NAME = "logs-apm.app";
 
@@ -187,8 +189,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
     }
 
     /**
-     * FIXME Verify accurate
      * Check if the configured index template exists.
+     * It's a good way to verify the Elastic setup is capable of receiving OpenTelemetry Logs
      *
      * @return true if the index template exists.
      */
