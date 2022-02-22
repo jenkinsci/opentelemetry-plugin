@@ -73,6 +73,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
     @Override
     public Map<String, String> getBindings() {
         Map<String, String> bindings = new LinkedHashMap<>();
+        bindings.put("backendName", getName());
         bindings.put("kibanaBaseUrl", this.getKibanaBaseUrl());
         bindings.put("kibanaDashboardTitle", this.kibanaDashboardTitle);
         bindings.put("kibanaSpaceIdentifier", this.kibanaSpaceIdentifier);

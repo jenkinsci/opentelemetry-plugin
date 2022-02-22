@@ -6,19 +6,21 @@
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import hudson.Extension;
-import hudson.model.Descriptor;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
+import io.jenkins.plugins.opentelemetry.backend.custom.CustomLogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class NoElasticLogsBackend extends ElasticLogsBackend {
+public class ElasticLogsBackendWithoutJenkinsVisualization extends ElasticLogsBackend {
+
     @DataBoundConstructor
-    public NoElasticLogsBackend() {
+    public ElasticLogsBackendWithoutJenkinsVisualization() {
+
     }
 
     @Override
     public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
-        return null;
+        return new CustomLogStorageRetriever(getBuildLogsVisualizationMessageTemplate(), templateBindingsProvider);
     }
 
     @Override
@@ -30,14 +32,21 @@ public class NoElasticLogsBackend extends ElasticLogsBackend {
 
     @Override
     public int hashCode() {
-        return NoElasticLogsBackend.class.hashCode();
+        return ElasticLogsBackendWithoutJenkinsVisualization.class.hashCode();
     }
 
-    @Extension(ordinal = 100)
+
+    @Override
+    public String toString() {
+        return "ElasticLogsBackendWithoutJenkinsVisualization{" +
+            '}';
+    }
+
+    @Extension(ordinal = 50)
     public static class DescriptorImpl extends ElasticLogsBackend.DescriptorImpl {
         @Override
         public String getDisplayName() {
-            return "Don't store pipeline logs in Elastic";
+            return "Store pipeline logs In Elastic and visualize logs exclusively in Elastic (logs no longer visible through Jenkins screens)";
         }
     }
 }

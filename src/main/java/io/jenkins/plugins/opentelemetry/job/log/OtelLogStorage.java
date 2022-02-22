@@ -7,9 +7,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
@@ -135,7 +133,7 @@ class OtelLogStorage implements LogStorage {
             logsQueryContexts.put(traceAndSpanId, logsQueryResult.getLogsQueryContext());
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());
-            return new OverallLog(logsQueryResult.getByteBuffer(), logsQueryResult.getCharset(), logsQueryResult.isComplete(), build, tracer);
+            return new OverallLog(logsQueryResult.getByteBuffer(), logsQueryResult.getLogsViewHeader(), logsQueryResult.getCharset(), logsQueryResult.isComplete(), build, tracer);
         } catch (Exception x) {
             span.recordException(x);
             return new BrokenLogStorage(x).overallLog(build, complete);

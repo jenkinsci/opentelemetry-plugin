@@ -21,7 +21,8 @@ import java.util.logging.Logger;
 
 /**
  * Process the output stream and send it to OpenTelemetry.
- * TODO support Pipeline Step Context {@link Context} in addition to supporting run root context
+ * TODO support Pipeline Step Context {@link Context} in addition to supporting run root context.
+ * TODO should we implement a MonotonicallyIncreasedClock to ensure the logs messages are always well sorted? Will backends truncate nano seconds to just do millis and loose this monotonical nature ?
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L162
  */
 final class OtelLogOutputStream extends LineTransformationOutputStream {

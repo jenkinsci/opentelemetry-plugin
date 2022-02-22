@@ -13,6 +13,7 @@ import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
+import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -48,6 +49,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -127,28 +129,28 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
 
             SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
             SearchHit[] hits = searchResponse.getHits().getHits();
+            boolean completed = hits.length != PAGE_SIZE; // TODO find better algorithm
 
             ByteBuffer byteBuffer = new ByteBuffer();
 
             try (Writer w = new OutputStreamWriter(byteBuffer, charset)) {
-                Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, Collections.singletonMap("traceId", traceId)).getBindings();
-                String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();
-                w.write("View logs in Kibana: " + logsVisualizationUrl + "\n\n");
-
                 writeOutput(w, hits);
-
                 span.setAttribute("results", hits.length);
-                boolean completed =  hits.length != PAGE_SIZE; // TODO is there smarter?
-                if (completed) {
-                    w.write("\n\nView logs on Kibana " + logsVisualizationUrl);
-                } else {
-                    w.write("...\n\nView the rest of logs on Kibana " + logsVisualizationUrl);
-                }
+                span.setAttribute("completed", completed);
             }
+
+            Map<String, String> localBindings = new HashMap<>();
+            localBindings.put("traceId", traceId);
+            localBindings.put("spanId", spanId);
+
+            Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, localBindings).getBindings();
+            String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();
 
             logger.log(Level.FINE, () -> "overallLog(written.length: " + byteBuffer.length() + ")");
             return new LogsQueryResult(
-                byteBuffer, charset, true,
+                byteBuffer,
+                new LogsViewHeader(bindings.get("backendName"), logsVisualizationUrl),
+                charset, completed,
                 new ElasticsearchLogsQueryContext()
             );
         } catch (IOException | RuntimeException e) {

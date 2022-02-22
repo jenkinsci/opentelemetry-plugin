@@ -9,6 +9,7 @@ import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
 import hudson.DescriptorExtensionList;
 import hudson.ExtensionPoint;
+import hudson.model.AbstractDescribableImpl;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
@@ -18,6 +19,7 @@ import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -25,14 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class ElasticLogsBackend implements Describable<ElasticLogsBackend>, ExtensionPoint {
+public abstract class ElasticLogsBackend extends AbstractDescribableImpl<ElasticLogsBackend> implements Describable<ElasticLogsBackend>, ExtensionPoint {
     private final static Logger logger = Logger.getLogger(ElasticLogsBackend.class.getName());
 
     private transient Template buildLogsVisualizationUrlGTemplate;
-
-    public Descriptor<ElasticLogsBackend> getDescriptor() {
-        return Jenkins.get().getDescriptorOrDie(getClass());
-    }
 
     /**
      * Returns {@code null} if the backend is not capable of retrieving logs(ie the {@link NoElasticLogsBackend}
@@ -40,11 +38,12 @@ public abstract class ElasticLogsBackend implements Describable<ElasticLogsBacke
     @CheckForNull
     public abstract LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider);
 
-    /**
-     * Returns all the registered {@link ElasticLogsBackend} descriptors.
-     */
-    public static DescriptorExtensionList<ElasticLogsBackend, Descriptor<ElasticLogsBackend>> all() {
-        return Jenkins.get().getDescriptorList(ElasticLogsBackend.class);
+    public Template getBuildLogsVisualizationMessageTemplate() {
+        try {
+            return new GStringTemplateEngine().createTemplate("View build logs in ${backendName}");
+        } catch (ClassNotFoundException|IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public Template getBuildLogsVisualizationUrlTemplate() {
@@ -79,5 +78,21 @@ public abstract class ElasticLogsBackend implements Describable<ElasticLogsBacke
     private String getKibanaSpaceIdentifier() {
         // FIXME implement getKibanaSpaceIdentifier
         return "";
+    }
+
+    @Override
+    public DescriptorImpl getDescriptor() {
+        return (DescriptorImpl) super.getDescriptor();
+    }
+
+    /**
+     * Returns all the registered {@link ElasticLogsBackend} descriptors.
+     */
+    public static DescriptorExtensionList<ElasticLogsBackend, Descriptor<ElasticLogsBackend>> all() {
+        return Jenkins.get().getDescriptorList(ElasticLogsBackend.class);
+    }
+
+    public abstract static class DescriptorImpl extends Descriptor<ElasticLogsBackend> {
+
     }
 }
