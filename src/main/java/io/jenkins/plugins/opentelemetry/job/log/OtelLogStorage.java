@@ -38,7 +38,6 @@ class OtelLogStorage implements LogStorage {
 
     private final static Logger logger = Logger.getLogger(OtelLogStorage.class.getName());
     final BuildInfo buildInfo;
-    final LogStorageRetriever logStorageRetriever;
     final Map<TraceAndSpanId, LogsQueryContext> logsQueryContexts = new ConcurrentHashMap<>();
     final transient Tracer tracer;
 
@@ -88,9 +87,8 @@ class OtelLogStorage implements LogStorage {
         }
     }
 
-    public OtelLogStorage(@Nonnull BuildInfo buildInfo, @Nonnull LogStorageRetriever logStorageRetriever, @Nonnull  Tracer tracer) {
+    public OtelLogStorage(@Nonnull BuildInfo buildInfo, @Nonnull  Tracer tracer) {
         this.buildInfo = buildInfo;
-        this.logStorageRetriever = logStorageRetriever;
         this.tracer = tracer;
     }
 
@@ -129,7 +127,15 @@ class OtelLogStorage implements LogStorage {
                 throw new IllegalStateException("traceId or spanId is null for " + buildInfo);
             }
             TraceAndSpanId traceAndSpanId = new TraceAndSpanId(traceId, spanId);
-            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(traceId, spanId, complete, logsQueryContexts.get(traceAndSpanId));
+            LogsQueryContext logsQueryContext = logsQueryContexts.get(traceAndSpanId);
+            LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
+            LogsQueryResult logsQueryResult;
+            try {
+                logsQueryResult = logStorageRetriever.overallLog(traceId, spanId, complete, logsQueryContext);
+            } catch (ClassCastException e) {
+                logger.log(Level.INFO, "LogStorageRetriever has changed to " + logStorageRetriever + ", reset context");
+                logsQueryResult = logStorageRetriever.overallLog(traceId, spanId, complete, null);
+            }
             logsQueryContexts.put(traceAndSpanId, logsQueryResult.getLogsQueryContext());
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());
@@ -157,7 +163,7 @@ class OtelLogStorage implements LogStorage {
                 throw new IllegalStateException("traceId or spanId is null for " + buildInfo);
             }
             TraceAndSpanAndFlowNodeId traceAndSpanAndFlowNodeId = new TraceAndSpanAndFlowNodeId(traceId, spanId, flowNode.getId());
-            LogsQueryResult logsQueryResult = logStorageRetriever.stepLog(traceId, spanId, logsQueryContexts.get(traceAndSpanAndFlowNodeId));
+            LogsQueryResult logsQueryResult = getLogStorageRetriever().stepLog(traceId, spanId, logsQueryContexts.get(traceAndSpanAndFlowNodeId));
             logsQueryContexts.put(traceAndSpanAndFlowNodeId, logsQueryResult.getLogsQueryContext());
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());
@@ -209,5 +215,10 @@ class OtelLogStorage implements LogStorage {
         return "OtelLogStorage{" +
             "buildInfo=" + buildInfo +
             '}';
+    }
+
+    @Nonnull
+    public LogStorageRetriever getLogStorageRetriever() {
+        return JenkinsOpenTelemetryPluginConfiguration.get().getLogStorageRetriever();
     }
 }

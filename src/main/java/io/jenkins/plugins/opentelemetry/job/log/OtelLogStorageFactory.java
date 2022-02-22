@@ -78,9 +78,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
                 BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getTraceId(), monitoringAction.getSpanId(), buildInfoContext);
                 LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
 
-                LogStorageRetriever logStorageRetriever = JenkinsOpenTelemetryPluginConfiguration.get().getLogStorageRetriever();
-
-                return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo, logStorageRetriever, getOpenTelemetrySdkProvider().getTracer()));
+                return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo, getOpenTelemetrySdkProvider().getTracer()));
             } else {
                 return null;
             }
