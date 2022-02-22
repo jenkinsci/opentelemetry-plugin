@@ -1,0 +1,10 @@
+<?jelly escape-by-default='true'?>
+<!--
+  ~ Copyright The Original Author or Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+<j:jelly  xmlns:j="jelly:core">
+    <i>
+    Logs are stored in the Jenkins Home as usual, they are not sent to Elastic.
+    </i>
+</j:jelly>

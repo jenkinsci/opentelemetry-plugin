@@ -5,10 +5,13 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import hudson.Main;
 import hudson.console.AnnotatedLargeText;
+import hudson.console.ConsoleAnnotationOutputStream;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+import org.apache.commons.io.output.CountingOutputStream;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -19,6 +22,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,10 +32,12 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     private final FlowExecutionOwner.Executable context;
     private final ByteBuffer byteBuffer;
     private final transient Tracer tracer;
+    private final LogsViewHeader logsViewHeader;
 
-    public OverallLog(ByteBuffer memory, Charset charset, boolean completed, FlowExecutionOwner.Executable context, Tracer tracer) {
+    public OverallLog(ByteBuffer memory, LogsViewHeader logsViewHeader, Charset charset, boolean completed, FlowExecutionOwner.Executable context, Tracer tracer) {
         super(memory, charset, completed, context);
         this.byteBuffer = memory;
+        this.logsViewHeader = logsViewHeader;
         this.context = context;
         this.tracer = tracer;
     }
@@ -110,15 +116,35 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
         }
     }
 
+    /**
+     * Inspired by io.jenkins.plugins.pipeline_cloudwatch_logs.CloudWatchRetriever.OverallLog#writeHtmlTo
+     */
     @Override
     public long writeHtmlTo(long start, Writer w) throws IOException {
         logger.log(Level.FINE, () -> "writeHtmlTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
 
         Span span = tracer.spanBuilder("OverallLog.writeHtmlTo")
             .startSpan();
+        long length = 0;
         try (Scope scope = span.makeCurrent()) {
             span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
-            return super.writeHtmlTo(start, w);
+            // HEADER
+            if (start == 0 && !Main.isUnitTest) { // would mess up unit tests
+                length += logsViewHeader.writeHeader(w, context, charset);
+                w.write("\n\n");  // TODO increment length
+            }
+            // LOG LINES
+            length += super.writeHtmlTo(start, w);
+
+            // FOOTER
+            {
+                if (!isComplete()) {
+                    w.write("...");  // TODO increment length
+                }
+                w.write("\n\n"); // TODO increment length
+                length += logsViewHeader.writeHeader(w, context, charset);
+            }
+            return length;
         } catch (IOException e) {
             span.recordException(e);
             throw e;
@@ -129,7 +155,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public Reader readAll() throws IOException {
-        logger.log(Level.FINE, () -> "readAll("+ ", buffer.length: " + this.byteBuffer.length() + ")");
+        logger.log(Level.FINE, () -> "readAll(" + ", buffer.length: " + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.readAll")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
@@ -145,7 +171,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public void doProgressText(StaplerRequest req, StaplerResponse rsp) throws IOException {
-        logger.log(Level.FINE, () -> "doProgressText("+ ", buffer.length: " + this.byteBuffer.length() + ")");
+        logger.log(Level.FINE, () -> "doProgressText(" + ", buffer.length: " + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.doProgressText")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {

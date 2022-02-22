@@ -7,35 +7,41 @@ package io.jenkins.plugins.opentelemetry.backend.custom;
 
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryContext;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
+import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogStorageRetriever.CustomLogsQueryContext> {
 
-    private final Template messageGTemplate;
-    private final Template urlGTemplate;
+    @Nonnull
+    private final Template buildLogsVisualizationUrlTemplate;
+
+    private final TemplateBindingsProvider templateBindingsProvider;
 
     public CustomLogStorageRetriever(String messageTemplate, String urlTemplate) {
         GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
         try {
-            this.messageGTemplate = gStringTemplateEngine.createTemplate(messageTemplate);
+            this.buildLogsVisualizationUrlTemplate = gStringTemplateEngine.createTemplate(messageTemplate);
         } catch (IOException | ClassNotFoundException e) {
             throw new IllegalArgumentException(e);
         }
-        try {
-            this.urlGTemplate = gStringTemplateEngine.createTemplate(urlTemplate);
-        } catch (IOException | ClassNotFoundException e) {
-            throw new IllegalArgumentException(e);
-        }
+        this.templateBindingsProvider = TemplateBindingsProvider.empty();
+    }
+
+    public CustomLogStorageRetriever(Template buildLogsVisualizationUrlTemplate, TemplateBindingsProvider templateBindingsProvider) {
+        this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
+        this.templateBindingsProvider = templateBindingsProvider;
     }
 
     @Nonnull
@@ -52,22 +58,21 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
 
     @Nonnull
     private LogsQueryResult getLogsQueryResult(@Nonnull String traceId, @Nonnull String spanId) throws IOException {
-        ByteBuffer byteBuffer = new ByteBuffer();
 
-        Map<String, Object> bindings = new HashMap<>();
-        bindings.put("traceId", traceId);
-        bindings.put("spanId", spanId);
-        String out =  messageGTemplate.make(bindings).toString() + " " + urlGTemplate.make(bindings).toString();
-        byteBuffer.write(out.getBytes(StandardCharsets.UTF_8));
+        Map<String, String> localBindings = new HashMap<>();
+        localBindings.put("traceId", traceId);
+        localBindings.put("spanId", spanId);
 
-        return new LogsQueryResult(byteBuffer, StandardCharsets.UTF_8, true, new CustomLogsQueryContext());
+        Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, Collections.singletonMap("traceId", traceId)).getBindings();
+        String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();
+
+        return new LogsQueryResult(new ByteBuffer(), new LogsViewHeader(bindings.get("backendName"), logsVisualizationUrl), StandardCharsets.UTF_8, true, new CustomLogsQueryContext());
     }
 
     @Override
     public String toString() {
         return "CustomLogStorageRetriever{" +
-            "messageTemplate=" + messageGTemplate +
-            ", url Template=" + urlGTemplate +
+            "urlTemplate=" + buildLogsVisualizationUrlTemplate +
             '}';
     }
 

@@ -6,7 +6,12 @@
 <j:jelly xmlns:j="jelly:core"
          xmlns:f="/lib/form"
          xmlns:c="/lib/credentials">
-     <f:entry title="${%Elasticsearch URL}" field="elasticsearchUrl"
+    <i>
+    Pipeline logs are no longer stored in the Jenkins home, they are sent through OpenTelemetry to Elastic, stored in
+    Elasticsearch, and visible in Kibana. <br/>
+    Pipeline logs are also visible through Jenkins screens.
+    </i>
+    <f:entry title="${%Elasticsearch URL}" field="elasticsearchUrl"
                  description="e.g. 'https://elasticsearch.example.com:9200'">
             <f:textbox checkMethod="post"/>
         </f:entry>

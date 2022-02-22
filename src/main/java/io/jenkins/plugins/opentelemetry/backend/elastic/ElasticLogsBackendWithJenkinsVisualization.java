@@ -34,12 +34,12 @@ import java.net.URL;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-public class ElasticLogsBackendWithVisualizationJenkins extends ElasticLogsBackend {
+public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBackend {
     private String elasticsearchUrl;
     private String elasticsearchCredentialsId;
 
     @DataBoundConstructor
-    public ElasticLogsBackendWithVisualizationJenkins() {
+    public ElasticLogsBackendWithJenkinsVisualization() {
 
     }
 
@@ -81,7 +81,7 @@ public class ElasticLogsBackendWithVisualizationJenkins extends ElasticLogsBacke
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ElasticLogsBackendWithVisualizationJenkins that = (ElasticLogsBackendWithVisualizationJenkins) o;
+        ElasticLogsBackendWithJenkinsVisualization that = (ElasticLogsBackendWithJenkinsVisualization) o;
         return Objects.equals(elasticsearchUrl, that.elasticsearchUrl) && Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
     }
 
@@ -92,14 +92,14 @@ public class ElasticLogsBackendWithVisualizationJenkins extends ElasticLogsBacke
 
     @Override
     public String toString() {
-        return "ElasticsearchLogBackend{" +
+        return "ElasticLogsBackendWithVisualizationJenkins{" +
             "elasticsearchUrl='" + elasticsearchUrl + '\'' +
             ", elasticsearchCredentialsId='" + elasticsearchCredentialsId + '\'' +
             '}';
     }
 
-    @Extension
-    public static class DescriptorImpl extends Descriptor<ElasticLogsBackend> {
+    @Extension(ordinal = 0)
+    public static class DescriptorImpl extends ElasticLogsBackend.DescriptorImpl {
         private static final String ERROR_MALFORMED_URL = "The url is malformed.";
         @Override
         public String getDisplayName() {
