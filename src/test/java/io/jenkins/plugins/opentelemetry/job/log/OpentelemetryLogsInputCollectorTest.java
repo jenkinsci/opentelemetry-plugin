@@ -12,6 +12,7 @@ import io.opentelemetry.sdk.common.Clock;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.testcontainers.DockerClientFactory;
@@ -32,6 +33,7 @@ import static com.google.common.base.Verify.verify;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+@Ignore
 public class OpentelemetryLogsInputCollectorTest {
     public static final int OTEL_PORT = 4317;
     private static final Logger LOGGER = Logger.getLogger(OpentelemetryLogsInputCollectorTest.class.getName());

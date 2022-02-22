@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.backend.custom;
 
-import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
