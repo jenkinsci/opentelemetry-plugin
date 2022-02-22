@@ -12,6 +12,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.CheckForNull;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Extension
@@ -84,6 +85,15 @@ public class ZipkinBackend extends ObservabilityBackend {
     @Override
     public int hashCode() {
         return ZipkinBackend.class.hashCode();
+    }
+
+    @Override
+    public Map<String, String> getBindings() {
+        Map<String, String> bindings = new LinkedHashMap<>();
+        bindings.put(ElasticBackend.TemplateBindings.BACKEND_NAME, getName());
+        bindings.put(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/zipkin.png");
+
+        return bindings;
     }
 
     @Extension

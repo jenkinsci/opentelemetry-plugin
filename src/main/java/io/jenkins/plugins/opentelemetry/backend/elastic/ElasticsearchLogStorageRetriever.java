@@ -10,6 +10,7 @@ import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import groovy.text.Template;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
@@ -48,7 +49,6 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -149,7 +149,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
             logger.log(Level.FINE, () -> "overallLog(written.length: " + byteBuffer.length() + ")");
             return new LogsQueryResult(
                 byteBuffer,
-                new LogsViewHeader(bindings.get("backendName"), logsVisualizationUrl),
+                new LogsViewHeader(bindings.get(ElasticBackend.TemplateBindings.BACKEND_NAME), logsVisualizationUrl, bindings.get(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL)),
                 charset, completed,
                 new ElasticsearchLogsQueryContext()
             );

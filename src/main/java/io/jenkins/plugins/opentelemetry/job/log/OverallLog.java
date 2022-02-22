@@ -22,7 +22,6 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -134,14 +133,16 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
                 w.write("\n\n");  // TODO increment length
             }
             // LOG LINES
-            length += super.writeHtmlTo(start, w);
+            long logLinesLengthInBytes = super.writeHtmlTo(start, w);
+            length += logLinesLengthInBytes;
 
             // FOOTER
-            {
+            if (logLinesLengthInBytes >0) { // some log lines have been emitted, append a footer
                 if (!isComplete()) {
                     w.write("...");  // TODO increment length
                 }
                 w.write("\n\n"); // TODO increment length
+
                 length += logsViewHeader.writeHeader(w, context, charset);
             }
             return length;

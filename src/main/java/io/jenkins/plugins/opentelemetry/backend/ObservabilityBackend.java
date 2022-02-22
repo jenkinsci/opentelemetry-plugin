@@ -30,7 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public abstract class ObservabilityBackend implements Describable<ObservabilityBackend>, ExtensionPoint {
+public abstract class ObservabilityBackend implements Describable<ObservabilityBackend>, ExtensionPoint, TemplateBindingsProvider {
     private final static Logger LOGGER = Logger.getLogger(ObservabilityBackend.class.getName());
 
     private String name;
@@ -140,6 +140,9 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     }
 
     @Override
+    public abstract Map<String, String> getBindings();
+
+    @Override
     public Descriptor<ObservabilityBackend> getDescriptor() {
         return Jenkins.get().getDescriptorOrDie(getClass());
     }
@@ -158,10 +161,18 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     public Map<String, String> getOtelConfigurationProperties() {
         LogStorageRetriever logStorageRetriever = getLogStorageRetriever(TemplateBindingsProvider.empty());
         if (logStorageRetriever != null) {
-            LOGGER.log(Level.FINE, ()-> "Configure OpenTelemetry SDK to export logs");
+            LOGGER.log(Level.FINE, () -> "Configure OpenTelemetry SDK to export logs");
             return Collections.singletonMap("otel.logs.exporter", "otlp");
         }
         return Collections.emptyMap();
+    }
+
+    /**
+     * List the attribute keys of the template bindings exposed by {@link ObservabilityBackend#getBindings()}
+     */
+    public interface TemplateBindings {
+        String BACKEND_NAME = "backendName";
+        String BACKEND_24_24_ICON_URL = "backend24x24IconUrl";
     }
 
     public static abstract class ObservabilityBackendDescriptor extends Descriptor<ObservabilityBackend> implements Comparable<ObservabilityBackendDescriptor> {
