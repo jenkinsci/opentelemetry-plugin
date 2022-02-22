@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.32</version>
+        <version>4.35</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -57,7 +57,7 @@
             <dependency>
                 <groupId>io.prometheus</groupId>
                 <artifactId>simpleclient_bom</artifactId>
-                <version>0.14.1</version>
+                <version>0.15.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
