@@ -127,7 +127,15 @@ class OtelLogStorage implements LogStorage {
                 throw new IllegalStateException("traceId or spanId is null for " + buildInfo);
             }
             TraceAndSpanId traceAndSpanId = new TraceAndSpanId(traceId, spanId);
-            LogsQueryResult logsQueryResult = getLogStorageRetriever().overallLog(traceId, spanId, complete, logsQueryContexts.get(traceAndSpanId));
+            LogsQueryContext logsQueryContext = logsQueryContexts.get(traceAndSpanId);
+            LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
+            LogsQueryResult logsQueryResult;
+            try {
+                logsQueryResult = logStorageRetriever.overallLog(traceId, spanId, complete, logsQueryContext);
+            } catch (ClassCastException e) {
+                logger.log(Level.INFO, "LogStorageRetriever has changed to " + logStorageRetriever + ", reset context");
+                logsQueryResult = logStorageRetriever.overallLog(traceId, spanId, complete, null);
+            }
             logsQueryContexts.put(traceAndSpanId, logsQueryResult.getLogsQueryContext());
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());
