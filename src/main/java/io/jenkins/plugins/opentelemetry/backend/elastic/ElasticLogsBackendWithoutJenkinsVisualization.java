@@ -20,7 +20,7 @@ public class ElasticLogsBackendWithoutJenkinsVisualization extends ElasticLogsBa
 
     @Override
     public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
-        return new CustomLogStorageRetriever(getBuildLogsVisualizationMessageTemplate(), templateBindingsProvider);
+        return new CustomLogStorageRetriever(getBuildLogsVisualizationUrlTemplate(), templateBindingsProvider);
     }
 
     @Override

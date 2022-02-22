@@ -73,10 +73,12 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
     @Override
     public Map<String, String> getBindings() {
         Map<String, String> bindings = new LinkedHashMap<>();
-        bindings.put("backendName", getName());
-        bindings.put("kibanaBaseUrl", this.getKibanaBaseUrl());
-        bindings.put("kibanaDashboardTitle", this.kibanaDashboardTitle);
-        bindings.put("kibanaSpaceIdentifier", this.kibanaSpaceIdentifier);
+        bindings.put(TemplateBindings.BACKEND_NAME, getName());
+        bindings.put(TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/elastic.png");
+
+        bindings.put(TemplateBindings.KIBANA_BASE_URL, this.getKibanaBaseUrl());
+        bindings.put(TemplateBindings.KIBANA_DASHBOARD_TITLE, this.kibanaDashboardTitle);
+        bindings.put(TemplateBindings.KIBANA_SPACE_IDENTIFIER, this.kibanaSpaceIdentifier);
         return bindings;
     }
 
@@ -255,5 +257,14 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
             }
             return FormValidation.ok();
         }
+    }
+
+    /**
+     * List the attribute keys of the template bindings exposed by {@link ObservabilityBackend#getBindings()}
+     */
+    public interface TemplateBindings extends ObservabilityBackend.TemplateBindings{
+        String KIBANA_BASE_URL = "kibanaBaseUrl";
+        String KIBANA_DASHBOARD_TITLE = "kibanaDashboardTitle";
+        String KIBANA_SPACE_IDENTIFIER = "kibanaSpaceIdentifier";
     }
 }

@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -20,6 +21,16 @@ public interface TemplateBindingsProvider {
     }
     static TemplateBindingsProvider of(Map<String, String> bindings) {
         return () -> bindings;
+    }
+
+    static TemplateBindingsProvider of(String key, String value) {
+        return of(Collections.singletonMap(key, value));
+    }
+    static TemplateBindingsProvider of(String key1, String value1, String key2, String value2) {
+        Map<String, String> map = new LinkedHashMap<>(2);
+        map.put(key1, value1);
+        map.put(key2, value2);
+        return of(map);
     }
 
     /**

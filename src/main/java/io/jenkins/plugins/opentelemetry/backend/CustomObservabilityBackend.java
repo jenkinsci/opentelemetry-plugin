@@ -11,6 +11,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.CheckForNull;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -94,6 +95,15 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     @Override
     public int hashCode() {
         return Objects.hash(traceVisualisationUrlTemplate, metricsVisualizationUrlTemplate);
+    }
+
+    @Override
+    public Map<String, String> getBindings() {
+        Map<String, String> bindings = new LinkedHashMap<>();
+        bindings.put(ElasticBackend.TemplateBindings.BACKEND_NAME, getName());
+        bindings.put(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/opentelemetry.png");
+
+        return bindings;
     }
 
     @Extension

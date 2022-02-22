@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.base.Strings;
+import groovy.text.GStringTemplateEngine;
 import hudson.Extension;
 import hudson.PluginWrapper;
 import hudson.model.Describable;
@@ -505,7 +506,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nonnull
-    public LogStorageRetriever getLogStorageRetriever(){
+    public LogStorageRetriever getLogStorageRetriever() {
         if (logStorageRetriever == null) {
             throw new IllegalStateException("logStorageRetriever NOT loaded");
         }
@@ -516,17 +517,23 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private LogStorageRetriever resolveLogStorageRetriever() {
         LogStorageRetriever logStorageRetriever = null;
         for (ObservabilityBackend backend : getObservabilityBackends()) {
-            if (backend instanceof TemplateBindingsProvider) {
-                TemplateBindingsProvider templateBindingsProvider = (TemplateBindingsProvider) backend;
-                logStorageRetriever = backend.getLogStorageRetriever(templateBindingsProvider);
-                if (logStorageRetriever != null) {
-                    break;
-                }
+            ObservabilityBackend templateBindingsProvider = backend; // TODO make JenkinsOpenTelemetryPluginConfiguration a templateBindingsProvider
+            logStorageRetriever = backend.getLogStorageRetriever(templateBindingsProvider);
+            if (logStorageRetriever != null) {
+                break;
             }
         }
         if (logStorageRetriever == null) {
-            logStorageRetriever = new CustomLogStorageRetriever(
-                "No observability backend configured to display the build logs for build with traceId: ${traceId}. See documentation: ", "https://plugins.jenkins.io/opentelemetry/");
+            // "No observability backend configured to display the build logs for build with traceId: ${traceId}. See documentation: ",
+            try {
+                logStorageRetriever = new CustomLogStorageRetriever(
+                    new GStringTemplateEngine().createTemplate("https://plugins.jenkins.io/opentelemetry/"), // TODO better documentation URL
+                    TemplateBindingsProvider.of(
+                        ObservabilityBackend.TemplateBindings.BACKEND_NAME, "See documentation on missing logs visualization URL",
+                        ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/opentelemetry.png"));
+            } catch (ClassNotFoundException | IOException e) {
+                throw new IllegalStateException(e);
+            }
         }
         if (LOGGER.isLoggable(Level.INFO)) {
             LOGGER.log(Level.INFO, "resolveStorageRetriever: " + logStorageRetriever);

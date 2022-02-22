@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry.backend.custom;
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
+import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryContext;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
@@ -28,16 +29,6 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
     private final Template buildLogsVisualizationUrlTemplate;
 
     private final TemplateBindingsProvider templateBindingsProvider;
-
-    public CustomLogStorageRetriever(String messageTemplate, String urlTemplate) {
-        GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
-        try {
-            this.buildLogsVisualizationUrlTemplate = gStringTemplateEngine.createTemplate(messageTemplate);
-        } catch (IOException | ClassNotFoundException e) {
-            throw new IllegalArgumentException(e);
-        }
-        this.templateBindingsProvider = TemplateBindingsProvider.empty();
-    }
 
     public CustomLogStorageRetriever(Template buildLogsVisualizationUrlTemplate, TemplateBindingsProvider templateBindingsProvider) {
         this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
@@ -63,10 +54,12 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
         localBindings.put("traceId", traceId);
         localBindings.put("spanId", spanId);
 
-        Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, Collections.singletonMap("traceId", traceId)).getBindings();
+        Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, localBindings).getBindings();
         String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();
 
-        return new LogsQueryResult(new ByteBuffer(), new LogsViewHeader(bindings.get("backendName"), logsVisualizationUrl), StandardCharsets.UTF_8, true, new CustomLogsQueryContext());
+        String backendName = bindings.get(ObservabilityBackend.TemplateBindings.BACKEND_NAME);
+        String backend24x24IconUrl = bindings.get(ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL);
+        return new LogsQueryResult(new ByteBuffer(), new LogsViewHeader(backendName, logsVisualizationUrl, backend24x24IconUrl), StandardCharsets.UTF_8, true, new CustomLogsQueryContext());
     }
 
     @Override

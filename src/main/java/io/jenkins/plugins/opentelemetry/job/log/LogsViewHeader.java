@@ -10,6 +10,8 @@ import hudson.console.ConsoleAnnotationOutputStream;
 import hudson.console.ConsoleAnnotator;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
+import org.kohsuke.stapler.Stapler;
+import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -18,13 +20,16 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 public class LogsViewHeader {
-    final String messageFirstToken = "View logs in ";
-    final String backendName;
-    final String backendUrl;
+    final private static String messageFirstToken = " View logs in ";
+    final private String backendName;
+    final private String backendUrl;
+    final private String backendIconUrl;
 
-    public LogsViewHeader(String backendName, String backendUrl) {
+
+    public LogsViewHeader(String backendName, String backendUrl, String backendIconUrl) {
         this.backendName = backendName;
         this.backendUrl = backendUrl;
+        this.backendIconUrl = backendIconUrl;
     }
 
     public String getMessage() {
@@ -35,7 +40,15 @@ public class LogsViewHeader {
         ConsoleAnnotator consoleAnnotator = new ConsoleAnnotator() {
             @Override
             public ConsoleAnnotator annotate(@Nonnull Object context, @Nonnull MarkupText text) {
-                // TODO add backend logo
+                StaplerRequest currentRequest = Stapler.getCurrentRequest();
+                String iconRootContextRelativeUrl;
+                if (currentRequest == null) { // unit test
+                    iconRootContextRelativeUrl = backendIconUrl;
+                } else {
+                    iconRootContextRelativeUrl = currentRequest.getContextPath() + backendIconUrl;
+                }
+
+                text.addMarkup(0, 0, "<img src='" + iconRootContextRelativeUrl + "' />", "");
                 text.addMarkup(messageFirstToken.length(), messageFirstToken.length() + backendName.length(), "<a href='" + backendUrl + "' target='_blank'>", "</a>");
                 return this;
             }
