@@ -88,6 +88,10 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
         }
     }
 
+    /**
+     * Called by `/job/:jobFullName/:runNumber/consoleText`
+     * FIXME add link to logs visualization screen.
+     */
     @Override
     public long writeLogTo(long start, OutputStream out) throws IOException {
         logger.log(Level.FINE, () -> "writeLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");

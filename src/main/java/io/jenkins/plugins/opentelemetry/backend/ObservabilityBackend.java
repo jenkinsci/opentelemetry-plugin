@@ -74,7 +74,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     public abstract Map<String, Object> mergeBindings(Map<String, Object> bindings);
 
     /**
-     * Returns the specified backend name or the default name. Not {@link null} or empty.
+     * Returns the specified backend name or the default name. Not {@code null} or empty.
      */
     public String getName() {
         return Strings.isNullOrEmpty(name) ? getDefaultName() : name;

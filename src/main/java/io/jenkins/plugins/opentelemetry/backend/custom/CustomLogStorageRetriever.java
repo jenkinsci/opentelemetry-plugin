@@ -54,7 +54,7 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
         localBindings.put("traceId", traceId);
         localBindings.put("spanId", spanId);
 
-        Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, Collections.singletonMap("traceId", traceId)).getBindings();
+        Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, localBindings).getBindings();
         String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();
 
         String backendName = bindings.get(ObservabilityBackend.TemplateBindings.BACKEND_NAME);

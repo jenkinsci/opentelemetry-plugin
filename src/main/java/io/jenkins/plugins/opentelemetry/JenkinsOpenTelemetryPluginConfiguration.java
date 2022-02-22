@@ -517,12 +517,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private LogStorageRetriever resolveLogStorageRetriever() {
         LogStorageRetriever logStorageRetriever = null;
         for (ObservabilityBackend backend : getObservabilityBackends()) {
-            if (backend instanceof TemplateBindingsProvider) {
-                TemplateBindingsProvider templateBindingsProvider = (TemplateBindingsProvider) backend;
-                logStorageRetriever = backend.getLogStorageRetriever(templateBindingsProvider);
-                if (logStorageRetriever != null) {
-                    break;
-                }
+            ObservabilityBackend templateBindingsProvider = backend; // TODO make JenkinsOpenTelemetryPluginConfiguration a templateBindingsProvider
+            logStorageRetriever = backend.getLogStorageRetriever(templateBindingsProvider);
+            if (logStorageRetriever != null) {
+                break;
             }
         }
         if (logStorageRetriever == null) {
