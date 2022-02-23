@@ -281,7 +281,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
             List<FormValidation> validations = new ArrayList<>();
             ElasticsearchIndicesClient indicesClient = this.esClient.indices();
 
-            // workaround https://github.com/jenkinsci/opentelemetry-plugin/issues/336
+            // TODO remove workaround https://github.com/jenkinsci/opentelemetry-plugin/issues/336
             // we just check the existence of the Index Template and assume the Index Lifecycle Policy is "logs-apm.app_logs-default_policy"
             boolean indexTemplateExists;
             try {
