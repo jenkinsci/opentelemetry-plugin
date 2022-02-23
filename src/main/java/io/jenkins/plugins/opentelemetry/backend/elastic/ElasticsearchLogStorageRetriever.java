@@ -304,13 +304,14 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
             if (lifecyclePolicy == null) {
                 validations.add(FormValidation.warning("Index Lifecycle Policy '" + INDEX_LIFECYCLE_POLICY_NAME + "' NOT found"));
             } else {
+                validations.add(FormValidation.ok("Index Lifecycle Policy '" + INDEX_LIFECYCLE_POLICY_NAME + "' found"));
                 Phases phases = lifecyclePolicy.policy().phases();
                 List<String> retentionPolicy = new ArrayList<>();
                 retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.hot(), "hot"));
                 retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.warm(), "warm"));
                 retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.cold(), "cold"));
                 retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.delete(), "delete"));
-                validations.add(FormValidation.ok("Index Lifecycle Policy '" + INDEX_LIFECYCLE_POLICY_NAME + "' found. Retention strategy: "
+                validations.add(FormValidation.ok("Logs retention policy: "
                     + retentionPolicy.stream().collect(Collectors.joining(", "))));
             }
             return validations;
