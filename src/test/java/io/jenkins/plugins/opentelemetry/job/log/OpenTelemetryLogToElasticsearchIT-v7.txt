@@ -5,15 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
@@ -27,13 +18,22 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.InputStream;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -97,35 +97,35 @@ public class OpenTelemetryLogToElasticsearchIT {
             BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(elasticsearchUsername, elasticsearchPassword));
 
-            RestClient restClient = RestClient.builder(HttpHost.create(elasticsearchUrl))
-                .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
-                .build();
-            RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
-            ElasticsearchClient elasticsearchClient = new ElasticsearchClient(elasticsearchTransport);
+            RestHighLevelClient esClient = new RestHighLevelClient(RestClient
+                .builder(HttpHost.create(elasticsearchUrl))
+                .setHttpClientConfigCallback(httpClient -> httpClient.setDefaultCredentialsProvider(credentialsProvider)));
 
-            SearchRequest searchRequest = new SearchRequest.Builder()
-                .index("logs-apm.app-*")
-                .size(500)
-                .sort(s -> s.field(f -> f.field("@timestamp").order(SortOrder.Asc)))
-                .query(q -> q.match(m -> m.field("trace.id").query(FieldValue.of(traceId))))
-                .build();
-            SearchResponse<ObjectNode> searchResponse = elasticsearchClient.search(searchRequest, ObjectNode.class);
-            List<Hit<ObjectNode>> hits = searchResponse.hits().hits();
-            if (hits.size() != LOG_MESSAGE_COUNT) {
-                System.err.println("Invalid number of log messages: actual: " + hits.size() + ", expected: " + LOG_MESSAGE_COUNT);
+            SearchRequest searchRequest = new SearchRequest("logs-apm.app-*")
+                .source(new SearchSourceBuilder()
+                    .size(100)
+                    .sort(new FieldSortBuilder("@timestamp").order(SortOrder.ASC))
+                    .query(QueryBuilders.matchQuery("trace.id", traceId)));
+
+            SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+            SearchHits hits = searchResponse.getHits();
+
+
+            if (hits.getTotalHits().value != LOG_MESSAGE_COUNT) {
+                System.err.println("Invalid number of log messages: actual: " + hits.getTotalHits().value + ", expected: " + LOG_MESSAGE_COUNT);
             }
 
-            for (Hit<ObjectNode> hit : hits) {
+            for (SearchHit hit : hits.getHits()) {
 
-                ObjectNode source = hit.source();
-                ObjectNode labels = (ObjectNode) source.findValue("labels");
-                ObjectNode numericLabels = (ObjectNode) source.findValue("numeric_labels");
+                Map<String, Object> source = hit.getSourceAsMap();
+                Map<String, Object> labels = (Map<String, Object>) source.get("labels");
+                Map<String, Object> numericLabels = (Map<String, Object>) source.get("numeric_labels");
 
                 try {
-                    String message = source.findValue("message").asText();
-                    String myStringAttribute = labels.findValue("myStringAttribute").asText();
-                    long myNumericAttribute = numericLabels.findValue("myNumericAttribute").longValue();
-                    System.out.println(hit.id() + "\tmessage:'" + message + "', \tmyStringAttribute: '" + myStringAttribute + "', myNumericAttribute: " + myNumericAttribute);
+                    Object message = source.get("message");
+                    Object myStringAttribute = labels.get("myStringAttribute");
+                    Object myNumericAttribute = numericLabels.get("myNumericAttribute");
+                    System.out.println(hit.getId() + "\tmessage:'" + message + "', \tmyStringAttribute: '" + myStringAttribute + "', myNumericAttribute: " + myNumericAttribute);
                 } catch (Exception e) {
                     System.err.println("Error parsing " + source);
                 }

@@ -162,17 +162,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                     TemplateBindingsProvider.empty(),
                     tracer);
 
-                if (elasticsearchLogStorageRetriever.indexTemplateExists()) {
-                    return FormValidation.ok("success");
-                } else {
-                    return FormValidation.error("Logs index pattern not found. Verify you use Elastic 8.0+ with data streams for APM");
-                }
-            } catch (NoSuchElementException e) {
-                return FormValidation.error("Invalid credentials.");
-            } catch (IllegalArgumentException e) {
-                return FormValidation.error(e, e.getMessage());
-            } catch (IOException e) {
-                return FormValidation.error(e, e.getMessage());
+                return FormValidation.aggregate(elasticsearchLogStorageRetriever.checkElasticsearchSetup());
             } catch (Exception e) {
                 return FormValidation.error(e, e.getMessage());
             }
