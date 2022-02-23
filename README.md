@@ -84,7 +84,7 @@ unclassified:
           elasticLogsBackend:
             elasticLogsBackendWithJenkinsVisualization:
               elasticsearchCredentialsId: "elasticsearch-logs-creds"
-              elasticsearchUrl: "http://localhost:9200"
+              elasticsearchUrl: "https://***.cloud.es.io:9243"
       - jaeger:
           jaegerBaseUrl: "http://localhost:16686"
           name: "Jaeger"
