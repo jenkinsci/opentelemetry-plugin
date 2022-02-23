@@ -18,12 +18,13 @@ import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
-import com.cloudbees.plugins.credentials.common.IdCredentials;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import groovy.text.Template;
+import hudson.security.ACL;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
@@ -38,6 +39,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONArray;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
@@ -58,12 +60,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -362,12 +364,14 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
      * FIXME optimize search
      */
     public static Credentials getCredentials(String jenkinsCredentialsId) throws NoSuchElementException {
-        final UsernamePasswordCredentials usernamePasswordCredentials = (UsernamePasswordCredentials) SystemCredentialsProvider.getInstance().getCredentials().stream()
-            .filter(credentials ->
-                (credentials instanceof UsernamePasswordCredentials)
-                    && ((IdCredentials) credentials)
-                    .getId().equals(jenkinsCredentialsId))
-            .findAny().orElseThrow(() -> new NoSuchElementException("No credentials found for id '" + jenkinsCredentialsId + "' and type '" + UsernamePasswordCredentials.class.getName() + "'"));
+        UsernamePasswordCredentials usernamePasswordCredentials = (UsernamePasswordCredentials) CredentialsMatchers.firstOrNull(
+            CredentialsProvider.lookupCredentials(UsernamePasswordCredentials.class, Jenkins.get(),
+                ACL.SYSTEM, Collections.EMPTY_LIST),
+            CredentialsMatchers.withId(jenkinsCredentialsId));
+
+        if (usernamePasswordCredentials == null) {
+            throw new NoSuchElementException("No credentials found for id '" + jenkinsCredentialsId + "' and type '" + UsernamePasswordCredentials.class.getName() + "'");
+        }
 
         return new Credentials() {
             @Override
