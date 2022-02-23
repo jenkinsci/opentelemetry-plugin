@@ -287,7 +287,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
             try {
                 indexTemplateExists = indicesClient.existsIndexTemplate(b -> b.name(INDEX_TEMPLATE_NAME)).value();
             } catch (IOException e) {
-                e.printStackTrace();
                 validations.add(FormValidation.warning("Exception accessing Elasticsearch " + elasticsearchUrl, e));
                 return validations;
             }
