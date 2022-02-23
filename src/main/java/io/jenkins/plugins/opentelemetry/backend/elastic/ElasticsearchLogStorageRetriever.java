@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -365,7 +366,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
                 (credentials instanceof UsernamePasswordCredentials)
                     && ((IdCredentials) credentials)
                     .getId().equals(jenkinsCredentialsId))
-            .findAny().get();
+            .findAny().orElseThrow(() -> new NoSuchElementException("No credentials found for id '" + jenkinsCredentialsId + "' and type '" + UsernamePasswordCredentials.class.getName() + "'"));
 
         return new Credentials() {
             @Override
