@@ -11,8 +11,11 @@ import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.ilm.GetLifecycleResponse;
+import co.elastic.clients.elasticsearch.ilm.Phase;
+import co.elastic.clients.elasticsearch.ilm.Phases;
+import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
-import co.elastic.clients.elasticsearch.indices.GetIndexTemplateResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
@@ -33,6 +36,8 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 import net.sf.json.JSONArray;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
@@ -57,8 +62,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 
 /**
@@ -80,6 +87,11 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
     public static final int PAGE_SIZE = 100; // FIXME
     public static final String INDEX_TEMPLATE_PATTERNS = "logs-apm.app-*";
     public static final String INDEX_TEMPLATE_NAME = "logs-apm.app";
+    /**
+     * Waiting to fix https://github.com/jenkinsci/opentelemetry-plugin/issues/336 , we hard code the policy name
+     */
+    public static final String INDEX_LIFECYCLE_POLICY_NAME = "logs-apm.app_logs-default_policy";
+
 
     private final static Logger logger = Logger.getLogger(ElasticsearchLogStorageRetriever.class.getName());
 
@@ -261,62 +273,73 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
         }
     }
 
-    /**
-     * FIXME returns false when true is expected. How to test
-     * check if the configured index template exists.
-     *
-     * @return true if the index template exists.
-     */
-    public boolean indexTemplateExists() throws IOException {
-        ElasticsearchIndicesClient indicesClient = this.esClient.indices();
-        return indicesClient.existsIndexTemplate(b -> b.name(INDEX_TEMPLATE_NAME)).value();
+    public List<FormValidation> checkElasticsearchSetup() throws IOException {
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        // workaround https://github.com/elastic/elasticsearch-java/issues/163
+        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+        try {
+            List<FormValidation> validations = new ArrayList<>();
+            ElasticsearchIndicesClient indicesClient = this.esClient.indices();
+
+            // workaround https://github.com/jenkinsci/opentelemetry-plugin/issues/336
+            // we just check the existence of the Index Template and assume the Index Lifecycle Policy is "logs-apm.app_logs-default_policy"
+            boolean indexTemplateExists;
+            try {
+                indexTemplateExists = indicesClient.existsIndexTemplate(b -> b.name(INDEX_TEMPLATE_NAME)).value();
+            } catch (IOException e) {
+                e.printStackTrace();
+                validations.add(FormValidation.warning("Exception accessing Elasticsearch " + elasticsearchUrl, e));
+                return validations;
+            }
+            validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl));
+
+            if (indexTemplateExists) {
+                validations.add(FormValidation.ok("Index Template '" + INDEX_TEMPLATE_NAME + "' found"));
+            } else {
+                validations.add(FormValidation.warning("Index Template '" + INDEX_TEMPLATE_NAME + "' NOT found"));
+            }
+
+            GetLifecycleResponse getLifecycleResponse = esClient.ilm().getLifecycle(b -> b.name(INDEX_LIFECYCLE_POLICY_NAME));
+            Lifecycle lifecyclePolicy = getLifecycleResponse.get(INDEX_LIFECYCLE_POLICY_NAME);
+            if (lifecyclePolicy == null) {
+                validations.add(FormValidation.warning("Index Lifecycle Policy '" + INDEX_LIFECYCLE_POLICY_NAME + "' NOT found"));
+            } else {
+                Phases phases = lifecyclePolicy.policy().phases();
+                List<String> retentionPolicy = new ArrayList<>();
+                retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.hot(), "hot"));
+                retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.warm(), "warm"));
+                retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.cold(), "cold"));
+                retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.delete(), "delete"));
+                validations.add(FormValidation.ok("Index Lifecycle Policy '" + INDEX_LIFECYCLE_POLICY_NAME + "' found. Retention strategy: "
+                    + retentionPolicy.stream().collect(Collectors.joining(", "))));
+            }
+            return validations;
+        } finally {
+            Thread.currentThread().setContextClassLoader(contextClassLoader);
+        }
     }
 
-    public List<FormValidation> checkStatus() throws IOException {
-        List<FormValidation> validations = new ArrayList<>();
-        ElasticsearchIndicesClient indicesClient = this.esClient.indices();
-
-        GetIndexTemplateResponse indexTemplatesResponse;
-        try {
-            indexTemplatesResponse = indicesClient.getIndexTemplate(b-> b.name(INDEX_TEMPLATE_NAME));
-        } catch (IOException e) {
-            e.printStackTrace();
-            validations.add(FormValidation.error("Exception accessing Elasticsearch " + elasticsearchUrl, e));
-            return validations;
+    @Nonnull
+    protected static String prettyPrintPhaseRetentionPolicy(Phase phase, String phaseName) {
+        if (phase == null) {
+            return phaseName + " [phase not defined]";
         }
-        validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl));
-/*
-         indexTemplates = indexTemplatesResponse.indexTemplates();
-        if (indexTemplates.size() == 0) {
-            validations.add(FormValidation.error("Index Template '" + INDEX_TEMPLATE_NAME + " NOT found"));
-            return validations;
-        } else if (indexTemplates.size() > 1) {
-            validations.add(FormValidation.error("More than 1 Index Template matching '" + INDEX_TEMPLATE_NAME + " found: " + indexTemplates.keySet().stream().collect(Collectors.joining(", "))));
-        } else {
-            validations.add(FormValidation.ok("Index Template '" + INDEX_TEMPLATE_NAME + "' found"));
+        List<String> retentionPolicySpec = new ArrayList<>();
+        JsonValue actionsAsJson = phase.actions().toJson();
+        JsonObject hotPhaseActions = actionsAsJson.asJsonObject();
+        if (hotPhaseActions.containsKey("rollover")) {
+            JsonObject rollOver = hotPhaseActions.getJsonObject("rollover");
+            String maxSize = rollOver.getString("max_size", "not defined");
+            String maxAge = Optional
+                .ofNullable(rollOver.getString("max_age", null))
+                .map(a -> Time.of(b -> b.time(a))).map(t -> t.time()).orElse("Not defined");
+            retentionPolicySpec.add("rollover[maxAge=" + maxAge + ", maxSize=" + maxSize + "]");
         }
-        ComposableIndexTemplate indexTemplate = indexTemplates.get(INDEX_TEMPLATE_NAME);
-        String lifecyclePolicyName;
-        try {
-            lifecyclePolicyName = indexTemplate.template().settings().getAsSettings("index.lifecycle").get("name");
-        } catch (Exception e) {
-            validations.add(FormValidation.error("Lifecycle Policy NOT found for Index Template '" + INDEX_TEMPLATE_NAME + "'"));
-            return validations;
+        if (hotPhaseActions.containsKey("delete")) {
+            String minAge = phase.minAge().time();
+            retentionPolicySpec.add("delete[min_age=" + minAge + "]");
         }
-        IndexLifecycleClient indexLifecycleClient = esClient.indexLifecycle();
-        GetLifecyclePolicyResponse lifecyclePolicyResponse = indexLifecycleClient.getLifecyclePolicy(new GetLifecyclePolicyRequest(lifecyclePolicyName), RequestOptions.DEFAULT);
-        ImmutableOpenMap<String, LifecyclePolicyMetadata> lifecyclePolicieMetadatas = lifecyclePolicyResponse.getPolicies();
-        if (lifecyclePolicieMetadatas.size() == 0) {
-            validations.add(FormValidation.error("Lifecycle Policy '" + lifecyclePolicyName + "' NOT found"));
-            return validations;
-        } else if (lifecyclePolicieMetadatas.size() > 1) {
-            validations.add(FormValidation.error("More than 1 Lifecycle Policy found for name '" + lifecyclePolicyName + "': " + lifecyclePolicieMetadatas.stream().map(p -> p.getValue().getName())));
-        }
-        LifecyclePolicyMetadata lifecyclePolicyMetadata = lifecyclePolicieMetadatas.get(lifecyclePolicyName);
-        Map<String, Phase> phases = lifecyclePolicyMetadata.getPolicy().getPhases();
-        */
-
-        return validations;
+        return phaseName + "[" + retentionPolicySpec.stream().collect(Collectors.joining(",")) + "]";
     }
 
 
