@@ -59,7 +59,7 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
                 }
 
                 String urlTemplate = kibanaSpaceBaseUrl + "/app/logs/stream?" +
-                    "logPosition=(end:now,start:now-1d,streamLive:!f)&" +
+                    "logPosition=(end:now,start:now-40d,streamLive:!f)&" +
                     "logFilter=(language:kuery,query:%27trace.id:${traceId}%27)&";
                 GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
                 try {
