@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryContext;
@@ -18,13 +19,14 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 @Ignore
 public class ElasticsearchRetrieverIT {
 
     @Test
-    public void test() throws IOException {
+    public void testIndexExist() throws IOException {
         InputStream envAsStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
         Assert.assertNotNull(".env file not found in classpath", envAsStream);
         Properties env = new Properties();
@@ -58,4 +60,29 @@ public class ElasticsearchRetrieverIT {
         } while (!logsQueryResult.isComplete() && counter < MAX);
         Assert.assertTrue(counter < MAX);
     }
+
+    @Test
+    public void testCheckStatus() throws IOException {
+        InputStream envAsStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
+        Assert.assertNotNull(".env file not found in classpath", envAsStream);
+        Properties env = new Properties();
+        env.load(envAsStream);
+
+        String url = env.getProperty("elasticsearch.url");
+        String username = env.getProperty("elasticsearch.username");
+        String password = env.getProperty("elasticsearch.password");
+        String kibanaBaseUrl = env.getProperty("kibana.baseUrl");
+
+        ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
+            url,
+            new UsernamePasswordCredentials(username, password),
+            ObservabilityBackend.ERROR_TEMPLATE /* TODO better URL template */,
+            TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)),
+            OpenTelemetry.noop().getTracer("test"));
+        final List<FormValidation> formValidations = elasticsearchLogStorageRetriever.checkStatus();
+        for (FormValidation formValidation : formValidations) {
+            System.out.println(formValidation);
+        }
+    }
+
 }
