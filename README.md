@@ -80,6 +80,11 @@ unclassified:
       - elastic:
           kibanaBaseUrl: "http://localhost:5601"
           name: "Elastic Observability"
+          displayKibanaDashboardLink: true
+          elasticLogsBackend:
+            elasticLogsBackendWithJenkinsVisualization:
+              elasticsearchCredentialsId: "elasticsearch-logs-creds"
+              elasticsearchUrl: "http://localhost:9200"
       - jaeger:
           jaegerBaseUrl: "http://localhost:16686"
           name: "Jaeger"
@@ -208,7 +213,7 @@ In addition, if the backends were configured then there will be an environment v
 | ci.pipeline.parameter.name       | Name of the parameters | String[] |
 | ci.pipeline.parameter.value      | Value of the parameters. "Sensitive" values are redacted | String[] |
 
-##### Pipeline step spans  
+##### Pipeline step spans
 
 | Status Code | Status Description | Description |
 |-------------|--------------------|-------------|

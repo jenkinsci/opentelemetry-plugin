@@ -1,0 +1,21 @@
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              description: Elasticsearch User/Pass
+              id: elasticsearch-logs-creds
+              password: my-pass
+              scope: GLOBAL
+              username: my-user
+unclassified:
+  openTelemetry:
+    endpoint: "http://otel-collector-contrib:4317"
+    observabilityBackends:
+      - elastic:
+          name: "My Elastic"
+          kibanaBaseUrl: "http://localhost:5601"
+          elasticLogsBackend:
+            elasticLogsBackendWithJenkinsVisualization:
+              elasticsearchCredentialsId: "elasticsearch-logs-creds"
+              elasticsearchUrl: "http://localhost:9200"
