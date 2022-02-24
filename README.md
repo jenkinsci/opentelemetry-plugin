@@ -119,7 +119,7 @@ See this [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc/zipki
 
 See this [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc/elastic.yml) about configuring Elastic for traces and metrics.
 
-### Elastic for traces, metrics and logs
+### Elastic for traces, metrics and logs (Version 2.0.0+)
 
 See this [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc/elastic-logs.yml) about configuring Elastic for traces, metrics and logs (logs visualization both in Elastic Kibana and through Jenkins).
 
