@@ -34,7 +34,7 @@ The Jenkins pipeline build console then displays a hyperlink to Kibana rather th
 
 <img width="400px"
    alt="Configuration - Elastic Observability Backend - Advanced configuration"
-   src="./images/jenkins-pipeline-build-console-with-hlink-elastic-zoom.png" />
+   src="./images/jenkins-pipeline-build-console-with-hlink-elastic-and-without-logs-zoom.png" />
 
 Example configuration:
 
