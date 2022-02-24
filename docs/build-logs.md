@@ -24,7 +24,7 @@ To store pipeline logs in Elastic,
 
 <img width="400px"
 alt="Configuration - Elastic Observability Backend - Advanced configuration"
-src="./images/jenkins-config-elastic-backend-advanced-button.png)
+src="./images/jenkins-config-elastic-backend-advanced-button.png" />
 
 
 ### Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana
@@ -40,7 +40,7 @@ The Jenkins pipeline build console then displays a hyperlink to Kibana rather th
 
 <img width="400px" 
    alt="Configuration - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana"
-   src="jenkins-pipeline-logs-elastic-without-visualization-through-jenkins.png" />
+   src="./images/jenkins-pipeline-logs-elastic-without-visualization-through-jenkins.png" />
 
 #### Architecture
 
