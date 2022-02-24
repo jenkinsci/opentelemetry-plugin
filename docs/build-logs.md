@@ -36,12 +36,17 @@ The Jenkins pipeline build console then displays a hyperlink to Kibana rather th
    alt="Configuration - Elastic Observability Backend - Advanced configuration"
    src="./images/jenkins-pipeline-build-console-with-hlink-elastic-and-without-logs-zoom.png" />
 
-Example configuration:
+#### Example configuration
 
 <img width="400px" 
    alt="Configuration - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana"
-   src="./images/jenkins-config-elastic-logs-without-visualization-through-jenkins.png" />
+   src="jenkins-pipeline-logs-elastic-without-visualization-through-jenkins.png" />
 
+#### Architecture
+
+<img width="400px"
+alt="Architecture - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana"
+src="./images/jenkins-config-elastic-logs-without-visualization-through-jenkins.png" />
 
 ### Storing Jenkins Pipeline Logs in Elastic visualizing logs both in Kibana and through the Jenkins build console
 
@@ -56,10 +61,17 @@ This more advanced setup requires connecting from the Jenkins Controller to Elas
 
 Please use the "Validate Elasticsearch configuration" to verify the setup.
 
+#### Configuration
+
 <img width="400px"
-   alt="Configuration - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana"
+   alt="Configuration - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana and through Jenkins"
    src="./images/jenkins-config-elastic-logs-with-visualization-through-jenkins.png" />
 
+#### Architecture
+
+<img width="400px"
+alt="Configuration - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana and through Jenkins"
+src="./images/jenkins-pipeline-logs-elastic-with-visualization-through-jenkins.png" />
 
 ## FAQ
 
