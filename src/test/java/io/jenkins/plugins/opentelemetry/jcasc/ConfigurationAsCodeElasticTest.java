@@ -11,54 +11,45 @@ import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
-import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
+import io.jenkins.plugins.opentelemetry.authentication.BearerTokenAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
-import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithJenkinsVisualization;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 
 import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
 import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
 import static io.jenkins.plugins.casc.misc.Util.toYamlString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 
-public class ConfigurationAsCodeElasticLogsBackendTest {
+public class ConfigurationAsCodeElasticTest {
 
     @ClassRule
-    @ConfiguredWithCode("elastic-logs.yml")
+    @ConfiguredWithCode("elastic.yml")
     public static JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
 
     @Test
     public void should_support_configuration_as_code() {
         final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
-        MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
+        MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("https://my-deployment.apm.europe-west1.gcp.cloud.es.io"));
+        MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(1));
 
         ElasticBackend elastic = (ElasticBackend) configuration.getObservabilityBackends().get(0);
-        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://kibana.europe-west1.gcp.cloud.es.io:9243"));
+        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://my-deployment.europe-west1.gcp.cloud.es.io:9243"));
         MatcherAssert.assertThat(elastic.getName(), CoreMatchers.is("My Elastic"));
 
-        ElasticLogsBackendWithJenkinsVisualization elasticLogsBackend = (ElasticLogsBackendWithJenkinsVisualization) elastic.getElasticLogsBackend();
-        MatcherAssert.assertThat(elasticLogsBackend.getElasticsearchCredentialsId(), CoreMatchers.is("elasticsearch-logs-creds"));
-        MatcherAssert.assertThat(elasticLogsBackend.getElasticsearchUrl(), CoreMatchers.is("https://es.europe-west1.gcp.cloud.es.io:9243"));
+        BearerTokenAuthentication authentication = (BearerTokenAuthentication) configuration.getAuthentication();
+        MatcherAssert.assertThat(authentication.getTokenId(), CoreMatchers.is("apm-server-token"));
 
-        OtlpAuthentication authentication = configuration.getAuthentication();
-        MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
+        MatcherAssert.assertThat(configuration.getServiceName(), CoreMatchers.is("my-jenkins"));
+        MatcherAssert.assertThat(configuration.getServiceNamespace(), CoreMatchers.is("ci"));
 
-        MatcherAssert.assertThat(configuration.getExporterTimeoutMillis(), CoreMatchers.nullValue());
-        MatcherAssert.assertThat(configuration.getExporterIntervalMillis(), CoreMatchers.nullValue());
-
-        MatcherAssert.assertThat(configuration.getIgnoredSteps(), CoreMatchers.is("dir,echo,isUnix,pwd,properties"));
-
-        MatcherAssert.assertThat(configuration.getServiceName(), CoreMatchers.is("jenkins"));
-        MatcherAssert.assertThat(configuration.getServiceNamespace(), CoreMatchers.is("jenkins"));
+        MatcherAssert.assertThat(configuration.getExporterIntervalMillis(), CoreMatchers.is(Integer.valueOf(60_000)));
+        MatcherAssert.assertThat(configuration.getExporterTimeoutMillis(), CoreMatchers.is(Integer.valueOf(30_000)));
     }
 
     @Test
@@ -69,7 +60,7 @@ public class ConfigurationAsCodeElasticLogsBackendTest {
 
         String exported = toYamlString(yourAttribute);
 
-        String expected = toStringFromYamlFile(this, "elastic-logs-expected.yml");
+        String expected = toStringFromYamlFile(this, "elastic-expected.yml");
 
         MatcherAssert.assertThat(exported, CoreMatchers.is(expected));
     }

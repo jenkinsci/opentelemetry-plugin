@@ -14,7 +14,7 @@ import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
-import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithJenkinsVisualization;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithoutJenkinsVisualization;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
 import org.hamcrest.CoreMatchers;
@@ -29,10 +29,10 @@ import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
 import static io.jenkins.plugins.casc.misc.Util.toYamlString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 
-public class ConfigurationAsCodeElasticLogsBackendTest {
+public class ConfigurationAsCodeElasticLogsBackendExclusiveTest {
 
     @ClassRule
-    @ConfiguredWithCode("elastic-logs.yml")
+    @ConfiguredWithCode("elastic-logs-exclusive.yml")
     public static JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
 
     @Test
@@ -45,9 +45,8 @@ public class ConfigurationAsCodeElasticLogsBackendTest {
         MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://kibana.europe-west1.gcp.cloud.es.io:9243"));
         MatcherAssert.assertThat(elastic.getName(), CoreMatchers.is("My Elastic"));
 
-        ElasticLogsBackendWithJenkinsVisualization elasticLogsBackend = (ElasticLogsBackendWithJenkinsVisualization) elastic.getElasticLogsBackend();
-        MatcherAssert.assertThat(elasticLogsBackend.getElasticsearchCredentialsId(), CoreMatchers.is("elasticsearch-logs-creds"));
-        MatcherAssert.assertThat(elasticLogsBackend.getElasticsearchUrl(), CoreMatchers.is("https://es.europe-west1.gcp.cloud.es.io:9243"));
+        ElasticLogsBackendWithoutJenkinsVisualization elasticLogsBackend = (ElasticLogsBackendWithoutJenkinsVisualization) elastic.getElasticLogsBackend();
+        MatcherAssert.assertThat(elasticLogsBackend, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         OtlpAuthentication authentication = configuration.getAuthentication();
         MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
@@ -69,7 +68,7 @@ public class ConfigurationAsCodeElasticLogsBackendTest {
 
         String exported = toYamlString(yourAttribute);
 
-        String expected = toStringFromYamlFile(this, "elastic-logs-expected.yml");
+        String expected = toStringFromYamlFile(this, "elastic-logs-exclusive-expected.yml");
 
         MatcherAssert.assertThat(exported, CoreMatchers.is(expected));
     }

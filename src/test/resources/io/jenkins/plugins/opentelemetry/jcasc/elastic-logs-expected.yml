@@ -8,8 +8,8 @@ observabilityBackends:
     elasticLogsBackend:
       elasticLogsBackendWithJenkinsVisualization:
         elasticsearchCredentialsId: "elasticsearch-logs-creds"
-        elasticsearchUrl: "http://localhost:9200"
-    kibanaBaseUrl: "http://localhost:5601"
+        elasticsearchUrl: "https://es.europe-west1.gcp.cloud.es.io:9243"
+    kibanaBaseUrl: "https://kibana.europe-west1.gcp.cloud.es.io:9243"
     name: "My Elastic"
 serviceName: "jenkins"
 serviceNamespace: "jenkins"

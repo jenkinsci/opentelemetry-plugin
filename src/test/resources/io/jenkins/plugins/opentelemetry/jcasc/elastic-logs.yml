@@ -14,8 +14,8 @@ unclassified:
     observabilityBackends:
       - elastic:
           name: "My Elastic"
-          kibanaBaseUrl: "http://localhost:5601"
+          kibanaBaseUrl: "https://kibana.europe-west1.gcp.cloud.es.io:9243"
           elasticLogsBackend:
             elasticLogsBackendWithJenkinsVisualization:
               elasticsearchCredentialsId: "elasticsearch-logs-creds"
-              elasticsearchUrl: "http://localhost:9200"
+              elasticsearchUrl: "https://es.europe-west1.gcp.cloud.es.io:9243"
