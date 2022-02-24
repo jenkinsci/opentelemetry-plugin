@@ -107,6 +107,24 @@ See the [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc) folde
 For more details see the configuration as code plugin documentation:
 <https://github.com/jenkinsci/configuration-as-code-plugin#getting-started>
 
+### Jaeger for traces
+
+See this [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc/jaeger.yml) about configuring Jaeger for traces.
+
+### Zipkin for traces
+
+See this [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc/zipkin.yml) about configuring Zipkin for traces.
+
+### Elastic for traces and metrics
+
+See this [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc/elastic.yml) about configuring Elastic for traces and metrics.
+
+### Elastic for traces, metrics and logs
+
+See this [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc/elastic-logs.yml) about configuring Elastic for traces, metrics and logs (logs visualization both in Elastic Kibana and through Jenkins).
+
+See this [jcasc](src/test/resources/io/jenkins/plugins/opentelemetry/jcasc/elastic-logs-exclusive.yml) about configuring Elastic for traces, metrics and logs (exclusively logs visualization in Elastic Kibana).
+
 ## Setup
 
 ### Setup for Elastic
