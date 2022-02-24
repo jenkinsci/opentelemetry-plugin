@@ -1,0 +1,8 @@
+unclassified:
+  openTelemetry:
+    endpoint: "http://otel-collector-contrib:4317"
+    observabilityBackends:
+      - elastic:
+          name: "My Elastic"
+          kibanaBaseUrl: "https://kibana.europe-west1.gcp.cloud.es.io:9243"
+          elasticLogsBackend: "elasticLogsBackendWithoutJenkinsVisualization"
