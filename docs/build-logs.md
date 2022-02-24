@@ -22,7 +22,9 @@ To store pipeline logs in Elastic,
 * Set the Kibana URL
 * Click on the "Advanced" button to choose the storage integration strategy
 
-![Configuration - Elastic Observability Backend - Advanced configuration](./images/jenkins-config-elastic-backend-advanced-button.png)
+<img width="400px"
+alt="Configuration - Elastic Observability Backend - Advanced configuration"
+src="./images/jenkins-config-elastic-backend-advanced-button.png)
 
 
 ### Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana
@@ -30,7 +32,9 @@ To store pipeline logs in Elastic,
 The Jenkins OpenTelemetry provides turnkey storage of pipeline logs in Elasticsearch with visualization in Kibana.
 The Jenkins pipeline build console then displays a hyperlink to Kibana rather than displaying the logs.
 
-![Configuration - Elastic Observability Backend - Advanced configuration](./images/jenkins-pipeline-build-console-with-hlink-elastic-zoom.png)
+<img width="400px"
+   alt="Configuration - Elastic Observability Backend - Advanced configuration"
+   src="./images/jenkins-pipeline-build-console-with-hlink-elastic-zoom.png" />
 
 Example configuration:
 
@@ -43,14 +47,18 @@ Example configuration:
 
 The Jenkins OpenTelemetry can also store of pipeline logs in Elasticsearch proving visualization of pipeline logs in Kibana while continuing to display them through the Jenkins pipeline build console.
 
-![Configuration - Elastic Observability Backend - Advanced configuration](./images/jenkins-pipeline-build-console-with-hlink-elastic-and-logs-zoom.png)
+<img width="400px"
+   alt="Configuration - Elastic Observability Backend - Advanced configuration"
+   src="./images/jenkins-pipeline-build-console-with-hlink-elastic-and-logs-zoom.png" />
 
 
 This more advanced setup requires connecting from the Jenkins Controller to Elasticsearch with read permissions on the `logs-apm.app` and preferably on the Metadata of the ILM policy of this index template (by default it's the `logs-apm.app_logs-default_policy` policy).  
 
 Please use the "Validate Elasticsearch configuration" to verify the setup.
 
-![Configuration - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana](./images/jenkins-config-elastic-logs-with-visualization-through-jenkins.png)
+<img width="400px"
+   alt="Configuration - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana"
+   src="./images/jenkins-config-elastic-logs-with-visualization-through-jenkins.png" />
 
 
 ## FAQ
