@@ -417,6 +417,21 @@
             <artifactId>configuration-as-code</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+        HTML Publisher for blueocen 1.24.7 conflicts with the htmlpublisher we retrieve
+        <dependency>
+            <groupId>io.jenkins.blueocean</groupId>
+            <artifactId>blueocean</artifactId>
+            <version>1.24.7</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jenkins-ci.plugins</groupId>
+                    <artifactId>htmlpublisher</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        -->
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ssh-slaves</artifactId>

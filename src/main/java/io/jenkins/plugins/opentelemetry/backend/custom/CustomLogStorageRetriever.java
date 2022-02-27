@@ -35,13 +35,13 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
 
     @Nonnull
     @Override
-    public LogsQueryResult overallLog(@Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nullable CustomLogsQueryContext logsQueryContext) throws IOException {
+    public LogsQueryResult overallLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nullable CustomLogsQueryContext logsQueryContext) throws IOException {
         return getLogsQueryResult(traceId, spanId);
     }
 
     @Nonnull
     @Override
-    public LogsQueryResult stepLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable CustomLogStorageRetriever.CustomLogsQueryContext logsQueryContext) throws IOException {
+    public LogsQueryResult stepLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, @Nullable CustomLogStorageRetriever.CustomLogsQueryContext logsQueryContext) throws IOException {
         return getLogsQueryResult(traceId, spanId);
     }
 

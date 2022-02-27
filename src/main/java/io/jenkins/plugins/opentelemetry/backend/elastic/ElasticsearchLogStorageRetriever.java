@@ -8,6 +8,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -85,7 +87,11 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
      */
     public static final String FIELD_TRACE_ID = "trace.id";
     public static final String FIELD_TIMESTAMP = "@timestamp";
+    public static final String FIELD_CI_PIPELINE_ID = "labels." + JenkinsOtelSemanticAttributes.CI_PIPELINE_ID.getKey().replace('.', '_');
+    public static final String FIELD_CI_PIPELINE_RUN_NUMBER = "numeric_labels." + JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER.getKey().replace('.', '_');
+    public static final String FIELD_JENKINS_STEP_ID = "labels." + JenkinsOtelSemanticAttributes.JENKINS_STEP_ID.getKey().replace('.', '_');
 
+    @Deprecated
     public static final Time POINT_IN_TIME_KEEP_ALIVE = Time.of(builder -> builder.time("30s"));
     public static final int PAGE_SIZE = 100; // FIXME
     public static final String INDEX_TEMPLATE_PATTERNS = "logs-apm.app-*";
@@ -114,9 +120,9 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
      * TODO verify unsername:password auth vs apiKey auth
      */
     public ElasticsearchLogStorageRetriever(
-        String elasticsearchUrl, Credentials elasticsearchCredentials,
-        Template buildLogsVisualizationUrlTemplate, TemplateBindingsProvider templateBindingsProvider,
-        Tracer tracer) {
+        @Nonnull String elasticsearchUrl, @Nonnull Credentials elasticsearchCredentials,
+        @Nonnull Template buildLogsVisualizationUrlTemplate, @Nonnull TemplateBindingsProvider templateBindingsProvider,
+        @Nonnull Tracer tracer) {
 
         if (StringUtils.isBlank(elasticsearchUrl)) {
             throw new IllegalArgumentException("Elasticsearch url cannot be blank");
@@ -137,9 +143,96 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
         this.templateBindingsProvider = templateBindingsProvider;
     }
 
+    /**
+     * Waiting to better understand pagination of logs in Jenkins, we just grab the first 100 lines of logs
+     */
     @Nonnull
     @Override
-    public LogsQueryResult overallLog(@Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nullable ElasticsearchLogsQueryContext context) throws IOException {
+    public LogsQueryResult overallLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nullable ElasticsearchLogsQueryContext context) throws IOException {
+        Span span = tracer.spanBuilder("elasticsearch.search")
+            .startSpan();
+        try (Scope scope = span.makeCurrent()) {
+
+            final Charset charset = StandardCharsets.UTF_8;
+            final boolean completed;
+            final List<Hit<ObjectNode>> hits;
+
+            span.setAttribute("query.index", INDEX_TEMPLATE_PATTERNS)
+                .setAttribute("query.size", PAGE_SIZE)
+                .setAttribute("query.match.traceId", traceId)
+                .setAttribute("query.match.jobFullName", jobFullName)
+                .setAttribute("query.match.runNumber", runNumber);
+
+
+            Query query = QueryBuilders.bool()
+                .must(
+                    QueryBuilders.match().field(FIELD_TRACE_ID).query(FieldValue.of(traceId)).build()._toQuery(),
+                    QueryBuilders.match().field(FIELD_CI_PIPELINE_ID).query(FieldValue.of(jobFullName)).build()._toQuery(),
+                    QueryBuilders.match().field(FIELD_CI_PIPELINE_RUN_NUMBER).query(FieldValue.of(runNumber)).build()._toQuery()
+                )
+                .build()._toQuery();
+
+            SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(INDEX_TEMPLATE_PATTERNS)
+                .size(PAGE_SIZE)
+                .sort(s -> s.field(f -> f.field(FIELD_TIMESTAMP).order(SortOrder.Asc)))
+                .query(query)
+                // .fields() TODO narrow down the list fields to retrieve - we probably have to look at a source filter
+                .build();
+
+            logger.log(Level.FINE, "Retrieve logs for traceId: " + traceId);
+            ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+            // workaround https://github.com/elastic/elasticsearch-java/issues/163
+            Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+            SearchResponse<ObjectNode> searchResponse;
+            try {
+                searchResponse = this.esClient.search(searchRequest, ObjectNode.class);
+            } finally {
+                Thread.currentThread().setContextClassLoader(contextClassLoader);
+            }
+            hits = searchResponse.hits().hits();
+
+            span.setAttribute("results", hits.size());
+            completed = hits.size() != PAGE_SIZE; // TODO is there smarter?
+
+            ByteBuffer byteBuffer = new ByteBuffer();
+
+            try (Writer w = new OutputStreamWriter(byteBuffer, charset)) {
+                writeOutput(w, hits);
+                span.setAttribute("results", hits.size());
+                span.setAttribute("completed", completed);
+            }
+
+            logger.log(Level.FINE, () -> "overallLog(completed: " + completed + ", hits: " + hits.size() + ", written.length: " + byteBuffer.length() + ")");
+            Map<String, String> localBindings = new HashMap<>();
+            localBindings.put("traceId", traceId);
+            localBindings.put("spanId", spanId);
+
+            Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, localBindings).getBindings();
+            String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();
+
+            logger.log(Level.FINE, () -> "overallLog(written.length: " + byteBuffer.length() + ")");
+            return new LogsQueryResult(
+                byteBuffer,
+                new LogsViewHeader(bindings.get(ElasticBackend.TemplateBindings.BACKEND_NAME), logsVisualizationUrl, bindings.get(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL)),
+                charset, completed,
+                new ElasticsearchLogsQueryContext(null, 0)
+            );
+        } catch (IOException | RuntimeException e) {
+            span.recordException(e);
+            throw e;
+        } finally {
+            span.end();
+        }
+    }
+
+    /**
+     * TODO PointInTime API will be used when we understand the pagination of logs in Jenkins
+     * @deprecated use {@link #overallLog(String, int, String, String, boolean, ElasticsearchLogsQueryContext)}
+     */
+    @Deprecated
+    @Nonnull
+    public LogsQueryResult overallLogWithPointInTime(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nullable ElasticsearchLogsQueryContext context) throws IOException {
         // https://www.elastic.co/guide/en/elasticsearch/reference/7.17/point-in-time-api.html
         Span span = tracer.spanBuilder("elasticsearch.search")
             .startSpan();
@@ -244,8 +337,83 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
      */
     @Nonnull
     @Override
-    public LogsQueryResult stepLog(@Nonnull String traceId, @Nonnull String spanId, @Nullable ElasticsearchLogsQueryContext logsQueryContext) throws IOException {
-        throw new UnsupportedOperationException("Not yet implemented");
+    public LogsQueryResult stepLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, @Nullable ElasticsearchLogsQueryContext logsQueryContext) throws IOException {
+        Span span = tracer.spanBuilder("elasticsearch.search")
+            .startSpan();
+        try (Scope scope = span.makeCurrent()) {
+
+            final Charset charset = StandardCharsets.UTF_8;
+            final boolean completed;
+            final List<Hit<ObjectNode>> hits;
+
+            span.setAttribute("query.index", INDEX_TEMPLATE_PATTERNS)
+                .setAttribute("query.size", PAGE_SIZE)
+                .setAttribute("query.match.traceId", traceId)
+                .setAttribute("query.match.jobFullName", jobFullName)
+                .setAttribute("query.match.runNumber", runNumber)
+                .setAttribute("query.match.flowNodeId", flowNodeId);
+
+
+            Query query = QueryBuilders.bool()
+                .must(
+                    QueryBuilders.match().field(FIELD_TRACE_ID).query(FieldValue.of(traceId)).build()._toQuery(),
+                    QueryBuilders.match().field(FIELD_CI_PIPELINE_ID).query(FieldValue.of(jobFullName)).build()._toQuery(),
+                    QueryBuilders.match().field(FIELD_CI_PIPELINE_RUN_NUMBER).query(FieldValue.of(runNumber)).build()._toQuery(),
+                    QueryBuilders.match().field(FIELD_JENKINS_STEP_ID).query(FieldValue.of(flowNodeId)).build()._toQuery()
+                )
+                .build()._toQuery();
+
+            SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(INDEX_TEMPLATE_PATTERNS)
+                .size(PAGE_SIZE)
+                .sort(s -> s.field(f -> f.field(FIELD_TIMESTAMP).order(SortOrder.Asc)))
+                .query(query)
+                // .fields() TODO narrow down the list fields to retrieve - we probably have to look at a source filter
+                .build();
+
+            ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+            // workaround https://github.com/elastic/elasticsearch-java/issues/163
+            Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
+            SearchResponse<ObjectNode> searchResponse;
+            try {
+                searchResponse = this.esClient.search(searchRequest, ObjectNode.class);
+            } finally {
+                Thread.currentThread().setContextClassLoader(contextClassLoader);
+            }
+            hits = searchResponse.hits().hits();
+
+            span.setAttribute("results", hits.size());
+            completed = hits.size() != PAGE_SIZE; // TODO is there smarter?
+
+            ByteBuffer byteBuffer = new ByteBuffer();
+
+            try (Writer w = new OutputStreamWriter(byteBuffer, charset)) {
+                writeOutput(w, hits);
+                span.setAttribute("results", hits.size());
+                span.setAttribute("completed", completed);
+            }
+
+            logger.log(Level.FINE, () -> "stepLog(completed: " + completed + ", hits: " + hits.size() + ", written.length: " + byteBuffer.length() + ")");
+            Map<String, String> localBindings = new HashMap<>();
+            localBindings.put("traceId", traceId);
+            localBindings.put("spanId", spanId);
+
+            Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, localBindings).getBindings();
+            String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();
+
+            logger.log(Level.FINE, () -> "stepLog(written.length: " + byteBuffer.length() + ")");
+            return new LogsQueryResult(
+                byteBuffer,
+                new LogsViewHeader(bindings.get(ElasticBackend.TemplateBindings.BACKEND_NAME), logsVisualizationUrl, bindings.get(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL)),
+                charset, completed,
+                new ElasticsearchLogsQueryContext(null, 0)
+            );
+        } catch (IOException | RuntimeException e) {
+            span.recordException(e);
+            throw e;
+        } finally {
+            span.end();
+        }
     }
 
     private void writeOutput(Writer writer, List<Hit<ObjectNode>> hits) throws IOException {
@@ -264,6 +432,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
             if (labels == null) {
                 annotations = null;
             } else {
+
                 JsonNode annotationsAsText = labels.get(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS.getKey());
                 if (annotationsAsText == null) {
                     annotations = null;
@@ -348,7 +517,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever<Ela
 
     @Override
     public void close() throws IOException {
-        logger.log(Level.INFO, () -> "Shutdown Elasticsearch client...");
+        logger.log(Level.FINE, () -> "Shutdown Elasticsearch client...");
         this.esClient.shutdown();
     }
 

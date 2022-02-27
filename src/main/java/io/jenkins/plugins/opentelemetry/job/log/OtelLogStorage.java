@@ -102,13 +102,14 @@ class OtelLogStorage implements LogStorage {
         return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, otelConfigurationProperties, otelResourceAttributes);
     }
 
-    /**
-     * FIXME implement `TaskListener nodeListener(@Nonnull FlowNode node)`
-     */
     @Nonnull
     @Override
-    public TaskListener nodeListener(@Nonnull FlowNode node) {
-        return overallListener();
+    public TaskListener nodeListener(@Nonnull FlowNode flowNode) {
+        OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
+        Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
+        Map<String, String> otelResourceAttributes = new HashMap<>();
+        otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
+        return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, flowNode.getId(),  otelConfigurationProperties, otelResourceAttributes);
     }
 
     @Nonnull
@@ -131,10 +132,10 @@ class OtelLogStorage implements LogStorage {
             LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
             LogsQueryResult logsQueryResult;
             try {
-                logsQueryResult = logStorageRetriever.overallLog(traceId, spanId, complete, logsQueryContext);
+                logsQueryResult = logStorageRetriever.overallLog(buildInfo.getJobFullName(), buildInfo.runNumber, traceId, spanId, complete, logsQueryContext);
             } catch (ClassCastException e) {
                 logger.log(Level.INFO, "LogStorageRetriever has changed to " + logStorageRetriever + ", reset context");
-                logsQueryResult = logStorageRetriever.overallLog(traceId, spanId, complete, null);
+                logsQueryResult = logStorageRetriever.overallLog(buildInfo.getJobFullName(), buildInfo.runNumber, traceId, spanId, complete, null);
             }
             logsQueryContexts.put(traceAndSpanId, logsQueryResult.getLogsQueryContext());
             span.setAttribute("completed", logsQueryResult.isComplete())
@@ -163,7 +164,7 @@ class OtelLogStorage implements LogStorage {
                 throw new IllegalStateException("traceId or spanId is null for " + buildInfo);
             }
             TraceAndSpanAndFlowNodeId traceAndSpanAndFlowNodeId = new TraceAndSpanAndFlowNodeId(traceId, spanId, flowNode.getId());
-            LogsQueryResult logsQueryResult = getLogStorageRetriever().stepLog(traceId, spanId, logsQueryContexts.get(traceAndSpanAndFlowNodeId));
+            LogsQueryResult logsQueryResult = getLogStorageRetriever().stepLog(buildInfo.getJobFullName(), buildInfo.runNumber, flowNode.getId(), traceId, spanId, logsQueryContexts.get(traceAndSpanAndFlowNodeId));
             logsQueryContexts.put(traceAndSpanAndFlowNodeId, logsQueryResult.getLogsQueryContext());
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());

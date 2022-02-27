@@ -31,6 +31,7 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
 
     @Nonnull
     final BuildInfo buildInfo;
+    @Nullable String flowNodeId;
     /**
      * {@link Map} version of the {@link Context} used to associate log message with the right {@link Span}
      */
@@ -43,8 +44,9 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
      * @param buildInfo
      * @param w3cTraceContext Serializable version of the {@link Context} used to associate log messages with {@link io.opentelemetry.api.trace.Span}s
      */
-    public OtelLogOutputStream(BuildInfo buildInfo, Map<String, String> w3cTraceContext, LogEmitter logEmitter, Clock clock) {
+    public OtelLogOutputStream(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nonnull Map<String, String> w3cTraceContext, @Nonnull LogEmitter logEmitter, @Nonnull Clock clock) {
         this.buildInfo = buildInfo;
+        this.flowNodeId = flowNodeId;
         this.logEmitter = logEmitter;
         this.clock = clock;
         this.w3cTraceContext = w3cTraceContext;
@@ -77,6 +79,9 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
                 attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS, textAndAnnotations.annotations.toString());
             }
             attributesBuilder.putAll(buildInfo.toAttributes());
+            if (flowNodeId != null) {
+                attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId);
+            }
             logEmitter.logBuilder()
                 .setBody(plainLogLine)
                 .setAttributes(attributesBuilder.build())
