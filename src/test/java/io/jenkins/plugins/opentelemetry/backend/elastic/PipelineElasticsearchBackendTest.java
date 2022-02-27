@@ -92,10 +92,12 @@ public class PipelineElasticsearchBackendTest {
 //            OpenTelemetry.noop().getTracer("test"));
 //    }
 
+
     @Test
     public void test() throws Exception {
         jenkinsRule.createSlave("remote", null, null);
         WorkflowJob p = jenkinsRule.jenkins.createProject(WorkflowJob.class, "p");
+        p.getFullName();
         p.setDefinition(new CpsFlowDefinition("node('remote') {\n" + "  echo 'Hello'\n" + "}", true));
         WorkflowRun run = jenkinsRule.buildAndAssertSuccess(p);
         waitForLogs(run);
@@ -111,7 +113,7 @@ public class PipelineElasticsearchBackendTest {
         boolean complete = true;
         do {
             try {
-                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(traceId, spanId, complete, null);
+                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(run.getParent().getFullName(), run.getNumber(), traceId, spanId, complete, null);
                 logsLength = logsQueryResult.getByteBuffer().length();
             } catch (Throwable e) {
                 //NOOP
