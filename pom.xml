@@ -330,7 +330,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>bitbucket</artifactId>
-            <version>1.1.19</version>
+            <version>223.vd12f2bca5430</version>
             <optional>true</optional>
         </dependency>
         <dependency>
