@@ -97,11 +97,11 @@ public class OpenTelemetryServletFilter implements Filter {
             }
         } else if (rootPath.equals("blue")) {
             if (pathInfoTokens.size() == 1) {
-                httpRoute = "blue/";
+                httpRoute = "/blue/";
                 spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
             } else if ("rest".equals(pathInfoTokens.get(1))) {
                 if (pathInfoTokens.size() == 2) {
-                    httpRoute = "blue/rest/";
+                    httpRoute = "/blue/rest/";
                     spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
                 } else if ("organizations".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 9) {
                     // eg /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/blueTestSummary/
@@ -116,16 +116,16 @@ public class OpenTelemetryServletFilter implements Filter {
                 } else if ("classes".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 3) {
                     // eg /blue/rest/classes/io.jenkins.blueocean.rest.impl.pipeline.PipelineRunImpl/
                     String blueOceanClass = pathInfoTokens.get(3);
-                    httpRoute = "blue/rest/classes/:blueOceanClass";
+                    httpRoute = "/blue/rest/classes/:blueOceanClass";
                     spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute)
                         .setAttribute("blueOceanClass", blueOceanClass);
                 } else {
                     // eg /blue/rest/i18n/blueocean-personalization/1.25.2/jenkins.plugins.blueocean.personalization.Messages/en-US
-                    httpRoute = "blue/rest/" + pathInfoTokens.get(2) + "/*";
+                    httpRoute = "/blue/rest/" + pathInfoTokens.get(2) + "/*";
                     spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
                 }
             } else {
-                httpRoute = "blue/" + pathInfoTokens.get(1) + "/*";
+                httpRoute = "/blue/" + pathInfoTokens.get(1) + "/*";
                 spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
             }
 
@@ -241,7 +241,7 @@ public class OpenTelemetryServletFilter implements Filter {
         }
         checkUrlPathInfoMatch(pathInfo, Arrays.asList("blue", "rest", "organizations", "*", "pipelines", "*", "branches", "*", "runs"));
 
-        List<String> jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipeline", "branches", ":branch", "runs", ":runNumber", "*"));
+        List<String> jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber", "*"));
         return new ParsedJobUrl(Arrays.asList(pathInfo.get(5), pathInfo.get(7)), Long.parseLong(pathInfo.get(9)), jobUrlPattern);
     }
 
