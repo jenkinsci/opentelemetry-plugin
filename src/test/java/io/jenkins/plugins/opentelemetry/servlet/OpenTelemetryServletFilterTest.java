@@ -86,7 +86,7 @@ public class OpenTelemetryServletFilterTest {
         // /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/19/log/
 
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "ecommerce-antifraud/main", 110l, "/blue/rest/organizations/:organization/pipelines/:pipeline/branches/:branch/runs/:runNumber/*");
+            "ecommerce-antifraud/main", 110l, "/blue/rest/organizations/:organization/pipelines/:pipelineName/branches/:branch/runs/:runNumber/*");
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/blueTestSummary/";
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -94,7 +94,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseBlueOceanRestPipelineUrl_flowNodeSteps() {
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "ecommerce-antifraud/main", 110l, "/blue/rest/organizations/:organization/pipelines/:pipeline/branches/:branch/runs/:runNumber/*");
+            "ecommerce-antifraud/main", 110l, "/blue/rest/organizations/:organization/pipelines/:pipelineName/branches/:branch/runs/:runNumber/*");
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/";
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -102,7 +102,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseBlueOceanRestPipelineUrl_flowNodeStepLogs() {
         OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
-            "ecommerce-antifraud/main", 110l, "/blue/rest/organizations/:organization/pipelines/:pipeline/branches/:branch/runs/:runNumber/*");
+            "ecommerce-antifraud/main", 110l, "/blue/rest/organizations/:organization/pipelines/:pipelineName/branches/:branch/runs/:runNumber/*");
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/19/log/";
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
