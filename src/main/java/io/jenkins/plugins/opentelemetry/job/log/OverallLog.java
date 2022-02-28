@@ -7,11 +7,9 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.Main;
 import hudson.console.AnnotatedLargeText;
-import hudson.console.ConsoleAnnotationOutputStream;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
-import org.apache.commons.io.output.CountingOutputStream;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -47,6 +45,10 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
             span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
+            String start = req.getParameter("start");
+            if (start != null && !start.isEmpty()) {
+                span.setAttribute("start", start);
+            }
             super.doProgressiveHtml(req, rsp);
         } catch (IOException e) {
             span.recordException(e);
@@ -63,6 +65,10 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
             span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
+            String start = req.getParameter("start");
+            if (start != null && !start.isEmpty()) {
+                span.setAttribute("start", start);
+            }
             super.doProgressiveText(req, rsp);
         } catch (IOException e) {
             span.recordException(e);
@@ -76,6 +82,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     public long writeLogTo(long start, Writer w) throws IOException {
         logger.log(Level.FINE, () -> "writeLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.writeLogTo")
+            .setAttribute("start", start)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
             span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
@@ -96,6 +103,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     public long writeLogTo(long start, OutputStream out) throws IOException {
         logger.log(Level.FINE, () -> "writeLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.writeLogTo")
+            .setAttribute("start", start)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
             span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
@@ -107,6 +115,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     public long writeRawLogTo(long start, OutputStream out) throws IOException {
         logger.log(Level.FINE, () -> "writeRawLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
         Span span = tracer.spanBuilder("OverallLog.writeRawLogTo")
+            .setAttribute("start", start)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
             span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
@@ -127,6 +136,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
         logger.log(Level.FINE, () -> "writeHtmlTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
 
         Span span = tracer.spanBuilder("OverallLog.writeHtmlTo")
+            .setAttribute("start", start)
             .startSpan();
         long length = 0;
         try (Scope scope = span.makeCurrent()) {
@@ -141,7 +151,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
             length += logLinesLengthInBytes;
 
             // FOOTER
-            if (logLinesLengthInBytes >0) { // some log lines have been emitted, append a footer
+            if (logLinesLengthInBytes > 0) { // some log lines have been emitted, append a footer
                 if (!isComplete()) {
                     w.write("...");  // TODO increment length
                 }
@@ -181,6 +191,10 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
             span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
+            String start = req.getParameter("start");
+            if (start != null && !start.isEmpty()) {
+                span.setAttribute("start", start);
+            }
             super.doProgressText(req, rsp);
         } catch (IOException e) {
             span.recordException(e);
