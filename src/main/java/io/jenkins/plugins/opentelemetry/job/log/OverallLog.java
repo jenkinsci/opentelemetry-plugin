@@ -128,9 +128,9 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     }
 
     /**
-     * Invoked by
-     * <li> /job/:jobFullName/:runNumber/console</li>
-     * <li>{@link org.jenkinsci.plugins.workflow.job.WorkflowRun#getLogInputStream()}</li>
+     * Invoked by:
+     * * /job/:jobFullName/:runNumber/console
+     * * {@link org.jenkinsci.plugins.workflow.job.WorkflowRun#getLogInputStream()}
      */
     @Override
     public long writeRawLogTo(long start, OutputStream out) throws IOException {
