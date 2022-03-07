@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry.job;
 
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.errorprone.annotations.MustBeClosed;
@@ -95,7 +94,7 @@ public class OtelTraceService {
     @Nonnull
     public Span getSpan(@Nonnull Run run, FlowNode flowNode) {
 
-        RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromRun(run);
+        RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
         LOGGER.log(Level.FINEST, () -> "getSpan(" + run.getFullDisplayName() + ", FlowNode[name" + flowNode.getDisplayName() + ", function:" + flowNode.getDisplayFunctionName() + ", id=" + flowNode.getId() + "]) -  " + runSpans);
         LOGGER.log(Level.FINEST, () -> "parentFlowNodes: " + flowNode.getParents().stream().map(node -> node.getDisplayName() + ", id: " + node.getId()).collect(Collectors.toList()));
@@ -121,7 +120,7 @@ public class OtelTraceService {
     @Nonnull
     public Span getSpan(@Nonnull AbstractBuild build, @Nonnull BuildStep buildStep) {
 
-        RunIdentifier runIdentifier = OtelTraceService.RunIdentifier.fromBuild(build);
+        RunIdentifier runIdentifier = RunIdentifier.fromBuild(build);
         FreestyleRunSpans freestyleRunSpans = freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans()); // absent when Jenkins restarts during build
         LOGGER.log(Level.FINEST, () -> "getSpan(" + build.getFullDisplayName() + ", BuildStep[name" + buildStep.getClass().getSimpleName() + ") -  " + freestyleRunSpans);
 
@@ -450,80 +449,4 @@ public class OtelTraceService {
         }
     }
 
-    @Immutable
-    public static class RunIdentifier implements Comparable<RunIdentifier> {
-        final String jobName;
-        final int runNumber;
-
-        static RunIdentifier fromRun(@Nonnull Run run) {
-            try {
-                return new RunIdentifier(run.getParent().getFullName(), run.getNumber());
-            } catch (StackOverflowError e) {
-                // TODO remove when https://github.com/jenkinsci/opentelemetry-plugin/issues/87 is fixed
-                try {
-                    final String jobName = run.getParent().getName();
-                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for " + jobName + "#" + run.getNumber());
-                    return new RunIdentifier("#StackOverflowError#_" + jobName, run.getNumber());
-                } catch (StackOverflowError e2) {
-                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for unknown job #" + run.getNumber());
-                    return new RunIdentifier("#StackOverflowError#", run.getNumber());
-                }
-            }
-        }
-
-        static RunIdentifier fromBuild(@Nonnull AbstractBuild build) {
-            try {
-                return new RunIdentifier(build.getParent().getFullName(), build.getNumber());
-            } catch (StackOverflowError e) {
-                // TODO remove when https://github.com/jenkinsci/opentelemetry-plugin/issues/87 is fixed
-                try {
-                    final String jobName = build.getParent().getName();
-                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for " + jobName + "#" + build.getNumber());
-                    return new RunIdentifier("#StackOverflowError#_" + jobName, build.getNumber());
-                } catch (StackOverflowError e2) {
-                    LOGGER.log(Level.WARNING, "Issue #87: StackOverflowError getting job name for unknown job #" + build.getNumber());
-                    return new RunIdentifier("#StackOverflowError#", build.getNumber());
-                }
-            }
-        }
-
-        public RunIdentifier(@Nonnull String jobName, @Nonnull int runNumber) {
-            this.jobName = jobName;
-            this.runNumber = runNumber;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            RunIdentifier that = (RunIdentifier) o;
-            return runNumber == that.runNumber && jobName.equals(that.jobName);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(jobName, runNumber);
-        }
-
-        @Override
-        public String toString() {
-            return "RunIdentifier{" +
-                    "jobName='" + jobName + '\'' +
-                    ", runNumber=" + runNumber +
-                    '}';
-        }
-
-        public String getJobName() {
-            return jobName;
-        }
-
-        public int getRunNumber() {
-            return runNumber;
-        }
-
-        @Override
-        public int compareTo(RunIdentifier o) {
-            return ComparisonChain.start().compare(this.jobName, o.jobName).compare(this.runNumber, o.runNumber).result();
-        }
-    }
 }

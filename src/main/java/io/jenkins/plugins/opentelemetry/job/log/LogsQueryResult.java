@@ -11,19 +11,17 @@ import javax.annotation.Nonnull;
 import java.nio.charset.Charset;
 
 public class LogsQueryResult {
-    public LogsQueryResult(@Nonnull ByteBuffer byteBuffer, @Nonnull LogsViewHeader logsViewHeader, @Nonnull Charset charset, boolean completed, @Nonnull LogsQueryContext newLogsQueryContext) {
+    public LogsQueryResult(@Nonnull ByteBuffer byteBuffer, @Nonnull LogsViewHeader logsViewHeader, @Nonnull Charset charset, boolean completed) {
         this.byteBuffer = byteBuffer;
         this.logsViewHeader = logsViewHeader;
         this.charset = charset;
         this.complete = completed;
-        this.logsQueryContext = newLogsQueryContext;
     }
 
     final ByteBuffer byteBuffer;
     final LogsViewHeader logsViewHeader;
     final Charset charset;
     final boolean complete;
-    final LogsQueryContext logsQueryContext;
 
     @Nonnull
     public ByteBuffer getByteBuffer() {
@@ -38,11 +36,6 @@ public class LogsQueryResult {
     @Nonnull
     public boolean isComplete() {
         return complete;
-    }
-
-    @Nonnull
-    public LogsQueryContext getLogsQueryContext() {
-        return logsQueryContext;
     }
 
     @Nonnull

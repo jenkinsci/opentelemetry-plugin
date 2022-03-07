@@ -9,19 +9,17 @@ import groovy.text.Template;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import io.jenkins.plugins.opentelemetry.job.log.LogsQueryContext;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogStorageRetriever.CustomLogsQueryContext> {
+public class CustomLogStorageRetriever implements LogStorageRetriever {
 
     @Nonnull
     private final Template buildLogsVisualizationUrlTemplate;
@@ -35,13 +33,13 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
 
     @Nonnull
     @Override
-    public LogsQueryResult overallLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nullable CustomLogsQueryContext logsQueryContext) throws IOException {
+    public LogsQueryResult overallLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete) throws IOException {
         return getLogsQueryResult(traceId, spanId);
     }
 
     @Nonnull
     @Override
-    public LogsQueryResult stepLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, @Nullable CustomLogStorageRetriever.CustomLogsQueryContext logsQueryContext) throws IOException {
+    public LogsQueryResult stepLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete) throws IOException {
         return getLogsQueryResult(traceId, spanId);
     }
 
@@ -57,7 +55,7 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
 
         String backendName = bindings.get(ObservabilityBackend.TemplateBindings.BACKEND_NAME);
         String backend24x24IconUrl = bindings.get(ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL);
-        return new LogsQueryResult(new ByteBuffer(), new LogsViewHeader(backendName, logsVisualizationUrl, backend24x24IconUrl), StandardCharsets.UTF_8, true, new CustomLogsQueryContext());
+        return new LogsQueryResult(new ByteBuffer(), new LogsViewHeader(backendName, logsVisualizationUrl, backend24x24IconUrl), StandardCharsets.UTF_8, true);
     }
 
     @Override
@@ -65,9 +63,5 @@ public class CustomLogStorageRetriever implements LogStorageRetriever<CustomLogS
         return "CustomLogStorageRetriever{" +
             "urlTemplate=" + buildLogsVisualizationUrlTemplate +
             '}';
-    }
-
-    static class CustomLogsQueryContext implements LogsQueryContext {
-
     }
 }

@@ -113,7 +113,7 @@ public class PipelineElasticsearchBackendTest {
         boolean complete = true;
         do {
             try {
-                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(run.getParent().getFullName(), run.getNumber(), traceId, spanId, complete, null);
+                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(run.getParent().getFullName(), run.getNumber(), traceId, spanId, complete);
                 logsLength = logsQueryResult.getByteBuffer().length();
             } catch (Throwable e) {
                 //NOOP

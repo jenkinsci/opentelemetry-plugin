@@ -9,12 +9,12 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Queue;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
-import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
-import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
-import io.jenkins.plugins.opentelemetry.backend.custom.CustomLogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.context.Scope;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
@@ -38,7 +38,7 @@ import java.util.logging.Logger;
 @Extension
 public final class OtelLogStorageFactory implements LogStorageFactory {
 
-    private final static Logger LOGGER = Logger.getLogger(OtelLogStorageFactory.class.getName());
+    private final static Logger logger = Logger.getLogger(OtelLogStorageFactory.class.getName());
 
     static {
         // Make sure JENKINS-52165 is enabled, or performance will be awful for remote shell steps.
@@ -57,7 +57,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
     @Override
     public LogStorage forBuild(@Nonnull final FlowExecutionOwner owner) {
         if (!getOpenTelemetrySdkProvider().isOtelLogsEnabled()) {
-            LOGGER.log(Level.FINE, () -> "forBuild(): null");
+            logger.log(Level.FINE, () -> "forBuild(): null");
             return null;
         }
 
@@ -76,7 +76,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
                 }
                 Map<String, String> buildInfoContext = new HashMap<>(rootContext);
                 BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getTraceId(), monitoringAction.getSpanId(), buildInfoContext);
-                LOGGER.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
+                logger.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
 
                 return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo, getOpenTelemetrySdkProvider().getTracer()));
             } else {
@@ -84,17 +84,6 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
             }
         } catch (IOException x) {
             return new BrokenLogStorage(x);
-        }
-    }
-
-
-
-    void close(BuildInfo buildInfo) {
-        LOGGER.log(Level.FINE, () -> "Close logStorage for " + buildInfo.jobFullName + "#" + buildInfo.runNumber);
-        Object removed = this.logStoragesByBuild.remove(buildInfo);
-        if (removed == null) {
-            // FIXME UNDERSTAND WHY THIS HAPPENS MORE THAN EXPECTED
-            LOGGER.log(Level.FINE, () -> "Log storage for " + buildInfo + " was already closed");
         }
     }
 

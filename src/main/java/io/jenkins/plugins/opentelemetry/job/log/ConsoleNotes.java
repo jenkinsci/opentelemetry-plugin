@@ -8,15 +8,13 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import com.google.common.collect.ImmutableMap;
 import hudson.console.ConsoleNote;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.common.AttributesBuilder;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -85,23 +83,24 @@ public class ConsoleNotes {
         }
     }
 
-    public static void write(Writer writer, String message, @Nullable JSONArray annotations) throws IOException {
+    public static String readFormattedMessage(String message, @Nullable JSONArray annotations) {
         if (annotations == null) {
-            writer.write(message);
+            return message;
         } else {
+            StringWriter formattedMessage = new StringWriter();
             int pos = 0;
             for (Object o : annotations) {
                 JSONObject annotation = (JSONObject) o;
                 int position = annotation.getInt(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD);
                 String note = annotation.getString(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD);
-                writer.write(message, pos, position - pos);
-                writer.write(ConsoleNote.PREAMBLE_STR);
-                writer.write(note);
-                writer.write(ConsoleNote.POSTAMBLE_STR);
+                formattedMessage.write(message, pos, position - pos);
+                formattedMessage.write(ConsoleNote.PREAMBLE_STR);
+                formattedMessage.write(note);
+                formattedMessage.write(ConsoleNote.POSTAMBLE_STR);
                 pos = position;
             }
-            writer.write(message, pos, message.length() - pos);
+            formattedMessage.write(message, pos, message.length() - pos);
+            return formattedMessage.toString();
         }
-        writer.write('\n');
     }
 }

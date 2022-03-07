@@ -105,12 +105,10 @@ public final class BuildInfo implements Serializable {
         return Objects.hashCode(jobFullName, runNumber, w3cTraceContext);
     }
 
-    @CheckForNull
     public String getTraceId() {
         return traceId;
     }
 
-    @CheckForNull
     public String getSpanId() {
         return spanId;
     }

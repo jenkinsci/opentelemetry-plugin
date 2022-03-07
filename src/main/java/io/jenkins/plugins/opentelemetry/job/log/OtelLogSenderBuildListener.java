@@ -35,7 +35,7 @@ import java.util.logging.Logger;
  * <p>
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java
  */
-abstract class OtelLogSenderBuildListener implements BuildListener, Closeable {
+abstract class OtelLogSenderBuildListener implements BuildListener {
 
     protected final static Logger LOGGER = Logger.getLogger(OtelLogSenderBuildListener.class.getName());
     final BuildInfo buildInfo;
@@ -80,17 +80,6 @@ abstract class OtelLogSenderBuildListener implements BuildListener, Closeable {
             }
         }
         return logger;
-    }
-
-    @Override
-    public void close() throws IOException {
-        if (logger != null) {
-            LOGGER.log(Level.FINE, () -> getClass().getName() + "#close(" + buildInfo + ")");
-            logger = null;
-        }
-        if (JenkinsJVM.isJenkinsJVM()) { // TODO why, it is possible because in the Agent closing of channel kill all the resources but on the Jenkins controller not.
-            OtelLogStorageFactory.get().close(buildInfo);
-        }
     }
 
     abstract LogEmitter getLogEmitter();

@@ -190,7 +190,7 @@ public class OpenTelemetryServletFilter implements Filter {
         String httpTarget = servletRequest.getRequestURI();
         String queryString = servletRequest.getQueryString();
         if (queryString != null && !queryString.isEmpty()) {
-            httpTarget += queryString;
+            httpTarget += "?" + queryString;
         }
         Span span = spanBuilder
             .setAttribute(SemanticAttributes.HTTP_CLIENT_IP, servletRequest.getRemoteAddr())
