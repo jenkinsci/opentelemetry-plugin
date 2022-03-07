@@ -9,6 +9,7 @@ import hudson.Main;
 import hudson.console.AnnotatedLargeText;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.kohsuke.stapler.StaplerRequest;
@@ -39,17 +40,28 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
         this.tracer = tracer;
     }
 
+    /**
+     * Invoked by `/job/:jobFullName/:runNumber/logText/progressiveHtml
+     */
     @Override
     public void doProgressiveHtml(StaplerRequest req, StaplerResponse rsp) throws IOException {
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.doProgressiveHtml")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
-            span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
             String start = req.getParameter("start");
             if (start != null && !start.isEmpty()) {
                 span.setAttribute("start", start);
             }
             super.doProgressiveHtml(req, rsp);
+            String xTextSize = rsp.getHeader("X-Text-Size");
+            if (xTextSize != null) {
+                span.setAttribute("response.textSize", Long.parseLong(xTextSize));
+            }
+            String xMoreData = rsp.getHeader("X-More-Data");
+            if (xMoreData != null) {
+                span.setAttribute("response.moreData", Boolean.parseBoolean(xMoreData));
+            }
         } catch (IOException e) {
             span.recordException(e);
             throw e;
@@ -60,11 +72,10 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public void doProgressiveText(StaplerRequest req, StaplerResponse rsp) throws IOException {
-        logger.log(Level.FINE, () -> "doProgressiveText(buffer.length" + this.byteBuffer.length() + ")");
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.doProgressiveText")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
-            span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
             String start = req.getParameter("start");
             if (start != null && !start.isEmpty()) {
                 span.setAttribute("start", start);
@@ -80,13 +91,14 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public long writeLogTo(long start, Writer w) throws IOException {
-        logger.log(Level.FINE, () -> "writeLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.writeLogTo")
             .setAttribute("start", start)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
-            span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
-            return super.writeLogTo(start, w);
+            long length = super.writeLogTo(start, w);
+            span.setAttribute("response.length", length);
+            return length;
         } catch (IOException e) {
             span.recordException(e);
             throw e;
@@ -96,30 +108,40 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     }
 
     /**
-     * Called by `/job/:jobFullName/:runNumber/consoleText`
-     * FIXME add link to logs visualization screen.
+     * Called by `/job/:jobFullName/:runNumber/consoleText` or
+     * `/blue/rest/organizations/:organization/pipelines/:pipeline/branches/:branch/runs/:runNumber/log?start=0`
+     * with `complete=true`
      */
     @Override
     public long writeLogTo(long start, OutputStream out) throws IOException {
-        logger.log(Level.FINE, () -> "writeLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.writeLogTo")
             .setAttribute("start", start)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
-            span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
-            return super.writeLogTo(start, out);
+            long length = super.writeLogTo(start, out);
+            span.setAttribute("response.length", length);
+            return length;
+        } finally {
+            span.end();
         }
     }
 
+    /**
+     * Invoked by
+     * <li> /job/:jobFullName/:runNumber/console</li>
+     * <li>{@link org.jenkinsci.plugins.workflow.job.WorkflowRun#getLogInputStream()}</li>
+     */
     @Override
     public long writeRawLogTo(long start, OutputStream out) throws IOException {
-        logger.log(Level.FINE, () -> "writeRawLogTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.writeRawLogTo")
             .setAttribute("start", start)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
-            span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
-            return super.writeRawLogTo(start, out);
+            long length = super.writeRawLogTo(start, out);
+            span.setAttribute("response.length", length);
+            return length;
         } catch (IOException e) {
             span.recordException(e);
             throw e;
@@ -133,14 +155,13 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
      */
     @Override
     public long writeHtmlTo(long start, Writer w) throws IOException {
-        logger.log(Level.FINE, () -> "writeHtmlTo(start: " + start + ", buffer.length: " + this.byteBuffer.length() + ")");
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
 
         Span span = tracer.spanBuilder("OverallLog.writeHtmlTo")
             .setAttribute("start", start)
             .startSpan();
         long length = 0;
         try (Scope scope = span.makeCurrent()) {
-            span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
             // HEADER
             if (start == 0 && !Main.isUnitTest) { // would mess up unit tests
                 length += logsViewHeader.writeHeader(w, context, charset);
@@ -148,17 +169,10 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
             }
             // LOG LINES
             long logLinesLengthInBytes = super.writeHtmlTo(start, w);
+            span.setAttribute("response.length", logLinesLengthInBytes);
+
             length += logLinesLengthInBytes;
 
-            // FOOTER
-            if (logLinesLengthInBytes > 0) { // some log lines have been emitted, append a footer
-                if (!isComplete()) {
-                    w.write("...");  // TODO increment length
-                }
-                w.write("\n\n"); // TODO increment length
-
-                length += logsViewHeader.writeHeader(w, context, charset);
-            }
             return length;
         } catch (IOException e) {
             span.recordException(e);
@@ -170,11 +184,10 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public Reader readAll() throws IOException {
-        logger.log(Level.FINE, () -> "readAll(" + ", buffer.length: " + this.byteBuffer.length() + ")");
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.readAll")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
-            span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
             return super.readAll();
         } catch (IOException e) {
             span.recordException(e);
@@ -186,19 +199,50 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
 
     @Override
     public void doProgressText(StaplerRequest req, StaplerResponse rsp) throws IOException {
-        logger.log(Level.FINE, () -> "doProgressText(" + ", buffer.length: " + this.byteBuffer.length() + ")");
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.doProgressText")
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
-            span.setAttribute(ATTRIBUTE_LENGTH, this.byteBuffer.length());
             String start = req.getParameter("start");
             if (start != null && !start.isEmpty()) {
-                span.setAttribute("start", start);
+                span.setAttribute("request.start", start);
             }
             super.doProgressText(req, rsp);
+            String xTextSize = rsp.getHeader("X-Text-Size");
+            if (xTextSize != null) {
+                span.setAttribute("response.textSize", Long.parseLong(xTextSize));
+            }
+            String xMoreData = rsp.getHeader("X-More-Data");
+            if (xMoreData != null) {
+                span.setAttribute("response.moreData", Boolean.parseBoolean(xMoreData));
+            }
         } catch (IOException e) {
             span.recordException(e);
             throw e;
+        } finally {
+            span.end();
+        }
+    }
+
+    @Override
+    protected Writer createWriter(StaplerRequest req, StaplerResponse rsp, long size) throws IOException {
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
+        Span span = tracer.spanBuilder("OverallLog.createWriter")
+            .startSpan();
+        try (Scope scope = span.makeCurrent()) {
+            return super.createWriter(req, rsp, size);
+        } finally {
+            span.end();
+        }
+    }
+
+    @Override
+    public void markAsComplete() {
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
+        Span span = tracer.spanBuilder("OverallLog.markAsComplete")
+            .startSpan();
+        try (Scope scope = span.makeCurrent()) {
+            super.markAsComplete();
         } finally {
             span.end();
         }

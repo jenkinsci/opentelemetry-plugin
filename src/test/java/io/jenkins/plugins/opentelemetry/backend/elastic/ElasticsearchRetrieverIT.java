@@ -16,7 +16,6 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
-import io.jenkins.plugins.opentelemetry.job.log.LogsQueryContext;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.opentelemetry.api.OpenTelemetry;
 import org.apache.http.HttpHost;
@@ -64,13 +63,11 @@ public class ElasticsearchRetrieverIT {
 
         final int MAX = 10;
         int counter = 0;
-        LogsQueryContext logsQueryContext = null;
         LogsQueryResult logsQueryResult;
         boolean complete = true;
         do {
             System.out.println("Request " + counter);
-            logsQueryResult = elasticsearchLogStorageRetriever.overallLog("my-war/master", 136, "1253b77680aa4f5a709e76381e5523f1", "", complete, (ElasticsearchLogsQueryContext) logsQueryContext);
-            logsQueryContext = logsQueryResult.getLogsQueryContext();
+            logsQueryResult = elasticsearchLogStorageRetriever.overallLog("my-war/master", 136, "1253b77680aa4f5a709e76381e5523f1", "", complete);
             complete = false;
             counter++;
         } while (!logsQueryResult.isComplete() && counter < MAX);
