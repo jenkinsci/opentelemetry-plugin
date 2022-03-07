@@ -129,7 +129,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
                 jobFullName, runNumber, traceId, spanId,
                 esClient, tracer);
 
-            ByteBuffer byteBuffer = new StreamingByteBuffer(new StreamingInputStream(logLines, tracer), tracer);
+            StreamingInputStream streamingInputStream = new StreamingInputStream(logLines, complete, tracer);
+            ByteBuffer byteBuffer = new StreamingByteBuffer(streamingInputStream, tracer);
 
             Map<String, String> localBindings = new HashMap<>();
             localBindings.put("traceId", traceId);
@@ -160,7 +161,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
                 jobFullName, runNumber, traceId, spanId, flowNodeId,
                 esClient, tracer);
 
-            ByteBuffer byteBuffer = new StreamingByteBuffer(new StreamingInputStream(logLines, tracer), tracer);
+            StreamingInputStream streamingInputStream = new StreamingInputStream(logLines, complete, tracer);
+            ByteBuffer byteBuffer = new StreamingByteBuffer(streamingInputStream, tracer);
 
             Map<String, String> localBindings = new HashMap<>();
             localBindings.put("traceId", traceId);

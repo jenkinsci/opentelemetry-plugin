@@ -28,6 +28,7 @@ public class StreamingInputStream extends InputStream {
     private final static Logger logger = Logger.getLogger(StreamingInputStream.class.getName());
 
     Iterator<String> formattedLogLines;
+    final boolean complete;
     final protected Tracer tracer;
 
     private int cursorOnCurrentLine;
@@ -35,9 +36,16 @@ public class StreamingInputStream extends InputStream {
     private long skip;
     final AtomicInteger processedRowsCount = new AtomicInteger();
 
-    public StreamingInputStream(Iterator<String> formattedLogLines, Tracer tracer) {
-        this.tracer = tracer;
+    /**
+     * @param formattedLogLines the provider of formatted log lines
+     * @param complete          {@code true } indicates that the content will be accessed at once and that invocations to `skip`
+     *                          should be handled as end of stream.
+     * @param tracer
+     */
+    public StreamingInputStream(Iterator<String> formattedLogLines, boolean complete, Tracer tracer) {
         this.formattedLogLines = formattedLogLines;
+        this.complete = complete;
+        this.tracer = tracer;
     }
 
     @Override
@@ -85,7 +93,16 @@ public class StreamingInputStream extends InputStream {
             this.skip = skip;
             // FIXME implement progressive logs rendering
             if (skip > 0) {
-                this.formattedLogLines = Collections.singleton("Progressive logs rendering not yet implemented, please refresh page").iterator();
+                if (complete) {
+                    // we have already served all the content during the first request
+                    // we stop returning content.
+                    // happens from
+                    // org.jenkinsci.plugins.workflow.job.WorkflowRun.getLogText
+
+                    this.formattedLogLines = Collections.emptyIterator();
+                } else {
+                    this.formattedLogLines = Collections.singleton("Progressive logs rendering not yet implemented, please refresh page").iterator();
+                }
             }
             return skip;
         } finally {

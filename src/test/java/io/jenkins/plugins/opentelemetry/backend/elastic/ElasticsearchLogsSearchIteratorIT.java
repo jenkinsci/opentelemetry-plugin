@@ -39,7 +39,7 @@ public class ElasticsearchLogsSearchIteratorIT {
     @Test
     public void testStreamingInputStream() throws IOException {
         ElasticsearchLogsSearchIterator elasticsearchLogsSearchIterator = getElasticsearchLogsSearchIterator();
-        StreamingInputStream streamingInputStream = new StreamingInputStream(elasticsearchLogsSearchIterator, TracerProvider.noop().get("noop"));
+        StreamingInputStream streamingInputStream = new StreamingInputStream(elasticsearchLogsSearchIterator,true, TracerProvider.noop().get("noop"));
         ByteStreams.copy(streamingInputStream, System.out);
 
         System.out.println("Queries count: " + elasticsearchLogsSearchIterator.queryCounter.get());
