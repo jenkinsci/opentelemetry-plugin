@@ -118,8 +118,8 @@ public class ElasticsearchRetrieverIT {
             .build();
         RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
         ElasticsearchClient elasticsearchClient = new ElasticsearchClient(elasticsearchTransport);
-        ElasticsearchIndicesClient indices = elasticsearchClient.indices();
-        GetIndexTemplateResponse indexTemplatesResponse = indices.getIndexTemplate(b -> b.name("logs-apm.app"));
+        ElasticsearchIndicesClient elasticsearchIndicesClient = elasticsearchClient.indices();
+        GetIndexTemplateResponse indexTemplatesResponse = elasticsearchIndicesClient.getIndexTemplate(b -> b.name("logs-apm.app"));
         // TODO the rest
     }
 
