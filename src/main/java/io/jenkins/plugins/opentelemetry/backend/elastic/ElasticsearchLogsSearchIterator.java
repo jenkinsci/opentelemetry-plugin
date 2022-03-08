@@ -56,31 +56,32 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
     @Nullable
     final String flowNodeId;
     final String traceId;
-    final String spanId;
     final ElasticsearchClient esClient;
     final Tracer tracer;
+    final ElasticsearchSearchContext context;
     String pointInTimeId;
 
     @VisibleForTesting
     final AtomicInteger queryCounter = new AtomicInteger();
 
-    @VisibleForTesting
-    final AtomicInteger lineCounter = new AtomicInteger();
-
     Iterator<String> delegate;
     boolean endOfStream;
 
-    public ElasticsearchLogsSearchIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nonnull String spanId, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
-        this(jobFullName, runNumber, traceId, spanId, null, esClient, tracer);
+    public ElasticsearchLogsSearchIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nullable ElasticsearchSearchContext context, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
+        this(jobFullName, runNumber, traceId, null, context, esClient, tracer);
     }
 
-    public ElasticsearchLogsSearchIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nonnull String spanId, @Nullable String flowNodeId, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
+    public ElasticsearchLogsSearchIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nullable String flowNodeId, @Nullable ElasticsearchSearchContext context, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
         this.tracer = tracer;
         this.jobFullName = jobFullName;
         this.runNumber = runNumber;
         this.traceId = traceId;
-        this.spanId = spanId;
         this.flowNodeId = flowNodeId;
+        if (context == null) {
+            this.context = new ElasticsearchSearchContext();
+        } else {
+            this.context = context;
+        }
         this.esClient = esClient;
     }
 
@@ -96,7 +97,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
                 Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
                 SearchResponse<ObjectNode> searchResponse;
                 try {
-                    this.pointInTimeId = esClient.openPointInTime(pit -> pit.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS).keepAlive(POINT_IN_TIME_KEEP_ALIVE)).id();
+                    pointInTimeId = esClient.openPointInTime(pit -> pit.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS).keepAlive(POINT_IN_TIME_KEEP_ALIVE)).id();
                 } finally {
                     Thread.currentThread().setContextClassLoader(contextClassLoader);
                 }
@@ -105,7 +106,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
                 esOpenPitSpan.end();
             }
         }
-        return this.pointInTimeId;
+        return pointInTimeId;
     }
 
     @Nonnull
@@ -122,7 +123,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
                 return delegate;
             }
             delegate = loadNextFormattedLogLines();
-            if (lineCounter.get() > MAX_LINES) {
+            if (context.from > MAX_LINES) {
                 delegate = Iterators.concat(delegate, Collections.singleton("...").iterator());
                 endOfStream = true;
             } else if (!delegate.hasNext()) {
@@ -139,16 +140,16 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchLogsSearchIterator.close")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber);
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            .setAttribute("pointInTimeId", pointInTimeId);
         if (flowNodeId != null) {
             spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId);
-
         }
         Span closeSpan = spanBuilder.startSpan();
         try (Scope closeSpanScope = closeSpan.makeCurrent()) {
             if (pointInTimeId != null) {
                 Span esClosePitSpan = this.tracer.spanBuilder("Elasticsearch.closePointInTime")
-                    .setAttribute("pitId", pointInTimeId)
+                    .setAttribute("query.pointInTimeId", pointInTimeId)
                     .startSpan();
                 try (Scope scope = esClosePitSpan.makeCurrent()) {
                     ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -188,11 +189,12 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
         try (Scope esSearchSpanScope = esSearchSpan.makeCurrent()) {
             esSearchSpan
                 .setAttribute("query.pointInTimeId", lazyLoadPointInTimeId())
-                .setAttribute("query.from", lineCounter.get())
+                .setAttribute("query.from", context.from)
                 .setAttribute("query.size", PAGE_SIZE)
                 .setAttribute("query.match.traceId", traceId)
                 .setAttribute("query.match.jobFullName", jobFullName)
-                .setAttribute("query.match.runNumber", runNumber);
+                .setAttribute("query.match.runNumber", runNumber)
+                .setAttribute("elasticsearchSearchContext.identityHashCode", System.identityHashCode(context));
 
             BoolQuery.Builder queryBuilder = QueryBuilders.bool()
                 .must(
@@ -208,7 +210,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
 
             SearchRequest searchRequest = new SearchRequest.Builder()
                 .pit(pit -> pit.id(loadPointInTimeId).keepAlive(POINT_IN_TIME_KEEP_ALIVE))
-                .from(lineCounter.get())
+                .from(context.from)
                 .size(PAGE_SIZE)
                 .sort(s -> s.field(f -> f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
                 .query(query)
@@ -224,8 +226,10 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
             } finally {
                 Thread.currentThread().setContextClassLoader(contextClassLoader);
             }
-            final List<Hit<ObjectNode>> hits = searchResponse.hits().hits();
-            lineCounter.addAndGet(hits.size());
+            List<Hit<ObjectNode>> hits = searchResponse.hits().hits();
+            esSearchSpan.setAttribute("response.size", hits.size());
+            context.from = context.from + hits.size();
+            esSearchSpan.setAttribute("newFrom", context.from);
             return hits.stream().map(new ElasticsearchHitToFormattedLogLine()).filter(Objects::nonNull).iterator();
         } finally {
             esSearchSpan.end();

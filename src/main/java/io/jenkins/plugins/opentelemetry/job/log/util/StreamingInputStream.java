@@ -25,7 +25,7 @@ import java.util.logging.Logger;
  * {@link InputStream} backend by an {@link Iterator}
  */
 public class StreamingInputStream extends InputStream {
-    private final static Logger logger = Logger.getLogger(StreamingInputStream.class.getName());
+        private final static Logger logger = Logger.getLogger(StreamingInputStream.class.getName());
 
     Iterator<String> formattedLogLines;
     final boolean complete;
@@ -40,7 +40,6 @@ public class StreamingInputStream extends InputStream {
      * @param formattedLogLines the provider of formatted log lines
      * @param complete          {@code true } indicates that the content will be accessed at once and that invocations to `skip`
      *                          should be handled as end of stream.
-     * @param tracer
      */
     public StreamingInputStream(Iterator<String> formattedLogLines, boolean complete, Tracer tracer) {
         this.formattedLogLines = formattedLogLines;
@@ -88,20 +87,28 @@ public class StreamingInputStream extends InputStream {
     public long skip(long skip) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("StreamingInputStream.skip")
+            .setAttribute("complete", complete)
             .setAttribute("skip", skip).startSpan();
         try (Scope scope = span.makeCurrent()) {
             this.skip = skip;
-            // FIXME implement progressive logs rendering
             if (skip > 0) {
                 if (complete) {
-                    // we have already served all the content during the first request
-                    // we stop returning content.
-                    // happens from
-                    // org.jenkinsci.plugins.workflow.job.WorkflowRun.getLogText
-
-                    this.formattedLogLines = Collections.emptyIterator();
-                } else {
-                    this.formattedLogLines = Collections.singleton("Progressive logs rendering not yet implemented, please refresh page").iterator();
+                    boolean progressiveStreaming = Boolean.TRUE.equals(PROGRESSIVE_STREAMING.get());
+                    span.setAttribute("progressiveStreaming", progressiveStreaming);
+                    if (progressiveStreaming) {
+                        // progressive rendering of logs, the underlying iterator is capable of handling this
+                    } else {
+                        // we have already served all the content during the first request
+                        // we stop returning content.
+                        // happens from
+                        // GET /job/:jobFullName/:runNumber/consoleText
+                        // |- org.jenkinsci.plugins.workflow.job.WorkflowRun.doConsoleText
+                        //   |- org.jenkinsci.plugins.workflow.job.WorkflowRun.getLogText
+                        //     |- org.jenkinsci.plugins.workflow.job.WorkflowRun.writeLogTo
+                        //        |- hudson.console.AnnotatedLargeText.writeLogTo(long, java.io.OutputStream)
+                        // TODO simplify this code
+                        this.formattedLogLines = Collections.emptyIterator();
+                    }
                 }
             }
             return skip;
@@ -131,4 +138,13 @@ public class StreamingInputStream extends InputStream {
             ((Closeable) formattedLogLines).close();
         }
     }
+
+    final static ThreadLocal<Boolean> PROGRESSIVE_STREAMING = new ThreadLocal<>();
+    public static void setProgressiveStreaming(){
+        PROGRESSIVE_STREAMING.set(Boolean.TRUE);
+    }
+    public static void unsetProgressiveStreaming(){
+        PROGRESSIVE_STREAMING.remove();
+    }
+
 }

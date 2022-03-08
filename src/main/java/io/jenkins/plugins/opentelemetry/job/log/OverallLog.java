@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.Main;
 import hudson.console.AnnotatedLargeText;
+import io.jenkins.plugins.opentelemetry.job.log.util.StreamingInputStream;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
@@ -207,7 +208,12 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
             if (start != null && !start.isEmpty()) {
                 span.setAttribute("request.start", start);
             }
-            super.doProgressText(req, rsp);
+            try {
+                StreamingInputStream.setProgressiveStreaming();
+                super.doProgressText(req, rsp);
+            } finally {
+                StreamingInputStream.unsetProgressiveStreaming();
+            }
             String xTextSize = rsp.getHeader("X-Text-Size");
             if (xTextSize != null) {
                 span.setAttribute("response.textSize", Long.parseLong(xTextSize));
