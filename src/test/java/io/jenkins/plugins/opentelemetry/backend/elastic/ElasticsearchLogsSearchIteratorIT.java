@@ -43,6 +43,7 @@ public class ElasticsearchLogsSearchIteratorIT {
         ByteStreams.copy(streamingInputStream, System.out);
 
         System.out.println("Queries count: " + elasticsearchLogsSearchIterator.queryCounter.get());
+        System.out.println("context : " + elasticsearchLogsSearchIterator.context);
     }
 
     @Nonnull
@@ -67,7 +68,7 @@ public class ElasticsearchLogsSearchIteratorIT {
         ElasticsearchClient esClient = new ElasticsearchClient(elasticsearchTransport);
 
 
-        ElasticsearchLogsSearchIterator elasticsearchLogsSearchIterator = new ElasticsearchLogsSearchIterator("my-war/master", 136, "1253b77680aa4f5a709e76381e5523f1", "", esClient, TracerProvider.noop().get("noop"));
+        ElasticsearchLogsSearchIterator elasticsearchLogsSearchIterator = new ElasticsearchLogsSearchIterator("my-war/master", 136, "1253b77680aa4f5a709e76381e5523f1", null, null, esClient, TracerProvider.noop().get("noop"));
         return elasticsearchLogsSearchIterator;
     }
 

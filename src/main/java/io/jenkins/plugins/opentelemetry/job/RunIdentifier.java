@@ -31,6 +31,14 @@ public class RunIdentifier implements Comparable<RunIdentifier> {
         this.runNumber = runNumber;
     }
 
+    /**
+     * String identifier for this run
+     */
+    @Nonnull
+    public String getId() {
+        return jobName + "#" + runNumber;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

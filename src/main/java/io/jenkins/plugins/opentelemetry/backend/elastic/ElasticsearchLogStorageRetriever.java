@@ -21,6 +21,8 @@ import hudson.security.ACL;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
+import io.jenkins.plugins.opentelemetry.job.RunFlowNodeIdentifier;
+import io.jenkins.plugins.opentelemetry.job.RunIdentifier;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
@@ -28,6 +30,7 @@ import io.jenkins.plugins.opentelemetry.job.log.util.StreamingByteBuffer;
 import io.jenkins.plugins.opentelemetry.job.log.util.StreamingInputStream;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import jakarta.json.JsonObject;
@@ -40,9 +43,11 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.auth.Credentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
+import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import javax.annotation.Nonnull;
+import javax.servlet.http.HttpSession;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -58,7 +63,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 
 /**
@@ -110,23 +114,45 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         this.templateBindingsProvider = templateBindingsProvider;
     }
 
-    /**
-     * Waiting to better understand pagination of logs in Jenkins, we just grab the first 100 lines of logs
-     */
     @Nonnull
     @Override
     public LogsQueryResult overallLog(
-        @Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete) {
+        @Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete) {
         Charset charset = StandardCharsets.UTF_8;
 
-        Span span = tracer.spanBuilder("ElasticsearchLogStorageRetriever.overallLog")
+        SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchLogStorageRetriever.overallLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
-            .setAttribute("complete", complete)
+            .setAttribute("complete", complete);
+
+        RunIdentifier runIdentifier = new RunIdentifier(jobFullName, runNumber);
+        HttpSession session = Stapler.getCurrentRequest().getSession();
+        ElasticsearchSearchContext context;
+        context = (ElasticsearchSearchContext) session.getAttribute(runIdentifier.getId());
+        if (context == null) {
+            if (complete) {
+                spanBuilder.setAttribute("elasticsearchSearchContext", "none");
+            } else {
+                context = new ElasticsearchSearchContext();
+                session.setAttribute(runIdentifier.getId(), context);
+                spanBuilder.setAttribute("elasticsearchSearchContext", "new");
+                spanBuilder.setAttribute("elasticsearchSearchContext.identityHashCode", System.identityHashCode(context));
+            }
+        } else {
+            if (complete) {
+                session.removeAttribute(runIdentifier.getId());
+                spanBuilder.setAttribute("elasticsearchSearchContext", "reuse-and-delete");
+            } else {
+                spanBuilder.setAttribute("elasticsearchSearchContext", "reuse");
+            }
+            spanBuilder.setAttribute("elasticsearchSearchContext.identityHashCode", System.identityHashCode(context));
+            spanBuilder.setAttribute("from", context.from);
+        }
+        Span span = spanBuilder
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
             Iterator<String> logLines = new ElasticsearchLogsSearchIterator(
-                jobFullName, runNumber, traceId, spanId,
+                jobFullName, runNumber, traceId, context,
                 esClient, tracer);
 
             StreamingInputStream streamingInputStream = new StreamingInputStream(logLines, complete, tracer);
@@ -151,14 +177,47 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
     @Nonnull
     @Override
-    public LogsQueryResult stepLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete) {
-        Span span = tracer.spanBuilder("ElasticsearchLogStorageRetriever.stepLog").startSpan();
-
+    public LogsQueryResult stepLog(@Nonnull String jobFullName, int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete) {
         final Charset charset = StandardCharsets.UTF_8;
+
+        SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchLogStorageRetriever.stepLog")
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId)
+            .setAttribute("complete", complete);
+
+        RunFlowNodeIdentifier runFlowNodeIdentifier = new RunFlowNodeIdentifier(jobFullName, runNumber, flowNodeId);
+        HttpSession session = Stapler.getCurrentRequest().getSession();
+        ElasticsearchSearchContext context;
+        context = (ElasticsearchSearchContext) session.getAttribute(runFlowNodeIdentifier.getId());
+        if (context == null) {
+            if (complete) {
+                spanBuilder.setAttribute("elasticsearchSearchContext", "none");
+            } else {
+                context = new ElasticsearchSearchContext();
+                session.setAttribute(runFlowNodeIdentifier.getId(), context);
+                spanBuilder.setAttribute("elasticsearchSearchContext", "new");
+            }
+        } else {
+            if (complete) {
+                session.removeAttribute(runFlowNodeIdentifier.getId());
+                spanBuilder.setAttribute("elasticsearchSearchContext", "reuse-and-delete");
+            } else {
+                spanBuilder.setAttribute("elasticsearchSearchContext", "reuse");
+            }
+        }
+
+
+        if (context != null) {
+            spanBuilder.setAttribute("from", context.from);
+        }
+        Span span = spanBuilder.startSpan();
+
         try (Scope scope = span.makeCurrent()) {
 
             Iterator<String> logLines = new ElasticsearchLogsSearchIterator(
-                jobFullName, runNumber, traceId, spanId, flowNodeId,
+                jobFullName, runNumber, traceId, flowNodeId,
+                context,
                 esClient, tracer);
 
             StreamingInputStream streamingInputStream = new StreamingInputStream(logLines, complete, tracer);
@@ -220,7 +279,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
                 retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.cold(), "cold"));
                 retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.delete(), "delete"));
                 validations.add(FormValidation.ok("Logs retention policy: "
-                    + retentionPolicy.stream().collect(Collectors.joining(", "))));
+                    + String.join(", ", retentionPolicy)));
             }
             return validations;
         } finally {
@@ -241,14 +300,14 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             String maxSize = rollOver.getString("max_size", "not defined");
             String maxAge = Optional
                 .ofNullable(rollOver.getString("max_age", null))
-                .map(a -> Time.of(b -> b.time(a))).map(t -> t.time()).orElse("Not defined");
+                .map(a -> Time.of(b -> b.time(a))).map(Time::time).orElse("Not defined");
             retentionPolicySpec.add("rollover[maxAge=" + maxAge + ", maxSize=" + maxSize + "]");
         }
         if (hotPhaseActions.containsKey("delete")) {
             String minAge = phase.minAge().time();
             retentionPolicySpec.add("delete[min_age=" + minAge + "]");
         }
-        return phaseName + "[" + retentionPolicySpec.stream().collect(Collectors.joining(",")) + "]";
+        return phaseName + "[" + String.join(",", retentionPolicySpec) + "]";
     }
 
     @Override
