@@ -136,7 +136,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
                 context = new ElasticsearchSearchContext();
                 session.setAttribute(runIdentifier.getId(), context);
                 spanBuilder.setAttribute("elasticsearchSearchContext", "new");
-                spanBuilder.setAttribute("elasticsearchSearchContext.identityHashCode", System.identityHashCode(context));
             }
         } else {
             if (complete) {
@@ -145,7 +144,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             } else {
                 spanBuilder.setAttribute("elasticsearchSearchContext", "reuse");
             }
-            spanBuilder.setAttribute("elasticsearchSearchContext.identityHashCode", System.identityHashCode(context));
             spanBuilder.setAttribute("from", context.from);
         }
         Span span = spanBuilder
