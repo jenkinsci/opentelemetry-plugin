@@ -92,15 +92,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
                 .setAttribute("query.keepAlive", POINT_IN_TIME_KEEP_ALIVE.time())
                 .startSpan();
             try (Scope esOpenPitSpanScope = esOpenPitSpan.makeCurrent()) {
-                ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-                // workaround https://github.com/elastic/elasticsearch-java/issues/163
-                Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-                SearchResponse<ObjectNode> searchResponse;
-                try {
-                    pointInTimeId = esClient.openPointInTime(pit -> pit.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS).keepAlive(POINT_IN_TIME_KEEP_ALIVE)).id();
-                } finally {
-                    Thread.currentThread().setContextClassLoader(contextClassLoader);
-                }
+                pointInTimeId = esClient.openPointInTime(pit -> pit.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS).keepAlive(POINT_IN_TIME_KEEP_ALIVE)).id();
                 esOpenPitSpan.setAttribute("pitId", pointInTimeId);
             } finally {
                 esOpenPitSpan.end();
@@ -152,15 +144,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
                     .setAttribute("query.pointInTimeId", pointInTimeId)
                     .startSpan();
                 try (Scope scope = esClosePitSpan.makeCurrent()) {
-                    ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-                    // workaround https://github.com/elastic/elasticsearch-java/issues/163
-                    Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-                    SearchResponse<ObjectNode> searchResponse;
-                    try {
-                        esClient.closePointInTime(builder -> builder.id(pointInTimeId));
-                    } finally {
-                        Thread.currentThread().setContextClassLoader(contextClassLoader);
-                    }
+                    esClient.closePointInTime(builder -> builder.id(pointInTimeId));
                 } finally {
                     esClosePitSpan.end();
                     pointInTimeId = null;
