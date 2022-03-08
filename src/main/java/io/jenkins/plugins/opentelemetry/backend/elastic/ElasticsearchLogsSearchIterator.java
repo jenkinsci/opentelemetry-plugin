@@ -193,8 +193,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
                 .setAttribute("query.size", PAGE_SIZE)
                 .setAttribute("query.match.traceId", traceId)
                 .setAttribute("query.match.jobFullName", jobFullName)
-                .setAttribute("query.match.runNumber", runNumber)
-                .setAttribute("elasticsearchSearchContext.identityHashCode", System.identityHashCode(context));
+                .setAttribute("query.match.runNumber", runNumber);
 
             BoolQuery.Builder queryBuilder = QueryBuilders.bool()
                 .must(
