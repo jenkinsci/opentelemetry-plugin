@@ -199,20 +199,11 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
                 .query(query)
                 .build();
 
-            logger.log(Level.FINE, () -> "Retrieve logs for traceId: " + traceId + ", job: " + jobFullName + ", run: " + runNumber);
-            ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-            // workaround https://github.com/elastic/elasticsearch-java/issues/163
-            Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-            SearchResponse<ObjectNode> searchResponse;
-            try {
-                searchResponse = this.esClient.search(searchRequest, ObjectNode.class);
-            } finally {
-                Thread.currentThread().setContextClassLoader(contextClassLoader);
-            }
+            SearchResponse<ObjectNode> searchResponse = this.esClient.search(searchRequest, ObjectNode.class);
+
             List<Hit<ObjectNode>> hits = searchResponse.hits().hits();
             esSearchSpan.setAttribute("response.size", hits.size());
             context.from = context.from + hits.size();
-            esSearchSpan.setAttribute("newFrom", context.from);
             return hits.stream().map(new ElasticsearchHitToFormattedLogLine()).filter(Objects::nonNull).iterator();
         } finally {
             esSearchSpan.end();
