@@ -52,6 +52,8 @@ import javax.inject.Inject;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -546,6 +548,41 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
+     * See <a href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#configuration-options">OpenTelemetry Specification / OpenTelemetry Protocol Exporter</a>
+     * <p>
+     * Target URL to which the exporter is going to send spans or metrics. The endpoint MUST be a valid URL with scheme
+     * (http or https) and host, MAY contain a port, SHOULD contain a path and MUST NOT contain other parts
+     * (such as query string or fragment).
+     * A scheme of https indicates a secure connection.
+     * </p>
+     *
+     * @param endpoint
+     * @return
+     */
+    public FormValidation doCheckEndpoint(@QueryParameter String endpoint) {
+        if (endpoint == null || endpoint.isEmpty()) {
+            return FormValidation.ok();
+        }
+        URL endpointAsUrl;
+        try {
+            endpointAsUrl = new URL(endpoint);
+        } catch (MalformedURLException e) {
+            return FormValidation.error("Invalid URL: " + e.getMessage() + ".");
+        }
+        if (!"http".equals(endpointAsUrl.getProtocol()) && !"https".equals(endpointAsUrl.getProtocol())) {
+            return FormValidation.error("Unsupported protocol '" + endpointAsUrl.getProtocol() + "'. Expect 'https' or 'http' protocol.");
+        }
+        List<String> localhosts = Arrays.asList("localhost", "127.0.0.1", "0:0:0:0:0:0:0:1");
+        for (String localhost : localhosts) {
+            if (localhost.equals(endpointAsUrl.getHost())) {
+                return FormValidation.warning("The OTLP Endpoint URL is also used from the Jenkins agents when sending logs through OTLP. " +
+                    "Identifying the OTLP endpoint with the `" + localhost + "` hostname is likely to not work from Jenkins agents.");
+            }
+        }
+        return FormValidation.ok();
+    }
+
+    /**
      * Validates the period duration input.
      *
      * @param ignoredSteps the comma-separated list of steps to ignore.
@@ -555,7 +592,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         if (ignoredSteps.matches("[A-Za-z0-9,]*")) {
             return FormValidation.ok();
         }
-        return FormValidation.error("Invalid format: \"%s\"", ignoredSteps);
+        return FormValidation.error("Invalid format: \"%s\".", ignoredSteps);
     }
 
     /**

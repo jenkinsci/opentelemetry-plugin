@@ -16,9 +16,9 @@ public class ElasticStackConfigurationFormTest {
     @Test
     public void testDoCheckKibanaUrl() {
         ElasticBackend.DescriptorImpl config = new ElasticBackend.DescriptorImpl();
-        assertEquals(config.doCheckKibanaUrl("http://example.com:100").kind, FormValidation.Kind.OK);
-        assertEquals(config.doCheckKibanaUrl("").kind, FormValidation.Kind.OK);
-        assertEquals(config.doCheckKibanaUrl("foo").kind, FormValidation.Kind.ERROR);
+        assertEquals(config.doCheckKibanaBaseUrl("http://example.com:100").kind, FormValidation.Kind.OK);
+        assertEquals(config.doCheckKibanaBaseUrl("").kind, FormValidation.Kind.OK);
+        assertEquals(config.doCheckKibanaBaseUrl("foo").kind, FormValidation.Kind.ERROR);
     }
 
     @Test

@@ -6,11 +6,15 @@
 package io.jenkins.plugins.opentelemetry.backend;
 
 import hudson.Extension;
+import hudson.util.FormValidation;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.CheckForNull;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -21,10 +25,10 @@ public class JaegerBackend extends ObservabilityBackend {
     public static final String OTEL_JAEGER_URL = "OTEL_JAEGER_URL";
     public static final String DEFAULT_NAME = "Jaeger";
 
-	private String jaegerBaseUrl;
+    private String jaegerBaseUrl;
 
     @DataBoundConstructor
-    public JaegerBackend(){
+    public JaegerBackend() {
 
     }
 
@@ -99,6 +103,18 @@ public class JaegerBackend extends ObservabilityBackend {
         @Override
         public String getDisplayName() {
             return DEFAULT_NAME;
+        }
+
+        public FormValidation doCheckJaegerBaseUrl(@QueryParameter String jaegerBaseUrl) {
+            if (jaegerBaseUrl == null | jaegerBaseUrl.isEmpty()) {
+                return FormValidation.ok();
+            }
+            try {
+                new URL(jaegerBaseUrl);
+            } catch (MalformedURLException e) {
+                return FormValidation.error("Invalid URL: " + e.getMessage());
+            }
+            return FormValidation.ok();
         }
     }
 }
