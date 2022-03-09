@@ -11,6 +11,8 @@ import com.github.rutledgepaulv.prune.Tree;
 import hudson.EnvVars;
 import hudson.model.Run;
 import hudson.util.LogTaskListener;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import jenkins.branch.BranchProperty;
@@ -20,6 +22,7 @@ import jenkins.plugins.git.GitSCMSource;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.StringContains;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
@@ -92,5 +95,6 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         // Environment variables are populated
         EnvVars environment = b1.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
         assertEnvironmentVariables(environment);
+        MatcherAssert.assertThat(environment.get(ElasticBackend.OTEL_ELASTIC_URL), StringContains.containsString("transactionName=" + OtelUtils.urlEncode(rootSpanName)));
     }
 }
