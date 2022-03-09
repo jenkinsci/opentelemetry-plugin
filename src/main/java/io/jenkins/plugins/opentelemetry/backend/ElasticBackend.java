@@ -226,7 +226,6 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
     @Extension
     @Symbol("elastic")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
-        private static final String ERROR_MALFORMED_URL = "The url is malformed.";
 
         @Override
         public String getDisplayName() {
@@ -245,15 +244,14 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
             return DEFAULT_KIBANA_SPACE_IDENTIFIER;
         }
 
-        @RequirePOST
-        public FormValidation doCheckKibanaUrl(@QueryParameter("kibanaBaseUrl") String url) {
-            if (StringUtils.isEmpty(url)) {
+        public FormValidation doCheckKibanaBaseUrl(@QueryParameter("kibanaBaseUrl") String kibanaBaseUrl) {
+            if (StringUtils.isEmpty(kibanaBaseUrl)) {
                 return FormValidation.ok();
             }
             try {
-                new URL(url);
+                new URL(kibanaBaseUrl);
             } catch (MalformedURLException e) {
-                return FormValidation.error(ERROR_MALFORMED_URL, e);
+                return FormValidation.error("Invalid URL: " + e.getMessage());
             }
             return FormValidation.ok();
         }

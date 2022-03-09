@@ -106,7 +106,6 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             return "Store pipeline logs In Elastic and visualize logs both in Elastic and through Jenkins";
         }
 
-        @RequirePOST
         public FormValidation doCheckElasticsearchUrl(@QueryParameter("elasticsearchUrl") String url) {
             if (StringUtils.isEmpty(url)) {
                 return FormValidation.ok();
@@ -114,12 +113,11 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             try {
                 new URL(url);
             } catch (MalformedURLException e) {
-                return FormValidation.error(ERROR_MALFORMED_URL, e);
+                return FormValidation.error("Invalid URL: " + e.getMessage());
             }
             return FormValidation.ok();
         }
 
-        @RequirePOST
         public ListBoxModel doFillElasticsearchCredentialsIdItems(Item context, @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
                 || context != null && !context.hasPermission(context.CONFIGURE)) {
@@ -131,7 +129,6 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                 .includeCurrentValue(elasticsearchCredentialsId);
         }
 
-        @RequirePOST
         public FormValidation doCheckElasticsearchCredentialsId(Item context, @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
                 || context != null && !context.hasPermission(context.CONFIGURE)) {
@@ -146,7 +143,6 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             return FormValidation.ok();
         }
 
-        @RequirePOST
         public FormValidation doValidate(@QueryParameter String elasticsearchUrl, @QueryParameter String elasticsearchCredentialsId) {
             FormValidation elasticsearchUrlValidation = doCheckElasticsearchUrl(elasticsearchUrl);
             if (elasticsearchUrlValidation.kind != FormValidation.Kind.OK) {
