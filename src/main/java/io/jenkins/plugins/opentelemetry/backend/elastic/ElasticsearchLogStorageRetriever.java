@@ -5,6 +5,8 @@
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.ilm.GetLifecycleResponse;
 import co.elastic.clients.elasticsearch.ilm.Phase;
@@ -78,6 +80,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     private final TemplateBindingsProvider templateBindingsProvider;
 
     @Nonnull
+    final Credentials elasticsearchCredentials;
+    @Nonnull
     final String elasticsearchUrl;
 
     @Nonnull
@@ -101,6 +105,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         }
 
         this.elasticsearchUrl = elasticsearchUrl;
+        this.elasticsearchCredentials = elasticsearchCredentials;
         BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(AuthScope.ANY, elasticsearchCredentials);
 
@@ -235,41 +240,85 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         }
     }
 
+    /**
+     * Example of a successful check:
+     * <pre>{@code
+     * OK: Verify existence of the Elasticsearch Index Template 'logs-apm.app' used to store Jenkins pipeline logs...
+     * OK: Connected to Elasticsearch https://***.europe-west1.gcp.cloud.es.io:9243 with user 'jenkins'.
+     * OK: Index Template 'logs-apm.app' found.
+     * OK: Verify existence of the Index Lifecycle Management (ILM) Policy 'logs-apm.app' associated with the Index Template 'logs-apm.app' to define the time to live of the Jenkins pipeline logs in Elasticsearch...
+     * OK: Index Lifecycle Policy 'logs-apm.app_logs-default_policy' found.
+     * OK: Logs retention policy: hot[rollover[maxAge=30d, maxSize=50gb]], warm [phase not defined], cold [phase not defined], delete[delete[min_age=10d]].
+     * }</pre>
+     */
     public List<FormValidation> checkElasticsearchSetup() throws IOException {
         List<FormValidation> validations = new ArrayList<>();
         ElasticsearchIndicesClient indicesClient = this.esClient.indices();
+        String elasticsearchUsername = Optional.ofNullable(elasticsearchCredentials.getUserPrincipal()).map(p -> p.getName()).orElse("No username for credentials type " + elasticsearchCredentials.getClass().getSimpleName());
 
         // TODO remove workaround https://github.com/jenkinsci/opentelemetry-plugin/issues/336
         // we just check the existence of the Index Template and assume the Index Lifecycle Policy is "logs-apm.app_logs-default_policy"
+
+        validations.add(FormValidation.ok("Verify existence of the Elasticsearch Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' used to store Jenkins pipeline logs..."));
+
         boolean indexTemplateExists;
         try {
             indexTemplateExists = indicesClient.existsIndexTemplate(b -> b.name(ElasticsearchFields.INDEX_TEMPLATE_NAME)).value();
+        } catch (ElasticsearchException e) {
+            ErrorCause errorCause = e.error();
+            if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
+                validations.add(FormValidation.warning(errorCause.type() + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "'. " +
+                    "Elasticsearch user '" + elasticsearchUsername + "' doesn't have read permission to the index template metadata - " + errorCause.reason() + "."));
+            } else {
+                validations.add(FormValidation.warning(errorCause.type() + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
+                    "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
+            }
+            return validations;
         } catch (IOException e) {
-            validations.add(FormValidation.warning("Exception accessing Elasticsearch " + elasticsearchUrl, e));
+            validations.add(FormValidation.warning("Exception accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
             return validations;
         }
-        validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl));
+        validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
 
         if (indexTemplateExists) {
-            validations.add(FormValidation.ok("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' found"));
+            validations.add(FormValidation.ok("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' found."));
         } else {
-            validations.add(FormValidation.warning("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' NOT found"));
+            validations.add(FormValidation.warning("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' NOT found."));
         }
 
-        GetLifecycleResponse getLifecycleResponse = esClient.ilm().getLifecycle(b -> b.name(ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME));
+        validations.add(FormValidation.ok("Verify existence of the Index Lifecycle Management (ILM) Policy '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' associated with the Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME +
+            "' to define the time to live of the Jenkins pipeline logs in Elasticsearch..."));
+
+        GetLifecycleResponse getLifecycleResponse;
+        try {
+            getLifecycleResponse = esClient.ilm().getLifecycle(b -> b.name(ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME));
+        } catch (ElasticsearchException e) {
+            ErrorCause errorCause = e.error();
+            if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
+                validations.add(FormValidation.ok(
+                    "Time to live of the pipeline logs in Elasticsearch " + elasticsearchUrl + "not available. " +
+                        "The Index Lifecycle Management (ILM) policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' is not readable by the Elasticsearch user '" + elasticsearchUsername + ". " +
+                        " Details: " + errorCause.type() + " - " + errorCause.reason() + "."));
+            } else {
+                validations.add(FormValidation.warning(errorCause.type() + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
+            }
+            return validations;
+        } catch (IOException e) {
+            validations.add(FormValidation.warning("Exception accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "'.", e));
+            return validations;
+        }
         Lifecycle lifecyclePolicy = getLifecycleResponse.get(ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME);
         if (lifecyclePolicy == null) {
-            validations.add(FormValidation.warning("Index Lifecycle Policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' NOT found"));
+            validations.add(FormValidation.warning("Index Lifecycle Policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' NOT found."));
         } else {
-            validations.add(FormValidation.ok("Index Lifecycle Policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' found"));
+            validations.add(FormValidation.ok("Index Lifecycle Policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' found."));
             Phases phases = lifecyclePolicy.policy().phases();
             List<String> retentionPolicy = new ArrayList<>();
             retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.hot(), "hot"));
             retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.warm(), "warm"));
             retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.cold(), "cold"));
             retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.delete(), "delete"));
-            validations.add(FormValidation.ok("Logs retention policy: "
-                + String.join(", ", retentionPolicy)));
+            validations.add(FormValidation.ok("Logs retention policy: " + String.join(", ", retentionPolicy)+ "."));
         }
         return validations;
     }

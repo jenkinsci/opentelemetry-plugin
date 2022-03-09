@@ -27,4 +27,10 @@ public interface ElasticsearchFields {
      * Waiting to fix https://github.com/jenkinsci/opentelemetry-plugin/issues/336 , we hard code the policy name
      */
     String INDEX_LIFECYCLE_POLICY_NAME = "logs-apm.app_logs-default_policy";
+
+
+    /**
+     * @see co.elastic.clients.elasticsearch._types.ErrorCause#type()
+     */
+    String ERROR_CAUSE_TYPE_SECURITY_EXCEPTION = "security_exception";
 }
