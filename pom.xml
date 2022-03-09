@@ -28,7 +28,10 @@
         <elasticstack.version>8.1.0</elasticstack.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
-    <description>Publish Jenkins metrics to an OpenTelemetry endpoint, including distributed traces of job executions and health metrics of the controller.</description>
+    <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
+        Monitor Jenkins with dashboards and alerts on critical health metrics.
+        Troubleshoot Jenkins problems using traces of job executions and HTTP requests.
+        Store pipeline build logs in an Observability backend like Elastic to improve Jenkins reliability and scalability while improving the traceability of builds.</description>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
 
     <dependencyManagement>
