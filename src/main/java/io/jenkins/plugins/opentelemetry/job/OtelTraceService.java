@@ -307,11 +307,21 @@ public class OtelTraceService {
 
     /**
      * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
+     * @see #setupContext(Run, boolean) 
      */
     @Nonnull
     @MustBeClosed
     public Scope setupContext(@Nonnull Run run) {
-        Span span = getSpan(run);
+        return setupContext(run, true);
+    }
+
+    /**
+     * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
+     */
+    @Nonnull
+    @MustBeClosed
+    public Scope setupContext(@Nonnull Run run, boolean verifyIfRemainingSteps) {
+        Span span = getSpan(run, verifyIfRemainingSteps);
         Scope scope = span.makeCurrent();
         Context.current().with(RunContextKey.KEY, run);
         return scope;
