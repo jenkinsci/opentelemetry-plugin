@@ -45,8 +45,6 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         System.setProperty("org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep.USE_WATCHING", "true");
     }
 
-    ConcurrentMap<BuildInfo, LogStorage> logStoragesByBuild = new ConcurrentHashMap<>();
-
     OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
     static OtelLogStorageFactory get() {
@@ -76,9 +74,9 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
                 }
                 Map<String, String> buildInfoContext = new HashMap<>(rootContext);
                 BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getTraceId(), monitoringAction.getSpanId(), buildInfoContext);
-                logger.log(Level.FINE, () -> "forBuild(" + buildInfo + ")");
+                logger.log(Level.FINEST, () -> "forBuild(" + buildInfo + ")");
 
-                return logStoragesByBuild.computeIfAbsent(buildInfo, k -> new OtelLogStorage(buildInfo, getOpenTelemetrySdkProvider().getTracer()));
+                return new OtelLogStorage(buildInfo, getOpenTelemetrySdkProvider().getTracer());
             } else {
                 return null;
             }
