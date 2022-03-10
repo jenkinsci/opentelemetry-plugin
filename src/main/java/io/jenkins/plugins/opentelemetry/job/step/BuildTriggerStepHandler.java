@@ -19,7 +19,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.build.BuildTriggerStep;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -30,13 +30,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class BuildTriggerStepHandler implements StepHandler {
     private final static Logger LOGGER = Logger.getLogger(BuildTriggerStepHandler.class.getName());
     @Override
-    public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
+    public boolean canCreateSpanBuilder(@NonNull FlowNode flowNode, @NonNull WorkflowRun run) {
         return flowNode instanceof StepAtomNode && ((StepAtomNode) flowNode).getDescriptor() instanceof BuildTriggerStep.DescriptorImpl;
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer) {
+    public SpanBuilder createSpanBuilder(@NonNull FlowNode node, @NonNull WorkflowRun run, @NonNull Tracer tracer) {
         Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
         String job = checkNotNull(arguments.get("job")).toString();
         SpanBuilder spanBuilder = tracer.spanBuilder("build: " + job);

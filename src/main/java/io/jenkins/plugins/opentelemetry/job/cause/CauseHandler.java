@@ -8,19 +8,19 @@ package io.jenkins.plugins.opentelemetry.job.cause;
 import hudson.model.Cause;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface CauseHandler extends Comparable<CauseHandler> {
 
     default void configure(ConfigProperties config){};
 
-    boolean isSupported(@Nonnull Cause cause);
+    boolean isSupported(@NonNull Cause cause);
 
     /**
      * Machine-readable description of the cause like "UserIdCause:anonymous"...
      */
-    @Nonnull
-    default String getStructuredDescription(@Nonnull Cause cause) {
+    @NonNull
+    default String getStructuredDescription(@NonNull Cause cause) {
         return cause.getClass().getSimpleName();
     }
 

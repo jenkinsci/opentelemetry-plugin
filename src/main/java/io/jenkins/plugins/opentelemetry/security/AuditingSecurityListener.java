@@ -13,7 +13,7 @@ import io.opentelemetry.api.metrics.Meter;
 import jenkins.security.SecurityListener;
 import org.acegisecurity.userdetails.UserDetails;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
 @Extension
@@ -77,7 +77,7 @@ public class AuditingSecurityListener extends SecurityListener  {
     }
 
     @Inject
-    public void setJenkinsOtelPlugin(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+    public void setJenkinsOtelPlugin(@NonNull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.meter = openTelemetrySdkProvider.getMeter();
         initialise();
     }

@@ -11,13 +11,13 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface StepHandler extends Comparable<StepHandler> {
-    boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run);
+    boolean canCreateSpanBuilder(@NonNull FlowNode flowNode, @NonNull WorkflowRun run);
 
-    @Nonnull
-    SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer);
+    @NonNull
+    SpanBuilder createSpanBuilder(@NonNull FlowNode node, @NonNull WorkflowRun run, @NonNull Tracer tracer);
 
     /**
      * @return the ordinal of this handler to execute step handlers in predictable order. The smallest ordinal is executed first.
@@ -41,5 +41,5 @@ public interface StepHandler extends Comparable<StepHandler> {
      *
      * The created {@link io.opentelemetry.api.trace.Span} can be retrieved using {@link io.opentelemetry.api.trace.Span#current()}
      */
-    default void afterSpanCreated(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {}
+    default void afterSpanCreated(@NonNull StepAtomNode node, @NonNull WorkflowRun run) {}
 }

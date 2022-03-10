@@ -17,7 +17,7 @@ import io.opentelemetry.api.metrics.Meter;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -61,7 +61,7 @@ public class DiskUsageMonitoringInitializer {
         }
         return calculateDiskUsageInBytes(quickDiskUsagePlugin);
     }
-    private long calculateDiskUsageInBytes(@Nonnull QuickDiskUsagePlugin diskUsagePlugin) {
+    private long calculateDiskUsageInBytes(@NonNull QuickDiskUsagePlugin diskUsagePlugin) {
         LOGGER.log(Level.FINE, "calculateDiskUsageInBytes");
         try {
             DiskItem disk = diskUsagePlugin.getDirectoriesUsages()
@@ -84,7 +84,7 @@ public class DiskUsageMonitoringInitializer {
      * Jenkins doesn't support {@link com.google.inject.Provides} so we manually wire dependencies :-(
      */
     @Inject
-    public void setMeter(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+    public void setMeter(@NonNull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.meter = openTelemetrySdkProvider.getMeter();
     }
 }

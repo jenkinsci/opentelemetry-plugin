@@ -20,7 +20,7 @@ import org.elasticsearch.client.RestClient;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -46,7 +46,7 @@ public class ElasticsearchLogsSearchIteratorIT {
         System.out.println("context : " + elasticsearchLogsSearchIterator.context);
     }
 
-    @Nonnull
+    @NonNull
     private ElasticsearchLogsSearchIterator getElasticsearchLogsSearchIterator() throws IOException {
         InputStream envAsStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
         Assert.assertNotNull(".env file not found in classpath", envAsStream);

@@ -20,7 +20,7 @@ import javaposse.jobdsl.plugin.actions.SeedJobAction;
 import javaposse.jobdsl.plugin.actions.SeedJobTransientActionFactory;
 import jenkins.YesNoMaybe;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
 
 
@@ -37,16 +37,16 @@ public class JobDslRunHandler implements RunHandler {
     }
 
     @Override
-    public boolean canCreateSpanBuilder(@Nonnull Run run) {
+    public boolean canCreateSpanBuilder(@NonNull Run run) {
         Job job = run.getParent();
         // perf optimization: directly lookup up in the SeedJobTransientActionFactory over `job.getAction(SeedJobAction.class)`
         Collection<? extends Action> actions = seedJobTransientActionFactory.createFor(job);
         return !actions.isEmpty();
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull Run run, @Nonnull Tracer tracer) {
+    public SpanBuilder createSpanBuilder(@NonNull Run run, @NonNull Tracer tracer) {
         Job job = run.getParent();
         // perf optimization: directly lookup up in the SeedJobTransientActionFactory over `job.getAction(SeedJobAction.class)`
         Collection<? extends Action> actions = seedJobTransientActionFactory.createFor(job);
@@ -90,7 +90,7 @@ public class JobDslRunHandler implements RunHandler {
     }
 
     @Inject
-    public void setSeedJobTransientActionFactory(@Nonnull SeedJobTransientActionFactory seedJobTransientActionFactory) {
+    public void setSeedJobTransientActionFactory(@NonNull SeedJobTransientActionFactory seedJobTransientActionFactory) {
         this.seedJobTransientActionFactory = seedJobTransientActionFactory;
     }
 }

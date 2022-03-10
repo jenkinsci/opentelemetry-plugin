@@ -22,9 +22,9 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 import org.jenkinsci.plugins.workflow.support.steps.StageStep;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
@@ -212,7 +212,7 @@ public class PipelineNodeUtil {
         return isStartParallelBlock(stepEndNode.getStartNode());
     }
 
-    public static boolean isStartExecutorNodeExecution(@Nonnull FlowNode node) {
+    public static boolean isStartExecutorNodeExecution(@NonNull FlowNode node) {
         if (node == null) {
             return false;
         }
@@ -231,8 +231,8 @@ public class PipelineNodeUtil {
     /**
      * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
      */
-    @Nonnull
-    public static String getDisplayName(@Nonnull FlowNode node) {
+    @NonNull
+    public static String getDisplayName(@NonNull FlowNode node) {
         ThreadNameAction threadNameAction = node.getAction(ThreadNameAction.class);
         return threadNameAction != null
                 ? threadNameAction.getThreadName()
@@ -245,7 +245,7 @@ public class PipelineNodeUtil {
      * @return the {@link FlowNode} that has previously executed or {@code null}
      */
     @CheckForNull
-    public static FlowNode getPreviousNode(@Nonnull FlowNode node) {
+    public static FlowNode getPreviousNode(@NonNull FlowNode node) {
         List<FlowNode> parents = node.getParents();
         if (parents.size() > 1) {
             System.out.println(PipelineNodeUtil.getDetailedDebugString(node));
@@ -255,7 +255,7 @@ public class PipelineNodeUtil {
 
 
     @CheckForNull
-    public static WorkflowRun getWorkflowRun(@Nonnull FlowNode flowNode) {
+    public static WorkflowRun getWorkflowRun(@NonNull FlowNode flowNode) {
         Queue.Executable executable;
         try {
             executable = flowNode.getExecution().getOwner().getExecutable();
@@ -271,7 +271,7 @@ public class PipelineNodeUtil {
         return null;
     }
 
-    @Nonnull
+    @NonNull
     public static String getDebugString(@Nullable FlowNode flowNode) {
         if (flowNode == null) {
             return "#null#";
@@ -287,7 +287,7 @@ public class PipelineNodeUtil {
         return value;
     }
 
-    @Nonnull
+    @NonNull
     public static String getDetailedDebugString(@Nullable FlowNode flowNode) {
         if (flowNode == null) {
             return "#null#";

@@ -11,7 +11,7 @@ import hudson.model.EnvironmentContributor;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.util.logging.Logger;
 
@@ -27,7 +27,7 @@ public class OtelEnvironmentContributor extends EnvironmentContributor {
     private OtelTraceService otelTraceService;
 
     @Override
-    public void buildEnvironmentFor(@Nonnull Run run, @Nonnull EnvVars envs, @Nonnull TaskListener listener) {
+    public void buildEnvironmentFor(@NonNull Run run, @NonNull EnvVars envs, @NonNull TaskListener listener) {
         otelEnvironmentContributorService.addEnvironmentVariables(run, envs, otelTraceService.getSpan(run, false));
     }
 

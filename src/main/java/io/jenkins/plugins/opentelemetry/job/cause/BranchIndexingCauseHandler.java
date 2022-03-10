@@ -10,7 +10,7 @@ import hudson.model.Cause;
 import jenkins.YesNoMaybe;
 import jenkins.branch.BranchIndexingCause;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class BranchIndexingCauseHandler implements CauseHandler {
@@ -21,7 +21,7 @@ public class BranchIndexingCauseHandler implements CauseHandler {
     }
 
     @Override
-    public boolean isSupported(@Nonnull Cause cause) {
+    public boolean isSupported(@NonNull Cause cause) {
         return cause instanceof jenkins.branch.BranchIndexingCause;
     }
 }

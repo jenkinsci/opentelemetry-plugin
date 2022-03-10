@@ -22,7 +22,7 @@ import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
@@ -157,7 +157,7 @@ public class MonitoringComputerListener extends ComputerListener {
      * Jenkins doesn't support {@link com.google.inject.Provides} so we manually wire dependencies :-(
      */
     @Inject
-    public void setMeter(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+    public void setMeter(@NonNull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.meter = openTelemetrySdkProvider.getMeter();
     }
 }

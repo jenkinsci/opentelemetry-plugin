@@ -11,7 +11,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.*;
 import io.opentelemetry.context.Context;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,7 +52,7 @@ public class SpanBuilderMock implements SpanBuilder {
     }
 
     @Override
-    public SpanBuilder setAttribute(String key, @Nonnull String value) {
+    public SpanBuilder setAttribute(String key, @NonNull String value) {
         this.attributes.put(AttributeKey.stringKey(key), value);
         delegate.setAttribute(key, value);
         return this;
@@ -80,7 +80,7 @@ public class SpanBuilderMock implements SpanBuilder {
     }
 
     @Override
-    public <T> SpanBuilder setAttribute(AttributeKey<T> key, @Nonnull T value) {
+    public <T> SpanBuilder setAttribute(AttributeKey<T> key, @NonNull T value) {
         this.attributes.put(key, value);
         delegate.setAttribute(key, value);
         return this;
@@ -109,7 +109,7 @@ public class SpanBuilderMock implements SpanBuilder {
         return delegate.startSpan();
     }
 
-    @Nonnull
+    @NonNull
     public Map<AttributeKey, Object> getAttributes() {
         return attributes;
     }

@@ -11,8 +11,8 @@ import io.opentelemetry.sdk.common.Clock;
 import io.opentelemetry.sdk.logs.LogEmitter;
 import org.apache.commons.lang.StringUtils;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +29,7 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
     public static boolean ENABLE_LOG_FORMATTING = Boolean.valueOf(System.getProperty("pipeline.log.elastic.enable.log.formatting", "false"));
     private final static Logger LOGGER = Logger.getLogger(OtelLogOutputStream.class.getName());
 
-    @Nonnull
+    @NonNull
     final BuildInfo buildInfo;
     @Nullable String flowNodeId;
     /**
@@ -44,7 +44,7 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
      * @param buildInfo
      * @param w3cTraceContext Serializable version of the {@link Context} used to associate log messages with {@link io.opentelemetry.api.trace.Span}s
      */
-    public OtelLogOutputStream(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nonnull Map<String, String> w3cTraceContext, @Nonnull LogEmitter logEmitter, @Nonnull Clock clock) {
+    public OtelLogOutputStream(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId, @NonNull Map<String, String> w3cTraceContext, @NonNull LogEmitter logEmitter, @NonNull Clock clock) {
         this.buildInfo = buildInfo;
         this.flowNodeId = flowNodeId;
         this.logEmitter = logEmitter;

@@ -13,7 +13,7 @@ import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.Charset;
@@ -39,7 +39,7 @@ public class LogsViewHeader {
     public long writeHeader(Writer w, FlowExecutionOwner.Executable context, Charset charset) throws IOException {
         ConsoleAnnotator consoleAnnotator = new ConsoleAnnotator() {
             @Override
-            public ConsoleAnnotator annotate(@Nonnull Object context, @Nonnull MarkupText text) {
+            public ConsoleAnnotator annotate(@NonNull Object context, @NonNull MarkupText text) {
                 StaplerRequest currentRequest = Stapler.getCurrentRequest();
                 String iconRootContextRelativeUrl;
                 if (currentRequest == null) { // unit test

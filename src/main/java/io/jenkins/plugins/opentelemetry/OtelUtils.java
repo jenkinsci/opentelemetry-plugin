@@ -27,9 +27,9 @@ import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -73,13 +73,13 @@ public class OtelUtils {
         return null;
     }
 
-    public static String getComaSeparatedString(@Nonnull Map<String, String> keyValuePairs) {
+    public static String getComaSeparatedString(@NonNull Map<String, String> keyValuePairs) {
         return keyValuePairs.entrySet().stream()
             .map(keyValuePair -> keyValuePair.getKey() + "=" + keyValuePair.getValue())
             .collect(Collectors.joining(","));
     }
 
-    @Nonnull
+    @NonNull
     public static Map<String, String> getCommaSeparatedMap(@Nullable String comaSeparatedKeyValuePairs) {
         if (StringUtils.isBlank(comaSeparatedKeyValuePairs)) {
             return new HashMap<>();
@@ -108,7 +108,7 @@ public class OtelUtils {
             .collect(Collectors.toList());
     }
 
-    @Nonnull
+    @NonNull
     public static Function<Span, String> spanToDebugString() {
         return span -> {
             if (span == null) {
@@ -128,7 +128,7 @@ public class OtelUtils {
         };
     }
 
-    @Nonnull
+    @NonNull
     public static String getProjectType(Run run) {
         if (isFreestyle(run)) {
             return FREESTYLE;
@@ -148,7 +148,7 @@ public class OtelUtils {
         return UNKNOWN;
     }
 
-    @Nonnull
+    @NonNull
     public static String getMultibranchType(Run run) {
         if (isMultibranch(run)) {
             if (isMultibranchChangeRequest(run)) {
@@ -185,7 +185,7 @@ public class OtelUtils {
         return false;
     }
 
-    @Nonnull
+    @NonNull
     public static boolean isMultibranch(Run run) {
         if (run == null) {
             return false;
@@ -193,7 +193,7 @@ public class OtelUtils {
         return (run instanceof WorkflowRun && run.getParent().getParent() instanceof WorkflowMultiBranchProject);
     }
 
-    @Nonnull
+    @NonNull
     public static boolean isWorkflow(Run run) {
         if (run == null) {
             return false;
@@ -201,7 +201,7 @@ public class OtelUtils {
         return (run instanceof WorkflowRun && !(run.getParent().getParent() instanceof WorkflowMultiBranchProject));
     }
 
-    @Nonnull
+    @NonNull
     public static boolean isFreestyle(Run run) {
         if (run == null) {
             return false;
@@ -209,7 +209,7 @@ public class OtelUtils {
         return (run instanceof FreeStyleBuild);
     }
 
-    @Nonnull
+    @NonNull
     public static boolean isMatrix(Run run) {
         if (run == null) {
             return false;
@@ -219,7 +219,7 @@ public class OtelUtils {
             isInstance(run, "hudson.matrix.MatrixRun");
     }
 
-    @Nonnull
+    @NonNull
     public static boolean isMaven(Run run) {
         if (run == null) {
             return false;
@@ -236,12 +236,12 @@ public class OtelUtils {
         return false;
     }
 
-    @Nonnull
+    @NonNull
     public static String toDebugString(@Nullable Span span) {
         return spanToDebugString().apply(span);
     }
 
-    @Nonnull
+    @NonNull
     public static String urlEncode(String value) {
         try {
             return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
@@ -250,13 +250,13 @@ public class OtelUtils {
         }
     }
 
-    @Nonnull
+    @NonNull
     public static String getJenkinsVersion() {
         final VersionNumber versionNumber = Jenkins.getVersion();
         return versionNumber == null ? UNKNOWN_VALUE : versionNumber.toString(); // should not be null except maybe in development of Jenkins itself
     }
 
-    @Nonnull
+    @NonNull
     public static String getOpentelemetryPluginVersion() {
         final Jenkins instance = Jenkins.getInstanceOrNull();
         if (instance == null) {

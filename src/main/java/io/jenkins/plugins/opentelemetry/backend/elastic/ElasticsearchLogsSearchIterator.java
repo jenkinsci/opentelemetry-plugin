@@ -28,8 +28,8 @@ import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
 import net.sf.json.JSONArray;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
@@ -67,11 +67,11 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
     Iterator<String> delegate;
     boolean endOfStream;
 
-    public ElasticsearchLogsSearchIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nullable ElasticsearchSearchContext context, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
+    public ElasticsearchLogsSearchIterator(@NonNull String jobFullName, int runNumber, @NonNull String traceId, @Nullable ElasticsearchSearchContext context, @NonNull ElasticsearchClient esClient, @NonNull Tracer tracer) {
         this(jobFullName, runNumber, traceId, null, context, esClient, tracer);
     }
 
-    public ElasticsearchLogsSearchIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nullable String flowNodeId, @Nullable ElasticsearchSearchContext context, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
+    public ElasticsearchLogsSearchIterator(@NonNull String jobFullName, int runNumber, @NonNull String traceId, @Nullable String flowNodeId, @Nullable ElasticsearchSearchContext context, @NonNull ElasticsearchClient esClient, @NonNull Tracer tracer) {
         this.tracer = tracer;
         this.jobFullName = jobFullName;
         this.runNumber = runNumber;
@@ -101,7 +101,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
         return pointInTimeId;
     }
 
-    @Nonnull
+    @NonNull
     Iterator<String> getCurrentIterator() {
         try {
             if (endOfStream) {

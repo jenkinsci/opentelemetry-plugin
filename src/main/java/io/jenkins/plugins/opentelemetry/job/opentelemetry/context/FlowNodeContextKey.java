@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.job.opentelemetry.context;
 import io.opentelemetry.context.ContextKey;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
-import javax.annotation.concurrent.Immutable;
+import net.jcip.annotations.Immutable;
 
 /**
  * See {@code io.opentelemetry.api.trace.SpanContextKey}

@@ -15,8 +15,8 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 
 public class GitStepHandlerTest {
@@ -143,7 +143,7 @@ public class GitStepHandlerTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("c:\\srv/git/project"));
     }
 
-    private SpanBuilderMock testGithubUrl(@Nonnull String githubUrl, @Nullable String gitBranch, @Nullable String gitUsername) throws Exception {
+    private SpanBuilderMock testGithubUrl(@NonNull String githubUrl, @Nullable String gitBranch, @Nullable String gitUsername) throws Exception {
 
         GitStepHandler handler = new GitStepHandler();
 

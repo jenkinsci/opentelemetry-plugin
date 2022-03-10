@@ -13,8 +13,8 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,7 +60,7 @@ public final class BuildInfo implements Serializable {
         this.w3cTraceContext = new HashMap<>(buildInfo.w3cTraceContext);
     }
 
-    @Nonnull
+    @NonNull
     public Attributes toAttributes() {
         return Attributes.builder()
             .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)

@@ -12,13 +12,13 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 public interface PipelineListener {
 
-    @Nonnull
+    @NonNull
     static List<PipelineListener> all() {
         return ExtensionList.lookup(PipelineListener.class);
     }
@@ -26,56 +26,56 @@ public interface PipelineListener {
     /**
      * Just before the pipeline starts
      */
-    void onStartPipeline(@Nonnull FlowNode node, @Nonnull WorkflowRun run);
+    void onStartPipeline(@NonNull FlowNode node, @NonNull WorkflowRun run);
 
     /**
      * Just before the `node` step starts.
      */
-    void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String nodeLabel, @Nonnull WorkflowRun run);
+    void onStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run);
 
     /**
      * Just after the `node` step starts.
      */
-    void onAfterStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String nodeLabel, @Nonnull WorkflowRun run);
+    void onAfterStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run);
 
     /**
      * Just after the `node` step ends
      */
-    void onEndNodeStep(@Nonnull StepEndNode nodeStepEndNode, @Nonnull String nodeName, @Nonnull WorkflowRun run);
+    void onEndNodeStep(@NonNull StepEndNode nodeStepEndNode, @NonNull String nodeName, @NonNull WorkflowRun run);
 
     /**
      * Just before the `stage`step starts
      */
-    void onStartStageStep(@Nonnull StepStartNode stepStartNode, @Nonnull String stageName, @Nonnull WorkflowRun run);
+    void onStartStageStep(@NonNull StepStartNode stepStartNode, @NonNull String stageName, @NonNull WorkflowRun run);
 
     /**
      * Just after the `stage` step ends
      */
-    void onEndStageStep(@Nonnull StepEndNode stageStepEndNode, @Nonnull String stageName, @Nonnull WorkflowRun run);
+    void onEndStageStep(@NonNull StepEndNode stageStepEndNode, @NonNull String stageName, @NonNull WorkflowRun run);
 
     /**
      * Just before the `parallel` branch starts
      */
-    void onStartParallelStepBranch(@Nonnull StepStartNode stepStartNode, @Nonnull String branchName, @Nonnull WorkflowRun run);
+    void onStartParallelStepBranch(@NonNull StepStartNode stepStartNode, @NonNull String branchName, @NonNull WorkflowRun run);
 
     /**
      * Just before the `parallel` branch ends
      */
-    void onEndParallelStepBranch(@Nonnull StepEndNode stepStepNode, @Nonnull String branchName, @Nonnull WorkflowRun run);
+    void onEndParallelStepBranch(@NonNull StepEndNode stepStepNode, @NonNull String branchName, @NonNull WorkflowRun run);
 
     /**
      * Just before the atomic step starts
      */
-    void onAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run);
+    void onAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run);
 
     /**
      * Just after the atomic step
      */
-    void onAfterAtomicStep(@Nonnull StepAtomNode stepAtomNode, @Nonnull WorkflowRun run);
+    void onAfterAtomicStep(@NonNull StepAtomNode stepAtomNode, @NonNull WorkflowRun run);
 
     /**
      * Just after the pipeline ends
      */
-    void onEndPipeline(@Nonnull FlowNode node, @Nonnull WorkflowRun run);
+    void onEndPipeline(@NonNull FlowNode node, @NonNull WorkflowRun run);
 
 }

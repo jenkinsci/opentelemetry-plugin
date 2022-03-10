@@ -20,8 +20,8 @@ import io.opentelemetry.sdk.resources.Resource;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
@@ -157,7 +157,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     /**
      * Extension point for Observability backends to contribute to the configuration properties used to instantiate the OpenTelemetry SDK.
      */
-    @Nonnull
+    @NonNull
     public Map<String, String> getOtelConfigurationProperties() {
         LogStorageRetriever logStorageRetriever = getLogStorageRetriever(TemplateBindingsProvider.empty());
         if (logStorageRetriever != null) {

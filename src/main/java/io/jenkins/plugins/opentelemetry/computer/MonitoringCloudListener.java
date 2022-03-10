@@ -15,7 +15,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.logging.Level;
@@ -65,7 +65,7 @@ public class MonitoringCloudListener extends CloudProvisioningListener {
      * Jenkins doesn't support {@link com.google.inject.Provides} so we manually wire dependencies :-(
      */
     @Inject
-    public void setMeter(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+    public void setMeter(@NonNull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.meter = openTelemetrySdkProvider.getMeter();
     }
 }

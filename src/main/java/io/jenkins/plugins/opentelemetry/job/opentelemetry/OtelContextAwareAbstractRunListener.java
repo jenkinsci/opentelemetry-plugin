@@ -17,7 +17,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
@@ -37,7 +37,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     private ConfigProperties config;
 
     @Inject
-    public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService, @Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+    public final void setOpenTelemetryTracerService(@NonNull OtelTraceService otelTraceService, @NonNull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
         this.otelTraceService = otelTraceService;
         this.tracer = this.otelTraceService.getTracer();
         this.meter = openTelemetrySdkProvider.getMeter();
@@ -122,7 +122,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         return meter;
     }
 
-    @Nonnull
+    @NonNull
     protected ConfigProperties getConfig() {
         return config;
     }

@@ -5,7 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 public interface LogStorageRetriever {
@@ -15,8 +15,8 @@ public interface LogStorageRetriever {
      * @param runNumber see {@link hudson.model.Run#getNumber()}
      * @param complete if true, we claim to be serving the complete log for a build, so implementations should be sure to retrieve final log lines
      */
-    @Nonnull
-    LogsQueryResult overallLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete) throws IOException;
+    @NonNull
+    LogsQueryResult overallLog(@NonNull String jobFullName, @NonNull int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete) throws IOException;
 
 
     /**
@@ -25,6 +25,6 @@ public interface LogStorageRetriever {
      * @param flowNodeId see {@link org.jenkinsci.plugins.workflow.graph.FlowNode#getId()}
      * @param complete if true, we claim to be serving the complete log for a build, so implementations should be sure to retrieve final log lines
      */
-    @Nonnull LogsQueryResult stepLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete) throws IOException;
+    @NonNull LogsQueryResult stepLog(@NonNull String jobFullName, @NonNull int runNumber, @NonNull String flowNodeId, @NonNull String traceId, @NonNull String spanId, boolean complete) throws IOException;
 
 }

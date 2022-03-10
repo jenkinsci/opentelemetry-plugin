@@ -13,9 +13,9 @@ import io.opentelemetry.sdk.common.Clock;
 import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.util.JenkinsJVM;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -53,11 +53,11 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
     @CheckForNull
     transient PrintStream logger;
 
-    public OtelLogSenderBuildListener(@Nonnull BuildInfo buildInfo, @Nonnull Map<String, String> otelConfigProperties, @Nonnull Map<String, String> otelResourceAttributes) {
+    public OtelLogSenderBuildListener(@NonNull BuildInfo buildInfo, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
         this(buildInfo, null, otelConfigProperties, otelResourceAttributes);
     }
 
-    public OtelLogSenderBuildListener(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nonnull Map<String, String> otelConfigProperties, @Nonnull Map<String, String> otelResourceAttributes) {
+    public OtelLogSenderBuildListener(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
         this.buildInfo = new BuildInfo(buildInfo);
         this.w3cTraceContext = buildInfo.getW3cTraceContext();
         this.flowNodeId = flowNodeId;
@@ -69,7 +69,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         JenkinsJVM.checkJenkinsJVM();
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public synchronized final PrintStream getLogger() {
         if (logger == null) {
@@ -93,11 +93,11 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
 
         private final static Logger logger = Logger.getLogger(OtelLogSenderBuildListenerOnController.class.getName());
 
-        public OtelLogSenderBuildListenerOnController(@Nonnull BuildInfo buildInfo, @Nonnull Map<String, String> otelConfigProperties, @Nonnull Map<String, String> otelResourceAttributes) {
+        public OtelLogSenderBuildListenerOnController(@NonNull BuildInfo buildInfo, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
             this(buildInfo, null, otelConfigProperties, otelResourceAttributes);
         }
 
-        public OtelLogSenderBuildListenerOnController(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nonnull Map<String, String> otelConfigProperties, @Nonnull Map<String, String> otelResourceAttributes) {
+        public OtelLogSenderBuildListenerOnController(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
             super(buildInfo, flowNodeId, otelConfigProperties, otelResourceAttributes);
             logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnController()");
             JenkinsJVM.checkJenkinsJVM();
@@ -141,7 +141,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         /**
          * Intended to be exclusively called on the Jenkins Controller by {@link OtelLogSenderBuildListenerOnController#writeReplace()}.
          */
-        private OtelLogSenderBuildListenerOnAgent(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nonnull Map<String, String> otelConfigProperties, @Nonnull Map<String, String> otelResourceAttributes) {
+        private OtelLogSenderBuildListenerOnAgent(@NonNull BuildInfo buildInfo, @Nullable String flowNodeId, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
             super(buildInfo, flowNodeId, otelConfigProperties, otelResourceAttributes);
             logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnAgent()");
             JenkinsJVM.checkJenkinsJVM();

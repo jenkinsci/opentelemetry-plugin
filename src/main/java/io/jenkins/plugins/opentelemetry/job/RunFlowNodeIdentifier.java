@@ -5,15 +5,15 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.Immutable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import net.jcip.annotations.Immutable;
 import java.util.Objects;
 
 @Immutable
 public class RunFlowNodeIdentifier extends RunIdentifier {
     final String flowNodeId;
 
-    public RunFlowNodeIdentifier(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String flowNodeId) {
+    public RunFlowNodeIdentifier(@NonNull String jobFullName, @NonNull int runNumber, @NonNull String flowNodeId) {
         super(jobFullName, runNumber);
         this.flowNodeId = flowNodeId;
     }

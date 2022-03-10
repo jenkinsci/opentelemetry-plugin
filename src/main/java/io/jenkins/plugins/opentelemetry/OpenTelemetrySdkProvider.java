@@ -26,7 +26,7 @@ import io.opentelemetry.sdk.logs.SdkLogEmitterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.logging.Level;
@@ -60,22 +60,22 @@ public class OpenTelemetrySdkProvider {
         initializeNoOp();
     }
 
-    @Nonnull
+    @NonNull
     public Tracer getTracer() {
         return Preconditions.checkNotNull(tracer);
     }
 
-    @Nonnull
+    @NonNull
     public Meter getMeter() {
         return Preconditions.checkNotNull(meter);
     }
 
-    @Nonnull
+    @NonNull
     public Resource getResource() {
         return Preconditions.checkNotNull(resource);
     }
 
-    @Nonnull
+    @NonNull
     public ConfigProperties getConfig() {
         return Preconditions.checkNotNull(config);
     }
@@ -85,13 +85,13 @@ public class OpenTelemetrySdkProvider {
         return otelLogsExporter != null && !otelLogsExporter.equals("none");
     }
 
-    @Nonnull
+    @NonNull
     public LogEmitter getLogEmitter() {
         return Preconditions.checkNotNull(this.logEmitter);
     }
 
     @VisibleForTesting
-    @Nonnull
+    @NonNull
     protected OpenTelemetrySdk getOpenTelemetrySdk() {
         return Preconditions.checkNotNull(openTelemetrySdk);
     }
@@ -106,7 +106,7 @@ public class OpenTelemetrySdkProvider {
         GlobalOpenTelemetry.resetForTest();
     }
 
-    public void initialize(@Nonnull OpenTelemetryConfiguration configuration) {
+    public void initialize(@NonNull OpenTelemetryConfiguration configuration) {
         preDestroy(); // shutdown existing SDK
 
         AutoConfiguredOpenTelemetrySdkBuilder sdkBuilder = AutoConfiguredOpenTelemetrySdk.builder();

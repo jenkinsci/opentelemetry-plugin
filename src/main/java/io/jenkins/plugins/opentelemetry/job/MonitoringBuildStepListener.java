@@ -25,8 +25,8 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import jenkins.model.Jenkins;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -100,7 +100,7 @@ public class MonitoringBuildStepListener extends BuildStepListener {
      */
     @CheckForNull
     @MustBeClosed
-    protected Scope setupContext(AbstractBuild build, @Nonnull BuildStep buildStep) {
+    protected Scope setupContext(AbstractBuild build, @NonNull BuildStep buildStep) {
         build = verifyNotNull(build, "%s No build found for step %s", build, buildStep);
         Span span = this.otelTraceService.getSpan(build, buildStep);
 
@@ -110,17 +110,17 @@ public class MonitoringBuildStepListener extends BuildStepListener {
     }
 
     @Inject
-    public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService) {
+    public final void setOpenTelemetryTracerService(@NonNull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
         this.tracer = this.otelTraceService.getTracer();
     }
 
-    @Nonnull
+    @NonNull
     public OtelTraceService getTracerService() {
         return otelTraceService;
     }
 
-    @Nonnull
+    @NonNull
     public Tracer getTracer() {
         return tracer;
     }

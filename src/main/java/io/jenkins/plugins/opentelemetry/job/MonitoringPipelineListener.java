@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.job;
 
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Computer;
@@ -48,9 +49,9 @@ import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
@@ -90,8 +91,9 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         this.statusUnsetCausesOfInterruption = new HashSet<>(jenkinsOpenTelemetryPluginConfiguration.getStatusUnsetCausesOfInterruption());
     }
 
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", justification = "see https://github.com/spotbugs/spotbugs/issues/651")
     @Override
-    public void onStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String agentLabel, @Nonnull WorkflowRun run) {
+    public void onStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String agentLabel, @NonNull WorkflowRun run) {
         try (Scope nodeSpanScope = setupContext(run, stepStartNode)) {
             verifyNotNull(nodeSpanScope, "%s - No span found for node %s", run, stepStartNode);
             String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NODE);
@@ -128,13 +130,13 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void onAfterStartNodeStep(@Nonnull StepStartNode stepStartNode, @Nullable String nodeLabel, @Nonnull WorkflowRun run) {
+    public void onAfterStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run) {
         // end the JenkinsOtelSemanticAttributes.AGENT_ALLOCATE span
         endCurrentSpan(stepStartNode, run);
     }
 
     @Override
-    public void onStartStageStep(@Nonnull StepStartNode stepStartNode, @Nonnull String stageName, @Nonnull WorkflowRun run) {
+    public void onStartStageStep(@NonNull StepStartNode stepStartNode, @NonNull String stageName, @NonNull WorkflowRun run) {
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
             String spanStageName = "Stage: " + stageName;
@@ -157,12 +159,12 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void onEndNodeStep(@Nonnull StepEndNode node, @Nonnull String nodeName, @Nonnull WorkflowRun run) {
+    public void onEndNodeStep(@NonNull StepEndNode node, @NonNull String nodeName, @NonNull WorkflowRun run) {
         endCurrentSpan(node, run);
     }
 
     @Override
-    public void onEndStageStep(@Nonnull StepEndNode node, @Nonnull String stageName, @Nonnull WorkflowRun run) {
+    public void onEndStageStep(@NonNull StepEndNode node, @NonNull String stageName, @NonNull WorkflowRun run) {
         endCurrentSpan(node, run);
     }
 
@@ -175,7 +177,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         return this.stepHandlers;
     }
     @Override
-    public void onAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {
+    public void onAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run) {
         if (isIgnoredStep(node.getDescriptor())){
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - don't create span for step '" + node.getDisplayFunctionName() + "'");
             return;
@@ -213,7 +215,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void onAfterAtomicStep(@Nonnull StepAtomNode node, @Nonnull WorkflowRun run) {
+    public void onAfterAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run) {
         if (isIgnoredStep(node.getDescriptor())){
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - don't end span for step '" + node.getDisplayFunctionName() + "'");
             return;
@@ -230,7 +232,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         return ignoreStep;
     }
 
-    private String getStepName(@Nonnull StepAtomNode node, @Nonnull String name) {
+    private String getStepName(@NonNull StepAtomNode node, @NonNull String name) {
         StepDescriptor stepDescriptor = node.getDescriptor();
         if (stepDescriptor == null) {
             return name;
@@ -243,7 +245,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         return stepDescriptor.getDisplayName();
     }
 
-    private String getStepType(@Nonnull FlowNode node, @Nullable StepDescriptor stepDescriptor, @Nonnull String type) {
+    private String getStepType(@NonNull FlowNode node, @Nullable StepDescriptor stepDescriptor, @NonNull String type) {
         if (stepDescriptor == null) {
             return type;
         }
@@ -255,7 +257,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Nullable
-    private UninstantiatedDescribable getUninstantiatedDescribableOrNull(@Nonnull FlowNode node, @Nullable StepDescriptor stepDescriptor) {
+    private UninstantiatedDescribable getUninstantiatedDescribableOrNull(@NonNull FlowNode node, @Nullable StepDescriptor stepDescriptor) {
         // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
         if (stepDescriptor instanceof CoreStep.DescriptorImpl) {
             Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
@@ -267,7 +269,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void onStartParallelStepBranch(@Nonnull StepStartNode stepStartNode, @Nonnull String branchName, @Nonnull WorkflowRun run) {
+    public void onStartParallelStepBranch(@NonNull StepStartNode stepStartNode, @NonNull String branchName, @NonNull WorkflowRun run) {
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
 
@@ -289,7 +291,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void onEndParallelStepBranch(@Nonnull StepEndNode node, @Nonnull String branchName, @Nonnull WorkflowRun run) {
+    public void onEndParallelStepBranch(@NonNull StepEndNode node, @NonNull String branchName, @NonNull WorkflowRun run) {
         endCurrentSpan(node, run);
     }
 
@@ -338,7 +340,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void notifyOfNewStep(@Nonnull Step step, @Nonnull StepContext context) {
+    public void notifyOfNewStep(@NonNull Step step, @NonNull StepContext context) {
         try {
             WorkflowRun run = context.get(WorkflowRun.class);
             FlowNode node = context.get(FlowNode.class);
@@ -375,7 +377,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
      */
     @CheckForNull
     @MustBeClosed
-    protected Scope setupContext(WorkflowRun run, @Nonnull FlowNode node) {
+    protected Scope setupContext(WorkflowRun run, @NonNull FlowNode node) {
         run = verifyNotNull(run, "%s No run found for node %s", run, node);
         Span span = this.otelTraceService.getSpan(run, node);
 
@@ -385,17 +387,17 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Inject
-    public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService) {
+    public final void setOpenTelemetryTracerService(@NonNull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
         this.tracer = this.otelTraceService.getTracer();
     }
 
-    @Nonnull
+    @NonNull
     public OtelTraceService getTracerService() {
         return otelTraceService;
     }
 
-    @Nonnull
+    @NonNull
     public Tracer getTracer() {
         return tracer;
     }

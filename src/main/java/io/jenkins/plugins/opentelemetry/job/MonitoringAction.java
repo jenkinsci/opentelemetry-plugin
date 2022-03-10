@@ -16,8 +16,8 @@ import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -87,7 +87,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
     /**
      * Add per {@link FlowNode} contextual information.
      */
-    public void addContext(@Nonnull FlowNode node, @Nonnull Map<String, String> context) {
+    public void addContext(@NonNull FlowNode node, @NonNull Map<String, String> context) {
         if (contextPerNodeId == null) {
             contextPerNodeId = new HashMap<>();
         }
@@ -102,16 +102,16 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
     /**
      * See `io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator#inject(io.opentelemetry.context.Context, java.lang.Object, io.opentelemetry.context.propagation.TextMapSetter)`
      */
-    public void addRootContext(@Nonnull Map<String, String> context) {
+    public void addRootContext(@NonNull Map<String, String> context) {
         this.rootContext = context;
     }
 
     @CheckForNull
-    public Map<String, String> getContext(@Nonnull String flowNodeId) {
+    public Map<String, String> getContext(@NonNull String flowNodeId) {
         return contextPerNodeId.get(flowNodeId);
     }
 
-    @Nonnull
+    @NonNull
     public List<ObservabilityBackendLink> getLinks() {
         List<ObservabilityBackend> tracingCapableBackends = JenkinsOpenTelemetryPluginConfiguration.get().getObservabilityBackends()
             .stream()

@@ -18,7 +18,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,13 +33,13 @@ public class MatrixRunHandler implements RunHandler {
     }
 
     @Override
-    public boolean canCreateSpanBuilder(@Nonnull Run run) {
+    public boolean canCreateSpanBuilder(@NonNull Run run) {
         return run instanceof MatrixRun || run instanceof MatrixBuild;
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull Run run, @Nonnull Tracer tracer) {
+    public SpanBuilder createSpanBuilder(@NonNull Run run, @NonNull Tracer tracer) {
         if (run instanceof MatrixRun) {
             MatrixRun matrixRun = (MatrixRun) run;
             MatrixConfiguration matrixConfiguration = matrixRun.getParent();

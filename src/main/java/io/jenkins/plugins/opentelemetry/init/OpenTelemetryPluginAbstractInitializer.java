@@ -9,7 +9,7 @@ package io.jenkins.plugins.opentelemetry.init;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
 public abstract class OpenTelemetryPluginAbstractInitializer {
@@ -24,7 +24,7 @@ public abstract class OpenTelemetryPluginAbstractInitializer {
      * using {@link io.opentelemetry.api.GlobalOpenTelemetry}, proper dependency injection can be implemented.
      */
     @Inject
-    public void setOpenTelemetrySdkProvider(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider){
+    public void setOpenTelemetrySdkProvider(@NonNull OpenTelemetrySdkProvider openTelemetrySdkProvider){
         this.openTelemetrySdkProvider = openTelemetrySdkProvider;
     }
 }

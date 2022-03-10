@@ -18,7 +18,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -41,12 +41,12 @@ class OtelLogStorage implements LogStorage {
     final BuildInfo buildInfo;
     final Tracer tracer;
 
-    public OtelLogStorage(@Nonnull BuildInfo buildInfo, @Nonnull  Tracer tracer) {
+    public OtelLogStorage(@NonNull BuildInfo buildInfo, @NonNull  Tracer tracer) {
         this.buildInfo = buildInfo;
         this.tracer = tracer;
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public BuildListener overallListener() {
         OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
@@ -56,9 +56,9 @@ class OtelLogStorage implements LogStorage {
         return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, otelConfigurationProperties, otelResourceAttributes);
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public TaskListener nodeListener(@Nonnull FlowNode flowNode) {
+    public TaskListener nodeListener(@NonNull FlowNode flowNode) {
         OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
         Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelResourceAttributes = new HashMap<>();
@@ -77,9 +77,9 @@ class OtelLogStorage implements LogStorage {
      *       |- hudson.model.Run#writeLogTo(long, org.apache.commons.jelly.XMLOutput)
      *          |- workflowRun/console.jelly
      */
-    @Nonnull
+    @NonNull
     @Override
-    public AnnotatedLargeText<FlowExecutionOwner.Executable> overallLog(@Nonnull FlowExecutionOwner.Executable build, boolean complete) {
+    public AnnotatedLargeText<FlowExecutionOwner.Executable> overallLog(@NonNull FlowExecutionOwner.Executable build, boolean complete) {
         Span span = tracer.spanBuilder("OtelLogStorage.overallLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
@@ -98,9 +98,9 @@ class OtelLogStorage implements LogStorage {
         }
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public AnnotatedLargeText<FlowNode> stepLog(@Nonnull FlowNode flowNode, boolean complete) {
+    public AnnotatedLargeText<FlowNode> stepLog(@NonNull FlowNode flowNode, boolean complete) {
         Span span = tracer.spanBuilder("OtelLogStorage.stepLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
@@ -166,7 +166,7 @@ class OtelLogStorage implements LogStorage {
             '}';
     }
 
-    @Nonnull
+    @NonNull
     public LogStorageRetriever getLogStorageRetriever() {
         return JenkinsOpenTelemetryPluginConfiguration.get().getLogStorageRetriever();
     }

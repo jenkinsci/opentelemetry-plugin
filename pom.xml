@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.35</version>
+        <version>4.37</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -19,7 +19,7 @@
     <properties>
         <revision>2.1.2</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.277.1</jenkins.version>
+        <jenkins.version>2.332.1</jenkins.version>
         <java.level>8</java.level>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.12.0</opentelemetry.version>
@@ -38,8 +38,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.249.x</artifactId>
-                <version>984.vb5eaac999a7e</version>
+                <artifactId>bom-2.332.x</artifactId>
+                <version>1195.v33041c1f1b_b_2</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -79,10 +79,9 @@
                 <version>3.12.0</version>
             </dependency>
             <dependency>
-                <!-- workflow-basic-steps:2.22 vs gitlab-plugin:1.5.22 -->
-                <groupId>javax.activation</groupId>
-                <artifactId>activation</artifactId>
-                <version>1.1.1</version>
+                <groupId>org.eclipse.sisu</groupId>
+                <artifactId>org.eclipse.sisu.inject</artifactId>
+                <version>0.3.5</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -200,17 +199,12 @@
             <artifactId>okhttp-api</artifactId>
             <version>4.9.3-105.vb96869f8ac3a</version>
         </dependency>
-        <dependency> <!-- see maskClasses config -->
+        <!--
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <!--
-            Don't bump beyond 20.0 as 21.0 removes com.google.common.util.concurrent.MoreExecutors#sameThreadExecutor()
-            that is used by
-            org.jenkinsci.plugins.workflow.support.concurrent.Futures.addCallback(com.google.common.util.concurrent.ListenableFuture<V>, com.google.common.util.concurrent.FutureCallback<? super V>)
-            See https://github.com/google/guava/wiki/Release21
-            -->
-            <version>20.0</version>
         </dependency>
+        -->
         <dependency>
             <groupId>com.google.errorprone</groupId>
             <artifactId>error_prone_annotations</artifactId>
@@ -270,29 +264,10 @@
         <dependency>
             <groupId>org.jenkinsci.plugins</groupId>
             <artifactId>pipeline-model-definition</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jenkins-ci.plugins</groupId>
-                    <artifactId>jackson2-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.datatype</groupId>
-                    <artifactId>jackson-datatype-json-org</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>matrix-project</artifactId>
-            <version>1.18</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -321,14 +296,8 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>gitlab-plugin</artifactId>
-            <version>1.5.22</version>
+            <version>1.5.28</version>
             <optional>true</optional>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.jaxrs</groupId>
-                    <artifactId>jackson-jaxrs-json-provider</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -372,10 +341,7 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
-            <!--
-            can bump to 3.9 because it requires jenkins-core 2.270
-            -->
-            <version>3.8</version>
+            <version>3.18</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -384,6 +350,14 @@
                     -->
                     <groupId>commons-net</groupId>
                     <artifactId>commons-net</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.annotation</groupId>
+                    <artifactId>javax.annotation-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jenkins-ci</groupId>
+                    <artifactId>symbol-annotation</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -444,25 +418,6 @@
             <groupId>io.jenkins.configuration-as-code</groupId>
             <artifactId>test-harness</artifactId>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.datatype</groupId>
-                    <artifactId>jackson-datatype-json-org</artifactId>
-                </exclusion>
-                <exclusion>
-                    <!-- conflicts with pipeline-model-definition -->
-                    <groupId>joda-time</groupId>
-                    <artifactId>joda-time</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <!-- For JUnit test results UI compatibility -->
         <dependency>
@@ -504,9 +459,6 @@
                 <groupId>org.jenkins-ci.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
                 <configuration>
-                    <!-- JENKINS-50520: since we need a custom version of Guava -->
-                    <maskClasses>com.google.common.</maskClasses>
-                    <minimumJavaVersion>8</minimumJavaVersion>
                     <loggers>
                         <io.jenkins.plugins.opentelemetry.job.log>FINE</io.jenkins.plugins.opentelemetry.job.log>
                     </loggers>
