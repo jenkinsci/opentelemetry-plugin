@@ -508,7 +508,7 @@
                     <maskClasses>com.google.common.</maskClasses>
                     <minimumJavaVersion>8</minimumJavaVersion>
                     <loggers>
-                        <io.jenkins.plugins.opentelemetry.job.log>FINE</io.jenkins.plugins.opentelemetry.job.log>
+                        <io.jenkins.plugins.opentelemetry.job.log>FINER</io.jenkins.plugins.opentelemetry.job.log>
                     </loggers>
                 </configuration>
             </plugin>

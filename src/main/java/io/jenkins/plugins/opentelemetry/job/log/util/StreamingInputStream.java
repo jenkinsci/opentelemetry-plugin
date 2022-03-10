@@ -34,6 +34,7 @@ public class StreamingInputStream extends InputStream {
     private int cursorOnCurrentLine;
     private byte[] currentLine;
     private long skip;
+    long readBytes;
     final AtomicInteger processedRowsCount = new AtomicInteger();
 
     /**
@@ -66,6 +67,7 @@ public class StreamingInputStream extends InputStream {
             currentLine = null;
             cursorOnCurrentLine = 0;
         }
+        readBytes++;
         return result;
     }
 
@@ -111,6 +113,7 @@ public class StreamingInputStream extends InputStream {
                     }
                 }
             }
+            readBytes += skip;
             return skip;
         } finally {
             span.end();
@@ -134,8 +137,16 @@ public class StreamingInputStream extends InputStream {
 
     @Override
     public void close() throws IOException {
-        if (formattedLogLines instanceof Closeable) {
-            ((Closeable) formattedLogLines).close();
+        Tracer tracer = logger.isLoggable(Level.FINER) ? this.tracer : TracerProvider.noop().get("noop");
+        Span span = tracer.spanBuilder("StreamingInputStream.close")
+            .setAttribute("readBytes", readBytes)
+            .startSpan();
+        try (Scope scope = span.makeCurrent()) {
+            if (formattedLogLines instanceof Closeable) {
+                ((Closeable) formattedLogLines).close();
+            }
+        } finally {
+            span.end();
         }
     }
 

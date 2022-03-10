@@ -158,20 +158,19 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
         Span span = tracer.spanBuilder("OverallLog.writeHtmlTo")
             .setAttribute("start", start)
             .startSpan();
-        long length = 0;
         try (Scope scope = span.makeCurrent()) {
             // HEADER
             if (start == 0 && !Main.isUnitTest) { // would mess up unit tests
-                length += logsViewHeader.writeHeader(w, context, charset);
+                // don't increment the outputted length with the header length
+                // because the outputted length is used by the logs streaming ajax call to reposition on the log stream
+                logsViewHeader.writeHeader(w, context, charset);
                 w.write("\n\n");  // TODO increment length
             }
             // LOG LINES
             long logLinesLengthInBytes = super.writeHtmlTo(start, w);
             span.setAttribute("response.length", logLinesLengthInBytes);
 
-            length += logLinesLengthInBytes;
-
-            return length;
+            return logLinesLengthInBytes;
         } catch (IOException e) {
             span.recordException(e);
             throw e;
