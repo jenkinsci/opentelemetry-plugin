@@ -26,16 +26,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable> {
-    final static String ATTRIBUTE_LENGTH = "buffer.length";
     private final static Logger logger = Logger.getLogger(OverallLog.class.getName());
     private final FlowExecutionOwner.Executable context;
-    private final ByteBuffer byteBuffer;
     private final transient Tracer tracer;
     private final LogsViewHeader logsViewHeader;
 
     public OverallLog(ByteBuffer memory, LogsViewHeader logsViewHeader, Charset charset, boolean completed, FlowExecutionOwner.Executable context, Tracer tracer) {
         super(memory, charset, completed, context);
-        this.byteBuffer = memory;
         this.logsViewHeader = logsViewHeader;
         this.context = context;
         this.tracer = tracer;
