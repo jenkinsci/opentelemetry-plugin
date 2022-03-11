@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.servlet;
 
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
@@ -85,101 +87,101 @@ public class OpenTelemetryServletFilter implements Filter {
         }
         SpanBuilder spanBuilder;
         try {
-        if (rootPath.equals("job")) {
-            // e.g /job/my-war/job/master/lastBuild/console
-            // e.g /job/my-war/job/master/2/console
-            ParsedJobUrl parsedJobUrl = parseJobUrl(pathInfoTokens);
-            httpRoute = parsedJobUrl.urlPattern;
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedJobUrl.urlPattern)
-                .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedJobUrl.jobName);
-            if (parsedJobUrl.runNumber != null) {
-                spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedJobUrl.runNumber);
-            }
-        } else if (rootPath.equals("blue")) {
-            if (pathInfoTokens.size() == 1) {
-                httpRoute = "/blue/";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
-            } else if ("rest".equals(pathInfoTokens.get(1))) {
-                if (pathInfoTokens.size() == 2) {
-                    httpRoute = "/blue/rest/";
+            if (rootPath.equals("job")) {
+                // e.g /job/my-war/job/master/lastBuild/console
+                // e.g /job/my-war/job/master/2/console
+                ParsedJobUrl parsedJobUrl = parseJobUrl(pathInfoTokens);
+                httpRoute = parsedJobUrl.urlPattern;
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedJobUrl.urlPattern)
+                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedJobUrl.jobName);
+                if (parsedJobUrl.runNumber != null) {
+                    spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedJobUrl.runNumber);
+                }
+            } else if (rootPath.equals("blue")) {
+                if (pathInfoTokens.size() == 1) {
+                    httpRoute = "/blue/";
                     spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
-                } else if ("organizations".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 9) {
-                    // eg /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/blueTestSummary/
+                } else if ("rest".equals(pathInfoTokens.get(1))) {
+                    if (pathInfoTokens.size() == 2) {
+                        httpRoute = "/blue/rest/";
+                        spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
+                    } else if ("organizations".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 7) {
+                        // eg /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/blueTestSummary/
 
-                    ParsedJobUrl parsedBlueOceanPipelineUrl = parseBlueOceanRestPipelineUrl(pathInfoTokens);
-                    httpRoute = parsedBlueOceanPipelineUrl.urlPattern;
-                    spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedBlueOceanPipelineUrl.urlPattern)
-                        .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedBlueOceanPipelineUrl.jobName);
-                    if (parsedBlueOceanPipelineUrl.runNumber != null) {
-                        spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedBlueOceanPipelineUrl.runNumber);
+                        ParsedJobUrl parsedBlueOceanPipelineUrl = parseBlueOceanRestPipelineUrl(pathInfoTokens);
+                        httpRoute = parsedBlueOceanPipelineUrl.urlPattern;
+                        spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedBlueOceanPipelineUrl.urlPattern)
+                            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedBlueOceanPipelineUrl.jobName);
+                        if (parsedBlueOceanPipelineUrl.runNumber != null) {
+                            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedBlueOceanPipelineUrl.runNumber);
+                        }
+                    } else if ("classes".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 3) {
+                        // eg /blue/rest/classes/io.jenkins.blueocean.rest.impl.pipeline.PipelineRunImpl/
+                        String blueOceanClass = pathInfoTokens.get(3);
+                        httpRoute = "/blue/rest/classes/:blueOceanClass";
+                        spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute)
+                            .setAttribute("blueOceanClass", blueOceanClass);
+                    } else {
+                        // eg /blue/rest/i18n/blueocean-personalization/1.25.2/jenkins.plugins.blueocean.personalization.Messages/en-US
+                        httpRoute = "/blue/rest/" + pathInfoTokens.get(2) + "/*";
+                        spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
                     }
-                } else if ("classes".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 3) {
-                    // eg /blue/rest/classes/io.jenkins.blueocean.rest.impl.pipeline.PipelineRunImpl/
-                    String blueOceanClass = pathInfoTokens.get(3);
-                    httpRoute = "/blue/rest/classes/:blueOceanClass";
-                    spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute)
-                        .setAttribute("blueOceanClass", blueOceanClass);
                 } else {
-                    // eg /blue/rest/i18n/blueocean-personalization/1.25.2/jenkins.plugins.blueocean.personalization.Messages/en-US
-                    httpRoute = "/blue/rest/" + pathInfoTokens.get(2) + "/*";
+                    httpRoute = "/blue/" + pathInfoTokens.get(1) + "/*";
                     spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
                 }
-            } else {
-                httpRoute = "/blue/" + pathInfoTokens.get(1) + "/*";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
-            }
 
-        } else if (rootPath.equals("administrativeMonitor")) {
-            // eg GET /administrativeMonitor/hudson.diagnosis.ReverseProxySetupMonitor/testForReverseProxySetup/http://localhost:8080/jenkins/manage/
-            httpRoute = "/administrativeMonitor/:administrativeMonitor/*";
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/administrativeMonitor/");
-            if (pathInfoTokens.size() > 1) {
-                spanBuilder.setAttribute("administrativeMonitor", pathInfoTokens.get(1));
+            } else if (rootPath.equals("administrativeMonitor")) {
+                // eg GET /administrativeMonitor/hudson.diagnosis.ReverseProxySetupMonitor/testForReverseProxySetup/http://localhost:8080/jenkins/manage/
+                httpRoute = "/administrativeMonitor/:administrativeMonitor/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/administrativeMonitor/");
+                if (pathInfoTokens.size() > 1) {
+                    spanBuilder.setAttribute("administrativeMonitor", pathInfoTokens.get(1));
+                }
+            } else if (rootPath.equals("asynchPeople")) {
+                httpRoute = "/asynchPeople";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/asynchPeople");
+            } else if (rootPath.equals("computer")) {
+                // /computer/(master)/
+                httpRoute = "/computer/:computer/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/computer/*");
+                // TODO more details
+            } else if (rootPath.equals("credentials")) {
+                // eg /credentials/store/system/domain/_/
+                httpRoute = "/credentials/store/:store/domain/:domain/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/credentials/*");
+                // TODO more details
+            } else if (rootPath.equals("descriptorByName")) {
+                httpRoute = "/descriptorByName/:descriptor/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/descriptorByName/");
+                if (pathInfoTokens.size() > 1) {
+                    spanBuilder.setAttribute("descriptor", pathInfoTokens.get(1));
+                }
+            } else if (rootPath.equals("extensionList")) {
+                // eg /extensionList/hudson.diagnosis.MemoryUsageMonitor/0/heap/graph
+                httpRoute = "/extensionList/:extension/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/extensionList/");
+                if (pathInfoTokens.size() > 1) {
+                    spanBuilder.setAttribute("extension", pathInfoTokens.get(1));
+                }
+            } else if (rootPath.equals("fingerprint")) {
+                httpRoute = "/fingerprint/:fingerprint";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/fingerprint/");
+                spanBuilder.setAttribute("fingerprint", pathInfo.substring("/fingerprint/".length()));
+                if (pathInfoTokens.size() > 1) {
+                    spanBuilder.setAttribute("fingerprint", pathInfoTokens.get(1));
+                }
+            } else if (rootPath.equals("user")) {
+                //eg /user/cyrille.leclerc/ /user/cyrille.leclerc/configure /user/cyrille.leclerc/my-views/view/all/
+                httpRoute = "/user/:user/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/user/*");
+                if (pathInfoTokens.size() > 1) {
+                    spanBuilder.setAttribute("user", pathInfoTokens.get(1));
+                }
+            } else {
+                httpRoute = "/" + rootPath + "/*";
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + pathInfo);
             }
-        } else if (rootPath.equals("asynchPeople")) {
-            httpRoute = "/asynchPeople";
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/asynchPeople");
-        } else if (rootPath.equals("computer")) {
-            // /computer/(master)/
-            httpRoute = "/computer/:computer/*";
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/computer/*");
-            // TODO more details
-        } else if (rootPath.equals("credentials")) {
-            // eg /credentials/store/system/domain/_/
-            httpRoute = "/credentials/store/:store/domain/:domain/*";
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/credentials/*");
-            // TODO more details
-        } else if (rootPath.equals("descriptorByName")) {
-            httpRoute = "/descriptorByName/:descriptor/*";
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/descriptorByName/");
-            if (pathInfoTokens.size() > 1) {
-                spanBuilder.setAttribute("descriptor", pathInfoTokens.get(1));
-            }
-        } else if (rootPath.equals("extensionList")) {
-            // eg /extensionList/hudson.diagnosis.MemoryUsageMonitor/0/heap/graph
-            httpRoute = "/extensionList/:extension/*";
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/extensionList/");
-            if (pathInfoTokens.size() > 1) {
-                spanBuilder.setAttribute("extension", pathInfoTokens.get(1));
-            }
-        } else if (rootPath.equals("fingerprint")) {
-            httpRoute = "/fingerprint/:fingerprint";
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/fingerprint/");
-            spanBuilder.setAttribute("fingerprint", pathInfo.substring("/fingerprint/".length()));
-            if (pathInfoTokens.size() > 1) {
-                spanBuilder.setAttribute("fingerprint", pathInfoTokens.get(1));
-            }
-        } else if (rootPath.equals("user")) {
-            //eg /user/cyrille.leclerc/ /user/cyrille.leclerc/configure /user/cyrille.leclerc/my-views/view/all/
-            httpRoute = "/user/:user/*";
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/user/*");
-            if (pathInfoTokens.size() > 1) {
-                spanBuilder.setAttribute("user", pathInfoTokens.get(1));
-            }
-        } else {
-            httpRoute = "/" + rootPath + "/*";
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + pathInfo);
-        }
         } catch (RuntimeException e) {
             httpRoute = "/" + rootPath + "/*";
             spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + pathInfo);
@@ -192,15 +194,26 @@ public class OpenTelemetryServletFilter implements Filter {
         if (queryString != null && !queryString.isEmpty()) {
             httpTarget += "?" + queryString;
         }
-        Span span = spanBuilder
+
+        spanBuilder
             .setAttribute(SemanticAttributes.HTTP_CLIENT_IP, servletRequest.getRemoteAddr())
             .setAttribute(SemanticAttributes.HTTP_SCHEME, servletRequest.getScheme())
             .setAttribute(SemanticAttributes.HTTP_SERVER_NAME, servletRequest.getServerName())
             .setAttribute(SemanticAttributes.HTTP_HOST, servletRequest.getServerName() + ":" + servletRequest.getServerPort())
             .setAttribute(SemanticAttributes.HTTP_METHOD, servletRequest.getMethod())
             .setAttribute(SemanticAttributes.HTTP_TARGET, httpTarget)
-            .setAttribute(SemanticAttributes.HTTP_ROUTE, httpRoute)
-            .startSpan();
+            .setAttribute(SemanticAttributes.HTTP_ROUTE, httpRoute);
+
+        for (Map.Entry<String, String[]> entry : servletRequest.getParameterMap().entrySet()) {
+            String name = entry.getKey();
+            String[] values = entry.getValue();
+            if (values.length == 1) {
+                spanBuilder.setAttribute("query." + name, values[0]);
+            } else {
+                spanBuilder.setAttribute(AttributeKey.stringArrayKey("query." + name), Arrays.asList(values));
+            }
+        }
+        Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
             filterChain.doFilter(servletRequest, servletResponse);
             span.setAttribute("response.status", servletResponse.getStatus());
@@ -211,38 +224,167 @@ public class OpenTelemetryServletFilter implements Filter {
     }
 
     /**
+     * Throws an {@link IllegalArgumentException} if the given {@code pathInfo} doesn't match the given {@code expected} path
+     *
+     * @param pathInfo
+     * @param expected '*' element means not check
+     * @throws IllegalArgumentException if not matching
+     */
+    void checkUrlPathInfoMatch(List<String> pathInfo, List<String> expected) {
+        int violationIndex = getUrlPathInfoMatch(pathInfo, expected);
+        if (violationIndex >= 0) {
+            throw new IllegalArgumentException("Invalid URL path /" + String.join("/", pathInfo) + ", expected: /" + String.join("/", expected) + ". " +
+                "Violation on item " + violationIndex + ", " +
+                "expected: '" + expected.get(violationIndex) + "', " +
+                "actual: '" + (violationIndex < pathInfo.size() ? "<<missing>>" : pathInfo.get(violationIndex)) + "'");
+        }
+    }
+
+    /**
+     * Return {@code false} if the given {@code pathInfo} doesn't match the given {@code expected} path
+     *
      * @param pathInfo
      * @param expected '*' element means not check
      */
-    void checkUrlPathInfoMatch(List<String> pathInfo, List<String> expected) {
+    boolean isUrlPathInfoMatch(List<String> pathInfo, String... expected) {
+        return isUrlPathInfoMatch(pathInfo, Arrays.asList(expected));
+    }
+
+    /**
+     * Return {@code false} if the given {@code pathInfo} doesn't match the given {@code expected} path
+     *
+     * @param pathInfo
+     * @param expected expected uri segment. Segments starting with ':' or '*' means wildcard
+     */
+    boolean isUrlPathInfoMatch(List<String> pathInfo, List<String> expected) {
+        int violationIndex = getUrlPathInfoMatch(pathInfo, expected);
+        return violationIndex == -1;
+    }
+
+    /**
+     * @param pathInfo
+     * @param expected expected uri segment. Segments starting with ':' or '*' means wildcard
+     */
+    private int getUrlPathInfoMatch(List<String> pathInfo, List<String> expected) {
+        int violationIndex = -1;
+
         if (pathInfo.size() < expected.size()) {
-            throw new IllegalStateException("Given pattern is too short: actual: " + pathInfo + ", expected: " + expected);
+            violationIndex = pathInfo.size() + 1;
         }
         for (int i = 0; i < expected.size(); i++) {
             String expectedPathInfo = expected.get(i);
             String actualPathInfo = pathInfo.get(i);
-            if ("*".equals(expectedPathInfo)) {
+            if (expectedPathInfo.startsWith("*") || expectedPathInfo.startsWith(":")) {
                 // no check
             } else if (expectedPathInfo.equals(actualPathInfo)) {
                 // it's a match
             } else {
-                throw new IllegalStateException("Invalid URL path " + pathInfo + ", expected: " + expected + ". " +
-                    "Violation on item " + i + ", expected: '" + expectedPathInfo + "', actual: '" + actualPathInfo + "'");
+                violationIndex = i;
             }
         }
+        return violationIndex;
     }
 
     ParsedJobUrl parseBlueOceanRestPipelineUrl(List<String> pathInfo) {
         // /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/blueTestSummary/
         // /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/
         // /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/19/log/
-        if (pathInfo.size() <= 9) {
-            throw new IllegalArgumentException("Not a BlueOcean pipeline URL: " + pathInfo);
-        }
-        checkUrlPathInfoMatch(pathInfo, Arrays.asList("blue", "rest", "organizations", "*", "pipelines", "*", "branches", "*", "runs"));
 
-        List<String> jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber", "*"));
-        return new ParsedJobUrl(Arrays.asList(pathInfo.get(5), pathInfo.get(7)), Long.parseLong(pathInfo.get(9)), jobUrlPattern);
+        List<String> job;
+        Long runNumber;
+        String nodeId;
+        Integer stepId;
+        List<String> jobUrlPattern;
+
+        if (pathInfo.size() > 14 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber", "nodes", ":node", "steps", ":step", "*")) {
+            job = Arrays.asList(pathInfo.get(5), pathInfo.get(7));
+            runNumber = Long.parseLong(pathInfo.get(9));
+            nodeId = pathInfo.get(11);
+            stepId = Integer.parseInt(pathInfo.get(13));
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber", "nodes", ":node", "steps", ":step"));
+            if (pathInfo.size() > jobUrlPattern.size() + 1) {
+                jobUrlPattern.add("*");
+            } else {
+                jobUrlPattern.add(pathInfo.get(jobUrlPattern.size()));
+            }
+        } else if (pathInfo.size() > 10 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "runs", ":runNumber", "steps", ":step", "*")) {
+            // /blue/rest/organizations/jenkins/pipelines/my-war-pipeline/runs/1/steps/5/log/
+            job = Arrays.asList(pathInfo.get(5));
+            runNumber = Long.parseLong(pathInfo.get(7));
+            nodeId = null;
+            stepId = Integer.parseInt(pathInfo.get(9));
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "runs", ":runNumber", "steps", ":step"));
+            if (pathInfo.size() > jobUrlPattern.size() + 1) {
+                jobUrlPattern.add("*");
+            } else {
+                jobUrlPattern.add(pathInfo.get(jobUrlPattern.size()));
+            }
+        } else if (pathInfo.size() > 13 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber", "nodes", ":node", "steps", "*")) {
+            job = Arrays.asList(pathInfo.get(5), pathInfo.get(7));
+            runNumber = Long.parseLong(pathInfo.get(9));
+            nodeId = pathInfo.get(11);
+            stepId = Integer.parseInt(pathInfo.get(13));
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber", "nodes", ":node", "steps"));
+            if (pathInfo.size() > jobUrlPattern.size() + 1) {
+                jobUrlPattern.add("*");
+            } else {
+                jobUrlPattern.add(pathInfo.get(jobUrlPattern.size()));
+            }
+        } else if (pathInfo.size() > 12 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber", "nodes", ":node", "*")) {
+            // /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/
+            job = Arrays.asList(pathInfo.get(5), pathInfo.get(7));
+            runNumber = Long.parseLong(pathInfo.get(9));
+            nodeId = pathInfo.get(11);
+            stepId = null;
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber", "nodes", ":node"));
+            if (pathInfo.size() > jobUrlPattern.size() + 1) {
+                jobUrlPattern.add("*");
+            } else {
+                jobUrlPattern.add(pathInfo.get(jobUrlPattern.size()));
+            }
+        } else if (pathInfo.size() > 8 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "runs", ":runNumber")) {
+            // /blue/rest/organizations/jenkins/pipelines/my-war-pipeline/runs/1/steps/ TODO
+            // /blue/rest/organizations/jenkins/pipelines/my-war-pipeline/runs/1/blueTestSummary/
+            job = Arrays.asList(pathInfo.get(5));
+            runNumber = Long.parseLong(pathInfo.get(7));
+            nodeId = null;
+            stepId = null;
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "runs", ":runNumber"));
+            if (pathInfo.size() > jobUrlPattern.size() + 1) {
+                jobUrlPattern.add("*");
+            } else {
+                jobUrlPattern.add(pathInfo.get(jobUrlPattern.size()));
+            }
+        } else if (pathInfo.size() > 10 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber")) {
+            job = Arrays.asList(pathInfo.get(5), pathInfo.get(7));
+            runNumber = Long.parseLong(pathInfo.get(9));
+            nodeId = null;
+            stepId = null;
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber"));
+            if (pathInfo.size() > jobUrlPattern.size() + 1) {
+                jobUrlPattern.add("*");
+            } else {
+                jobUrlPattern.add(pathInfo.get(jobUrlPattern.size()));
+            }
+        } else if (pathInfo.size() > 9 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber")) {
+            job = Arrays.asList(pathInfo.get(5), pathInfo.get(7));
+            runNumber = Long.parseLong(pathInfo.get(9));
+            nodeId = null;
+            stepId = null;
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber"));
+        } else if (pathInfo.size() > 7 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "runs", ":runNumber")) {
+            // /blue/rest/organizations/jenkins/pipelines/my-war-pipeline/runs/1/
+            job = Arrays.asList(pathInfo.get(5));
+            runNumber = Long.parseLong(pathInfo.get(7));
+            nodeId = null;
+            stepId = null;
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "runs", ":runNumber"));
+
+        } else {
+            throw new IllegalArgumentException("Not a BlueOcean pipeline URL: /" + String.join("/", pathInfo));
+        }
+
+        return new ParsedBlueOceanPipelineJobUrl(job, runNumber, jobUrlPattern, nodeId, stepId);
     }
 
     ParsedJobUrl parseJobUrl(List<String> pathInfo) {
@@ -293,12 +435,41 @@ public class OpenTelemetryServletFilter implements Filter {
         String token = pathInfoTokensIt.next();
         if ("lastBuild".equals(token)) {
             jobUrlPattern.add("lastBuild");
-            pathInfoTokensIt.forEachRemaining(jobUrlPattern::add);
+            if (pathInfoTokensIt.hasNext()) {
+                String runSegment = pathInfoTokensIt.next();
+                jobUrlPattern.add(runSegment);
+                if ("artifact".equals(runSegment)) {
+                    jobUrlPattern.add(":artifact");
+                } else if ("descriptorByName".equals(runSegment)) {
+                    jobUrlPattern.add(":descriptor");
+                    if (pathInfoTokensIt.hasNext()) {
+                        jobUrlPattern.add(":method");
+                    }
+                } else {
+                    pathInfoTokensIt.forEachRemaining(jobUrlPattern::add);
+                }
+            }
             return new ParsedJobUrl(jobName, null, jobUrlPattern);
         } else if (StringUtils.isNumeric(token)) {
             runNumber = Long.parseLong(token);
             jobUrlPattern.add(":runNumber");
-            pathInfoTokensIt.forEachRemaining(jobUrlPattern::add);
+            if (pathInfoTokensIt.hasNext()) {
+                String runSegment = pathInfoTokensIt.next();
+                jobUrlPattern.add(runSegment);
+                if ("artifact".equals(runSegment)) {
+                    jobUrlPattern.add(":artifact");
+                } else if ("descriptorByName".equals(runSegment)) {
+                    jobUrlPattern.add(":descriptor");
+                    if (pathInfoTokensIt.hasNext()) {
+                        jobUrlPattern.add(":method");
+                    }
+                } else if ("execution".equals(runSegment)) {
+                    jobUrlPattern.add(":execution");
+                    jobUrlPattern.add("*");
+                } else {
+                    pathInfoTokensIt.forEachRemaining(jobUrlPattern::add);
+                }
+            }
             return new ParsedJobUrl(jobName, runNumber, jobUrlPattern);
         } else if ("descriptorByName".equals(token)) {
             jobUrlPattern.add("descriptorByName");
@@ -352,6 +523,49 @@ public class OpenTelemetryServletFilter implements Filter {
             return Objects.hash(jobName, runNumber, urlPattern);
         }
 
+    }
+
+    public static class ParsedBlueOceanPipelineJobUrl extends ParsedJobUrl {
+        // /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/19/log/
+        final String flowNodeId;
+        final Integer stepId;
+
+        public ParsedBlueOceanPipelineJobUrl(List<String> jobName, @Nullable Long runNumber, List<String> urlPattern, String flowNodeId, Integer stepId) {
+            super(jobName, runNumber, urlPattern);
+            this.flowNodeId = flowNodeId;
+            this.stepId = stepId;
+        }
+
+        public ParsedBlueOceanPipelineJobUrl(String jobName, @Nullable Long runNumber, String flowNodeId, Integer stepId, String urlPattern) {
+            super(jobName, runNumber, urlPattern);
+            this.flowNodeId = flowNodeId;
+            this.stepId = stepId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            ParsedBlueOceanPipelineJobUrl that = (ParsedBlueOceanPipelineJobUrl) o;
+            return Objects.equals(flowNodeId, that.flowNodeId) && Objects.equals(stepId, that.stepId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), flowNodeId, stepId);
+        }
+
+        @Override
+        public String toString() {
+            return "ParsedBlueOceanPipelineJobUrl{" +
+                "jobName='" + jobName + '\'' +
+                ", runNumber=" + runNumber +
+                ", flowNodeId='" + flowNodeId + '\'' +
+                ", stepId=" + stepId +
+                ", urlPattern='" + urlPattern + '\'' +
+                '}';
+        }
     }
 
     @Override
