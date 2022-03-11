@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.Main;
 import hudson.console.AnnotatedLargeText;
-import io.jenkins.plugins.opentelemetry.job.log.util.StreamingInputStream;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
@@ -90,12 +89,12 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     @Override
     public long writeLogTo(long start, Writer w) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
-        Span span = tracer.spanBuilder("OverallLog.writeLogTo")
+        Span span = tracer.spanBuilder("OverallLog.writeLogTo(writer)")
             .setAttribute("start", start)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
             long length = super.writeLogTo(start, w);
-            span.setAttribute("response.length", length);
+            span.setAttribute("response.lengthInBytes", length);
             return length;
         } catch (IOException e) {
             span.recordException(e);
@@ -113,12 +112,12 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     @Override
     public long writeLogTo(long start, OutputStream out) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
-        Span span = tracer.spanBuilder("OverallLog.writeLogTo")
+        Span span = tracer.spanBuilder("OverallLog.writeLogTo(outputStream)")
             .setAttribute("start", start)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
             long length = super.writeLogTo(start, out);
-            span.setAttribute("response.length", length);
+            span.setAttribute("response.lengthInBytes", length);
             return length;
         } finally {
             span.end();
@@ -168,7 +167,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
             }
             // LOG LINES
             long logLinesLengthInBytes = super.writeHtmlTo(start, w);
-            span.setAttribute("response.length", logLinesLengthInBytes);
+            span.setAttribute("response.lengthBytes", logLinesLengthInBytes);
 
             return logLinesLengthInBytes;
         } catch (IOException e) {
@@ -204,12 +203,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
             if (start != null && !start.isEmpty()) {
                 span.setAttribute("request.start", start);
             }
-            try {
-                StreamingInputStream.setProgressiveStreaming();
-                super.doProgressText(req, rsp);
-            } finally {
-                StreamingInputStream.unsetProgressiveStreaming();
-            }
+            super.doProgressText(req, rsp);
             String xTextSize = rsp.getHeader("X-Text-Size");
             if (xTextSize != null) {
                 span.setAttribute("response.textSize", Long.parseLong(xTextSize));

@@ -18,8 +18,11 @@ import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class StreamingByteBuffer extends ByteBuffer {
-    final static Logger logger = Logger.getLogger(StreamingByteBuffer.class.getName());
+/**
+ * Readonly {@link ByteBuffer} backed by an {@link InputStream}
+ */
+public class InputStreamByteBuffer extends ByteBuffer {
+    final static Logger logger = Logger.getLogger(InputStreamByteBuffer.class.getName());
 
     @Nonnull
     private final Tracer tracer;
@@ -27,7 +30,7 @@ public class StreamingByteBuffer extends ByteBuffer {
     @Nonnull
     final InputStream in;
 
-    public StreamingByteBuffer(InputStream in, Tracer tracer) {
+    public InputStreamByteBuffer(InputStream in, Tracer tracer) {
         this.in = in;
         this.tracer = tracer;
     }
@@ -38,7 +41,7 @@ public class StreamingByteBuffer extends ByteBuffer {
         // See system property 'hudson.consoleTailKB'
         // workflow-job-2.41.jar!/org/jenkinsci/plugins/workflow/job/WorkflowRun/console.jelly
         long length = Long.parseLong(System.getProperty("hudson.consoleTailKB", "150")) * 1024; // lower than 150KB -  FIXME verify
-        Span span = tracer.spanBuilder("StreamingByteBuffer.length")
+        Span span = tracer.spanBuilder("InputStreamByteBuffer.length")
             .setAttribute("response.length", length).startSpan();
         try (Scope scope = span.makeCurrent()) {
             return length;
@@ -49,9 +52,9 @@ public class StreamingByteBuffer extends ByteBuffer {
 
     @Override
     public InputStream newInputStream() {
-        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
-        Span span = tracer.spanBuilder("StreamingByteBuffer.newInputStream")
-            .setAttribute("inputStream", System.identityHashCode(in)).startSpan();
+        Tracer tracer = logger.isLoggable(Level.FINEST) ? this.tracer : TracerProvider.noop().get("noop");
+        Span span = tracer.spanBuilder("InputStreamByteBuffer.newInputStream")
+            .startSpan();
         try (Scope scope = span.makeCurrent()) {
             return in;
         } finally {
@@ -59,26 +62,51 @@ public class StreamingByteBuffer extends ByteBuffer {
         }
     }
 
+    /**
+     * Unsupported byt this readonly {@link ByteBuffer}
+     *
+     * @throws UnsupportedOperationException
+     */
     @Override
     public synchronized void write(byte[] b, int off, int len) throws IOException {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Unsupported byt this readonly {@link ByteBuffer}
+     *
+     * @throws UnsupportedOperationException
+     */
     @Override
     public synchronized void write(int b) throws IOException {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Unsupported byt this readonly {@link ByteBuffer}
+     *
+     * @throws UnsupportedOperationException
+     */
     @Override
-    public synchronized void writeTo(OutputStream os) throws IOException {
+    public synchronized void writeTo(OutputStream os) {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Unsupported byt this readonly {@link ByteBuffer}
+     *
+     * @throws UnsupportedOperationException
+     */
     @Override
     public void write(@Nonnull byte[] b) throws IOException {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Unsupported byt this readonly {@link ByteBuffer}
+     *
+     * @throws UnsupportedOperationException
+     */
     @Override
     public void flush() throws IOException {
         throw new UnsupportedOperationException();
