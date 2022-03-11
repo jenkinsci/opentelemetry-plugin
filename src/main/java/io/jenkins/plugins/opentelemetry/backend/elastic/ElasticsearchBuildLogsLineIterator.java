@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
@@ -20,6 +21,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Iterators;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
+import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -36,7 +38,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,8 +45,8 @@ import java.util.logging.Logger;
 /**
  * https://www.elastic.co/guide/en/elasticsearch/reference/7.17/point-in-time-api.html
  */
-public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closeable {
-    private final static Logger logger = Logger.getLogger(ElasticsearchLogsSearchIterator.class.getName());
+public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeable {
+    private final static Logger logger = Logger.getLogger(ElasticsearchBuildLogsLineIterator.class.getName());
 
     public static final Time POINT_IN_TIME_KEEP_ALIVE = Time.of(builder -> builder.time("30s"));
     public static final int PAGE_SIZE = 200;
@@ -58,36 +59,31 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
     final String traceId;
     final ElasticsearchClient esClient;
     final Tracer tracer;
-    final ElasticsearchSearchContext context;
+    long readLines;
     String pointInTimeId;
 
     @VisibleForTesting
-    final AtomicInteger queryCounter = new AtomicInteger();
+    int queryCounter;
 
     Iterator<String> delegate;
     boolean endOfStream;
 
-    public ElasticsearchLogsSearchIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nullable ElasticsearchSearchContext context, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
-        this(jobFullName, runNumber, traceId, null, context, esClient, tracer);
+    public ElasticsearchBuildLogsLineIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
+        this(jobFullName, runNumber, traceId, null, esClient, tracer);
     }
 
-    public ElasticsearchLogsSearchIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nullable String flowNodeId, @Nullable ElasticsearchSearchContext context, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
+    public ElasticsearchBuildLogsLineIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nullable String flowNodeId, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
         this.tracer = tracer;
         this.jobFullName = jobFullName;
         this.runNumber = runNumber;
         this.traceId = traceId;
         this.flowNodeId = flowNodeId;
-        if (context == null) {
-            this.context = new ElasticsearchSearchContext();
-        } else {
-            this.context = context;
-        }
         this.esClient = esClient;
     }
 
     String lazyLoadPointInTimeId() throws IOException {
         if (pointInTimeId == null) {
-            Span esOpenPitSpan = tracer.spanBuilder("Elasticsearch.openPointInTime")
+            Span esOpenPitSpan = tracer.spanBuilder("ElasticsearchLogsSearchIterator.openPointInTime")
                 .setAttribute("query.index", ElasticsearchFields.INDEX_TEMPLATE_PATTERNS)
                 .setAttribute("query.keepAlive", POINT_IN_TIME_KEEP_ALIVE.time())
                 .startSpan();
@@ -115,7 +111,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
                 return delegate;
             }
             delegate = loadNextFormattedLogLines();
-            if (context.from > MAX_LINES) {
+            if (readLines > MAX_LINES) {
                 delegate = Iterators.concat(delegate, Collections.singleton("...").iterator());
                 endOfStream = true;
             } else if (!delegate.hasNext()) {
@@ -130,7 +126,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
     @Override
     public void close() throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
-        SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchLogsSearchIterator.close")
+        SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchBuildLogsLineIterator.close")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
             .setAttribute("pointInTimeId", pointInTimeId);
@@ -162,18 +158,24 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
 
     @Override
     public String next() {
+        readLines++;
         return getCurrentIterator().next();
     }
 
     protected Iterator<String> loadNextFormattedLogLines() throws IOException {
+        if (readLines > Integer.MAX_VALUE) {
+            // TODO should we support reading more than max int lines?
+            logger.log(Level.INFO, () -> "Skip more than Integer.MAX_VALUE, return empty result"); // FIXME
+            return Collections.emptyIterator();
+        }
         String loadPointInTimeId = this.lazyLoadPointInTimeId();
 
-        Span esSearchSpan = tracer.spanBuilder("Elasticsearch.search")
+        Span esSearchSpan = tracer.spanBuilder("ElasticsearchLogsSearchIterator.search")
             .startSpan();
         try (Scope esSearchSpanScope = esSearchSpan.makeCurrent()) {
             esSearchSpan
                 .setAttribute("query.pointInTimeId", lazyLoadPointInTimeId())
-                .setAttribute("query.from", context.from)
+                .setAttribute("query.from", readLines)
                 .setAttribute("query.size", PAGE_SIZE)
                 .setAttribute("query.match.traceId", traceId)
                 .setAttribute("query.match.jobFullName", jobFullName)
@@ -193,21 +195,62 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
 
             SearchRequest searchRequest = new SearchRequest.Builder()
                 .pit(pit -> pit.id(loadPointInTimeId).keepAlive(POINT_IN_TIME_KEEP_ALIVE))
-                .from(context.from)
+                .from((int) readLines)
                 .size(PAGE_SIZE)
                 .sort(s -> s.field(f -> f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
                 .query(query)
                 .build();
-
             SearchResponse<ObjectNode> searchResponse = this.esClient.search(searchRequest, ObjectNode.class);
 
             List<Hit<ObjectNode>> hits = searchResponse.hits().hits();
             esSearchSpan.setAttribute("response.size", hits.size());
-            context.from = context.from + hits.size();
             return hits.stream().map(new ElasticsearchHitToFormattedLogLine()).filter(Objects::nonNull).iterator();
+        } catch (ElasticsearchException e) {
+            esSearchSpan.recordException(e);
+            throw e;
         } finally {
             esSearchSpan.end();
-            queryCounter.incrementAndGet();
+            queryCounter++;
+        }
+    }
+
+    @Override
+    public void skipLines(long skipLines) {
+        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
+        SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchBuildLogsLineIterator.skip")
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            .setAttribute("pointInTimeId", pointInTimeId)
+            .setAttribute("skipLines", skipLines);
+        Span span = spanBuilder.startSpan();
+        try {
+            this.readLines = skipLines;
+            if (this.delegate == null) {
+                span.setAttribute("skippedLines", -1);
+            } else {
+                /*
+                 * Happens when invoked by:
+                 * GET /job/:jobFullName/:runNumber/consoleText
+                 * |- org.jenkinsci.plugins.workflow.job.WorkflowRun.doConsoleText
+                 *    |- io.jenkins.plugins.opentelemetry.job.log.OverallLog.writeLogTo(long, java.io.OutputStream)
+                 *       |- org.kohsuke.stapler.framework.io.LargeText.writeLogTo(long, java.io.OutputStream)
+                 * GET /blue/rest/organizations/:organization/pipelines/:pipeline/branches/:branch/runs/:runNumber/log?start=0
+                 *
+                 * When invoked by "/job/:jobFullName/:runNumber/consoleText", it's the second call to LargeText.writeLogTo() and it's EOF
+                 */
+                int counter = 0;
+                for (int i = 0; i < skipLines; i++) {
+                    if (delegate.hasNext()) {
+                        delegate.next();
+                        counter++;
+                    } else {
+                        break;
+                    }
+                }
+                span.setAttribute("skippedLines", counter);
+            }
+        } finally {
+            span.end();
         }
     }
 
@@ -219,6 +262,10 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
         @Override
         public String apply(Hit<ObjectNode> hit) {
             ObjectNode source = hit.source();
+            if (source == null) {
+                logger.log(Level.FINE, () -> "Skip log with no source (document id: " + hit.id() + ")");
+                return null;
+            }
             JsonNode messageAsJsonNode = source.findValue(ElasticsearchFields.FIELD_MESSAGE);
             if (messageAsJsonNode == null) {
                 logger.log(Level.FINE, () -> "Skip log with no message (document id: " + hit.id() + ")");
@@ -239,7 +286,7 @@ public class ElasticsearchLogsSearchIterator implements Iterator<String>, Closea
                 }
             }
             String formattedMessage = ConsoleNotes.readFormattedMessage(message, annotations);
-            logger.log(Level.FINER, () -> "Write: " + formattedMessage + " for document.id: " + hit.id());
+            logger.log(Level.FINEST, () -> "Write: " + formattedMessage + " for document.id: " + hit.id());
             return formattedMessage;
         }
     }

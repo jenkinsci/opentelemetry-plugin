@@ -186,7 +186,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
             } else {
                 long instantInNanosOnJenkinsAgentAtDeserialization = Clock.getDefault().now();
                 long offsetInNanosOnJenkinsAgent = instantInNanosOnJenkinsControllerBeforeSerialization - instantInNanosOnJenkinsAgentAtDeserialization;
-                logger.log(Level.INFO, () ->
+                logger.log(Level.FINE, () ->
                     "adjustClock(): " +
                         "offsetInNanos: " + TimeUnit.MILLISECONDS.convert(offsetInNanosOnJenkinsAgent, TimeUnit.NANOSECONDS) + "ms / " + offsetInNanosOnJenkinsAgent + "ns. "+
                         "A negative offset of few milliseconds is expected due to the latency of the communication from the Jenkins Controller to the Jenkins Agent. " +

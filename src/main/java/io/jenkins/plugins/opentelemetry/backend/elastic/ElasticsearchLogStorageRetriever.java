@@ -23,13 +23,12 @@ import hudson.security.ACL;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
-import io.jenkins.plugins.opentelemetry.job.RunFlowNodeIdentifier;
-import io.jenkins.plugins.opentelemetry.job.RunIdentifier;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
-import io.jenkins.plugins.opentelemetry.job.log.util.StreamingByteBuffer;
-import io.jenkins.plugins.opentelemetry.job.log.util.StreamingInputStream;
+import io.jenkins.plugins.opentelemetry.job.log.util.InputStreamByteBuffer;
+import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
+import io.jenkins.plugins.opentelemetry.job.log.util.LineIteratorInputStream;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -45,11 +44,9 @@ import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.auth.Credentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
-import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import javax.annotation.Nonnull;
-import javax.servlet.http.HttpSession;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -58,7 +55,6 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -131,35 +127,14 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
             .setAttribute("complete", complete);
 
-        RunIdentifier runIdentifier = new RunIdentifier(jobFullName, runNumber);
-        HttpSession session = Stapler.getCurrentRequest().getSession();
-        ElasticsearchSearchContext context;
-        context = (ElasticsearchSearchContext) session.getAttribute(runIdentifier.getId());
-        if (context == null) {
-            if (complete) {
-                spanBuilder.setAttribute("elasticsearchSearchContext", "none");
-            } else {
-                context = new ElasticsearchSearchContext();
-                session.setAttribute(runIdentifier.getId(), context);
-                spanBuilder.setAttribute("elasticsearchSearchContext", "new");
-            }
-        } else {
-            spanBuilder.setAttribute("from", context.from);
-            if (complete) {
-                session.removeAttribute(runIdentifier.getId());
-                spanBuilder.setAttribute("elasticsearchSearchContext", "reuse-and-delete");
-            } else {
-                spanBuilder.setAttribute("elasticsearchSearchContext", "reuse");
-            }
-        }
         Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
-            Iterator<String> logLines = new ElasticsearchLogsSearchIterator(
-                jobFullName, runNumber, traceId, context,
-                esClient, tracer);
+            LineIterator logLines = new ElasticsearchBuildLogsLineIterator(
+                jobFullName, runNumber, traceId, esClient, tracer);
 
-            StreamingInputStream streamingInputStream = new StreamingInputStream(logLines, complete, tracer);
-            ByteBuffer byteBuffer = new StreamingByteBuffer(streamingInputStream, tracer);
+            LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter = new LineIterator.JenkinsHttpSessionLineBytesToLineNumberConverter(jobFullName, runNumber, null);
+            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, tracer);
+            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, tracer);
 
             Map<String, String> localBindings = new HashMap<>();
             localBindings.put("traceId", traceId);
@@ -189,39 +164,17 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId)
             .setAttribute("complete", complete);
 
-        RunFlowNodeIdentifier runFlowNodeIdentifier = new RunFlowNodeIdentifier(jobFullName, runNumber, flowNodeId);
-        HttpSession session = Stapler.getCurrentRequest().getSession();
-        ElasticsearchSearchContext context;
-        context = (ElasticsearchSearchContext) session.getAttribute(runFlowNodeIdentifier.getId());
-        if (context == null) {
-            if (complete) {
-                spanBuilder.setAttribute("elasticsearchSearchContext", "none");
-            } else {
-                context = new ElasticsearchSearchContext();
-                session.setAttribute(runFlowNodeIdentifier.getId(), context);
-                spanBuilder.setAttribute("elasticsearchSearchContext", "new");
-            }
-        } else {
-            spanBuilder.setAttribute("from", context.from);
-            if (complete) {
-                session.removeAttribute(runFlowNodeIdentifier.getId());
-                spanBuilder.setAttribute("elasticsearchSearchContext", "reuse-and-delete");
-            } else {
-                spanBuilder.setAttribute("elasticsearchSearchContext", "reuse");
-            }
-        }
-
         Span span = spanBuilder.startSpan();
 
         try (Scope scope = span.makeCurrent()) {
 
-            Iterator<String> logLines = new ElasticsearchLogsSearchIterator(
+            LineIterator logLines = new ElasticsearchBuildLogsLineIterator(
                 jobFullName, runNumber, traceId, flowNodeId,
-                context,
                 esClient, tracer);
+            LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter = new LineIterator.JenkinsHttpSessionLineBytesToLineNumberConverter(jobFullName, runNumber, flowNodeId);
 
-            StreamingInputStream streamingInputStream = new StreamingInputStream(logLines, complete, tracer);
-            ByteBuffer byteBuffer = new StreamingByteBuffer(streamingInputStream, tracer);
+            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, tracer);
+            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, tracer);
 
             Map<String, String> localBindings = new HashMap<>();
             localBindings.put("traceId", traceId);
