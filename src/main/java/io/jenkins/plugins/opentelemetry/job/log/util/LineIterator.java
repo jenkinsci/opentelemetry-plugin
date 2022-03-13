@@ -8,12 +8,12 @@ package io.jenkins.plugins.opentelemetry.job.log.util;
 import io.jenkins.plugins.opentelemetry.job.RunFlowNodeIdentifier;
 import org.kohsuke.stapler.Stapler;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpSession;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -28,24 +28,14 @@ public interface LineIterator extends Iterator<String> {
         Long getLogLineFromLogBytes(long bytes);
 
         void putLogBytesToLogLine(long bytes, long line);
+
     }
 
-    class SimpleLineBytesToLineNumberConverter implements LineBytesToLineNumberConverter {
-        final ConcurrentMap<Long, Long> context = new ConcurrentHashMap<>();
-
-        @Nullable
-        @Override
-        public Long getLogLineFromLogBytes(long bytes) {
-            return context.get(bytes);
-        }
-
-        @Override
-        public void putLogBytesToLogLine(long bytes, long line) {
-            context.put(bytes, line);
-        }
-    }
-
+    /**
+     * Converter gets garbage collected when the HTTP session expires
+     */
     class JenkinsHttpSessionLineBytesToLineNumberConverter implements LineBytesToLineNumberConverter {
+        public static final String HTTP_SESSION_KEY = "JenkinsHttpSessionLineBytesToLineNumberConverter";
         final String jobFullName;
         final int runNumber;
         final String flowNodeId;
@@ -59,30 +49,30 @@ public interface LineIterator extends Iterator<String> {
         @Nullable
         @Override
         public Long getLogLineFromLogBytes(long bytes) {
-            HttpSession session = Stapler.getCurrentRequest().getSession();
-            String sessionAttributeKey = getSessionAttributeKey();
-            Map<Long, Long> context = (Map<Long, Long>) session.getAttribute(sessionAttributeKey);
-            if (context == null) {
-                return null;
-            }
-            return context.get(bytes);
+            RunFlowNodeIdentifier contextKey = new RunFlowNodeIdentifier(jobFullName, runNumber, flowNodeId);
+            return Optional
+                .ofNullable(getContext().get(contextKey))
+                .map(d -> d.get(bytes))
+                .orElse(null);
+
         }
 
         @Override
         public void putLogBytesToLogLine(long bytes, long line) {
-            HttpSession session = Stapler.getCurrentRequest().getSession();
-            String sessionAttributeKey = getSessionAttributeKey();
-            Map<Long, Long> context = (Map<Long, Long>) session.getAttribute(sessionAttributeKey);
-            if (context == null) {
-                context = new LinkedHashMap<>();
-                session.setAttribute(sessionAttributeKey, context);
-            }
-            context.put(bytes, line);
+            RunFlowNodeIdentifier contextKey = new RunFlowNodeIdentifier(jobFullName, runNumber, flowNodeId);
+            getContext().computeIfAbsent(contextKey, runFlowNodeIdentifier -> new HashMap<>()).put(bytes, line);
         }
 
-        @Nonnull
-        private String getSessionAttributeKey() {
-            return new RunFlowNodeIdentifier(jobFullName, runNumber, flowNodeId).getId();
+        Map<RunFlowNodeIdentifier, Map<Long, Long>> getContext() {
+            HttpSession session = Stapler.getCurrentRequest().getSession();
+            synchronized (session) {
+                Map<RunFlowNodeIdentifier, Map<Long, Long>> context = (Map<RunFlowNodeIdentifier, Map<Long, Long>>) session.getAttribute(HTTP_SESSION_KEY);
+                if (context == null) {
+                    context = new HashMap<>();
+                    session.setAttribute(HTTP_SESSION_KEY, context);
+                }
+                return context;
+            }
         }
     }
 }
