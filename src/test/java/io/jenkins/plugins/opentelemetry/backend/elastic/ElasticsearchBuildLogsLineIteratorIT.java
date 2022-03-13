@@ -9,7 +9,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.google.common.io.ByteStreams;
-import io.jenkins.plugins.opentelemetry.job.log.util.StreamingInputStream;
+import io.jenkins.plugins.opentelemetry.job.log.util.LineIteratorInputStream;
+import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
 import io.opentelemetry.api.trace.TracerProvider;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -25,29 +26,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-public class ElasticsearchLogsSearchIteratorIT {
+public class ElasticsearchBuildLogsLineIteratorIT {
 
     @Test
     public void testElasticsearchLogsSearchIterator() throws IOException {
-        ElasticsearchLogsSearchIterator elasticsearchLogsSearchIterator = getElasticsearchLogsSearchIterator();
-        while (elasticsearchLogsSearchIterator.hasNext()) {
-            System.out.println(elasticsearchLogsSearchIterator.next());
+        ElasticsearchBuildLogsLineIterator elasticsearchBuildLogsLineIterator = getElasticsearchLogsSearchIterator();
+        int counter = 0;
+        while (elasticsearchBuildLogsLineIterator.hasNext()) {
+            System.out.println(elasticsearchBuildLogsLineIterator.next());
+            counter++;
         }
-        System.out.println("Queries count: " + elasticsearchLogsSearchIterator.queryCounter.get());
+        System.out.println("Line count: " + counter);
+        System.out.println("Query count: " + elasticsearchBuildLogsLineIterator.queryCounter);
     }
 
     @Test
     public void testStreamingInputStream() throws IOException {
-        ElasticsearchLogsSearchIterator elasticsearchLogsSearchIterator = getElasticsearchLogsSearchIterator();
-        StreamingInputStream streamingInputStream = new StreamingInputStream(elasticsearchLogsSearchIterator,true, TracerProvider.noop().get("noop"));
-        ByteStreams.copy(streamingInputStream, System.out);
+        ElasticsearchBuildLogsLineIterator elasticsearchBuildLogsLineIterator = getElasticsearchLogsSearchIterator();
+        LineIterator.LineBytesToLineNumberConverter converter = new LineIterator.SimpleLineBytesToLineNumberConverter();
+        LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(elasticsearchBuildLogsLineIterator, converter, TracerProvider.noop().get("noop"));
+        ByteStreams.copy(lineIteratorInputStream, System.out);
 
-        System.out.println("Queries count: " + elasticsearchLogsSearchIterator.queryCounter.get());
-        System.out.println("context : " + elasticsearchLogsSearchIterator.context);
+        System.out.println("Queries count: " + elasticsearchBuildLogsLineIterator.queryCounter);
     }
 
     @Nonnull
-    private ElasticsearchLogsSearchIterator getElasticsearchLogsSearchIterator() throws IOException {
+    private ElasticsearchBuildLogsLineIterator getElasticsearchLogsSearchIterator() throws IOException {
         InputStream envAsStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
         Assert.assertNotNull(".env file not found in classpath", envAsStream);
         Properties env = new Properties();
@@ -68,8 +72,7 @@ public class ElasticsearchLogsSearchIteratorIT {
         ElasticsearchClient esClient = new ElasticsearchClient(elasticsearchTransport);
 
 
-        ElasticsearchLogsSearchIterator elasticsearchLogsSearchIterator = new ElasticsearchLogsSearchIterator("my-war/master", 136, "1253b77680aa4f5a709e76381e5523f1", null, null, esClient, TracerProvider.noop().get("noop"));
-        return elasticsearchLogsSearchIterator;
+        return new ElasticsearchBuildLogsLineIterator("my-war/master", 136, "1253b77680aa4f5a709e76381e5523f1", null, esClient, TracerProvider.noop().get("noop"));
     }
 
 }

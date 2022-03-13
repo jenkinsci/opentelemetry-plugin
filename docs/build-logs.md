@@ -7,7 +7,7 @@ Jenkins pipeline build logs can be sent through OpenTelemetry Protocol in order 
 
 > **_BEST PRACTICE:_** When sending Jenkins pipeline logs through OpenTelemetry, it is recommended to deploy OpenTelemetry Collectors next to the Jenkins deployment for improved scalability and reliability.
 
-## Storing Jenkins Pipeline Logs in Elastic
+## Storing Jenkins Pipeline Logs in Elastic (Elastic v8.1+)
 
 > **_PRE REQUISITES:_** storing Jenkins pipeline logs in Elasticsearch requires :
 > * Elastic Observability version 8.1+

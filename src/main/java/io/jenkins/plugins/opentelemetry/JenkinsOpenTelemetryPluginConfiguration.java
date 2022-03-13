@@ -537,8 +537,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                 throw new IllegalStateException(e);
             }
         }
-        if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.log(Level.INFO, "resolveStorageRetriever: " + logStorageRetriever);
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, "resolveStorageRetriever: " + logStorageRetriever);
         }
         return logStorageRetriever;
     }
