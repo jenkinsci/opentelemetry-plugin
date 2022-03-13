@@ -39,7 +39,7 @@ public class ServletFilterInitializer extends OpenTelemetryPluginAbstractInitial
             } else {
                 try {
                     PluginServletFilter.addFilter(filter);
-                    logger.log(Level.INFO, () -> "Jenkins Web instrumentation enabled");
+                    logger.log(Level.FINE, () -> "Jenkins Web instrumentation enabled");
                 } catch (ServletException ex) {
                     logger.log(Level.WARNING, "Failure to enable Jenkins Web instrumentation", ex);
                 }
