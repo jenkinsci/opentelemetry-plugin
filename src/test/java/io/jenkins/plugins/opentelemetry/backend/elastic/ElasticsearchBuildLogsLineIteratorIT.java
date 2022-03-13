@@ -22,9 +22,14 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class ElasticsearchBuildLogsLineIteratorIT {
 
@@ -43,7 +48,20 @@ public class ElasticsearchBuildLogsLineIteratorIT {
     @Test
     public void testStreamingInputStream() throws IOException {
         ElasticsearchBuildLogsLineIterator elasticsearchBuildLogsLineIterator = getElasticsearchLogsSearchIterator();
-        LineIterator.LineBytesToLineNumberConverter converter = new LineIterator.SimpleLineBytesToLineNumberConverter();
+        LineIterator.LineBytesToLineNumberConverter converter = new LineIterator.LineBytesToLineNumberConverter() {
+            Map<Long, Long> context = new HashMap<>();
+            @Nullable
+            @Override
+            public Long getLogLineFromLogBytes(long bytes) {
+                return context.get(bytes);
+            }
+
+            @Override
+            public void putLogBytesToLogLine(long bytes, long line) {
+                context.put(bytes, line);
+
+            }
+        };
         LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(elasticsearchBuildLogsLineIterator, converter, TracerProvider.noop().get("noop"));
         ByteStreams.copy(lineIteratorInputStream, System.out);
 

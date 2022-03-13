@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.job;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import java.util.Objects;
 
@@ -13,7 +14,7 @@ import java.util.Objects;
 public class RunFlowNodeIdentifier extends RunIdentifier {
     final String flowNodeId;
 
-    public RunFlowNodeIdentifier(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String flowNodeId) {
+    public RunFlowNodeIdentifier(@Nonnull String jobFullName, int runNumber, @Nullable String flowNodeId) {
         super(jobFullName, runNumber);
         this.flowNodeId = flowNodeId;
     }
@@ -24,7 +25,7 @@ public class RunFlowNodeIdentifier extends RunIdentifier {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         RunFlowNodeIdentifier that = (RunFlowNodeIdentifier) o;
-        return flowNodeId.equals(that.flowNodeId);
+        return Objects.equals(flowNodeId, that.flowNodeId);
     }
 
     @Override
