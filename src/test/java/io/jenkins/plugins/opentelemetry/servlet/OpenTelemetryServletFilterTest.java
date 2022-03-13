@@ -142,10 +142,10 @@ public class OpenTelemetryServletFilterTest {
 
     @Test
     public void url_bo_pipeline_activity() {
-        String pathInfo = "/blue/organizations/jenkins/my-war-pipeline/activity";
+        String pathInfo = "/blue/organizations/jenkins/my-war/activity";
 
         OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
-            "my-war", 1L, null, null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/activity");
+            "my-war", null, null, null, "/blue/organizations/:organization/:pipelineName/activity");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
 
@@ -167,6 +167,13 @@ public class OpenTelemetryServletFilterTest {
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
 
+    @Test
+    public void url_bo_rest_pipeline_scm() {
+        String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/scm/content";
+        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+            "ecommerce-antifraud", null, null, null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/*");
+        verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
+    }
 
     @Test
     public void url_bo_pipeline_run_node_steps_log() {

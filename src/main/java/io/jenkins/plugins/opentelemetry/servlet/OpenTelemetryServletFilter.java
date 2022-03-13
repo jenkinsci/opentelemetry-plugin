@@ -92,8 +92,10 @@ public class OpenTelemetryServletFilter implements Filter {
                 // e.g /job/my-war/job/master/2/console
                 ParsedJobUrl parsedJobUrl = parseJobUrl(pathInfoTokens);
                 httpRoute = parsedJobUrl.urlPattern;
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedJobUrl.urlPattern)
-                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedJobUrl.jobName);
+                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedJobUrl.urlPattern);
+                if (parsedJobUrl.jobName != null) {
+                    spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedJobUrl.jobName);
+                }
                 if (parsedJobUrl.runNumber != null) {
                     spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedJobUrl.runNumber);
                 }
@@ -110,8 +112,10 @@ public class OpenTelemetryServletFilter implements Filter {
 
                         ParsedJobUrl parsedBlueOceanPipelineUrl = parseBlueOceanRestPipelineUrl(pathInfoTokens);
                         httpRoute = parsedBlueOceanPipelineUrl.urlPattern;
-                        spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedBlueOceanPipelineUrl.urlPattern)
-                            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedBlueOceanPipelineUrl.jobName);
+                        spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedBlueOceanPipelineUrl.urlPattern);
+                        if (parsedBlueOceanPipelineUrl.jobName != null) {
+                            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedBlueOceanPipelineUrl.jobName);
+                        }
                         if (parsedBlueOceanPipelineUrl.runNumber != null) {
                             spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedBlueOceanPipelineUrl.runNumber);
                         }
@@ -380,8 +384,33 @@ public class OpenTelemetryServletFilter implements Filter {
             stepId = null;
             jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "runs", ":runNumber"));
 
+        } else if (pathInfo.size() > 6 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "*")) {
+            // /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/scm/content
+            job = Arrays.asList(pathInfo.get(5));
+            runNumber = null;
+            nodeId = null;
+            stepId = null;
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "*"));
+        } else if (pathInfo.size() > 4 && isUrlPathInfoMatch(pathInfo, "blue", "organizations", ":organization", ":pipelineName", "activity")) {
+            // /blue/organizations/jenkins/my-war-pipeline/activity
+            job = Arrays.asList(pathInfo.get(3));
+            runNumber = null;
+            nodeId = null;
+            stepId = null;
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "organizations", ":organization", ":pipelineName", "activity"));
+        } else if (pathInfo.size() > 1 && isUrlPathInfoMatch(Arrays.asList("blue", "rest", "*"))) {
+            // // /blue/rest/
+            job = Collections.emptyList();
+            runNumber = null;
+            nodeId = null;
+            stepId = null;
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "*"));
         } else {
-            throw new IllegalArgumentException("Not a BlueOcean pipeline URL: /" + String.join("/", pathInfo));
+            job = Collections.emptyList();
+            runNumber = null;
+            nodeId = null;
+            stepId = null;
+            jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "*"));
         }
 
         return new ParsedBlueOceanPipelineJobUrl(job, runNumber, jobUrlPattern, nodeId, stepId);
@@ -490,12 +519,13 @@ public class OpenTelemetryServletFilter implements Filter {
                 "/" + urlPattern.stream().collect(Collectors.joining("/")));
         }
 
-        public ParsedJobUrl(String jobName, @Nullable Long runNumber, String urlPattern) {
+        public ParsedJobUrl(@Nullable String jobName, @Nullable Long runNumber, String urlPattern) {
             this.jobName = jobName;
             this.urlPattern = urlPattern;
             this.runNumber = runNumber;
         }
 
+        @Nullable
         final String jobName;
         @Nullable
         final Long runNumber;
@@ -530,13 +560,13 @@ public class OpenTelemetryServletFilter implements Filter {
         final String flowNodeId;
         final Integer stepId;
 
-        public ParsedBlueOceanPipelineJobUrl(List<String> jobName, @Nullable Long runNumber, List<String> urlPattern, String flowNodeId, Integer stepId) {
+        public ParsedBlueOceanPipelineJobUrl(List<String> jobName, @Nullable Long runNumber, List<String> urlPattern, @Nullable String flowNodeId, @Nullable Integer stepId) {
             super(jobName, runNumber, urlPattern);
             this.flowNodeId = flowNodeId;
             this.stepId = stepId;
         }
 
-        public ParsedBlueOceanPipelineJobUrl(String jobName, @Nullable Long runNumber, String flowNodeId, Integer stepId, String urlPattern) {
+        public ParsedBlueOceanPipelineJobUrl(@Nullable String jobName, @Nullable Long runNumber, @Nullable String flowNodeId, @Nullable Integer stepId, @Nullable String urlPattern) {
             super(jobName, runNumber, urlPattern);
             this.flowNodeId = flowNodeId;
             this.stepId = stepId;
