@@ -77,7 +77,7 @@ For details on how to store Jenkins pipelines build logs in an Observability bac
 
 <img alt="Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-pipeline-logs-elastic-with-visualization-through-jenkins.png" />
 
-_ Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI_
+_Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI_
 
 ## FAQ
 
