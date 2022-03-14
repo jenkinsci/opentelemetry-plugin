@@ -13,12 +13,15 @@ Monitor and observe Jenkins with OpenTelemetry.
 
 Visualize jobs and pipelines executions as distributed traces:
 
-![SpringBootPipeline Execution Trace](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-maven-execution-trace-jaeger.png)
+<img alt="SpringBootPipeline Execution Trace" width="400px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-maven-execution-trace-jaeger.png" />
+
 _Example pipeline execution trace of a SpringBoot app built with Maven going through security checks with Snyk, deployed on a Maven repository and published as a Docker image_
 
 
 Visualize Jenkins and pipeline health indicators:
-![Jenkins health dashboard](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/kibana_jenkins_overview_dashboard.png)
+
+<img alt="Example Kibana dashboard of the Jenkins and CI jobs health" width="400px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/kibana_jenkins_overview_dashboard.png" />
+
 _Example Kibana dashboard of the Jenkins and CI jobs health_
 
 
@@ -50,9 +53,10 @@ Here are example architectures with Elastic, Jaeger, and Prometheus:
         * Custom Observability backend for other visualization solutions
 * Set up Jenkins health dashboards on your OpenTelemetry metrics visualization solution. See details including guidance for Elastic Kibana [here](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/monitoring-metrics.md).
 
-![Sample Configuration](https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png)
+<img alt="Sample Configuration" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png" />
 
-You can look at this video tutorial to get started: [![Tracing Your Jenkins Pipelines With OpenTelemetry and Jaeger](https://img.youtube.com/vi/3XzVOxvNpGM/0.jpg)](https://www.youtube.com/watch?v=3XzVOxvNpGM)
+_Example Jenkins OpenTelemetry configuration_
+
 
 ## Setup and Configuration
 
@@ -63,7 +67,7 @@ For details to set up Jenkins with Elastic, Jaeger or Prometheus, to configure t
 
 For details on how to explore and troubleshoot jobs and pipelines builds as traces, see [Traces of Jobs and Pipeline Builds](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/job-traces.md).
 
-<img alt="SpringBootPipeline Execution Trace" width="400px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-maven-execution-trace-jaeger.png" />
+<img alt="SpringBootPipeline Execution Trace" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-maven-execution-trace-jaeger.png" />
 
 _Example pipeline execution trace of a SpringBoot app built with Maven going through security checks with Snyk, deployed on a Maven repository and published as a Docker image_
 
@@ -71,7 +75,7 @@ _Example pipeline execution trace of a SpringBoot app built with Maven going thr
 
 For details on how to store Jenkins pipelines build logs in an Observability backend like Elastic, see [Storing Jenkins Pipeline Logs in an Observability Backend though OpenTelemetry](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/build-logs.md).
 
-<img alt="Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI" width="400px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-pipeline-logs-elastic-with-visualization-through-jenkins.png" />
+<img alt="Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-pipeline-logs-elastic-with-visualization-through-jenkins.png" />
 
 _ Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI_
 
@@ -94,6 +98,10 @@ Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" se
 ```
 otel.exporter.otlp.protocol=http/protobuf
 ```
+
+## Learn More
+
+You can look at this video tutorial to get started: [![Tracing Your Jenkins Pipelines With OpenTelemetry and Jaeger](https://img.youtube.com/vi/3XzVOxvNpGM/0.jpg)](https://www.youtube.com/watch?v=3XzVOxvNpGM)
 
 ## Demos
 
