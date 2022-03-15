@@ -9,6 +9,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
@@ -211,7 +212,8 @@ public class OpenTelemetryServletFilter implements Filter {
             .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP)
             .setAttribute(SemanticAttributes.NET_PEER_IP, servletRequest.getRemoteAddr())
             .setAttribute(SemanticAttributes.NET_PEER_PORT, (long) servletRequest.getRemotePort())
-            .setAttribute(SemanticAttributes.THREAD_NAME, Thread.currentThread().getName());
+            .setAttribute(SemanticAttributes.THREAD_NAME, Thread.currentThread().getName())
+            .setSpanKind(SpanKind.SERVER);
 
         for (Map.Entry<String, String[]> entry : servletRequest.getParameterMap().entrySet()) {
             String name = entry.getKey();
