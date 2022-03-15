@@ -201,12 +201,17 @@ public class OpenTelemetryServletFilter implements Filter {
 
         spanBuilder
             .setAttribute(SemanticAttributes.HTTP_CLIENT_IP, servletRequest.getRemoteAddr())
+            .setAttribute(SemanticAttributes.HTTP_FLAVOR, StringUtils.substringAfter(servletRequest.getProtocol(), "/"))
             .setAttribute(SemanticAttributes.HTTP_SCHEME, servletRequest.getScheme())
             .setAttribute(SemanticAttributes.HTTP_SERVER_NAME, servletRequest.getServerName())
             .setAttribute(SemanticAttributes.HTTP_HOST, servletRequest.getServerName() + ":" + servletRequest.getServerPort())
             .setAttribute(SemanticAttributes.HTTP_METHOD, servletRequest.getMethod())
             .setAttribute(SemanticAttributes.HTTP_TARGET, httpTarget)
-            .setAttribute(SemanticAttributes.HTTP_ROUTE, httpRoute);
+            .setAttribute(SemanticAttributes.HTTP_ROUTE, httpRoute)
+            .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP)
+            .setAttribute(SemanticAttributes.NET_PEER_IP, servletRequest.getRemoteAddr())
+            .setAttribute(SemanticAttributes.NET_PEER_PORT, (long) servletRequest.getRemotePort())
+            .setAttribute(SemanticAttributes.THREAD_NAME, Thread.currentThread().getName());
 
         for (Map.Entry<String, String[]> entry : servletRequest.getParameterMap().entrySet()) {
             String name = entry.getKey();
@@ -220,7 +225,7 @@ public class OpenTelemetryServletFilter implements Filter {
         Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
             filterChain.doFilter(servletRequest, servletResponse);
-            span.setAttribute("response.status", servletResponse.getStatus());
+            span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, servletResponse.getStatus());
         } finally {
             span.end();
         }
