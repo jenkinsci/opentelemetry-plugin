@@ -1,4 +1,4 @@
-# OpenTelemetry
+# Jenkins OpenTelemetry Plugin
 
 [![Build Status](https://ci.jenkins.io/job/Plugins/job/opentelemetry-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/opentelemetry-plugin/job/master/)
 [![Contributors](https://img.shields.io/github/contributors/jenkinsci/opentelemetry-plugin.svg)](https://github.com/jenkinsci/opentelemetry-plugin/graphs/contributors)
@@ -66,24 +66,24 @@ Here are example architectures with Elastic, Jaeger, and Prometheus:
 For details to set up Jenkins with Elastic, Jaeger or Prometheus, to configure the integration including using Jenkins Configuration as Code, see [Setup and Configuration](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/setup-and-configuration.md).
 
 
-# Troubleshooting and Optimizing Jobs and Pipelines Tracing Builds
+## Troubleshooting and Optimizing Jenkins Jobs and Pipelines Using Tracing on the Builds
 
 For details on how to explore and troubleshoot jobs and pipelines builds as traces, see [Traces of Jobs and Pipeline Builds](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/job-traces.md).
 
 <img alt="SpringBootPipeline Execution Trace" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-maven-execution-trace-jaeger.png" />
 <p style="font-size:0.75em; font-style: italic">Example pipeline execution trace of a SpringBoot app built with Maven going through security checks with Snyk, deployed on a Maven repository and published as a Docker image</p>
 
-# Troubleshooting Jenkins Performances Tracing HTTP Requests
+## Troubleshooting Jenkins Performances Using Tracing on the HTTP Requests of the Jenkins Controller
 
 For details to set up Jenkins with Elastic, Jaeger or Prometheus, to configure the integration including using Jenkins Configuration as Code, see [Setup and Configuration](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/setup-and-configuration.md).
 
-# Jenkins Security
+## Jenkins Security
 
 Monitor access to Jenkins to detect anomalous behaviours.
 
 For details, see the security metrics [here](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/monitoring-metrics.md).
 
-# Storing Jenkins Pipeline Logs in an Observability Backend
+## Storing Jenkins Pipeline Logs in an Observability Backend
 
 For details on how to store Jenkins pipelines build logs in an Observability backend like Elastic, see [Storing Jenkins Pipeline Logs in an Observability Backend though OpenTelemetry](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/build-logs.md).
 
@@ -109,6 +109,32 @@ Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" se
 ```
 otel.exporter.otlp.protocol=http/protobuf
 ```
+
+## Other CI/CD Tools supporting OpenTelemetry traces
+
+List of other CI/CD tools that support OpenTelemetry traces and integrate with the Jenkins OpenTelemetryPlugin creating a distributed traces providing end to end visibility.
+
+### OpenTelemetry Maven Extension
+
+The [OpenTelemetry Maven Extension](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/maven-extension/) is a Maven extension to instrument with traces steps of Maven builds, including capturing details of the produced artifacts for traceability.
+
+ℹ️ For seamless and turnkey integration of the trace of the Maven builds that use the OpenTelemetry Maven Extension with the Jenkins trace, consider in the Jenkins configuration to enable "Export OpenTelemetry configuration as environment variables".  
+
+### OpenTelemetry Ansible Plugin
+
+The [OpenTelemetry Ansible Plugin](https://docs.ansible.com/ansible/latest/collections/community/general/opentelemetry_callback.html) is an Ansible callback to instrument with traces the tasks of Ansible playbooks. 
+
+ℹ️ For seamless and turnkey integration of the trace of the Ansible playbooks that use the OpenTelemetry plugin with the Jenkins trace, consider in the Jenkins configuration to enable "Export OpenTelemetry configuration as environment variables".
+
+### pytest-otel
+
+The [PyTest Otel Plugin](https://pypi.org/project/pytest-otel/) is a PyTest plugin to report each PyTest test as a span of a trace.
+
+ℹ️ For seamless and turnkey integration of the trace of the PyTest tests that use the OpenTelemetry plugin with the Jenkins trace, consider in the Jenkins configuration to enable "Export OpenTelemetry configuration as environment variables".
+
+### Otel CLI
+
+The [`otel-cli`](https://github.com/equinix-labs/otel-cli) is a command line wrapper to observe the execution of a shell command as an OpenTelemetry trace.
 
 ## Learn More
 
