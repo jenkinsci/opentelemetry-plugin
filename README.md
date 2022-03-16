@@ -90,26 +90,6 @@ For details on how to store Jenkins pipelines build logs in an Observability bac
 <img alt="Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-pipeline-logs-elastic-with-visualization-through-jenkins.png" />
 <p style="font-size:0.75em; font-style: italic">Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI</p>
 
-## FAQ
-
-### Enrich your pipeline `sh`, `bat`, and `powershell` steps with meaningful explanation thanks to labels
-
-If you use Jenkins pipelines in conjunction with the `sh`, `bat`, `powershell` steps, then it's highly recommended using the `label` argument to add a meaningful explanation thanks to step labels. Example:
-
-```groovy
-node {
-    sh(label: 'Maven verify', script: './mvnw deploy')
-}
-```
-
-### Using the OpenTelemetry OTLP/HTTP rather than OTLP/GRPC protocol
-
-Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" section, add to the "Configuration Properties text area the following:
-
-```
-otel.exporter.otlp.protocol=http/protobuf
-```
-
 ## Other CI/CD Tools supporting OpenTelemetry traces
 
 List of other CI/CD tools that support OpenTelemetry traces and integrate with the Jenkins OpenTelemetryPlugin creating a distributed traces providing end to end visibility.
@@ -135,6 +115,27 @@ The [PyTest Otel Plugin](https://pypi.org/project/pytest-otel/) is a PyTest plug
 ### Otel CLI
 
 The [`otel-cli`](https://github.com/equinix-labs/otel-cli) is a command line wrapper to observe the execution of a shell command as an OpenTelemetry trace.
+
+## FAQ
+
+### Enrich your pipeline `sh`, `bat`, and `powershell` steps with meaningful explanation thanks to labels
+
+If you use Jenkins pipelines in conjunction with the `sh`, `bat`, `powershell` steps, then it's highly recommended using the `label` argument to add a meaningful explanation thanks to step labels. Example:
+
+```groovy
+node {
+    sh(label: 'Maven verify', script: './mvnw deploy')
+}
+```
+
+### Using the OpenTelemetry OTLP/HTTP rather than OTLP/GRPC protocol
+
+Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" section, add to the "Configuration Properties text area the following:
+
+```
+otel.exporter.otlp.protocol=http/protobuf
+```
+
 
 ## Learn More
 
