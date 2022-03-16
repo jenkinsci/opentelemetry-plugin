@@ -1,5 +1,7 @@
 # Jenkins Monitoring Dashboards and Health Metrics
 
+Jenkins' metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
+
 ## Jenkins Health Dashboards
 
 The Jenkins OpenTelemetry integration provides all the key health metrics to monitor Jenkins with dashboards and alerts.
@@ -17,11 +19,11 @@ Dashboards can be imported in Kibana using the Kibana GUI ([here](https://www.el
 |------------------------------------------------|----------------------------------|
 | <img alt="Jenkins Health Dashboard with Elastic Kibana" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/kibana_jenkins_overview_dashboard.png" /> | <img alt="Jenkins Agent Provisioning Health Dashboard with Elastic Kibana" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/kibana_jenkins_provisioning_dashboard.png" /> |
 
-## Metrics on Jenkins health indicators
+## Jenkins Health Metrics
 
-Inventory of metrics collected by the Jenkins OpenTelemetry integration.
+Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
 
-| Metrics                          | Unit  | Label key  | Label Value       | Description |
+| Metric                           | Unit  | Label key  | Label Value       | Description |
 |----------------------------------|-------|------------|-------------------|-------------|
 | ci.pipeline.run.active           | 1     |            |                   | Gauge of active jobs |
 | ci.pipeline.run.launched         | 1     |            |                   | Job launched |
@@ -54,4 +56,11 @@ Inventory of metrics collected by the Jenkins OpenTelemetry integration.
 | process.cpu.time                 | ns    |            |                  | Process CPU time. See `com.sun.management.OperatingSystemMXBean.getProcessCpuTime` |
 
 
-Jenkins' metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
+
+## Jenkins Security Metrics 
+
+| Metrics                          | Unit  | Label key  | Label Value       | Description            |
+|----------------------------------|-------|------------|-------------------|------------------------|
+| login                            | 1     |            |                   | Login count            |
+| login_success                    | 1     |            |                   | Successful login count |
+| login_failure                    | 1     |            |                   | Failed login count     |

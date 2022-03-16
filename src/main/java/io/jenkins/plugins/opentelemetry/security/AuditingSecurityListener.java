@@ -8,6 +8,8 @@ package io.jenkins.plugins.opentelemetry.security;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import jenkins.security.SecurityListener;
@@ -25,18 +27,18 @@ public class AuditingSecurityListener extends SecurityListener  {
 
     private void initialise(){
         loginSuccessCounter =
-                meter.counterBuilder("login_success")
+                meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_SUCCESS)
                 .setDescription("Successful logins")
                 .setUnit("1")
                 .build();
         loginFailureCounter =
-                meter.counterBuilder("login_failure")
+                meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_FAILURE)
                         .setDescription("Failing logins")
                         .setUnit("1")
                         .build();
 
         loginCounter =
-                meter.counterBuilder("login")
+                meter.counterBuilder(JenkinsSemanticMetrics.LOGIN)
                         .setDescription("Logins")
                         .setUnit("1")
                         .build();
