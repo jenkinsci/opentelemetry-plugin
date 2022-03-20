@@ -8,15 +8,23 @@ The Jenkins OpenTelemetry Plugin captures key security events, metrics, and piec
 
 Successful and failed log in events are captured as structured log messages:
 
-* Attributes
-  * `enduser.id`: user identifier, the value of `hudson.model.User.getId()` if available or the username passed in `j.s.SecurityListener.loggedIn(username)` / `j.s.SecurityListener.failedToLogIn(username)`
-  * `event.type`: `login`
-  * `event.outcome`: `Success` or `Failure`
-  * `net.peer.ip`: `javax.servlet.ServletRequest.getRemoteAddr()`
-  * `net.peer.port`: `javax.servlet.ServletRequest.getRemotePort()`
-* Body
-   * Example: "Successful login of user 'admin'"
-
+* Login success
+  * Attributes
+    * `enduser.id`: user identifier, the value of `hudson.model.User.getId()` if available or the username passed in `j.s.SecurityListener.loggedIn(username)`
+    * `event.category`: `authentication`
+    * `event.action`: `user_login`
+    * `event.outcome`: `success`
+    * `net.peer.ip`: `javax.servlet.ServletRequest.getRemoteAddr()`
+  * Body
+     * Example: "Successful login of user 'admin' from 127.0.0.1"
+* Login failure
+    * Attributes
+        * `enduser.id`: username passed in `j.s.SecurityListener.failedToLogIn(username)`
+        * `event.category`: `authentication`
+        * `event.action`: `user_login`
+        * `event.outcome`: `failure`
+    * Body
+        * Example: "Successful login of user 'admin'"
 ## Jenkins Security Metrics
 
 | Metrics                          | Unit  | Label key  | Label Value       | Description            |

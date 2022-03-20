@@ -23,6 +23,10 @@ import jenkins.security.SecurityListener;
 import org.acegisecurity.userdetails.UserDetails;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -81,15 +85,21 @@ public class AuditingSecurityListener extends SecurityListener {
         Optional<User> user = Optional.ofNullable(User.current());
         attributesBuilder
             .put(SemanticAttributes.ENDUSER_ID, user.map(u -> u.getId()).orElse(username))
-            .put(JenkinsOtelSemanticAttributes.EVENT_TYPE, "login")
+            .put(JenkinsOtelSemanticAttributes.EVENT_CATEGORY, JenkinsOtelSemanticAttributes.EventCategoryValues.AUTHENTICATION)
+            .put(JenkinsOtelSemanticAttributes.EVENT_ACTION, "user_login")
             .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.SUCCESS);
 
-        StaplerRequest currentRequest = Stapler.getCurrentRequest();
-        if (currentRequest != null) {
-            attributesBuilder
-                .put(SemanticAttributes.NET_PEER_IP, currentRequest.getRemoteAddr())
-                .put(SemanticAttributes.NET_PEER_PORT, (long) currentRequest.getRemotePort());
-            message += " from remote address " + currentRequest.getRemoteAddr();
+        // Stapler.getCurrentRequest() returns null, it's not yet initialized
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        if (securityContext != null) {
+            Authentication authentication = securityContext.getAuthentication();
+            Object details = authentication.getDetails();
+            if (details instanceof WebAuthenticationDetails) {
+                WebAuthenticationDetails webAuthenticationDetails = (WebAuthenticationDetails) details;
+                attributesBuilder
+                    .put(SemanticAttributes.NET_PEER_IP, webAuthenticationDetails.getRemoteAddress());
+                message += " from " + webAuthenticationDetails.getRemoteAddress();
+            }
         }
 
         LogBuilder logBuilder = openTelemetrySdkProvider.getLogEmitter().logBuilder();
@@ -115,16 +125,11 @@ public class AuditingSecurityListener extends SecurityListener {
         AttributesBuilder attributesBuilder = Attributes.builder();
         attributesBuilder
             .put(SemanticAttributes.ENDUSER_ID, username)
-            .put(JenkinsOtelSemanticAttributes.EVENT_TYPE, "login")
+            .put(JenkinsOtelSemanticAttributes.EVENT_CATEGORY, JenkinsOtelSemanticAttributes.EventCategoryValues.AUTHENTICATION)
+            .put(JenkinsOtelSemanticAttributes.EVENT_ACTION, "user_login")
             .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.FAILURE);
 
-        StaplerRequest currentRequest = Stapler.getCurrentRequest();
-        if (currentRequest != null) {
-            attributesBuilder
-                .put(SemanticAttributes.NET_PEER_IP, currentRequest.getRemoteAddr())
-                .put(SemanticAttributes.NET_PEER_PORT, (long) currentRequest.getRemotePort());
-            message += " from remote address " + currentRequest.getRemoteAddr();
-        }
+        // TODO find a solution to retrieve the remoteIpAddress
 
         LogBuilder logBuilder = openTelemetrySdkProvider.getLogEmitter().logBuilder();
         logBuilder
