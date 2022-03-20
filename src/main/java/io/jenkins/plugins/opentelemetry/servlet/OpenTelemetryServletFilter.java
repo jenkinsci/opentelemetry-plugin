@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.servlet;
 
+import hudson.model.User;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
@@ -200,6 +201,7 @@ public class OpenTelemetryServletFilter implements Filter {
             httpTarget += "?" + queryString;
         }
 
+        Thread currentThread = Thread.currentThread();
         spanBuilder
             .setAttribute(SemanticAttributes.HTTP_CLIENT_IP, servletRequest.getRemoteAddr())
             .setAttribute(SemanticAttributes.HTTP_FLAVOR, StringUtils.substringAfter(servletRequest.getProtocol(), "/"))
@@ -212,8 +214,14 @@ public class OpenTelemetryServletFilter implements Filter {
             .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP)
             .setAttribute(SemanticAttributes.NET_PEER_IP, servletRequest.getRemoteAddr())
             .setAttribute(SemanticAttributes.NET_PEER_PORT, (long) servletRequest.getRemotePort())
-            .setAttribute(SemanticAttributes.THREAD_NAME, Thread.currentThread().getName())
+            .setAttribute(SemanticAttributes.THREAD_NAME, currentThread.getName())
+            .setAttribute(SemanticAttributes.THREAD_ID, currentThread.getId())
             .setSpanKind(SpanKind.SERVER);
+
+        User user = User.current();
+        if (user != null) {
+            spanBuilder.setAttribute(SemanticAttributes.ENDUSER_ID, user.getId());
+        }
 
         for (Map.Entry<String, String[]> entry : servletRequest.getParameterMap().entrySet()) {
             String name = entry.getKey();
