@@ -19,6 +19,7 @@ import groovy.text.Template;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
+import io.jenkins.plugins.opentelemetry.jenkins.CredentialsNotFoundException;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
@@ -199,7 +200,14 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     public List<FormValidation> checkElasticsearchSetup() throws IOException {
         List<FormValidation> validations = new ArrayList<>();
         ElasticsearchIndicesClient indicesClient = this.esClient.indices();
-        String elasticsearchUsername = Optional.ofNullable(elasticsearchCredentials.getUserPrincipal()).map(p -> p.getName()).orElse("No username for credentials type " + elasticsearchCredentials.getClass().getSimpleName());
+        String elasticsearchUsername;
+        try {
+            elasticsearchUsername = Optional.ofNullable(elasticsearchCredentials.getUserPrincipal()).map(p -> p.getName()).orElse("No username for credentials type " + elasticsearchCredentials.getClass().getSimpleName());
+        } catch (CredentialsNotFoundException e) {
+            validations.add(FormValidation.error("No credentials defined"));
+            return validations;
+        }
+
 
         // TODO remove workaround https://github.com/jenkinsci/opentelemetry-plugin/issues/336
         // we just check the existence of the Index Template and assume the Index Lifecycle Policy is "logs-apm.app_logs-default_policy"
@@ -217,15 +225,15 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
                     validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
                 } else if (status == HttpURLConnection.HTTP_FORBIDDEN) {
                     validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
-                    validations.add(FormValidation.warning(errorCause.type()  + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "'. " +
+                    validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "'. " +
                         "Elasticsearch user '" + elasticsearchUsername + "' doesn't have read permission to the index template metadata - " + errorCause.reason() + "."));
                 } else {
                     validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
-                    validations.add(FormValidation.warning(errorCause.type()  + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
+                    validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
                         "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
                 }
             } else {
-                validations.add(FormValidation.warning(errorCause.type()  + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
+                validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
                     "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
             }
             return validations;
@@ -259,10 +267,10 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
                             "The Index Lifecycle Management (ILM) policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' is not readable by the Elasticsearch user '" + elasticsearchUsername + ". " +
                             " Details: " + errorCause.type() + " - " + errorCause.reason() + "."));
                 } else {
-                    validations.add(FormValidation.warning(errorCause.type()  + "/" + status + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
+                    validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
                 }
             } else {
-                validations.add(FormValidation.warning(errorCause.type()  + "/" + status + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
+                validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
             }
             return validations;
         } catch (IOException e) {
