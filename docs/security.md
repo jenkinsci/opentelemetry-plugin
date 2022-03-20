@@ -25,6 +25,11 @@ Successful and failed log in events are captured as structured log messages:
         * `event.outcome`: `failure`
     * Body
         * Example: "Successful login of user 'admin'"
+
+Known limitations:
+* Some Jenkins authentication plugins such as the [Jenkins GitHub Authentication Plugin](https://plugins.jenkins.io/github-oauth/) won't capture the "Successful login" or the "Failed login" event because they don't invoke the `SecurityListener.loggedIn(username)` or the `SecurityListener.failedLoggedIn(username)` APIs,
+* The remote IP address is not captured on the "Failed login" event due to restrictions on Jenkins APIs.
+
 ## Jenkins Security Metrics
 
 | Metrics                          | Unit  | Label key  | Label Value       | Description            |
