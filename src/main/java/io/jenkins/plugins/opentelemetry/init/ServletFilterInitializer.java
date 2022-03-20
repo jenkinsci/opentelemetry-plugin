@@ -19,6 +19,11 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * TODO Register the {@link OpenTelemetryServletFilter} earlier in the chain of {@link Filter} of the Jenkins webapp,
+ * register it before the {@link hudson.security.HudsonFilter} so that the {@link io.jenkins.plugins.opentelemetry.security.AuditingSecurityListener}
+ * events can be associated to an HTTP trace.
+ */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
 public class ServletFilterInitializer extends OpenTelemetryPluginAbstractInitializer {
     private static final Logger logger = Logger.getLogger(ServletFilterInitializer.class.getName());
