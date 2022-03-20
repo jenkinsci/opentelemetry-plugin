@@ -10,11 +10,12 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import groovy.text.Template;
 import hudson.Extension;
 import hudson.Util;
-import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import io.jenkins.plugins.opentelemetry.jenkins.CredentialsNotFoundException;
+import io.jenkins.plugins.opentelemetry.jenkins.JenkinsCredentialsToApacheHttpCredentialsAdapter;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
@@ -22,13 +23,12 @@ import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.opentelemetry.api.trace.Tracer;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.auth.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.annotation.CheckForNull;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.NoSuchElementException;
@@ -50,8 +50,9 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             return null; // FIXME handle case where this logs retriever is miss configured lacking of an Elasticsearch URL. We should use the rendering  ElasticLogsBackendWithVisualizationOnlyThroughKibana
         } else {
             Tracer tracer = OpenTelemetrySdkProvider.get().getTracer();
+            Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
             return new ElasticsearchLogStorageRetriever(
-                this.elasticsearchUrl, ElasticsearchLogStorageRetriever.getCredentials(this.elasticsearchCredentialsId),
+                this.elasticsearchUrl, credentials,
                 buildLogsVisualizationUrlTemplate, templateBindingsProvider,
                 tracer);
         }
@@ -135,10 +136,13 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                 return FormValidation.ok();
             }
 
+            if (elasticsearchCredentialsId == null || elasticsearchCredentialsId.isEmpty()) {
+                return FormValidation.error("Elasticsearch credentials are missing");
+            }
             try {
-                ElasticsearchLogStorageRetriever.getCredentials(elasticsearchCredentialsId);
-            } catch (NoSuchElementException e) {
-                return FormValidation.warning("The credentials are not valid.");
+                new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId).getUserPrincipal().getName();
+            } catch (CredentialsNotFoundException e) {
+                return FormValidation.error("Elasticsearch credentials are not valid");
             }
             return FormValidation.ok();
         }
@@ -151,14 +155,17 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
 
             try {
                 Tracer tracer = OpenTelemetrySdkProvider.get().getTracer();
+                Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
                 ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
-                    ElasticsearchLogStorageRetriever.getCredentials(elasticsearchCredentialsId),
+                    credentials,
                     ObservabilityBackend.ERROR_TEMPLATE, // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check the proper configuration of the access to Elasticsearch
                     TemplateBindingsProvider.empty(),
                     tracer);
 
                 return FormValidation.aggregate(elasticsearchLogStorageRetriever.checkElasticsearchSetup());
+            } catch (NoSuchElementException e) {
+                return FormValidation.error("No credentials found for id '" + elasticsearchCredentialsId + "'");
             } catch (Exception e) {
                 return FormValidation.error(e, e.getMessage());
             }

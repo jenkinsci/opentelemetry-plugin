@@ -15,11 +15,7 @@ import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import groovy.text.Template;
-import hudson.security.ACL;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
@@ -36,11 +32,9 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.auth.Credentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
@@ -49,15 +43,13 @@ import org.kohsuke.stapler.framework.io.ByteBuffer;
 import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.Principal;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -219,11 +211,21 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             indexTemplateExists = indicesClient.existsIndexTemplate(b -> b.name(ElasticsearchFields.INDEX_TEMPLATE_NAME)).value();
         } catch (ElasticsearchException e) {
             ErrorCause errorCause = e.error();
+            int status = e.status();
             if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
-                validations.add(FormValidation.warning(errorCause.type() + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "'. " +
-                    "Elasticsearch user '" + elasticsearchUsername + "' doesn't have read permission to the index template metadata - " + errorCause.reason() + "."));
+                if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
+                    validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
+                } else if (status == HttpURLConnection.HTTP_FORBIDDEN) {
+                    validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+                    validations.add(FormValidation.warning(errorCause.type()  + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "'. " +
+                        "Elasticsearch user '" + elasticsearchUsername + "' doesn't have read permission to the index template metadata - " + errorCause.reason() + "."));
+                } else {
+                    validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+                    validations.add(FormValidation.warning(errorCause.type()  + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
+                        "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
+                }
             } else {
-                validations.add(FormValidation.warning(errorCause.type() + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
+                validations.add(FormValidation.warning(errorCause.type()  + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
                     "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
             }
             return validations;
@@ -247,13 +249,20 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             getLifecycleResponse = esClient.ilm().getLifecycle(b -> b.name(ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME));
         } catch (ElasticsearchException e) {
             ErrorCause errorCause = e.error();
+            int status = e.status();
             if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
-                validations.add(FormValidation.ok(
-                    "Time to live of the pipeline logs in Elasticsearch " + elasticsearchUrl + "not available. " +
-                        "The Index Lifecycle Management (ILM) policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' is not readable by the Elasticsearch user '" + elasticsearchUsername + ". " +
-                        " Details: " + errorCause.type() + " - " + errorCause.reason() + "."));
+                if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
+                    validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
+                } else if (status == HttpURLConnection.HTTP_FORBIDDEN) {
+                    validations.add(FormValidation.ok(
+                        "Time to live of the pipeline logs in Elasticsearch " + elasticsearchUrl + "not available. " +
+                            "The Index Lifecycle Management (ILM) policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' is not readable by the Elasticsearch user '" + elasticsearchUsername + ". " +
+                            " Details: " + errorCause.type() + " - " + errorCause.reason() + "."));
+                } else {
+                    validations.add(FormValidation.warning(errorCause.type()  + "/" + status + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
+                }
             } else {
-                validations.add(FormValidation.warning(errorCause.type() + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
+                validations.add(FormValidation.warning(errorCause.type()  + "/" + status + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
             }
             return validations;
         } catch (IOException e) {
@@ -271,7 +280,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.warm(), "warm"));
             retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.cold(), "cold"));
             retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.delete(), "delete"));
-            validations.add(FormValidation.ok("Logs retention policy: " + String.join(", ", retentionPolicy)+ "."));
+            validations.add(FormValidation.ok("Logs retention policy: " + String.join(", ", retentionPolicy) + "."));
         }
         return validations;
     }
@@ -311,28 +320,5 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             "buildLogsVisualizationUrlTemplate=" + buildLogsVisualizationUrlTemplate +
             ", templateBindingsProvider=" + templateBindingsProvider +
             '}';
-    }
-
-    public static Credentials getCredentials(String jenkinsCredentialsId) throws NoSuchElementException {
-        UsernamePasswordCredentials usernamePasswordCredentials = (UsernamePasswordCredentials) CredentialsMatchers.firstOrNull(
-            CredentialsProvider.lookupCredentials(UsernamePasswordCredentials.class, Jenkins.get(),
-                ACL.SYSTEM, Collections.EMPTY_LIST),
-            CredentialsMatchers.withId(jenkinsCredentialsId));
-
-        if (usernamePasswordCredentials == null) {
-            throw new NoSuchElementException("No credentials found for id '" + jenkinsCredentialsId + "' and type '" + UsernamePasswordCredentials.class.getName() + "'");
-        }
-
-        return new Credentials() {
-            @Override
-            public Principal getUserPrincipal() {
-                return new BasicUserPrincipal(usernamePasswordCredentials.getUsername());
-            }
-
-            @Override
-            public String getPassword() {
-                return usernamePasswordCredentials.getPassword().getPlainText();
-            }
-        };
     }
 }

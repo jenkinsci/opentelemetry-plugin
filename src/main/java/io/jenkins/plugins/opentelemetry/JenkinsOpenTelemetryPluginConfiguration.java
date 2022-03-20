@@ -127,6 +127,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @Override
     public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
+        LOGGER.log(Level.FINE, "Configure...");
         req.bindJSON(this, json);
         // stapler oddity, empty lists coming from the HTTP request are not set on bean by  `req.bindJSON(this, json)`
         this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
@@ -142,6 +143,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         }
         this.logStorageRetriever = resolveLogStorageRetriever();
         save();
+        LOGGER.log(Level.FINE, "Configured");
         return true;
     }
 
@@ -188,6 +190,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
         }
+        LOGGER.log(Level.FINE, "Initialize");
         openTelemetrySdkProvider.initialize(newOpenTelemetryConfiguration);
         this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
     }
@@ -217,7 +220,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setEndpoint(String endpoint) {
         this.endpoint = sanitizeOtlpEndpoint(endpoint);
-        initializeOpenTelemetry();
     }
 
     @Nonnull
@@ -228,7 +230,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setAuthentication(OtlpAuthentication authentication) {
         this.authentication = authentication;
-        initializeOpenTelemetry();
     }
 
     @CheckForNull
@@ -239,13 +240,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setTrustedCertificatesPem(String trustedCertificatesPem) {
         this.trustedCertificatesPem = trustedCertificatesPem;
-        initializeOpenTelemetry();
     }
 
     @DataBoundSetter
     public void setObservabilityBackends(List<ObservabilityBackend> observabilityBackends) {
         this.observabilityBackends = Optional.of(observabilityBackends).orElse(Collections.emptyList());
-        initializeOpenTelemetry();
     }
 
     @Nonnull
@@ -268,7 +267,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setExporterTimeoutMillis(Integer exporterTimeoutMillis) {
         this.exporterTimeoutMillis = exporterTimeoutMillis;
-        initializeOpenTelemetry();
+
     }
 
     public Integer getExporterIntervalMillis() {
@@ -278,7 +277,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setExporterIntervalMillis(Integer exporterIntervalMillis) {
         this.exporterIntervalMillis = exporterIntervalMillis;
-        initializeOpenTelemetry();
+
     }
 
     public String getIgnoredSteps() {
@@ -301,7 +300,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setDisabledResourceProviders(String disabledResourceProviders) {
         this.disabledResourceProviders = disabledResourceProviders;
-        initializeOpenTelemetry();
+
     }
 
     public boolean isExportOtelConfigurationAsEnvironmentVariables() {
@@ -320,7 +319,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setConfigurationProperties(String configurationProperties) {
         this.configurationProperties = configurationProperties;
-        initializeOpenTelemetry();
+
     }
 
     @Nonnull
@@ -451,7 +450,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
-        initializeOpenTelemetry();
+
     }
 
     /**
@@ -464,7 +463,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setServiceNamespace(String serviceNamespace) {
         this.serviceNamespace = serviceNamespace;
-        initializeOpenTelemetry();
+
     }
 
     @Nonnull
