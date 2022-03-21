@@ -3,7 +3,7 @@
 Jenkins pipeline build logs can be sent through OpenTelemetry Protocol in order to be stored in an observability backend alongside the traces of the pipeline builds and the health metrics of Jenkins. Doing so provides the following benefits
 * Better observability, monitoring, alerting, and troubleshooting of the Jenkins instance thanks to the unification of all the signals in the observability backend
 * Better traceability and audit of the Software Delivery Lifecycle having better control on the long term storage of the builds
-* Better scalability and reliability of Jenkins greatly reducing the quantity of data stored in Jenkins home and limiting the well known file system performance of Jenkins when storing a large history of builds  
+* Better scalability and reliability of Jenkins greatly reducing the quantity of data stored in Jenkins home and limiting the well known file system performance challenges of Jenkins when storing a large history of builds  
 
 > **_BEST PRACTICE:_** When sending Jenkins pipeline logs through OpenTelemetry, it is recommended to deploy OpenTelemetry Collectors next to the Jenkins deployment for improved scalability and reliability.
 
@@ -11,7 +11,7 @@ Jenkins pipeline build logs can be sent through OpenTelemetry Protocol in order 
 
 > **_PRE REQUISITES:_** storing Jenkins pipeline logs in Elasticsearch requires :
 > * Elastic Observability version 8.1+
-> * The OTLP endpoint configured on the Jenkins OpenTelemetry integration MUST be reachable from the Jenkins Agents (don't specify a `localhost` OTLP endpoint unless OpenTelemetry collectors are also deployed on the Jenkins Agents)  
+> * The OTLP endpoint configured on the Jenkins OpenTelemetry plugin configuration MUST be reachable from the Jenkins Agents (don't specify a `localhost` OTLP endpoint unless OpenTelemetry collectors are also deployed on the Jenkins Agents)  
 > * When using OpenTelemetry Collectors, requires setting up a logs pipeline in addition to the traces and metrics pipelines. See FAQ below 
 
 To store pipeline logs in Elastic, 
