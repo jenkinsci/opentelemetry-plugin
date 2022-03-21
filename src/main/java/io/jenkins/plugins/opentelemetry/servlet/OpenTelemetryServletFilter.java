@@ -38,6 +38,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/**
+ * TODO find a more smarter way to instrument each HTTP request path. It should rely on instrumenting the Stapler framework
+ */
 public class OpenTelemetryServletFilter implements Filter {
     private final static Logger logger = Logger.getLogger(OpenTelemetryServletFilter.class.getName());
     private final Tracer tracer;
