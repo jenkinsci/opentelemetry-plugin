@@ -6,6 +6,8 @@
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch.ilm.GetLifecycleResponse;
 import co.elastic.clients.elasticsearch.ilm.Phases;
 import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
@@ -29,6 +31,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -149,7 +152,7 @@ public class ElasticsearchRetrieverIT {
 
         List<String> retentionPolicy = new ArrayList<>();
 
-        retentionPolicy.add( ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.hot(), "hot"));
+        retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.hot(), "hot"));
         retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.warm(), "warm"));
         retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.cold(), "cold"));
         retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.delete(), "delete"));
@@ -157,5 +160,42 @@ public class ElasticsearchRetrieverIT {
         System.out.println(retentionPolicy.stream().collect(Collectors.joining(", ")));
     }
 
+    /**
+     * See https://github.com/elastic/elasticsearch-java/issues/212
+     */
+    @Test
+    public void testIndexExistsWithInvalidCredentials() throws Exception {
+        InputStream envAsStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
+        Assert.assertNotNull(".env file not found in classpath", envAsStream);
+        Properties env = new Properties();
+        env.load(envAsStream);
 
+        String url = env.getProperty("elasticsearch.url");
+        String username = env.getProperty("elasticsearch.username");
+        String password = "INVALID PASSWORD";
+
+        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
+
+        RestClient restClient = RestClient.builder(HttpHost.create(url))
+            .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
+            .build();
+        RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+        ElasticsearchClient elasticsearchClient = new ElasticsearchClient(elasticsearchTransport);
+        try {
+            boolean indexTemplateExists = elasticsearchClient.indices().existsIndexTemplate(b -> b.name("logs-apm.app")).value();
+            Assert.fail("Expected ElasticsearchException with ElasticsearchException.type='security_exception' and ElasticsearchException.status=401. Didn't expect exists=" + indexTemplateExists);
+        } catch (ElasticsearchException e) {
+            ErrorCause errorCause = e.error();
+            int status = e.status();
+            if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
+                if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
+                    // OK it's the behaviour we want
+                } else {
+                    Assert.fail("Expected ElasticsearchException with ElasticsearchException.type='security_exception' and ElasticsearchException.status=401. Didn't expect " + e);
+                }
+            }
+        }
+
+    }
 }
