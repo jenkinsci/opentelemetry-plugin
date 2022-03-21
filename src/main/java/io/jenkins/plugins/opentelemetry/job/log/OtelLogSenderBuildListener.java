@@ -16,7 +16,6 @@ import jenkins.util.JenkinsJVM;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
@@ -170,7 +169,10 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
             GlobalOpenTelemetrySdk.configure(
                 otelConfigProperties,
                 otelResourceAttributes,
-                true /* register shutdown hook when on the Jenkins agents */);
+                /* the JVM shutdown hook is too late to flush the Otel signals as the OTel classes have been unloaded */
+                false );
+            // TODO find the right lifecycle event to shutdown the Otel SDK on agent shutdown
+            // hudson.remoting.EngineListener doesn't seem to be the right event
             return this;
         }
 
