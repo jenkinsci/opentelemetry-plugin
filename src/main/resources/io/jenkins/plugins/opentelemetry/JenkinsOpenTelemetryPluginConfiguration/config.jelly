@@ -45,7 +45,7 @@
                 <f:entry field="exporterTimeoutMillis" title="Exporter Timeout (ms)" description="e.g. '30000'. Aka OTEL_EXPORTER_OTLP_TIMEOUT">
                     <f:number clazz="required positive number" min="1" default="${exporterTimeoutMillis}"/>
                 </f:entry>
-                <f:entry field="exporterIntervalMillis" title="Exporter Interval (ms)" description="e.g. '60000'. Aka OTEL_IMR_EXPORT_INTERVAL">
+                <f:entry field="exporterIntervalMillis" title="Metrics Exporter Interval (ms)" description="e.g. '60000'. Aka OTEL_IMR_EXPORT_INTERVAL">
                     <f:number clazz="required positive number" min="1" default="${exporterIntervalMillis}"/>
                 </f:entry>
                 <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format)">
