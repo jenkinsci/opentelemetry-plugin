@@ -7,6 +7,8 @@ exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
     namespace: promexample
+    resource_to_telemetry_conversion:
+      enabled: true
     const_labels:
       label1: value1
   logging:
