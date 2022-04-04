@@ -19,7 +19,7 @@
     <properties>
         <revision>2.3.1</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.277.1</jenkins.version>
+        <jenkins.version>2.289.3</jenkins.version>
         <java.level>8</java.level>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.12.0</opentelemetry.version>
@@ -38,8 +38,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.249.x</artifactId>
-                <version>984.vb5eaac999a7e</version>
+                <artifactId>bom-2.289.x</artifactId>
+                <version>1246.va_b_50630c1d19</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -79,10 +79,10 @@
                 <version>3.12.0</version>
             </dependency>
             <dependency>
-                <!-- workflow-basic-steps:2.22 vs gitlab-plugin:1.5.22 -->
-                <groupId>javax.activation</groupId>
-                <artifactId>activation</artifactId>
-                <version>1.1.1</version>
+                <!-- Jenkins core ships this till 2.330, can probably remove this after the baseline is above that  -->
+                <groupId>com.sun.activation</groupId>
+                <artifactId>jakarta.activation</artifactId>
+                <version>1.2.2</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -127,6 +127,11 @@
                     <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
                     <groupId>com.squareup.okhttp3</groupId>
                     <artifactId>okhttp</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- we get okhttp from org.jenkins-ci.plugins:jackson2-api -->
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -264,6 +269,11 @@
             <artifactId>pipeline-stage-step</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>scm-api</artifactId>
+            <version>596.v47ec118b_0c3a_</version> <!-- TODO https://github.com/jenkinsci/scm-api-plugin/pull/127 -->
+        </dependency>
+        <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-multibranch</artifactId>
         </dependency>
@@ -292,13 +302,12 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>matrix-project</artifactId>
-            <version>1.18</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>job-dsl</artifactId>
-            <version>1.77</version>
+            <version>1.78.3</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -309,7 +318,7 @@
         <dependency>
             <groupId>com.coravy.hudson.plugins.github</groupId>
             <artifactId>github</artifactId>
-            <version>1.32.0</version>
+            <version>1.34.3</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>
@@ -321,7 +330,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>gitlab-plugin</artifactId>
-            <version>1.5.22</version>
+            <version>1.5.29</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>
