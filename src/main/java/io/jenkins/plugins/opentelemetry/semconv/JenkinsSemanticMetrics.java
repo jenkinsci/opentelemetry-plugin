@@ -24,6 +24,11 @@ public class JenkinsSemanticMetrics {
     public static final String JENKINS_CLOUD_AGENTS_COMPLETED =     "jenkins.cloud.agents.completed";
     public static final String JENKINS_DISK_USAGE_BYTES =           "jenkins.disk.usage.bytes";
 
+    public static final String JENKINS_SCM_EVENT_POOL_SIZE =         "jenkins.scm.event.pool_size";
+    public static final String JENKINS_SCM_EVENT_ACTIVE_THREADS =    "jenkins.scm.event.active_threads";
+    public static final String JENKINS_SCM_EVENT_QUEUED_TASKS =      "jenkins.scm.event.queued_tasks";
+    public static final String JENKINS_SCM_EVENT_COMPLETED_TASKS =   "jenkins.scm.event.completed_tasks";
+
 
 
     public static final String LOGIN =           "login";
