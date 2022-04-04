@@ -47,7 +47,7 @@ public class ViewColumn extends ListViewColumn {
         }
 
         public boolean shownByDefault() {
-            return true;
+            return false;
         }
     }
 }
