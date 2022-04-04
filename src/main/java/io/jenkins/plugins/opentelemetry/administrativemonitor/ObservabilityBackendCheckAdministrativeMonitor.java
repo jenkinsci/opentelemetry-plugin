@@ -46,9 +46,7 @@ public class ObservabilityBackendCheckAdministrativeMonitor extends Administrati
     public HttpResponse doAct(StaplerRequest req, StaplerResponse rsp) throws IOException {
         if (req.hasParameter("no")) {
             disable(true);
-            return HttpResponses.redirectToDot();
-        } else {
-            return HttpResponses.redirectViaContextPath("/configure");
         }
+        return HttpResponses.redirectViaContextPath("/configure");
     }
 }

@@ -34,9 +34,8 @@ public class ElasticBackendDashboardNotEnabledAdministrativeMonitor extends Admi
         return pluginConfiguration.getObservabilityBackends().stream().
             filter(backend -> backend instanceof ElasticBackend).
             map(backend -> (ElasticBackend) backend).
-            filter( backend -> StringUtils.isNotEmpty(backend.getKibanaBaseUrl())).
-            filter(elasticBackend -> !elasticBackend.isDisplayKibanaDashboardLink()).
-            count() > 0;
+            filter(backend -> StringUtils.isNotEmpty(backend.getKibanaBaseUrl()))
+            .anyMatch(elasticBackend -> !elasticBackend.isDisplayKibanaDashboardLink());
     }
 
     /**
@@ -46,10 +45,8 @@ public class ElasticBackendDashboardNotEnabledAdministrativeMonitor extends Admi
     public HttpResponse doAct(StaplerRequest req, StaplerResponse rsp) throws IOException {
         if (req.hasParameter("no")) {
             disable(true);
-            return HttpResponses.redirectToDot();
-        } else {
-            return HttpResponses.redirectViaContextPath("/configure");
         }
+        return HttpResponses.redirectViaContextPath("/configure");
     }
 
 

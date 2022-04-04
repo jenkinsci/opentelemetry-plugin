@@ -33,9 +33,8 @@ public class ElasticBackendKibanaBaseUrlNotSetAdministrativeMonitor extends Admi
     public boolean isActivated() {
         return pluginConfiguration.getObservabilityBackends().stream().
             filter(backend -> backend instanceof ElasticBackend).
-            map(backend -> (ElasticBackend) backend).
-            filter( backend -> StringUtils.isEmpty(backend.getKibanaBaseUrl())).
-            count() > 0;
+            map(backend -> (ElasticBackend) backend)
+            .anyMatch(backend -> StringUtils.isEmpty(backend.getKibanaBaseUrl()));
     }
 
     /**
@@ -45,10 +44,8 @@ public class ElasticBackendKibanaBaseUrlNotSetAdministrativeMonitor extends Admi
     public HttpResponse doAct(StaplerRequest req, StaplerResponse rsp) throws IOException {
         if (req.hasParameter("no")) {
             disable(true);
-            return HttpResponses.redirectToDot();
-        } else {
-            return HttpResponses.redirectViaContextPath("/configure");
         }
+        return HttpResponses.redirectViaContextPath("/configure");
     }
 
 
