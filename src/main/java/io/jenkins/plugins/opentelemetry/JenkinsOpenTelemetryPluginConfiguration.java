@@ -28,6 +28,8 @@ import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
 import net.sf.json.JSONObject;
+import org.jenkins.ui.icon.Icon;
+import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
@@ -62,11 +64,36 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
+import static io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend.ICONS_PREFIX;
 
 @Extension
 @Symbol("openTelemetry")
 public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration {
     private final static Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());
+
+    static {
+        IconSet.icons.addIcon(
+            new Icon(
+                "icon-otel icon-sm",
+                ICONS_PREFIX + "opentelemetry.svg",
+                Icon.ICON_SMALL_STYLE));
+        IconSet.icons.addIcon(
+            new Icon(
+                "icon-otel icon-md",
+                ICONS_PREFIX + "opentelemetry.svg",
+                Icon.ICON_MEDIUM_STYLE));
+        IconSet.icons.addIcon(
+            new Icon(
+                "icon-otel icon-lg",
+                ICONS_PREFIX + "opentelemetry.svg",
+                Icon.ICON_LARGE_STYLE));
+        IconSet.icons.addIcon(
+            new Icon(
+                "icon-otel icon-xlg",
+                ICONS_PREFIX + "opentelemetry.svg",
+                Icon.ICON_XLARGE_STYLE));
+    }
+
 
     /**
      * OTLP endpoint prefixed by "http://" or "https://"
@@ -531,7 +558,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                     new GStringTemplateEngine().createTemplate("https://plugins.jenkins.io/opentelemetry/"), // TODO better documentation URL
                     TemplateBindingsProvider.of(
                         ObservabilityBackend.TemplateBindings.BACKEND_NAME, "See documentation on missing logs visualization URL",
-                        ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/opentelemetry.png"));
+                        ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/svgs/opentelemetry.svg"));
             } catch (ClassNotFoundException | IOException e) {
                 throw new IllegalStateException(e);
             }

@@ -1,10 +1,16 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <t:summary icon="/plugin/opentelemetry/images/48x48/opentelemetry.png">
-      OpenTelemetry:
-      <j:forEach items="${it.links}" var="link" varStatus="loop">
-        <img src="${resURL}${link.iconUrl}" height="24px"/><a href="${link.url}" target="_blank">${link.label}</a>
-        <j:if test="${!loop.last}">, </j:if>
-      </j:forEach>
+  <t:summary icon="icon-otel icon-xlg">
+      OpenTelemetry
+      <ul class="jenkins-!-padding-left-0">
+          <j:forEach items="${it.links}" var="link" varStatus="loop">
+              <li style="list-style: none;">
+                  <span class="icon-lg">
+                      <l:icon src="${link.iconClass} icon-lg" />
+                  </span>
+                  <a class="jenkins-icon-adjacent" href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label}</a>
+              </li>
+          </j:forEach>
+      </ul>
   </t:summary>
 </j:jelly>
