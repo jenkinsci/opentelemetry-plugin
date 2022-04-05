@@ -3,7 +3,9 @@
 <td>
     <j:forEach items="${it.getLinks(job)}" var="link" varStatus="loop">
         <span class="icon-md">
-            <l:icon class="${link.iconClass} icon-md" tooltip="${link.label}" />
+            <a href="${link.url}" target="_blank">
+                <l:icon class="${link.iconClass} icon-md" tooltip="${link.label}" />
+            </a>
         </span>
     </j:forEach>
 </td>
