@@ -121,7 +121,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
             return Collections.singletonList(new ObservabilityBackendLink(
                 "Please define an OpenTelemetry Visualisation URL of pipelines in Jenkins configuration",
                 Jenkins.get().getRootUrl() + "/configure",
-                "icon-gear",
+                "icon-gear2",
                 null));
         }
         Map<String, Object> binding = new HashMap<>();

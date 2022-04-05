@@ -32,7 +32,10 @@ public class OpenTelemetryRootAction implements RootAction {
 
     @Override
     public String getIconFileName() {
-        return getFirstMetricsCapableObservabilityBackend().map(ObservabilityBackend::getIconPath).orElse(null);
+        return getFirstMetricsCapableObservabilityBackend()
+            .map(ObservabilityBackend::getIconPath)
+            .map(icon -> icon + " icon-md")
+            .orElse(null);
     }
 
     @Override
