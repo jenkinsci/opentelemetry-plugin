@@ -19,6 +19,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.logs.LogBuilder;
 import io.opentelemetry.sdk.logs.data.Severity;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import jenkins.scm.api.SCMEvent;
 import jenkins.security.SecurityListener;
 import org.acegisecurity.userdetails.UserDetails;
 import org.kohsuke.stapler.Stapler;

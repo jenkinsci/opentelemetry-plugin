@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 public abstract class ObservabilityBackend implements Describable<ObservabilityBackend>, ExtensionPoint, TemplateBindingsProvider {
     private final static Logger LOGGER = Logger.getLogger(ObservabilityBackend.class.getName());
 
+    public static final String ICONS_PREFIX = "plugin/opentelemetry/images/svgs/";
+
     private String name;
 
     @CheckForNull

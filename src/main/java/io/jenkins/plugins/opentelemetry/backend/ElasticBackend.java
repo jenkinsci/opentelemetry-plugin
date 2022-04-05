@@ -11,6 +11,8 @@ import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import org.apache.commons.lang.StringUtils;
+import org.jenkins.ui.icon.Icon;
+import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -42,6 +44,29 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
     public static final String DEFAULT_KIBANA_SPACE_IDENTIFIER = "";
     public static final String DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS = "title=${kibanaDashboardTitle}&" +
         "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
+
+    static {
+        IconSet.icons.addIcon(
+            new Icon(
+                "icon-otel-elastic icon-sm",
+                ICONS_PREFIX + "elastic.svg",
+                Icon.ICON_SMALL_STYLE));
+        IconSet.icons.addIcon(
+            new Icon(
+                "icon-otel-elastic icon-md",
+                ICONS_PREFIX + "elastic.svg",
+                Icon.ICON_MEDIUM_STYLE));
+        IconSet.icons.addIcon(
+            new Icon(
+                "icon-otel-elastic icon-lg",
+                ICONS_PREFIX + "elastic.svg",
+                Icon.ICON_LARGE_STYLE));
+        IconSet.icons.addIcon(
+            new Icon(
+                "icon-otel-elastic icon-xlg",
+                ICONS_PREFIX + "elastic.svg",
+                Icon.ICON_XLARGE_STYLE));
+    }
 
     private boolean displayKibanaDashboardLink;
 
@@ -110,7 +135,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
     @CheckForNull
     @Override
     public String getIconPath() {
-        return "/plugin/opentelemetry/images/48x48/elastic.png";
+        return "icon-otel-elastic";
     }
 
     @CheckForNull

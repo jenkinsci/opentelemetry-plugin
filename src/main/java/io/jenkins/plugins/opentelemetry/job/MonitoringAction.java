@@ -121,7 +121,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
             return Collections.singletonList(new ObservabilityBackendLink(
                 "Please define an OpenTelemetry Visualisation URL of pipelines in Jenkins configuration",
                 Jenkins.get().getRootUrl() + "/configure",
-                "/images/48x48/gear2.png",
+                "icon-gear2",
                 null));
         }
         Map<String, Object> binding = new HashMap<>();
@@ -152,13 +152,13 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
     public static class ObservabilityBackendLink {
         final String label;
         final String url;
-        final String iconUrl;
+        final String iconClass;
         final String environmentVariableName;
 
-        public ObservabilityBackendLink(String label, String url, String iconUrl, String environmentVariableName) {
+        public ObservabilityBackendLink(String label, String url, String iconClass, String environmentVariableName) {
             this.label = label;
             this.url = url;
-            this.iconUrl = iconUrl;
+            this.iconClass = iconClass;
             this.environmentVariableName = environmentVariableName;
         }
 
@@ -170,8 +170,8 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
             return url;
         }
 
-        public String getIconUrl() {
-            return iconUrl;
+        public String getIconClass() {
+            return iconClass;
         }
 
         public String getEnvironmentVariableName() {
@@ -183,7 +183,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
             return "ObservabilityBackendLink{" +
                 "label='" + label + '\'' +
                 ", url='" + url + '\'' +
-                ", iconUrl='" + iconUrl + '\'' +
+                ", iconUrl='" + iconClass + '\'' +
                 ", environmentVariableName='" + environmentVariableName + '\'' +
                 '}';
         }

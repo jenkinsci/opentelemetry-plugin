@@ -61,7 +61,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     @CheckForNull
     @Override
     public String getIconPath() {
-        return "/images/24x24/monitor.png";
+        return "icon-monitor";
     }
 
     @CheckForNull
@@ -101,7 +101,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     public Map<String, String> getBindings() {
         Map<String, String> bindings = new LinkedHashMap<>();
         bindings.put(ElasticBackend.TemplateBindings.BACKEND_NAME, getName());
-        bindings.put(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/opentelemetry.png");
+        bindings.put(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/svgs/opentelemetry.svg");
 
         return bindings;
     }

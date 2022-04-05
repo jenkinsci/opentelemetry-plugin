@@ -22,25 +22,33 @@ public class OpenTelemetryRootAction implements RootAction {
     private OpenTelemetrySdkProvider openTelemetrySdkProvider;
 
     public Optional<ObservabilityBackend> getFirstMetricsCapableObservabilityBackend() {
-        final Optional<ObservabilityBackend> observabilityBackend = Optional.ofNullable(pluginConfiguration.getObservabilityBackends().stream().filter(backend -> backend.getMetricsVisualizationUrlTemplate() != null).findFirst().orElse(null));
+        final Optional<ObservabilityBackend> observabilityBackend = pluginConfiguration.getObservabilityBackends()
+            .stream()
+            .filter(backend -> backend.getMetricsVisualizationUrlTemplate() != null)
+            .findFirst();
         logger.log(Level.FINE, () -> "OpenTelemetryRootAction.observabilityBackend: " + observabilityBackend);
         return observabilityBackend;
     }
 
     @Override
     public String getIconFileName() {
-        return getFirstMetricsCapableObservabilityBackend().map(backend -> backend.getIconPath()).orElse(null);
+        return getFirstMetricsCapableObservabilityBackend()
+            .map(ObservabilityBackend::getIconPath)
+            .map(icon -> icon + " icon-md")
+            .orElse(null);
     }
 
     @Override
     public String getDisplayName() {
-        return getFirstMetricsCapableObservabilityBackend().map(backend -> backend.getName()).orElse(null);
+        return getFirstMetricsCapableObservabilityBackend().map(ObservabilityBackend::getName).orElse(null);
     }
 
     @Override
     public String getUrlName() {
         // TODO we could keep in cache this URL
-        return getFirstMetricsCapableObservabilityBackend().map(backend -> backend.getMetricsVisualizationUrl(this.openTelemetrySdkProvider.getResource())).orElse(null);
+        return getFirstMetricsCapableObservabilityBackend()
+            .map(backend -> backend.getMetricsVisualizationUrl(this.openTelemetrySdkProvider.getResource()))
+            .orElse(null);
     }
 
     @Inject
