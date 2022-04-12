@@ -17,6 +17,7 @@ import jenkins.model.Jenkins;
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,51 +40,34 @@ public class MonitoringQueueListener extends QueueListener {
     public void postConstruct() {
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_WAITING)
             .ofLongs()
-            .setDescription("Number of waiting items in queue")
+            .setDescription("Number of tasks in the queue with the status 'waiting', 'buildable' or 'pending'")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getUnblockedItemsSize()));
+            .buildWithCallback(valueObserver -> valueObserver.record((long)
+                Optional.ofNullable(Jenkins.getInstanceOrNull()).map(j -> j.getQueue()).
+                    map(q -> q.getUnblockedItems().size()).orElse(0)));
+
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BLOCKED)
             .ofLongs()
-            .setDescription("Number of blocked items in queue")
+            .setDescription("Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked")
             .setUnit("1")
             .buildWithCallback(valueObserver -> valueObserver.record(this.blockedItemGauge.longValue()));
+
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BUILDABLE)
             .ofLongs()
-            .setDescription("Number of buildable items in queue")
+            .setDescription("Number of tasks in the queue with the status 'buildable' or 'pending'")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getBuildableItemsSize()));
+            .buildWithCallback(valueObserver -> valueObserver.record((long)
+                Optional.ofNullable(Jenkins.getInstanceOrNull()).map(j -> j.getQueue()).
+                    map(q -> q.countBuildableItems()).orElse(0)));
+
         leftItemCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_LEFT)
-            .setDescription("Total count of left items")
+            .setDescription("Total count of tasks that have been processed")
             .setUnit("1")
             .build();
         timeInQueueInMillisCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_TIME_SPENT_MILLIS)
-            .setDescription("Total time spent in queue by items")
+            .setDescription("Total time spent in queue by the tasks that have been processed")
             .setUnit("ms")
             .build();
-    }
-
-    private long getUnblockedItemsSize() {
-        final Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins == null) {
-            return 0;
-        }
-        final Queue queue = jenkins.getQueue();
-        if (queue == null) {
-            return 0;
-        }
-        return queue.getUnblockedItems().size();
-    }
-
-    private long getBuildableItemsSize() {
-        final Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins == null) {
-            return 0;
-        }
-        final Queue queue = jenkins.getQueue();
-        if (queue == null) {
-            return 0;
-        }
-        return queue.getBuildableItems().size();
     }
 
     @Override
@@ -100,7 +84,7 @@ public class MonitoringQueueListener extends QueueListener {
     public void onLeft(Queue.LeftItem li) {
         this.leftItemCounter.add(1);
         this.timeInQueueInMillisCounter.add(System.currentTimeMillis() - li.getInQueueSince());
-        LOGGER.log(Level.FINE, () -> "onLeft(): " + li.toString());
+        LOGGER.log(Level.FINE, () -> "onLeft(): " + li);
     }
 
     /**
