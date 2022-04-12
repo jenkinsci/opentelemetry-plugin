@@ -30,6 +30,7 @@ unclassified:
     exportOtelConfigurationAsEnvironmentVariables: true  # Note that OpenTelemetry credentials, if configured, will be exposed as environment variables
     observabilityBackends:
     - elastic:
+        displayKibanaDashboardLink: true
         kibanaBaseUrl: "http://localhost:5601"
         name: "Elastic Observability"
 jobs:
