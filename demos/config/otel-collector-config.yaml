@@ -48,3 +48,6 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [logging, prometheus, otlp/elastic]
+    logs:
+      receivers: [otlp]
+      exporters: [logging, otlp/elastic]
