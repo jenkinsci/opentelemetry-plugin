@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := start
 
 export OTELCOL_IMG?=otel/opentelemetry-collector-contrib-dev:latest
-export ELASTIC_STACK_VERSION?=7.14.1
+export ELASTIC_STACK_VERSION?=8.1.2
 
 .PHONY: build
 build:
