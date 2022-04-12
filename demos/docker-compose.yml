@@ -60,6 +60,8 @@ services:
       - cluster.routing.allocation.disk.threshold_enabled=false
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+      - xpack.license.self_generated.type=trial
     ulimits:
       memlock:
         hard: -1
@@ -73,7 +75,7 @@ services:
     healthcheck:
       interval: 10s
       retries: 20
-      test: curl -s http://localhost:9200/_cluster/health | grep -vq '"status":"red"'
+      test: curl -s -k http://localhost:9200/_cluster/health | grep -vq '"status":"red"'
 
   kibana:
     image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-8.1.2}
