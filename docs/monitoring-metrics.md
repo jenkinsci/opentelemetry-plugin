@@ -30,11 +30,11 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
 | ci.pipeline.run.started          | 1     |            |                   | Job started |
 | ci.pipeline.run.completed        | 1     |            |                   | Job completed |
 | ci.pipeline.run.aborted          | 1     |            |                   | Job aborted |
-| jenkins.queue.waiting            | 1     |            |                   | Number of waiting tasks in the queue that are not blocked. tasks with status `waiting` or `buildable` or `pending` (see `Queue#getUnblockedItems()`) |
-| jenkins.queue.blocked            | 1     |            |                   | Number of blocked tasks in the queue (see `QueueListener#onEnterBlocked - QueueListener#onLeaveBlocked`) |
-| jenkins.queue.buildable          | 1     |            |                   | Number of buildable tasks in queue. Tasks that are in the queue and that are not blocked (see `Queue#getBuildableItems()`) |
-| jenkins.queue.left               | 1     |            |                   | Total count of tasks that have been process and are no longer in the build queue |
-| jenkins.queue.time_spent_millis  | ms    |            |                   | Total time spent in queue by items |
+| jenkins.queue.waiting            | 1     |            |                   | Number of tasks in the queue with the status 'buildable' or 'pending' (see `Queue#getUnblockedItems()`) |
+| jenkins.queue.blocked            | 1     |            |                   | Number of blocked tasks in the queue. Not that waiting for an executor to be available is not a reason to be counted as blocked. (see `QueueListener#onEnterBlocked - QueueListener#onLeaveBlocked`) |
+| jenkins.queue.buildable          | 1     |            |                   | Number of tasks in the queue with the status 'buildable' or 'pending' (see `Queue#getBuildableItems()`) |
+| jenkins.queue.left               | 1     |            |                   | Total count of tasks that have been processed |
+| jenkins.queue.time_spent_millis  | ms    |            |                   | Total time spent in queue by the tasks that have been processed |
 | jenkins.agents.total             | 1     |            |                   | Number of agents|
 | jenkins.agents.online            | 1     |            |                   | Number of online agents |
 | jenkins.agents.offline           | 1     |            |                   | Number of offline agents |
