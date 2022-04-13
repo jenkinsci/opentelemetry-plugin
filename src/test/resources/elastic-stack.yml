@@ -77,10 +77,3 @@ services:
             FLEET_SERVER_ELASTICSEARCH_INSECURE: "1"
             FLEET_SERVER_SERVICE_TOKEN: AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL2VsYXN0aWMtcGFja2FnZS1mbGVldC1zZXJ2ZXItdG9rZW46bmgtcFhoQzRRQ2FXbms2U0JySGlWQQ
             KIBANA_FLEET_SERVICE_TOKEN: AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL2VsYXN0aWMtcGFja2FnZS1mbGVldC1zZXJ2ZXItdG9rZW46bmgtcFhoQzRRQ2FXbms2U0JySGlWQQ
-
-    wait:
-        image: busybox
-        depends_on:
-            elasticsearch: { condition: service_healthy }
-            kibana: { condition: service_healthy }
-            fleet-server: { condition: service_healthy }
