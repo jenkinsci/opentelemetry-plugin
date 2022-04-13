@@ -23,7 +23,7 @@ exporters:
       insecure: true
 
   otlp/elastic:
-    endpoint: "apm-server:8200"
+    endpoint: "fleet-server:8200"
     tls:
       insecure: true
 
