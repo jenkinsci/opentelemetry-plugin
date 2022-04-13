@@ -21,7 +21,7 @@ services:
             - "xpack.security.authc.api_key.enabled=true"
             - "logger.org.elasticsearch=${ES_LOG_LEVEL:-error}"
             - "action.destructive_requires_name=false"
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.1.0-SNAPSHOT
+        image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-8.1.2}
         ports:
             - "9200"
         healthcheck:
@@ -35,15 +35,12 @@ services:
             - "./elasticsearch/service_tokens:/usr/share/elasticsearch/config/service_tokens"
 
     kibana:
-        depends_on:
-            elasticsearch:
-                condition: service_healthy
         environment:
             ELASTICSEARCH_HOSTS: http://elasticsearch:9200
             ELASTICSEARCH_USERNAME: "${KIBANA_ES_USER:-kibana_system_user}"
             ELASTICSEARCH_PASSWORD: "${KIBANA_ES_PASS:-changeme}"
             STATUS_ALLOWANONYMOUS: 'true'
-        image: docker.elastic.co/kibana/kibana:8.1.0-SNAPSHOT
+        image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-8.1.2}
         ports:
             - "5601:5601"
         volumes:
@@ -54,7 +51,7 @@ services:
             test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q 'All services are available'"]
 
     fleet-server:
-        image: docker.elastic.co/beats/elastic-agent:8.1.0-SNAPSHOT
+        image: docker.elastic.co/beats/elastic-agent:${ELASTIC_STACK_VERSION:-8.1.2}
         privileged: true
         entrypoint: "/bin/bash"
         command:
@@ -80,9 +77,6 @@ services:
             FLEET_SERVER_ELASTICSEARCH_INSECURE: "1"
             FLEET_SERVER_SERVICE_TOKEN: AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL2VsYXN0aWMtcGFja2FnZS1mbGVldC1zZXJ2ZXItdG9rZW46bmgtcFhoQzRRQ2FXbms2U0JySGlWQQ
             KIBANA_FLEET_SERVICE_TOKEN: AAEAAWVsYXN0aWMvZmxlZXQtc2VydmVyL2VsYXN0aWMtcGFja2FnZS1mbGVldC1zZXJ2ZXItdG9rZW46bmgtcFhoQzRRQ2FXbms2U0JySGlWQQ
-        depends_on:
-            elasticsearch: { condition: service_healthy }
-            kibana: { condition: service_healthy }
 
     wait:
         image: busybox
