@@ -23,7 +23,7 @@ exporters:
       insecure: true
 
   otlp/elastic:
-    endpoint: "apm-server:8200"
+    endpoint: "fleet-server:8200"
     tls:
       insecure: true
 
@@ -48,3 +48,6 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [logging, prometheus, otlp/elastic]
+    logs:
+      receivers: [otlp]
+      exporters: [logging, otlp/elastic]
