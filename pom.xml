@@ -39,7 +39,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.289.x</artifactId>
-                <version>1246.va_b_50630c1d19</version>
+                <version>1280.vd669827e38cd</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -271,7 +271,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>scm-api</artifactId>
-            <version>596.v47ec118b_0c3a_</version> <!-- TODO https://github.com/jenkinsci/scm-api-plugin/pull/127 -->
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
