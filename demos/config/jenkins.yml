@@ -23,6 +23,16 @@ jenkins:
       numExecutors: 2
       remoteFS: "/tmp"
       retentionStrategy: "always"
+credentials:
+  system:
+    domainCredentials:
+    - credentials:
+      - usernamePassword:
+          description: "elasticsearch-logs"
+          id: "elasticsearch-logs"
+          password: "changeme"
+          scope: GLOBAL
+          username: "admin"
 unclassified:
   openTelemetry:
     authentication: "noAuthentication"
@@ -30,6 +40,11 @@ unclassified:
     exportOtelConfigurationAsEnvironmentVariables: true  # Note that OpenTelemetry credentials, if configured, will be exposed as environment variables
     observabilityBackends:
     - elastic:
+        displayKibanaDashboardLink: true
+        elasticLogsBackend:
+          elasticLogsBackendWithJenkinsVisualization:
+            elasticsearchCredentialsId: "elasticsearch-logs"
+            elasticsearchUrl: "http://elasticsearch:9200"
         kibanaBaseUrl: "http://localhost:5601"
         name: "Elastic Observability"
 jobs:
