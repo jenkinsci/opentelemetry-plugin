@@ -39,7 +39,7 @@ public class GitHubClientMonitoring {
 
     @Initializer(after = InitMilestone.JOB_CONFIG_ADAPTED)
     public void initialize() {
-        final AttributeKey<String> GITHUB_API_URL = AttributeKey.stringKey("github_api_url");
+        final AttributeKey<String> GITHUB_API_URL = AttributeKey.stringKey("github.api.url");
 
         try {
             Field connectorReverseLookupField = Connector.class.getDeclaredField("reverseLookup");
