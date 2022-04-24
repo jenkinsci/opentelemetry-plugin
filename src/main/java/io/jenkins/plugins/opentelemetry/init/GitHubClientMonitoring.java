@@ -13,6 +13,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
 import org.jenkinsci.plugins.github_branch_source.Connector;
 import org.kohsuke.github.GHRateLimit;
@@ -41,31 +42,46 @@ public class GitHubClientMonitoring {
         final AttributeKey<String> GITHUB_API_URL = AttributeKey.stringKey("github_api_url");
 
         try {
-            Field reverseLookupField = Connector.class.getDeclaredField("reverseLookup");
-            reverseLookupField.setAccessible(true);
-            if (!Modifier.isStatic(reverseLookupField.getModifiers())) {
-                throw new IllegalStateException("Connector#reverseLookup is NOT a static field: " + reverseLookupField);
+            Field connectorReverseLookupField = Connector.class.getDeclaredField("reverseLookup");
+            connectorReverseLookupField.setAccessible(true);
+            Field githubGithubClientField = GitHub.class.getDeclaredField("client");
+            githubGithubClientField.setAccessible(true);
+            Field gitHubClientLoginField = Class.forName("org.kohsuke.github.GitHubClient").getDeclaredField("login");
+            gitHubClientLoginField.setAccessible(true);
+
+            if (!Modifier.isStatic(connectorReverseLookupField.getModifiers())) {
+                throw new IllegalStateException("Connector#reverseLookup is NOT a static field: " + connectorReverseLookupField);
             }
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_GITHUB_API_RATE_LIMIT_REMAINING_REQUESTS)
                 .ofLongs()
                 .setDescription("GitHub Repository API rate limit remaining requests")
                 .setUnit("1")
-                .buildWithCallback(c -> {
+                .buildWithCallback(gauge -> {
                     logger.log(Level.FINE, () -> "Collect GitHub client API rate limit metrics");
                     try {
-                        Map<GitHub, ?> reverseLookup = (Map<GitHub, ?>) reverseLookupField.get(null);
+                        Map<GitHub, ?> reverseLookup = (Map<GitHub, ?>) connectorReverseLookupField.get(null);
                         reverseLookup.keySet().forEach(gitHub -> {
-                            GHRateLimit ghRateLimit = gitHub.lastRateLimit();
-                            logger.log(Level.FINER, () -> "Collect GitHub API " + gitHub.getApiUrl() +
-                                ": rateLimit.remaining:" + ghRateLimit.getRemaining());
-                            c.record(ghRateLimit.getRemaining(), Attributes.of(GITHUB_API_URL, gitHub.getApiUrl()));
+                            try {
+                                GHRateLimit ghRateLimit = gitHub.lastRateLimit();
+                                Object githubClient = githubGithubClientField.get(gitHub);
+                                String login = (String) gitHubClientLoginField.get(githubClient);
+                                logger.log(Level.FINER, () -> "Collect GitHub API " + gitHub.getApiUrl() + ", login: " +
+                                    login + ": rateLimit.remaining:" + ghRateLimit.getRemaining());
+                                gauge.record(
+                                    ghRateLimit.getRemaining(),
+                                    Attributes.of(
+                                        GITHUB_API_URL, gitHub.getApiUrl(),
+                                        SemanticAttributes.ENDUSER_ID, login));
+                            } catch (IllegalAccessException e) {
+                                throw new RuntimeException(e);
+                            }
                         });
                     } catch (IllegalAccessException e) {
                         throw new RuntimeException(e);
                     }
                 });
             logger.log(Level.FINE, "GitHub client monitoring initialized");
-        } catch (NoSuchFieldException e) {
+        } catch (NoSuchFieldException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
