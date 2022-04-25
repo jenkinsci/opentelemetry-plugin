@@ -61,7 +61,7 @@ public class GitHubClientMonitoring {
                         reverseLookup.keySet().forEach(gitHub -> {
                             GHRateLimit ghRateLimit = gitHub.lastRateLimit();
                             try {
-                                String login = gitHub.isAnonymous() ? "#annonymous#" : gitHub.getMyself().getLogin();
+                                String login = gitHub.isAnonymous() ? "#anonymous#" : gitHub.getMyself().getLogin();
                                 logger.log(Level.FINER, () -> "Collect GitHub API " + gitHub.getApiUrl() + ", login: " +
                                     login + ": rateLimit.remaining:" + ghRateLimit.getRemaining());
                                 gauge.record(
