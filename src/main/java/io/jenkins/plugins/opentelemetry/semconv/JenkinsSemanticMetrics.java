@@ -26,6 +26,11 @@ public class JenkinsSemanticMetrics {
 
     public static final String JENKINS_GITHUB_API_RATE_LIMIT_REMAINING_REQUESTS =           "jenkins.github.api.rate_limit.remaining_requests";
 
+    public static final String JENKINS_SCM_EVENT_POOL_SIZE =         "jenkins.scm.event.pool_size";
+    public static final String JENKINS_SCM_EVENT_ACTIVE_THREADS =    "jenkins.scm.event.active_threads";
+    public static final String JENKINS_SCM_EVENT_QUEUED_TASKS =      "jenkins.scm.event.queued_tasks";
+    public static final String JENKINS_SCM_EVENT_COMPLETED_TASKS =   "jenkins.scm.event.completed_tasks";
+
 
     public static final String LOGIN =           "login";
     public static final String LOGIN_SUCCESS =   "login_success";
