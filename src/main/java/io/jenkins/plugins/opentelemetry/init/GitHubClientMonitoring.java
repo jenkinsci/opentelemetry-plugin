@@ -21,6 +21,7 @@ import org.kohsuke.github.GitHub;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Map;
@@ -44,14 +45,11 @@ public class GitHubClientMonitoring {
         try {
             Field connectorReverseLookupField = Connector.class.getDeclaredField("reverseLookup");
             connectorReverseLookupField.setAccessible(true);
-            Field githubGithubClientField = GitHub.class.getDeclaredField("client");
-            githubGithubClientField.setAccessible(true);
-            Field gitHubClientLoginField = Class.forName("org.kohsuke.github.GitHubClient").getDeclaredField("login");
-            gitHubClientLoginField.setAccessible(true);
 
             if (!Modifier.isStatic(connectorReverseLookupField.getModifiers())) {
                 throw new IllegalStateException("Connector#reverseLookup is NOT a static field: " + connectorReverseLookupField);
             }
+
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_GITHUB_API_RATE_LIMIT_REMAINING_REQUESTS)
                 .ofLongs()
                 .setDescription("GitHub Repository API rate limit remaining requests")
@@ -61,10 +59,9 @@ public class GitHubClientMonitoring {
                     try {
                         Map<GitHub, ?> reverseLookup = (Map<GitHub, ?>) connectorReverseLookupField.get(null);
                         reverseLookup.keySet().forEach(gitHub -> {
+                            GHRateLimit ghRateLimit = gitHub.lastRateLimit();
                             try {
-                                GHRateLimit ghRateLimit = gitHub.lastRateLimit();
-                                Object githubClient = githubGithubClientField.get(gitHub);
-                                String login = (String) gitHubClientLoginField.get(githubClient);
+                                String login = gitHub.isAnonymous() ? "#annonymous#" : gitHub.getMyself().getLogin();
                                 logger.log(Level.FINER, () -> "Collect GitHub API " + gitHub.getApiUrl() + ", login: " +
                                     login + ": rateLimit.remaining:" + ghRateLimit.getRemaining());
                                 gauge.record(
@@ -72,7 +69,7 @@ public class GitHubClientMonitoring {
                                     Attributes.of(
                                         GITHUB_API_URL, gitHub.getApiUrl(),
                                         SemanticAttributes.ENDUSER_ID, login));
-                            } catch (IllegalAccessException e) {
+                            } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
                         });
@@ -81,7 +78,7 @@ public class GitHubClientMonitoring {
                     }
                 });
             logger.log(Level.FINE, "GitHub client monitoring initialized");
-        } catch (NoSuchFieldException | ClassNotFoundException e) {
+        } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
     }
