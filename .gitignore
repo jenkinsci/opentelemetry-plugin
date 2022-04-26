@@ -47,6 +47,9 @@ bin/
 .prometheus-otel/
 *.log
 
+*.pem
+
+
 private/
 
 # For demos
