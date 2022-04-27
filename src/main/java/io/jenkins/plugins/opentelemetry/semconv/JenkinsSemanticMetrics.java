@@ -24,7 +24,6 @@ public class JenkinsSemanticMetrics {
     public static final String JENKINS_CLOUD_AGENTS_COMPLETED =     "jenkins.cloud.agents.completed";
     public static final String JENKINS_DISK_USAGE_BYTES =           "jenkins.disk.usage.bytes";
 
-    public static final String JENKINS_GITHUB_API_RATE_LIMIT_REMAINING_REQUESTS =           "jenkins.github.api.rate_limit.remaining_requests";
 
 
     public static final String LOGIN =           "login";
