@@ -10,7 +10,6 @@ import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -35,7 +34,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.jenkins.plugins.opentelemetry.semconv.GitHubSemanticAttributes.*;
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.JENKINS_CREDENTIALS_ID;
 
 /**
  * This implementation of the monitoring of the GitHub client relies on a hack with Java reflection to access a private
@@ -52,7 +50,9 @@ public class GitHubClientMonitoring {
     private final Class<?> credentialsTokenProviderClass;
     private final Field credentialsTokenProvider_credentialsField;
 
-    private final Field jwtTokenProvider_applicationIdField;
+    private Field dependentAuthorizationProvider_gitHubField;
+
+    private final Class<?> authorizationRefreshGitHubWrapperClass;
 
     private final Map<GitHub, ?> reverseLookup;
 
@@ -75,8 +75,10 @@ public class GitHubClientMonitoring {
             Preconditions.checkState(GitHubAppCredentials.class.isAssignableFrom(credentialsTokenProvider_credentialsField.getType()),
                 "Unsupported type for credentialsTokenProvider.credentials. Expected GitHubAppCredentials, current %s", credentialsTokenProvider_credentialsField);
 
-            jwtTokenProvider_applicationIdField = JWTTokenProvider.class.getDeclaredField("applicationId");
-            jwtTokenProvider_applicationIdField.setAccessible(true);
+            dependentAuthorizationProvider_gitHubField = GitHub.DependentAuthorizationProvider.class.getDeclaredField("gitHub");
+            dependentAuthorizationProvider_gitHubField.setAccessible(true);
+
+            authorizationRefreshGitHubWrapperClass = Class.forName("org.kohsuke.github.GitHub$AuthorizationRefreshGitHubWrapper");
 
             reverseLookup = (Map<GitHub, ?>) connector_reverseLookupField.get(null);
         } catch (IllegalAccessException | NoSuchFieldException | ClassNotFoundException e) {
@@ -115,17 +117,21 @@ public class GitHubClientMonitoring {
                             } else if (credentialsTokenProviderClass.isAssignableFrom(authorizationProvider.getClass())) {
                                 GitHubAppCredentials credentials = (GitHubAppCredentials) credentialsTokenProvider_credentialsField.get(authorizationProvider);
                                 attributesBuilder.put(GITHUB_APP_ID, credentials.getAppID());
-                                attributesBuilder.put(JENKINS_CREDENTIALS_ID, credentials.getId());
-                                gitHub.getApp().getName();
-                                authentication = "app:id=" + credentials.getAppID();
+                                GitHub jwtTokenBasedGitHub = (GitHub) dependentAuthorizationProvider_gitHubField.get(authorizationProvider);
+                                String gitHubAppName;
+                                if (authorizationRefreshGitHubWrapperClass.isAssignableFrom(jwtTokenBasedGitHub.getClass())) {
+                                    // The GitHub client lib uses a caching mechanism specified in org.jenkinsci.plugins.github_branch_source.Connector.connect()
+                                    gitHubAppName = jwtTokenBasedGitHub.getApp().getName();
+                                    attributesBuilder.put(GITHUB_APP_NAME, gitHubAppName);
+                                } else {
+                                    logger.log(Level.INFO, "Unexpected credentialsTokenProvider with internal GitHub of type " + jwtTokenBasedGitHub);
+                                    gitHubAppName= "#unknown#";
+                                }
+                                authentication = "app:id=" + credentials.getAppID()+ ",name=" + gitHubAppName.replace(",", "\\,");
                                 if (credentials.getOwner() != null) {
                                     attributesBuilder.put(GITHUB_APP_OWNER, credentials.getOwner());
                                     authentication += ",owner=" + credentials.getOwner();
                                 }
-                            } else if (authorizationProvider instanceof JWTTokenProvider) {
-                                String applicationId = (String) jwtTokenProvider_applicationIdField.get(authorizationProvider);
-                                attributesBuilder.put(GITHUB_APP_ID, applicationId);
-                                authentication = "jwtToken:applicationId=" + applicationId;
                             } else {
                                 authentication = authorizationProvider.getClass() + ":" + System.identityHashCode(authorizationProvider);
                             }
