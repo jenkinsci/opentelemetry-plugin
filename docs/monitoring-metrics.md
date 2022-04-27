@@ -75,35 +75,35 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td>1</td>
         <td></td>
         <td></td>
-        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see [`Queue#getUnblockedItems()`](https://javadoc.jenkins.io/hudson/model/Queue.html#getUnblockedItems--))</td>
+        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see <a href="https://javadoc.jenkins.io/hudson/model/Queue.html#getUnblockedItems--">`Queue#getUnblockedItems()`</a>)</td>
     </tr>
     <tr>
         <td>jenkins.queue.blocked</td>
         <td>1</td>
         <td></td>
         <td></td>
-        <td>Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked. (see [`QueueListener#onEnterBlocked() - QueueListener#onLeaveBlocked()`](https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html))</td>
+        <td>Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked. (see <a href="https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html">`QueueListener#onEnterBlocked() - QueueListener#onLeaveBlocked()`</a>)</td>
     </tr>
     <tr>
         <td>jenkins.queue.buildable</td>
         <td>1</td>
         <td></td>
         <td></td>
-        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see [`Queue#getBuildableItems()`](https://javadoc.jenkins.io/hudson/model/Queue.html#getBuildableItems--))</td>
+        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see <a href="https://javadoc.jenkins.io/hudson/model/Queue.html#getBuildableItems--">`Queue#getBuildableItems()`]</a>)</td>
     </tr>
     <tr>
         <td>jenkins.queue.left</td>
         <td>1</td>
         <td></td>
         <td></td>
-        <td>Total count of tasks that have been processed (see [`QueueListener#onLeft`](https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html#onLeft-hudson.model.Queue.LeftItem-)-</td>
+        <td>Total count of tasks that have been processed (see [`QueueListener#onLeft`]()-</td>
     </tr>
     <tr>
         <td>jenkins.queue.time_spent_millis</td>
         <td>ms</td>
         <td></td>
         <td></td>
-        <td>Total time spent in queue by the tasks that have been processed (see [`QueueListener#onLeft`](https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html#onLeft-hudson.model.Queue.LeftItem-) and [`Item#getInQueueSince`](https://javadoc.jenkins.io/hudson/model/Queue.Item.html#getInQueueSince--))</td>
+        <td>Total time spent in queue by the tasks that have been processed (see <a href="https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html#onLeft-hudson.model.Queue.LeftItem-">`QueueListener#onLeft()`</a> and <a href="https://javadoc.jenkins.io/hudson/model/Queue.Item.html#getInQueueSince--">`Item#getInQueueSince()`</a>)</td>
     </tr>
     <tr>
         <td>jenkins.disk.usage.bytes</td>
@@ -194,7 +194,7 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
          <li>github.app.id: `12345`, github.app.name: `My Jenkins App`, github.app.owner: `My Jenkins App`</li>
         </ul>
         </td>
-        <td>When using the GitHub Branch Source plugin, remaining requests for the authenticated GitHub user/app according to the [GitHub API Rate Limit](https://docs.github.com/en/rest/rate-limit)</td>
+        <td>When using the GitHub Branch Source plugin, remaining requests for the authenticated GitHub user/app according to the <a href="https://docs.github.com/en/rest/rate-limit">GitHub API Rate Limit</a></td>
     </tr>
     <tr>
         <td>jenkins.scm.event.pool_size</td>
@@ -244,21 +244,21 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td>1</td>
         <td>gc</td>
         <td>`G1 Young Generation`, `G1 Old Generation...`</td>
-        <td>see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html)</td>
+        <td>see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html">GarbageCollectorMXBean</a></td>
     </tr>
     <tr>
         <td>runtime.jvm.memory.area</td>
         <td>bytes</td>
         <td>type, area</td>
         <td>`used`, `committed`, `max`. &lt;br/&gt; `heap`, `non_heap`</td>
-        <td>see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html)</td>
+        <td>see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html">MemoryUsage</a></td>
     </tr>
     <tr>
         <td>runtime.jvm.memory.pool</td>
         <td>bytes</td>
         <td>type, pool</td>
         <td>`used`, `committed`, `max`. &lt;br/&gt; `PS Eden Space`, `G1 Old Gen...`</td>
-        <td>see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html)</td>
+        <td>see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html">MemoryUsage</a></td>
     </tr>
     <tr>
         <td>system.cpu.load</td>
