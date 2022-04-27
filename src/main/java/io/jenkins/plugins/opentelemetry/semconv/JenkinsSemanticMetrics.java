@@ -25,6 +25,7 @@ public class JenkinsSemanticMetrics {
     public static final String JENKINS_DISK_USAGE_BYTES =           "jenkins.disk.usage.bytes";
 
 
+
     public static final String LOGIN =           "login";
     public static final String LOGIN_SUCCESS =   "login_success";
     public static final String LOGIN_FAILURE =   "login_failure";

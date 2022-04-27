@@ -92,6 +92,8 @@ public final class JenkinsOtelSemanticAttributes {
 
     public static final AttributeKey<List<String>> JENKINS_STEP_INTERRUPTION_CAUSES = AttributeKey.stringArrayKey("jenkins.pipeline.step.interruption.causes");
 
+    public static final AttributeKey<String> JENKINS_CREDENTIALS_ID = AttributeKey.stringKey("jenkins.credentials.id");
+
     public static final String JENKINS = "jenkins";
 
     /**
