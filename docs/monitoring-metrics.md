@@ -1,6 +1,7 @@
 # Jenkins Monitoring Dashboards and Health Metrics
 
-Jenkins' metrics can be visualised with any OpenTelemetry compatible metrics solution such as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
+Jenkins' metrics can be visualised with any OpenTelemetry compatible metrics solution such
+as [Prometheus](https://prometheus.io/) or [Elastic Observability](https://www.elastic.co/observability)
 
 ## Jenkins Health Dashboards
 
@@ -11,9 +12,13 @@ _Example Kibana dashboard of the Jenkins and CI jobs health_
 
 ### Jenkins Health Dashboards with Elastic and Kibana
 
-Monitor Jenkins with Elastic Observability importing the dashboard definitions [jenkins-kibana-dashboards.ndjson](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/src/main/kibana/jenkins-kibana-dashboards.ndjson) in Kibana (v7.12+).
+Monitor Jenkins with Elastic Observability importing the dashboard
+definitions [jenkins-kibana-dashboards.ndjson](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/src/main/kibana/jenkins-kibana-dashboards.ndjson)
+in Kibana (v7.12+).
 
-Dashboards can be imported in Kibana using the Kibana GUI ([here](https://www.elastic.co/guide/en/kibana/7.12/managing-saved-objects.html#managing-saved-objects-export-objects)) or APIs ([here](https://www.elastic.co/guide/en/kibana/current/dashboard-import-api.html)).
+Dashboards can be imported in Kibana using the Kibana
+GUI ([here](https://www.elastic.co/guide/en/kibana/7.12/managing-saved-objects.html#managing-saved-objects-export-objects))
+or APIs ([here](https://www.elastic.co/guide/en/kibana/current/dashboard-import-api.html)).
 
 |  Jenkins and CI jobs health |  Jenkins Agent provisioning health |
 |------------------------------------------------|----------------------------------|
@@ -22,43 +27,298 @@ Dashboards can be imported in Kibana using the Kibana GUI ([here](https://www.el
 ## Jenkins Health Metrics
 
 Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
+<table>
+    <tr>
+        <th>Metric</th>
+        <th>Unit</th>
+        <th>Label / attribute key</th>
+        <th>Label / attribute value</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>ci.pipeline.run.active</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Gauge of active jobs</td>
+    </tr>
+    <tr>
+        <td>ci.pipeline.run.launched</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Job launched</td>
+    </tr>
+    <tr>
+        <td>ci.pipeline.run.started</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Job started</td>
+    </tr>
+    <tr>
+        <td>ci.pipeline.run.completed</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Job completed</td>
+    </tr>
+    <tr>
+        <td>ci.pipeline.run.aborted</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Job aborted</td>
+    </tr>
+    <tr>
+        <td>jenkins.queue.waiting</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see [`Queue#getUnblockedItems()`](https://javadoc.jenkins.io/hudson/model/Queue.html#getUnblockedItems--))</td>
+    </tr>
+    <tr>
+        <td>jenkins.queue.blocked</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked. (see [`QueueListener#onEnterBlocked() - QueueListener#onLeaveBlocked()`](https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html))</td>
+    </tr>
+    <tr>
+        <td>jenkins.queue.buildable</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see [`Queue#getBuildableItems()`](https://javadoc.jenkins.io/hudson/model/Queue.html#getBuildableItems--))</td>
+    </tr>
+    <tr>
+        <td>jenkins.queue.left</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Total count of tasks that have been processed (see [`QueueListener#onLeft`](https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html#onLeft-hudson.model.Queue.LeftItem-)-</td>
+    </tr>
+    <tr>
+        <td>jenkins.queue.time_spent_millis</td>
+        <td>ms</td>
+        <td></td>
+        <td></td>
+        <td>Total time spent in queue by the tasks that have been processed (see [`QueueListener#onLeft`](https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html#onLeft-hudson.model.Queue.LeftItem-) and [`Item#getInQueueSince`](https://javadoc.jenkins.io/hudson/model/Queue.Item.html#getInQueueSince--))</td>
+    </tr>
+    <tr>
+        <td>jenkins.disk.usage.bytes</td>
+        <td>By</td>
+        <td></td>
+        <td></td>
+        <td>Disk Usage size</td>
+    </tr>
+</table>
 
-| Metric                                           | Unit  | Label / attribute key                                                                               | Label / attribute value                                                                                                                                      | Description                                                                                                                                                                                                                                                                                                |
-|--------------------------------------------------|-------|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ci.pipeline.run.active                           | 1     |                                                                                                     |                                                                                                                                                              | Gauge of active jobs                                                                                                                                                                                                                                                                                       |
-| ci.pipeline.run.launched                         | 1     |                                                                                                     |                                                                                                                                                              | Job launched                                                                                                                                                                                                                                                                                               |
-| ci.pipeline.run.started                          | 1     |                                                                                                     |                                                                                                                                                              | Job started                                                                                                                                                                                                                                                                                                |
-| ci.pipeline.run.completed                        | 1     |                                                                                                     |                                                                                                                                                              | Job completed                                                                                                                                                                                                                                                                                              |
-| ci.pipeline.run.aborted                          | 1     |                                                                                                     |                                                                                                                                                              | Job aborted                                                                                                                                                                                                                                                                                                |
-| jenkins.queue.waiting                            | 1     |                                                                                                     |                                                                                                                                                              | Number of tasks in the queue with the status 'buildable' or 'pending' (see [`Queue#getUnblockedItems()`](https://javadoc.jenkins.io/hudson/model/Queue.html#getUnblockedItems--))                                                                                                                          |
-| jenkins.queue.blocked                            | 1     |                                                                                                     |                                                                                                                                                              | Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked. (see [`QueueListener#onEnterBlocked() - QueueListener#onLeaveBlocked()`](https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html))                              |
-| jenkins.queue.buildable                          | 1     |                                                                                                     |                                                                                                                                                              | Number of tasks in the queue with the status 'buildable' or 'pending' (see [`Queue#getBuildableItems()`](https://javadoc.jenkins.io/hudson/model/Queue.html#getBuildableItems--))                                                                                                                          |
-| jenkins.queue.left                               | 1     |                                                                                                     |                                                                                                                                                              | Total count of tasks that have been processed (see [`QueueListener#onLeft`](https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html#onLeft-hudson.model.Queue.LeftItem-)-                                                                                                                         |
-| jenkins.queue.time_spent_millis                  | ms    |                                                                                                     |                                                                                                                                                              | Total time spent in queue by the tasks that have been processed (see [`QueueListener#onLeft`](https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html#onLeft-hudson.model.Queue.LeftItem-) and [`Item#getInQueueSince`](https://javadoc.jenkins.io/hudson/model/Queue.Item.html#getInQueueSince--)) |
-| jenkins.agents.total                             | 1     |                                                                                                     |                                                                                                                                                              | Number of agents                                                                                                                                                                                                                                                                                           |
-| jenkins.agents.online                            | 1     |                                                                                                     |                                                                                                                                                              | Number of online agents                                                                                                                                                                                                                                                                                    |
-| jenkins.agents.offline                           | 1     |                                                                                                     |                                                                                                                                                              | Number of offline agents                                                                                                                                                                                                                                                                                   |
-| jenkins.agents.launch.failure                    | 1     |                                                                                                     |                                                                                                                                                              | Number of failed launched agents                                                                                                                                                                                                                                                                           |
-| jenkins.cloud.agents.completed                   | 1     |                                                                                                     |                                                                                                                                                              | Number of provisioned cloud agents                                                                                                                                                                                                                                                                         |
-| jenkins.cloud.agents.launch.failure              | 1     |                                                                                                     |                                                                                                                                                              | Number of failed cloud agents                                                                                                                                                                                                                                                                              |
-| jenkins.disk.usage.bytes                         | By    |                                                                                                     |                                                                                                                                                              | Disk Usage size                                                                                                                                                                                                                                                                                            |
-| runtime.jvm.gc.time                              | ms    | gc                                                                                                  | `G1 Young Generation`, `G1 Old Generation...`                                                                                                                | see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html)                                                                                                                                                             |
-| runtime.jvm.gc.count                             | 1     | gc                                                                                                  | `G1 Young Generation`, `G1 Old Generation...`                                                                                                                | see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html)                                                                                                                                                             |
-| runtime.jvm.memory.area                          | bytes | type, area                                                                                          | `used`, `committed`, `max`. <br/> `heap`, `non_heap`                                                                                                         | see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html)                                                                                                                                                                                |
-| runtime.jvm.memory.pool                          | bytes | type, pool                                                                                          | `used`, `committed`, `max`. <br/> `PS Eden Space`, `G1 Old Gen...`                                                                                           | see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html)                                                                                                                                                                                |
-| system.cpu.load                                  | 1     |                                                                                                     |                                                                                                                                                              | System CPU load. See `com.sun.management.OperatingSystemMXBean.getSystemCpuLoad`                                                                                                                                                                                                                           |
-| system.cpu.load.average.1m                       | 1     |                                                                                                     |                                                                                                                                                              | System CPU load average 1 minute See `java.lang.management.OperatingSystemMXBean.getSystemLoadAverage`                                                                                                                                                                                                     |
-| system.memory.usage                              | By    | state                                                                                               | `used`, `free`                                                                                                                                               | see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize`                                                                                                                                                         |
-| system.memory.utilization                        | 1     |                                                                                                     |                                                                                                                                                              | System memory utilization, see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize`. Report `0%` if no physical memory is discovered by the JVM.                                                                 |
-| system.paging.usage                              | By    | state                                                                                               | `used`, `free`                                                                                                                                               | see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize`                                                                                                                                                                   |
-| system.paging.utilization                        | 1     |                                                                                                     |                                                                                                                                                              | see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize`. Report `0%` if no swap memory is discovered by the JVM.                                                                                                          |
-| process.cpu.load                                 | 1     |                                                                                                     |                                                                                                                                                              | Process CPU load. See `com.sun.management.OperatingSystemMXBean.getProcessCpuLoad`                                                                                                                                                                                                                         |
-| process.cpu.time                                 | ns    |                                                                                                     |                                                                                                                                                              | Process CPU time. See `com.sun.management.OperatingSystemMXBean.getProcessCpuTime`                                                                                                                                                                                                                         |
-| github.api.rate_limit.remaining_requests | 1     | github.api.url, github.authentication, enduser.id, github.app.id, github.app.owner, github.app.name | e.g. `https://api.github.com`, `anonymous` / `app:id=1234,app.name="My Jenkins App",app.owner="My Jenkins App"` / `login:john-doe` , `john-doe`, `12345`, `john-doe` | When using the GitHub Branch Source plugin, remaining requests for the authenticated GitHub user according to the [GitHub API Rate Limit](https://docs.github.com/en/rest/rate-limit)                                                                                                                        |
+## Jenkins agents metrics
 
+<table>
+    <tr>
+        <th>Metric</th>
+        <th>Unit</th>
+        <th>Label / attribute key</th>
+        <th>Label / attribute value</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>jenkins.agents.total</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Number of agents</td>
+    </tr>
+    <tr>
+        <td>jenkins.agents.online</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Number of online agents</td>
+    </tr>
+    <tr>
+        <td>jenkins.agents.offline</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Number of offline agents</td>
+    </tr>
+    <tr>
+        <td>jenkins.agents.launch.failure</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Number of failed launched agents</td>
+    </tr>
+    <tr>
+        <td>jenkins.cloud.agents.completed</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Number of provisioned cloud agents</td>
+    </tr>
+    <tr>
+        <td>jenkins.cloud.agents.launch.failure</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Number of failed cloud agents</td>
+    </tr>
+</table>
 
+## SCM metrics (SCM event queue, GitHub client API rate limit...)
 
-## Jenkins Security Metrics 
+<table>
+    <tr>
+        <th>Metric</th>
+        <th>Unit</th>
+        <th>Label / attribute key</th>
+        <th>Label / attribute value</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>github.api.rate_limit.remaining_requests</td>
+        <td>1</td>
+        <td>
+            Always reported: github.api.url, github.authentication<br/>
+            For user based authentication:, enduser.id<br/>
+            For GitHub App based authentication: github.app.id, github.app.owner, github.app.name
+        </td>
+        <td>Examples:
+         <ul>
+         <li>github.api.url: `https://api.github.com`</li>
+         <li>github.authentication: `anonymous` or `app:id=1234,app.name="My Jenkins App",app.owner="My Jenkins App"` or `login:john-doe` 
+         enduser.id: `john-doe`</li>
+         <li>github.app.id: `12345`, github.app.name: `My Jenkins App`, github.app.owner: `My Jenkins App`</li>
+        </ul>
+        </td>
+        <td>When using the GitHub Branch Source plugin, remaining requests for the authenticated GitHub user/app according to the [GitHub API Rate Limit](https://docs.github.com/en/rest/rate-limit)</td>
+    </tr>
+    <tr>
+        <td>jenkins.scm.event.pool_size</td>
+        <td>1</td>
+        <td>Thread pool size of the SCM Event queue processor</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.scm.event.active_threads</td>
+        <td>1</td>
+        <td>Number of active threads of the SCM events thread pool</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.scm.event.queued_tasks</td>
+        <td>1</td>
+        <td>Number of events in the SCM event queue</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.scm.event.completed_tasks</td>
+        <td>1</td>
+        <td>Number of processed SCM events</td>
+        <td></td>
+    </tr>
+</table>
+
+## JVM and system metrics
+
+<table>
+    <tr>
+        <th>Metric</th>
+        <th>Unit</th>
+        <th>Label / attribute key</th>
+        <th>Label / attribute value</th>
+        <th>Description</th>
+    </tr>
+   <tr>
+        <td>runtime.jvm.gc.time</td>
+        <td>ms</td>
+        <td>gc</td>
+        <td>`G1 Young Generation`, `G1 Old Generation...`</td>
+        <td>see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html)</td>
+    </tr>
+    <tr>
+        <td>runtime.jvm.gc.count</td>
+        <td>1</td>
+        <td>gc</td>
+        <td>`G1 Young Generation`, `G1 Old Generation...`</td>
+        <td>see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html)</td>
+    </tr>
+    <tr>
+        <td>runtime.jvm.memory.area</td>
+        <td>bytes</td>
+        <td>type, area</td>
+        <td>`used`, `committed`, `max`. &lt;br/&gt; `heap`, `non_heap`</td>
+        <td>see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html)</td>
+    </tr>
+    <tr>
+        <td>runtime.jvm.memory.pool</td>
+        <td>bytes</td>
+        <td>type, pool</td>
+        <td>`used`, `committed`, `max`. &lt;br/&gt; `PS Eden Space`, `G1 Old Gen...`</td>
+        <td>see [MemoryUsage](https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html)</td>
+    </tr>
+    <tr>
+        <td>system.cpu.load</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>System CPU load. See `com.sun.management.OperatingSystemMXBean.getSystemCpuLoad`</td>
+    </tr>
+    <tr>
+        <td>system.cpu.load.average.1m</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>System CPU load average 1 minute See `java.lang.management.OperatingSystemMXBean.getSystemLoadAverage`</td>
+    </tr>
+    <tr>
+        <td>system.memory.usage</td>
+        <td>By</td>
+        <td>state</td>
+        <td>`used`, `free`</td>
+        <td>see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize`</td>
+    </tr>
+    <tr>
+        <td>system.memory.utilization</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>System memory utilization, see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize`. Report `0%` if no physical memory is discovered by the JVM.</td>
+    </tr>
+    <tr>
+        <td>system.paging.usage</td>
+        <td>By</td>
+        <td>state</td>
+        <td>`used`, `free`</td>
+        <td>see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize`</td>
+    </tr>
+    <tr>
+        <td>system.paging.utilization</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize`. Report `0%` if no swap memory is discovered by the JVM.</td>
+    </tr>
+    <tr>
+        <td>process.cpu.load</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Process CPU load. See `com.sun.management.OperatingSystemMXBean.getProcessCpuLoad`</td>
+    </tr>
+    <tr>
+        <td>process.cpu.time</td>
+        <td>ns</td>
+        <td></td>
+        <td></td>
+        <td>Process CPU time. See `com.sun.management.OperatingSystemMXBean.getProcessCpuTime`</td>
+    </tr>
+</table>
+
+## Jenkins Security Metrics
 
 | Metrics                          | Unit  | Label / attribute key | Label / attribute value | Description            |
 |----------------------------------|-------|-----------------------|-------------------------|------------------------|
