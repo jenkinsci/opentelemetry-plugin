@@ -12,6 +12,6 @@
         The OpenTelemetry Plugin is configured to send observability data but no observability backend is configured
         to navigate from Jenkins GUI to the observability screens and data (Jenkins health and performance dashboard,
         traces of the pipelines...). Observability solutions such as Jaeger, Zipkin, Prometheus, Elastic, and many others
-        can be used. Configured observability backend?
+        can be used. Configure observability backend?
     </div>
 </j:jelly>
