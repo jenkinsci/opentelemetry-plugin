@@ -199,26 +199,30 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     <tr>
         <td>jenkins.scm.event.pool_size</td>
         <td>1</td>
-        <td>Thread pool size of the SCM Event queue processor</td>
         <td></td>
+        <td></td>
+        <td>Thread pool size of the SCM Event queue processor</td>
     </tr>
     <tr>
         <td>jenkins.scm.event.active_threads</td>
         <td>1</td>
-        <td>Number of active threads of the SCM events thread pool</td>
         <td></td>
+        <td></td>
+        <td>Number of active threads of the SCM events thread pool</td>
     </tr>
     <tr>
         <td>jenkins.scm.event.queued_tasks</td>
         <td>1</td>
-        <td>Number of events in the SCM event queue</td>
         <td></td>
+        <td></td>
+        <td>Number of events in the SCM event queue</td>
     </tr>
     <tr>
         <td>jenkins.scm.event.completed_tasks</td>
         <td>1</td>
-        <td>Number of processed SCM events</td>
         <td></td>
+        <td></td>
+        <td>Number of processed SCM events</td>
     </tr>
 </table>
 
@@ -237,7 +241,7 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td>ms</td>
         <td>gc</td>
         <td>`G1 Young Generation`, `G1 Old Generation...`</td>
-        <td>see [GarbageCollectorMXBean](https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html)</td>
+        <td>see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html">GarbageCollectorMXBean</a></td>
     </tr>
     <tr>
         <td>runtime.jvm.gc.count</td>
@@ -249,14 +253,14 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     <tr>
         <td>runtime.jvm.memory.area</td>
         <td>bytes</td>
-        <td>type, area</td>
-        <td>`used`, `committed`, `max`. &lt;br/&gt; `heap`, `non_heap`</td>
+        <td>type<br/> area</td>
+        <td>`used`, `committed`, `max` <br/> `heap`, `non_heap`</td>
         <td>see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html">MemoryUsage</a></td>
     </tr>
     <tr>
         <td>runtime.jvm.memory.pool</td>
         <td>bytes</td>
-        <td>type, pool</td>
+        <td>type<br/> pool</td>
         <td>`used`, `committed`, `max`. &lt;br/&gt; `PS Eden Space`, `G1 Old Gen...`</td>
         <td>see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html">MemoryUsage</a></td>
     </tr>
