@@ -10,6 +10,7 @@ import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -34,6 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.jenkins.plugins.opentelemetry.semconv.GitHubSemanticAttributes.*;
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.JENKINS_CREDENTIALS_ID;
 
 /**
  * This implementation of the monitoring of the GitHub client relies on a hack with Java reflection to access a private
@@ -113,6 +115,8 @@ public class GitHubClientMonitoring {
                             } else if (credentialsTokenProviderClass.isAssignableFrom(authorizationProvider.getClass())) {
                                 GitHubAppCredentials credentials = (GitHubAppCredentials) credentialsTokenProvider_credentialsField.get(authorizationProvider);
                                 attributesBuilder.put(GITHUB_APP_ID, credentials.getAppID());
+                                attributesBuilder.put(JENKINS_CREDENTIALS_ID, credentials.getId());
+                                gitHub.getApp().getName();
                                 authentication = "app:id=" + credentials.getAppID();
                                 if (credentials.getOwner() != null) {
                                     attributesBuilder.put(GITHUB_APP_OWNER, credentials.getOwner());
