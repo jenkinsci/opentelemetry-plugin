@@ -226,15 +226,6 @@ public class OpenTelemetryServletFilter implements Filter {
             spanBuilder.setAttribute(SemanticAttributes.ENDUSER_ID, user.getId());
         }
 
-        for (Map.Entry<String, String[]> entry : servletRequest.getParameterMap().entrySet()) {
-            String name = entry.getKey();
-            String[] values = entry.getValue();
-            if (values.length == 1) {
-                spanBuilder.setAttribute("query." + name, values[0]);
-            } else {
-                spanBuilder.setAttribute(AttributeKey.stringArrayKey("query." + name), Arrays.asList(values));
-            }
-        }
         Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
             filterChain.doFilter(servletRequest, servletResponse);
