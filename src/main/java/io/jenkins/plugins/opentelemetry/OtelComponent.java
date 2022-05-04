@@ -19,12 +19,31 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Interface for components that want to be notified when the Otel SDL has been initialized or will be shutdown.
+ *
+ * Used by components that create counters...
+ */
 public interface OtelComponent {
 
+    /**
+     * Invoked soon after the Otel SDK has been initialized.
+     *
+     * @param meter {@link Meter} of the newly initialized Otel SDK
+     * @param logEmitter {@link LogEmitter} of the newly initialized Otel SDK
+     * @param tracer {@link Tracer} of the newly initialized Otel SDK
+     * @param configProperties {@link ConfigProperties} of the newly initialized Otel SDK
+     */
     void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties);
 
+    /**
+     * Invoked just before the Otel SDK is shutdown
+     */
     void beforeSdkShutdown();
 
+    /**
+     * Helper for {@link OtelComponent} implementations to manage the created metric instruments
+     */
     class State {
         private final static Logger logger = Logger.getLogger(State.class.getName());
         private final List<AutoCloseable> instruments = new ArrayList<>();
