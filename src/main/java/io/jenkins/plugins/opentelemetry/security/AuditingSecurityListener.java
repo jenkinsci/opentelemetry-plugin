@@ -8,29 +8,27 @@ package io.jenkins.plugins.opentelemetry.security;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.User;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.logs.LogBuilder;
+import io.opentelemetry.sdk.logs.LogEmitter;
 import io.opentelemetry.sdk.logs.data.Severity;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
-import jenkins.scm.api.SCMEvent;
 import jenkins.security.SecurityListener;
 import org.acegisecurity.userdetails.UserDetails;
-import org.kohsuke.stapler.Stapler;
-import org.kohsuke.stapler.StaplerRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
-import javax.annotation.Nonnull;
-import javax.inject.Inject;
 import java.util.Optional;
 
 /**
@@ -39,14 +37,17 @@ import java.util.Optional;
  * within a trace.
  */
 @Extension
-public class AuditingSecurityListener extends SecurityListener {
-    private OpenTelemetrySdkProvider openTelemetrySdkProvider;
-    private Meter meter;
+public class AuditingSecurityListener extends SecurityListener implements OtelComponent {
     private LongCounter loginSuccessCounter;
     private LongCounter loginFailureCounter;
     private LongCounter loginCounter;
 
-    private void initialise() {
+    private LogEmitter logEmitter;
+
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+        this.logEmitter = logEmitter;
+
         loginSuccessCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_SUCCESS)
                 .setDescription("Successful logins")
@@ -64,7 +65,6 @@ public class AuditingSecurityListener extends SecurityListener {
                 .setUnit("1")
                 .build();
     }
-
 
     @Deprecated
     @Override
@@ -103,7 +103,7 @@ public class AuditingSecurityListener extends SecurityListener {
             }
         }
 
-        LogBuilder logBuilder = openTelemetrySdkProvider.getLogEmitter().logBuilder();
+        LogBuilder logBuilder = logEmitter.logBuilder();
         logBuilder
             .setBody(message)
             .setAttributes(attributesBuilder.build())
@@ -132,7 +132,7 @@ public class AuditingSecurityListener extends SecurityListener {
 
         // TODO find a solution to retrieve the remoteIpAddress
 
-        LogBuilder logBuilder = openTelemetrySdkProvider.getLogEmitter().logBuilder();
+        LogBuilder logBuilder = logEmitter.logBuilder();
         logBuilder
             .setBody(message)
             .setAttributes(attributesBuilder.build())
@@ -146,10 +146,8 @@ public class AuditingSecurityListener extends SecurityListener {
         super.loggedOut(username);
     }
 
-    @Inject
-    public void setJenkinsOtelPlugin(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
-        this.meter = openTelemetrySdkProvider.getMeter();
-        this.openTelemetrySdkProvider = openTelemetrySdkProvider;
-        initialise();
+    @Override
+    public void beforeSdkShutdown() {
+
     }
 }

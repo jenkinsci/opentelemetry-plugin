@@ -12,19 +12,19 @@ import hudson.model.TaskListener;
 import hudson.remoting.Channel;
 import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -34,15 +34,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension
-public class MonitoringComputerListener extends ComputerListener {
+public class MonitoringComputerListener extends ComputerListener implements OtelComponent {
     private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
-
-    protected Meter meter;
 
     private LongCounter failureAgentCounter;
 
-    @PostConstruct
-    public void postConstruct() {
+    private OtelComponent.State state = new State();
+
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
         final Jenkins jenkins = Jenkins.get();
         Computer controllerComputer = jenkins.getComputer("");
         if (controllerComputer == null) {
@@ -65,21 +65,24 @@ public class MonitoringComputerListener extends ComputerListener {
                 LOGGER.log(Level.WARNING, "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
             }
         }
+        state.registerInstrument(
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
             .ofLongs()
             .setDescription("Number of offline agents")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount()));
-        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount())));
+        state.registerInstrument(
+            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
             .ofLongs()
             .setDescription("Number of online agents")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount()));
-        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount())));
+        state.registerInstrument(
+            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
             .ofLongs()
             .setDescription("Number of agents")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount()));
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount())));
         failureAgentCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
             .setDescription("Number of ComputerLauncher failures")
             .setUnit("1")
@@ -130,6 +133,11 @@ public class MonitoringComputerListener extends ComputerListener {
         LOGGER.log(Level.FINE, () -> "onLaunchFailure(" + computer + "): ");
     }
 
+    @Override
+    public void beforeSdkShutdown() {
+        state.closeInstruments();
+    }
+
     private static class GetComputerAttributes extends MasterToSlaveCallable<Map<String, String>, IOException> {
         @Override
         public Map<String, String> call() throws IOException {
@@ -151,13 +159,5 @@ public class MonitoringComputerListener extends ComputerListener {
             }
             return attributes;
         }
-    }
-
-    /**
-     * Jenkins doesn't support {@link com.google.inject.Provides} so we manually wire dependencies :-(
-     */
-    @Inject
-    public void setMeter(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
-        this.meter = openTelemetrySdkProvider.getMeter();
     }
 }

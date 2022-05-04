@@ -6,11 +6,14 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
-import hudson.init.InitMilestone;
-import hudson.init.Initializer;
 import hudson.util.PluginServletFilter;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.servlet.OpenTelemetryServletFilter;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.YesNoMaybe;
 
 import javax.servlet.Filter;
@@ -25,25 +28,23 @@ import java.util.logging.Logger;
  * events can be associated to an HTTP trace.
  */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class ServletFilterInitializer extends OpenTelemetryPluginAbstractInitializer {
+public class ServletFilterInitializer implements OtelComponent {
     private static final Logger logger = Logger.getLogger(ServletFilterInitializer.class.getName());
 
-    /**
-     * TODO better initialization sequence handling.
-     * Don't start just after `PLUGINS_STARTED` because it creates an initialization problem
-     */
-    @Initializer(after = InitMilestone.JOB_LOADED)
-    public void setUpFilter() {
+    OpenTelemetryServletFilter openTelemetryServletFilter;
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+
         // TODO support live reload of the config flag
-        boolean jenkinsWebInstrumentationEnabled = Optional.ofNullable(this.openTelemetrySdkProvider.getConfig().getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED)).orElse(true);
+        boolean jenkinsWebInstrumentationEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED)).orElse(true);
 
         if (jenkinsWebInstrumentationEnabled) {
-            Filter filter = new OpenTelemetryServletFilter(this.openTelemetrySdkProvider.getTracer());
-            if (PluginServletFilter.hasFilter(filter)) {
+            openTelemetryServletFilter = new OpenTelemetryServletFilter(tracer);
+            if (PluginServletFilter.hasFilter(openTelemetryServletFilter)) {
                 logger.log(Level.INFO, () -> "Jenkins Web instrumentation already enabled");
             } else {
                 try {
-                    PluginServletFilter.addFilter(filter);
+                    PluginServletFilter.addFilter(openTelemetryServletFilter);
                     logger.log(Level.FINE, () -> "Jenkins Web instrumentation enabled");
                 } catch (ServletException ex) {
                     logger.log(Level.WARNING, "Failure to enable Jenkins Web instrumentation", ex);
@@ -51,6 +52,15 @@ public class ServletFilterInitializer extends OpenTelemetryPluginAbstractInitial
             }
         } else {
             logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled");
+        }
+    }
+
+    @Override
+    public void beforeSdkShutdown() {
+        try {
+            PluginServletFilter.removeFilter(openTelemetryServletFilter);
+        } catch (ServletException e) {
+            logger.log(Level.INFO, "Exception removing OpenTelemetryServletFilter", e);
         }
     }
 }

@@ -28,14 +28,18 @@ import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 import io.opentelemetry.sdk.trace.ReadWriteSpan;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.model.Jenkins;
@@ -67,7 +71,6 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
-
     private AtomicInteger activeRun;
     private List<CauseHandler> causeHandlers;
     private LongCounter runLaunchedCounter;
@@ -78,42 +81,50 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
     @PostConstruct
     public void postConstruct() {
+
+    }
+
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+        super.afterSdkInitialized(meter, logEmitter, tracer, configProperties);
+
         // CAUSE HANDLERS
         List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));
-        causeHandlers.stream().forEach(causeHandler -> causeHandler.configure(getConfig()));
+        causeHandlers.stream().forEach(causeHandler -> causeHandler.configure(configProperties));
         Collections.sort(causeHandlers);
         this.causeHandlers = causeHandlers;
 
         // RUN HANDLERS
         List<RunHandler> runHandlers = new ArrayList<>(ExtensionList.lookup(RunHandler.class));
-        runHandlers.stream().forEach(runHandler -> runHandler.configure(getConfig()));
+        runHandlers.stream().forEach(runHandler -> runHandler.configure(configProperties));
         Collections.sort(runHandlers);
         this.runHandlers = runHandlers;
 
         // METRICS
         activeRun = new AtomicInteger();
-        getMeter().gaugeBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
-            .ofLongs()
-            .setDescription("Gauge of active jobs")
-            .setUnit("1")
-            .buildWithCallback(valueObserver -> this.activeRun.get());
+        getState().registerInstrument(
+            meter.gaugeBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
+                .ofLongs()
+                .setDescription("Gauge of active jobs")
+                .setUnit("1")
+                .buildWithCallback(valueObserver -> this.activeRun.get()));
         runLaunchedCounter =
-                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
+                meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
                         .setDescription("Job launched")
                         .setUnit("1")
                         .build();
         runStartedCounter =
-                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED)
+                meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED)
                         .setDescription("Job started")
                         .setUnit("1")
                         .build();
         runAbortedCounter =
-                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
+                meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
                         .setDescription("Job aborted")
                         .setUnit("1")
                         .build();
         runCompletedCounter =
-                getMeter().counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED)
+                meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED)
                         .setDescription("Job completed")
                         .setUnit("1")
                         .build();

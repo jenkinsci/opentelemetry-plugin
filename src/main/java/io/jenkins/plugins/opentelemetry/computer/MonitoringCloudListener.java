@@ -11,9 +11,13 @@ import hudson.model.Node;
 import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.NodeProvisioner;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
@@ -22,16 +26,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension
-public class MonitoringCloudListener extends CloudProvisioningListener {
+public class MonitoringCloudListener extends CloudProvisioningListener implements OtelComponent {
     private final static Logger LOGGER = Logger.getLogger(MonitoringCloudListener.class.getName());
-
-    protected Meter meter;
 
     private LongCounter failureCloudCounter;
     private LongCounter totalCloudCount;
 
-    @PostConstruct
-    public void postConstruct() {
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
         failureCloudCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_FAILURE)
             .setDescription("Number of failed cloud agents when provisioning")
             .setUnit("1")
@@ -61,11 +63,8 @@ public class MonitoringCloudListener extends CloudProvisioningListener {
         LOGGER.log(Level.FINE, () -> "onComplete(" + plannedNode + ")");
     }
 
-    /**
-     * Jenkins doesn't support {@link com.google.inject.Provides} so we manually wire dependencies :-(
-     */
-    @Inject
-    public void setMeter(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
-        this.meter = openTelemetrySdkProvider.getMeter();
+    @Override
+    public void beforeSdkShutdown() {
+
     }
 }
