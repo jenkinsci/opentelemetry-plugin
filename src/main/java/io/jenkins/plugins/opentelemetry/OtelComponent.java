@@ -20,7 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Interface for components that want to be notified when the Otel SDL has been initialized or will be shutdown.
+ * Interface for components that want to be notified when the Otel SDK has been initialized or will be shutdown.
  *
  * Used by components that create counters...
  */
