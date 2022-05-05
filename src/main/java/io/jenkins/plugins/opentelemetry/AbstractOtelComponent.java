@@ -16,9 +16,7 @@ import java.util.logging.Logger;
  * Helper to implement {@link OtelComponent} and to manage metric instruments
  */
 public abstract class AbstractOtelComponent implements OtelComponent {
-
-    private final static Logger logger = Logger.getLogger(AbstractOtelComponent.class.getName());
-
+    
     private final OtelComponent.State state = new OtelComponent.State();
 
     protected void registerInstrument(ObservableLongCounter instrument) {
