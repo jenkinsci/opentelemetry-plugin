@@ -1,147 +1,131 @@
 /*
- * Copyright The Original Author or Authors
+ * Copyright The OpenTelemetry Authors
  * SPDX-License-Identifier: Apache-2.0
  */
 
 package io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
+import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
+
 import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.MemoryType;
 import java.lang.management.MemoryUsage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /*
- * Copy of https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v1.6.0/instrumentation/runtime-metrics/library/src/main/java/io/opentelemetry/instrumentation/runtimemetrics/MemoryPools.java
+ * Copy of https://raw.githubusercontent.com/open-telemetry/opentelemetry-java-instrumentation/v1.13.1/instrumentation/runtime-metrics/library/src/main/java/io/opentelemetry/instrumentation/runtimemetrics/MemoryPools.java
  */
+
 /**
- * Registers observers that generate metrics about JVM memory areas.
+ * Registers measurements that generate metrics about JVM memory pools.
  *
  * <p>Example usage:
  *
  * <pre>{@code
- * MemoryPools.registerObservers();
+ * MemoryPools.registerObservers(GlobalOpenTelemetry.get());
  * }</pre>
  *
  * <p>Example metrics being exported: Component
  *
  * <pre>
- *   runtime.jvm.memory.area{type="used",area="heap"} 2000000
- *   runtime.jvm.memory.area{type="committed",area="non_heap"} 200000
- *   runtime.jvm.memory.area{type="used",pool="PS Eden Space"} 2000
+ *   process.runtime.jvm.memory.init{type="heap",pool="G1 Eden Space"} 1000000
+ *   process.runtime.jvm.memory.usage{type="heap",pool="G1 Eden Space"} 2500000
+ *   process.runtime.jvm.memory.committed{type="heap",pool="G1 Eden Space"} 3000000
+ *   process.runtime.jvm.memory.max{type="heap",pool="G1 Eden Space"} 4000000
+ *   process.runtime.jvm.memory.init{type="non_heap",pool="Metaspace"} 200
+ *   process.runtime.jvm.memory.usage{type="non_heap",pool="Metaspace"} 400
+ *   process.runtime.jvm.memory.committed{type="non_heap",pool="Metaspace"} 500
  * </pre>
  */
-@edu.umd.cs.findbugs.annotations.SuppressFBWarnings(value = "DLS_DEAD_LOCAL_STORE", justification = "Code copy/pasted from opentelemetry-java-instrumentatio")
 public final class MemoryPools {
-    // Visible for testing
-    static final AttributeKey<String> TYPE_KEY = AttributeKey.stringKey("type");
-    // Visible for testing
-    static final AttributeKey<String> AREA_KEY = AttributeKey.stringKey("area");
+
+    private static final AttributeKey<String> TYPE_KEY = AttributeKey.stringKey("type");
     private static final AttributeKey<String> POOL_KEY = AttributeKey.stringKey("pool");
 
-    private static final String USED = "used";
-    private static final String COMMITTED = "committed";
-    private static final String MAX = "max";
     private static final String HEAP = "heap";
     private static final String NON_HEAP = "non_heap";
 
-    private static final Attributes COMMITTED_HEAP =
-        Attributes.of(TYPE_KEY, COMMITTED, AREA_KEY, HEAP);
-    private static final Attributes USED_HEAP = Attributes.of(TYPE_KEY, USED, AREA_KEY, HEAP);
-    private static final Attributes MAX_HEAP = Attributes.of(TYPE_KEY, MAX, AREA_KEY, HEAP);
-
-    private static final Attributes COMMITTED_NON_HEAP =
-        Attributes.of(TYPE_KEY, COMMITTED, AREA_KEY, NON_HEAP);
-    private static final Attributes USED_NON_HEAP = Attributes.of(TYPE_KEY, USED, AREA_KEY, NON_HEAP);
-    private static final Attributes MAX_NON_HEAP = Attributes.of(TYPE_KEY, MAX, AREA_KEY, NON_HEAP);
-
-    /** Register only the "area" measurements. */
-    public static void registerMemoryAreaObservers() {
-        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        Meter meter = GlobalOpenTelemetry.get().getMeterProvider().get(MemoryPools.class.getName());
-        meter
-            .gaugeBuilder("runtime.jvm.memory.area")
-            .ofLongs()
-            .setDescription("Bytes of a given JVM memory area.")
-            .setUnit("byte")
-            .buildWithCallback(
-                resultLongObserver -> {
-                    observeHeap(resultLongObserver, memoryBean.getHeapMemoryUsage());
-                    observeNonHeap(resultLongObserver, memoryBean.getNonHeapMemoryUsage());
-                });
-    }
-
-    /** Register only the "pool" measurements. */
-    public static void registerMemoryPoolObservers() {
+    /**
+     * Register observers for java runtime memory metrics.
+     */
+    public static List<ObservableLongUpDownCounter> registerObservers(Meter meter) {
         List<MemoryPoolMXBean> poolBeans = ManagementFactory.getMemoryPoolMXBeans();
-        Meter meter = GlobalOpenTelemetry.get().getMeterProvider().get(MemoryPools.class.getName());
-        List<Attributes> usedLabelSets = new ArrayList<>(poolBeans.size());
-        List<Attributes> committedLabelSets = new ArrayList<>(poolBeans.size());
-        List<Attributes> maxLabelSets = new ArrayList<>(poolBeans.size());
+
+        List<ObservableLongUpDownCounter> instruments = new ArrayList<>(4);
+        instruments.add(
+            meter
+                .upDownCounterBuilder("process.runtime.jvm.memory.usage")
+                .setDescription("Measure of memory used")
+                .setUnit("By")
+                .buildWithCallback(callback(poolBeans, MemoryUsage::getUsed)));
+
+        instruments.add(
+            meter
+                .upDownCounterBuilder("process.runtime.jvm.memory.init")
+                .setDescription("Measure of initial memory requested")
+                .setUnit("By")
+                .buildWithCallback(callback(poolBeans, MemoryUsage::getInit)));
+
+        instruments.add(
+            meter
+                .upDownCounterBuilder("process.runtime.jvm.memory.committed")
+                .setDescription("Measure of memory committed")
+                .setUnit("By")
+                .buildWithCallback(callback(poolBeans, MemoryUsage::getCommitted)));
+
+        instruments.add(
+            meter
+                .upDownCounterBuilder("process.runtime.jvm.memory.max")
+                .setDescription("Measure of max obtainable memory")
+                .setUnit("By")
+                .buildWithCallback(callback(poolBeans, MemoryUsage::getMax)));
+
+        return instruments;
+    }
+
+    // Visible for testing
+    static Consumer<ObservableLongMeasurement> callback(
+        List<MemoryPoolMXBean> poolBeans, Function<MemoryUsage, Long> extractor) {
+        List<Attributes> attributeSets = new ArrayList<>(poolBeans.size());
         for (MemoryPoolMXBean pool : poolBeans) {
-            usedLabelSets.add(Attributes.of(TYPE_KEY, USED, POOL_KEY, pool.getName()));
-            committedLabelSets.add(Attributes.of(TYPE_KEY, COMMITTED, POOL_KEY, pool.getName()));
-            maxLabelSets.add(Attributes.of(TYPE_KEY, MAX, POOL_KEY, pool.getName()));
+            attributeSets.add(
+                Attributes.builder()
+                    .put(POOL_KEY, pool.getName())
+                    .put(TYPE_KEY, memoryType(pool.getType()))
+                    .build());
         }
 
-        meter
-            .gaugeBuilder("runtime.jvm.memory.pool")
-            .ofLongs()
-            .setDescription("Bytes of a given JVM memory pool.")
-            .setUnit("byte")
-            .buildWithCallback(
-                resultLongObserver -> {
-                    for (int i = 0; i < poolBeans.size(); i++) {
-                        MemoryUsage poolUsage = poolBeans.get(i).getUsage();
-                        if (poolUsage != null) {
-                            record(
-                                resultLongObserver,
-                                poolUsage,
-                                usedLabelSets.get(i),
-                                committedLabelSets.get(i),
-                                maxLabelSets.get(i));
-                        }
-                    }
-                });
+        return measurement -> {
+            for (int i = 0; i < poolBeans.size(); i++) {
+                Attributes attributes = attributeSets.get(i);
+                long value = extractor.apply(poolBeans.get(i).getUsage());
+                if (value != -1) {
+                    measurement.record(value, attributes);
+                }
+            }
+        };
     }
 
-    /** Register all measurements provided by this module. */
-    public static void registerObservers() {
-        registerMemoryAreaObservers();
-        registerMemoryPoolObservers();
-    }
-
-    static void observeHeap(ObservableLongMeasurement measurement, MemoryUsage usage) {
-        record(measurement, usage, USED_HEAP, COMMITTED_HEAP, MAX_HEAP);
-    }
-
-    static void observeNonHeap(ObservableLongMeasurement measurement, MemoryUsage usage) {
-        record(measurement, usage, USED_NON_HEAP, COMMITTED_NON_HEAP, MAX_NON_HEAP);
-    }
-
-    private static void record(
-        ObservableLongMeasurement measurement,
-        MemoryUsage usage,
-        Attributes usedAttributes,
-        Attributes committedAttributes,
-        Attributes maxAttributes) {
-        // TODO: Decide if init is needed or not. It is a constant that can be queried once on startup.
-        // if (usage.getInit() != -1) {
-        //  measurement.observe(usage.getInit(), ...);
-        // }
-        measurement.record(usage.getUsed(), usedAttributes);
-        measurement.record(usage.getCommitted(), committedAttributes);
-        // TODO: Decide if max is needed or not. It is a constant that can be queried once on startup.
-        if (usage.getMax() != -1) {
-            measurement.record(usage.getMax(), maxAttributes);
+    private static String memoryType(MemoryType memoryType) {
+        switch (memoryType) {
+            case HEAP:
+                return HEAP;
+            case NON_HEAP:
+                return NON_HEAP;
         }
+        return "unknown";
     }
 
-    private MemoryPools() {}
+    private MemoryPools() {
+    }
 }

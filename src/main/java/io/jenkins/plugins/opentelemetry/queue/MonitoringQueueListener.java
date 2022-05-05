@@ -9,9 +9,13 @@ import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.model.Jenkins;
 
 import javax.annotation.Nonnull;
@@ -26,39 +30,43 @@ import java.util.logging.Logger;
  * Monitor the Jenkins Build queue
  */
 @Extension
-public class MonitoringQueueListener extends QueueListener {
+public class MonitoringQueueListener extends QueueListener implements OtelComponent {
 
     private final static Logger LOGGER = Logger.getLogger(MonitoringQueueListener.class.getName());
 
-    protected Meter meter;
+    private OtelComponent.State state = new OtelComponent.State();
 
     private final AtomicInteger blockedItemGauge = new AtomicInteger();
     private LongCounter leftItemCounter;
     private LongCounter timeInQueueInMillisCounter;
 
-    @PostConstruct
-    public void postConstruct() {
-        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_WAITING)
-            .ofLongs()
-            .setDescription("Number of tasks in the queue with the status 'waiting', 'buildable' or 'pending'")
-            .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record((long)
-                Optional.ofNullable(Jenkins.getInstanceOrNull()).map(j -> j.getQueue()).
-                    map(q -> q.getUnblockedItems().size()).orElse(0)));
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
 
-        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BLOCKED)
-            .ofLongs()
-            .setDescription("Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked")
-            .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.blockedItemGauge.longValue()));
+        state.registerInstrument(
+            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_WAITING)
+                .ofLongs()
+                .setDescription("Number of tasks in the queue with the status 'waiting', 'buildable' or 'pending'")
+                .setUnit("1")
+                .buildWithCallback(valueObserver -> valueObserver.record((long)
+                    Optional.ofNullable(Jenkins.getInstanceOrNull()).map(j -> j.getQueue()).
+                        map(q -> q.getUnblockedItems().size()).orElse(0))));
 
-        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BUILDABLE)
-            .ofLongs()
-            .setDescription("Number of tasks in the queue with the status 'buildable' or 'pending'")
-            .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record((long)
-                Optional.ofNullable(Jenkins.getInstanceOrNull()).map(j -> j.getQueue()).
-                    map(q -> q.countBuildableItems()).orElse(0)));
+        state.registerInstrument(
+            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BLOCKED)
+                .ofLongs()
+                .setDescription("Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked")
+                .setUnit("1")
+                .buildWithCallback(valueObserver -> valueObserver.record(this.blockedItemGauge.longValue())));
+
+        state.registerInstrument(
+            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BUILDABLE)
+                .ofLongs()
+                .setDescription("Number of tasks in the queue with the status 'buildable' or 'pending'")
+                .setUnit("1")
+                .buildWithCallback(valueObserver -> valueObserver.record((long)
+                    Optional.ofNullable(Jenkins.getInstanceOrNull()).map(j -> j.getQueue()).
+                        map(q -> q.countBuildableItems()).orElse(0))));
 
         leftItemCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_LEFT)
             .setDescription("Total count of tasks that have been processed")
@@ -87,11 +95,8 @@ public class MonitoringQueueListener extends QueueListener {
         LOGGER.log(Level.FINE, () -> "onLeft(): " + li);
     }
 
-    /**
-     * Jenkins doesn't support {@link com.google.inject.Provides} so we manually wire dependencies :-(
-     */
-    @Inject
-    public void setMeter(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
-        this.meter = openTelemetrySdkProvider.getMeter();
+    @Override
+    public void beforeSdkShutdown() {
+        state.closeInstruments();
     }
 }

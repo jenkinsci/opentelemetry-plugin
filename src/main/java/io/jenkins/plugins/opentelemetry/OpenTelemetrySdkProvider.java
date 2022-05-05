@@ -9,6 +9,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import hudson.Extension;
 import hudson.ExtensionList;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
@@ -99,6 +101,10 @@ public class OpenTelemetrySdkProvider {
     @PreDestroy
     public void preDestroy() {
         if (this.openTelemetrySdk != null) {
+            for(OtelComponent otelComponent: ExtensionList.lookup(OtelComponent.class)) {
+                LOGGER.log(Level.FINE, () -> "beforeSdkShutdown() " + otelComponent);
+                otelComponent.beforeSdkShutdown();
+            }
             this.openTelemetrySdk.getSdkTracerProvider().shutdown();
             this.openTelemetrySdk.getSdkMeterProvider().shutdown();
             this.openTelemetrySdk.getSdkLogEmitterProvider().shutdown();
@@ -157,6 +163,14 @@ public class OpenTelemetrySdkProvider {
         this.meter = openTelemetry.getMeterProvider().get("io.jenkins.opentelemetry");
         this.logEmitter = SdkLogEmitterProvider.builder().build().get("noop"); // FIXME tear down
         LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
+    }
+
+    @Initializer(after = InitMilestone.JOB_CONFIG_ADAPTED)
+    public void postInitialize() {
+        for (OtelComponent otelComponent : ExtensionList.lookup(OtelComponent.class)) {
+            LOGGER.log(Level.FINE, () -> "Initialize Otel SDK on " + otelComponent);
+            otelComponent.afterSdkInitialized(meter, logEmitter, tracer, config);
+        }
     }
 
     static public OpenTelemetrySdkProvider get() {

@@ -10,12 +10,14 @@ import hudson.Launcher;
 import hudson.model.*;
 import hudson.model.listeners.RunListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
@@ -27,21 +29,22 @@ import java.util.logging.Logger;
  * {@link RunListener} that setups the OpenTelemetry {@link io.opentelemetry.context.Context}
  * with the current {@link Span}.
  */
-public abstract class OtelContextAwareAbstractRunListener extends RunListener<Run> {
+public abstract class OtelContextAwareAbstractRunListener extends RunListener<Run> implements OtelComponent {
 
     private final static Logger LOGGER = Logger.getLogger(OtelContextAwareAbstractRunListener.class.getName());
 
     private OtelTraceService otelTraceService;
     private Tracer tracer;
-    private Meter meter;
-    private ConfigProperties config;
+    private OtelComponent.State state = new State();
 
     @Inject
-    public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService, @Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
+    public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
-        this.tracer = this.otelTraceService.getTracer();
-        this.meter = openTelemetrySdkProvider.getMeter();
-        this.config = openTelemetrySdkProvider.getConfig();
+    }
+
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+        this.tracer = tracer;
     }
 
     @Override
@@ -118,12 +121,12 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     }
 
     @NonNull
-    public Meter getMeter() {
-        return meter;
+    protected State getState() {
+        return state;
     }
 
-    @Nonnull
-    protected ConfigProperties getConfig() {
-        return config;
+    @Override
+    public void beforeSdkShutdown() {
+        state.closeInstruments();
     }
 }

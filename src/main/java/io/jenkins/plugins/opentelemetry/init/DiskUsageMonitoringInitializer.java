@@ -9,11 +9,12 @@ import com.cloudbees.simplediskusage.DiskItem;
 import com.cloudbees.simplediskusage.QuickDiskUsageInitializer;
 import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import hudson.Extension;
-import hudson.init.InitMilestone;
-import hudson.init.Initializer;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.AbstractOtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
@@ -27,11 +28,9 @@ import java.util.logging.Logger;
  * Capture disk usage metrics relying on the {@link QuickDiskUsagePlugin}
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class DiskUsageMonitoringInitializer {
+public class DiskUsageMonitoringInitializer extends AbstractOtelComponent {
 
     private final static Logger LOGGER = Logger.getLogger(DiskUsageMonitoringInitializer.class.getName());
-
-    protected Meter meter;
 
     /**
      * Don't inject the `quickDiskUsagePlugin` using @{@link  Inject} because the injected instance is not the right once.
@@ -39,19 +38,18 @@ public class DiskUsageMonitoringInitializer {
      */
     protected QuickDiskUsagePlugin quickDiskUsagePlugin;
 
-    /**
-     * TODO ensure initialized after {@link QuickDiskUsageInitializer#initialize()} has been invoked by Jenkins
-     * lifecycle before {@link io.opentelemetry.api.metrics.ObservableLongMeasurement#record(long)} is invoked
-     */
-    @Initializer(after = InitMilestone.JOB_CONFIG_ADAPTED)
-    public void initialize() {
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+        registerInstrument(
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
                 .ofLongs()
                 .setDescription("Disk usage of first level folder in JENKINS_HOME.")
                 .setUnit("byte")
-                .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes()));
-            LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage");
+                .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes())));
+
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage");
     }
+
     private long calculateDiskUsageInBytes() {
         if (this.quickDiskUsagePlugin == null) {
             Jenkins jenkins = Jenkins.get();
@@ -61,14 +59,15 @@ public class DiskUsageMonitoringInitializer {
         }
         return calculateDiskUsageInBytes(quickDiskUsagePlugin);
     }
+
     private long calculateDiskUsageInBytes(@Nonnull QuickDiskUsagePlugin diskUsagePlugin) {
         LOGGER.log(Level.FINE, "calculateDiskUsageInBytes");
         try {
             DiskItem disk = diskUsagePlugin.getDirectoriesUsages()
-                    .stream()
-                    .filter(diskItem -> diskItem.getDisplayName().equals("JENKINS_HOME"))
-                    .findFirst()
-                    .orElse(null);
+                .stream()
+                .filter(diskItem -> diskItem.getDisplayName().equals("JENKINS_HOME"))
+                .findFirst()
+                .orElse(null);
             if (disk == null) {
                 return 0;
             } else {
@@ -78,13 +77,5 @@ public class DiskUsageMonitoringInitializer {
             LOGGER.log(Level.WARNING, e, () -> "Exception invoking `diskUsagePlugin.getDirectoriesUsages()`");
             return 0;
         }
-    }
-
-    /**
-     * Jenkins doesn't support {@link com.google.inject.Provides} so we manually wire dependencies :-(
-     */
-    @Inject
-    public void setMeter(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
-        this.meter = openTelemetrySdkProvider.getMeter();
     }
 }
