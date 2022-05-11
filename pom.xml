@@ -25,7 +25,7 @@
         <opentelemetry.version>1.13.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.13.0-alpha</opentelemetry-alpha.version>
         <useBeta>true</useBeta>
-        <elasticstack.version>8.1.3</elasticstack.version>
+        <elasticstack.version>8.2.0</elasticstack.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
@@ -263,7 +263,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>github-branch-source</artifactId>
-            <version>2.10.2</version>
+            <version>1628.vb_2f51293cb_78</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>
