@@ -150,6 +150,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundConstructor
     public JenkinsOpenTelemetryPluginConfiguration() {
         load();
+        configureOpentelemetryAndInitialize();
     }
 
     @Override
@@ -158,6 +159,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         req.bindJSON(this, json);
         // stapler oddity, empty lists coming from the HTTP request are not set on bean by  `req.bindJSON(this, json)`
         this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
+        configureOpentelemetryAndInitialize();
+        save();
+        LOGGER.log(Level.FINE, "Configured");
+        return true;
+    }
+
+    private void configureOpentelemetryAndInitialize() {
         this.endpoint = sanitizeOtlpEndpoint(this.endpoint);
         initializeOpenTelemetry();
         if (logStorageRetriever != null && logStorageRetriever instanceof Closeable) {
@@ -169,9 +177,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             }
         }
         this.logStorageRetriever = resolveLogStorageRetriever();
-        save();
-        LOGGER.log(Level.FINE, "Configured");
-        return true;
     }
 
     protected Object readResolve() {
