@@ -33,7 +33,6 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Extension
 public class ElasticBackend extends ObservabilityBackend implements TemplateBindingsProvider {
 
     private final static Logger LOGGER = Logger.getLogger(ElasticBackend.class.getName());

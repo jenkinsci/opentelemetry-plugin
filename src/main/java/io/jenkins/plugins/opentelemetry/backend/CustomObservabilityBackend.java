@@ -15,7 +15,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-@Extension
 public class CustomObservabilityBackend extends ObservabilityBackend {
 
     public static final String OTEL_CUSTOM_URL = "OTEL_CUSTOM_URL";

@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@Extension
 public class JaegerBackend extends ObservabilityBackend {
 
     public static final String OTEL_JAEGER_URL = "OTEL_JAEGER_URL";
