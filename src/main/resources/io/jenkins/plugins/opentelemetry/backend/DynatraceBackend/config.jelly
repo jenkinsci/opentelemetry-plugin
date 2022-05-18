@@ -1,0 +1,20 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:entry title="${%Dynatrace URL}" field="url" description="e.g. 'https://environmentId.live.dynatrace.com/'">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Dashboard ID}" field="dashboardId" description="e.g. 297e24c2-293b-4d11-98cf-3576a08b350a">
+        <f:textbox/>
+    </f:entry>
+    <f:advanced>
+        <f:entry title="${%Name}" field="name">
+            <f:textbox default="${descriptor.displayName}"/>
+        </f:entry>
+        <f:entry title="${%Dashboard time range}" field="dashboardTimeRange" description="Defaults to 'today'">
+            <f:textbox/>
+        </f:entry>
+        <f:entry title="${%Management zone ID}" field="managementZoneId" description="Defaults to 'all'">
+            <f:textbox/>
+        </f:entry>
+    </f:advanced>
+</j:jelly>
