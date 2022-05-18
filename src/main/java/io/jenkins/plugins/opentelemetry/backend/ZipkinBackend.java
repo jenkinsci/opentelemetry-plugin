@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@Extension
 public class ZipkinBackend extends ObservabilityBackend {
 
     public static final String OTEL_ZIPKIN_URL = "OTEL_ZIPKIN_URL";
