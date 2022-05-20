@@ -49,12 +49,10 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         if (StringUtils.isBlank(elasticsearchUrl)) {
             return null; // FIXME handle case where this logs retriever is miss configured lacking of an Elasticsearch URL. We should use the rendering  ElasticLogsBackendWithVisualizationOnlyThroughKibana
         } else {
-            Tracer tracer = OpenTelemetrySdkProvider.get().getTracer();
             Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
             return new ElasticsearchLogStorageRetriever(
                 this.elasticsearchUrl, credentials,
-                buildLogsVisualizationUrlTemplate, templateBindingsProvider,
-                tracer);
+                buildLogsVisualizationUrlTemplate, templateBindingsProvider);
         }
     }
 
@@ -154,14 +152,12 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             }
 
             try {
-                Tracer tracer = OpenTelemetrySdkProvider.get().getTracer();
                 Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
                 ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
                     credentials,
                     ObservabilityBackend.ERROR_TEMPLATE, // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check the proper configuration of the access to Elasticsearch
-                    TemplateBindingsProvider.empty(),
-                    tracer);
+                    TemplateBindingsProvider.empty());
 
                 return FormValidation.aggregate(elasticsearchLogStorageRetriever.checkElasticsearchSetup());
             } catch (NoSuchElementException e) {

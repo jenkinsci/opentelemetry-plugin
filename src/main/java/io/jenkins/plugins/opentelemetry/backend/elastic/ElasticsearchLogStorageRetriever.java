@@ -17,6 +17,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import groovy.text.Template;
 import hudson.util.FormValidation;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.jenkins.CredentialsNotFoundException;
@@ -79,15 +80,14 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     private final ElasticsearchClient esClient;
 
     @Nonnull
-    private final Tracer tracer;
+    private Tracer _tracer;
 
     /**
      * TODO verify unsername:password auth vs apiKey auth
      */
     public ElasticsearchLogStorageRetriever(
         @Nonnull String elasticsearchUrl, @Nonnull Credentials elasticsearchCredentials,
-        @Nonnull Template buildLogsVisualizationUrlTemplate, @Nonnull TemplateBindingsProvider templateBindingsProvider,
-        @Nonnull Tracer tracer) {
+        @Nonnull Template buildLogsVisualizationUrlTemplate, @Nonnull TemplateBindingsProvider templateBindingsProvider) {
 
         if (StringUtils.isBlank(elasticsearchUrl)) {
             throw new IllegalArgumentException("Elasticsearch url cannot be blank");
@@ -103,7 +103,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             .build();
         this.elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
         this.esClient = new ElasticsearchClient(elasticsearchTransport);
-        this.tracer = tracer;
 
         this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
         this.templateBindingsProvider = templateBindingsProvider;
@@ -115,7 +114,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         @Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete) {
         Charset charset = StandardCharsets.UTF_8;
 
-        SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchLogStorageRetriever.overallLog")
+        SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.overallLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
             .setAttribute("complete", complete);
@@ -123,11 +122,11 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
             LineIterator logLines = new ElasticsearchBuildLogsLineIterator(
-                jobFullName, runNumber, traceId, esClient, tracer);
+                jobFullName, runNumber, traceId, esClient, getTracer());
 
             LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter = new LineIterator.JenkinsHttpSessionLineBytesToLineNumberConverter(jobFullName, runNumber, null);
-            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, tracer);
-            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, tracer);
+            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, getTracer());
+            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
 
             Map<String, String> localBindings = new HashMap<>();
             localBindings.put("traceId", traceId);
@@ -151,7 +150,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     public LogsQueryResult stepLog(@Nonnull String jobFullName, int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete) {
         final Charset charset = StandardCharsets.UTF_8;
 
-        SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchLogStorageRetriever.stepLog")
+        SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.stepLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId)
@@ -163,11 +162,11 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
             LineIterator logLines = new ElasticsearchBuildLogsLineIterator(
                 jobFullName, runNumber, traceId, flowNodeId,
-                esClient, tracer);
+                esClient, getTracer());
             LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter = new LineIterator.JenkinsHttpSessionLineBytesToLineNumberConverter(jobFullName, runNumber, flowNodeId);
 
-            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, tracer);
-            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, tracer);
+            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, getTracer());
+            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
 
             Map<String, String> localBindings = new HashMap<>();
             localBindings.put("traceId", traceId);
@@ -328,5 +327,12 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             "buildLogsVisualizationUrlTemplate=" + buildLogsVisualizationUrlTemplate +
             ", templateBindingsProvider=" + templateBindingsProvider +
             '}';
+    }
+
+    private Tracer getTracer(){
+        if (_tracer == null) {
+            _tracer = OpenTelemetrySdkProvider.get().getTracer();
+        }
+        return _tracer;
     }
 }

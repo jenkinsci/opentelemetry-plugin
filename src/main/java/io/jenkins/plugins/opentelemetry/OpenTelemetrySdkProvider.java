@@ -33,6 +33,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 
 @Extension
@@ -56,11 +57,7 @@ public class OpenTelemetrySdkProvider {
     public OpenTelemetrySdkProvider() {
     }
 
-    @PostConstruct
-    @VisibleForTesting
-    public void postConstruct() {
-        initializeNoOp();
-    }
+
 
     @Nonnull
     public Tracer getTracer() {
@@ -99,8 +96,9 @@ public class OpenTelemetrySdkProvider {
     }
 
     @PreDestroy
-    public void preDestroy() {
+    public void shutdown() {
         if (this.openTelemetrySdk != null) {
+            LOGGER.log(Level.INFO, "shutdown...");
             for(OtelComponent otelComponent: ExtensionList.lookup(OtelComponent.class)) {
                 LOGGER.log(Level.FINE, () -> "beforeSdkShutdown() " + otelComponent);
                 otelComponent.beforeSdkShutdown();
@@ -113,7 +111,19 @@ public class OpenTelemetrySdkProvider {
     }
 
     public void initialize(@Nonnull OpenTelemetryConfiguration configuration) {
-        preDestroy(); // shutdown existing SDK
+        shutdown(); // shutdown existing SDK
+        if (configuration.getEndpoint().isPresent()) {
+            initializeOtlp(configuration);
+        } else {
+            initializeNoOp();
+        }
+        LOGGER.log(Level.INFO, () -> "Initialize Otel SDK on components: " + ExtensionList.lookup(OtelComponent.class).stream().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
+        for (OtelComponent otelComponent : ExtensionList.lookup(OtelComponent.class)) {
+            otelComponent.afterSdkInitialized(meter, logEmitter, tracer, config);
+        }
+    }
+
+    public void initializeOtlp(@Nonnull OpenTelemetryConfiguration configuration) {
 
         AutoConfiguredOpenTelemetrySdkBuilder sdkBuilder = AutoConfiguredOpenTelemetrySdk.builder();
         // PROPERTIES
@@ -136,7 +146,12 @@ public class OpenTelemetrySdkProvider {
         this.resource = autoConfiguredOpenTelemetrySdk.getResource();
         this.config = autoConfiguredOpenTelemetrySdk.getConfig();
         this.openTelemetry = this.openTelemetrySdk;
-        this.tracer.setDelegate(openTelemetry.getTracer(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME, OtelUtils.getOpentelemetryPluginVersion()));
+        Tracer newTracer = openTelemetry.getTracer(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME, OtelUtils.getOpentelemetryPluginVersion());
+        if (tracer == null) {
+            this.tracer = new TracerDelegate(newTracer);
+        } else {
+            this.tracer.setDelegate(newTracer);
+        }
 
         this.logEmitter = openTelemetrySdk.getSdkLogEmitterProvider().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
         this.meter = openTelemetry.getMeterProvider().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
@@ -144,9 +159,9 @@ public class OpenTelemetrySdkProvider {
         LOGGER.log(Level.INFO, () -> "OpenTelemetry SDK initialized: " + OtelUtils.prettyPrintOtelSdkConfig(autoConfiguredOpenTelemetrySdk));
     }
 
+    @VisibleForTesting
     public void initializeNoOp() {
-        LOGGER.log(Level.FINE, "initializeNoOp");
-        preDestroy();
+        LOGGER.log(Level.INFO, "initializeNoOp");
 
         this.openTelemetrySdk = null;
         this.resource = Resource.getDefault();
@@ -162,15 +177,7 @@ public class OpenTelemetrySdkProvider {
 
         this.meter = openTelemetry.getMeterProvider().get("io.jenkins.opentelemetry");
         this.logEmitter = SdkLogEmitterProvider.builder().build().get("noop"); // FIXME tear down
-        LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
-    }
-
-    @Initializer(after = InitMilestone.JOB_CONFIG_ADAPTED)
-    public void postInitialize() {
-        for (OtelComponent otelComponent : ExtensionList.lookup(OtelComponent.class)) {
-            LOGGER.log(Level.FINE, () -> "Initialize Otel SDK on " + otelComponent);
-            otelComponent.afterSdkInitialized(meter, logEmitter, tracer, config);
-        }
+        LOGGER.log(Level.INFO, "OpenTelemetry initialized as NoOp");
     }
 
     static public OpenTelemetrySdkProvider get() {

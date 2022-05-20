@@ -14,6 +14,7 @@ import hudson.model.Run;
 import hudson.util.LogTaskListener;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -40,6 +41,7 @@ import org.jvnet.hudson.test.BuildWatcher;
 
 import javax.annotation.Nonnull;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -54,6 +56,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verify;
+import static java.util.Optional.*;
 import static org.junit.Assert.fail;
 
 public class BaseIntegrationTest {
@@ -101,7 +104,12 @@ public class BaseIntegrationTest {
 
         // verify(openTelemetrySdkProvider.openTelemetry == null, "OpenTelemetrySdkProvider has already been configured");
         OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
-        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration());
+        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(
+            of("http://localhost:4317"), Optional.<String>empty(),
+            Optional.<OtlpAuthentication>empty(),
+            Optional.<Integer>empty(), Optional.<Integer>empty(),
+            Optional.<String>empty(), Optional.<String>empty(), Optional.<String>empty(),
+            Collections.emptyMap()));
 
         // openTelemetrySdkProvider.tracer.setDelegate(openTelemetrySdkProvider.openTelemetry.getTracer("jenkins"));
     }

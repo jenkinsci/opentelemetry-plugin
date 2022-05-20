@@ -37,7 +37,6 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
     Map<String, String> rootContext = new HashMap<>();
 
     transient Run run;
-    transient JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
 
     public MonitoringAction(String traceId, String spanId, String rootSpanName) {
         this.traceId = traceId;

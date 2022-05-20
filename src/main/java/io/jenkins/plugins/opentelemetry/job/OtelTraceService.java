@@ -15,12 +15,16 @@ import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
+import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.graph.AtomNode;
@@ -29,7 +33,6 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,7 +47,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Verify.verify;
 
 @Extension
-public class OtelTraceService {
+public class OtelTraceService implements OtelComponent {
     private static Logger LOGGER = Logger.getLogger(OtelTraceService.class.getName());
 
     private transient ConcurrentMap<RunIdentifier, RunSpans> spansByRun;
@@ -53,7 +56,7 @@ public class OtelTraceService {
 
     private Tracer tracer;
 
-    private Tracer noOpTracer;
+    private final Tracer noOpTracer = TracerProvider.noop().get("jenkins");
 
     public OtelTraceService() {
         initialize();
@@ -299,12 +302,6 @@ public class OtelTraceService {
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + " FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], Span[id: " + span.getSpanContext().getSpanId() + "]" + ") -  " + runSpans);
     }
 
-    @Inject
-    public void setJenkinsOtelPlugin(@Nonnull OpenTelemetrySdkProvider openTelemetrySdkProvider) {
-        this.tracer = openTelemetrySdkProvider.getTracer();
-        this.noOpTracer = TracerProvider.noop().get("jenkins");
-    }
-
     /**
      * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
      * @see #setupContext(Run, boolean) 
@@ -331,6 +328,15 @@ public class OtelTraceService {
         return tracer;
     }
 
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+        this.tracer = tracer;
+    }
+
+    @Override
+    public void beforeSdkShutdown() {
+
+    }
 
     @Immutable
     public static class RunSpans {
