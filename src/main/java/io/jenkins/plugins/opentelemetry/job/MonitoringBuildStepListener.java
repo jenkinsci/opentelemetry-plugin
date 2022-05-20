@@ -13,16 +13,20 @@ import hudson.model.BuildListener;
 import hudson.model.BuildStepListener;
 import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.BuildStepContextKey;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.model.Jenkins;
 
 import javax.annotation.CheckForNull;
@@ -35,7 +39,7 @@ import static com.google.common.base.Verify.verifyNotNull;
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
 
 @Extension
-public class MonitoringBuildStepListener extends BuildStepListener {
+public class MonitoringBuildStepListener extends BuildStepListener implements OtelComponent {
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
@@ -112,7 +116,6 @@ public class MonitoringBuildStepListener extends BuildStepListener {
     @Inject
     public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
-        this.tracer = this.otelTraceService.getTracer();
     }
 
     @Nonnull
@@ -128,5 +131,15 @@ public class MonitoringBuildStepListener extends BuildStepListener {
     @Override
     public String toString() {
         return "MonitoringBuildStepListener{}";
+    }
+
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+        this.tracer = tracer;
+    }
+
+    @Override
+    public void beforeSdkShutdown() {
+
     }
 }

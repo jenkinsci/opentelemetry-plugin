@@ -9,12 +9,17 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Queue;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.AbstractOtelComponent;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
+import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
@@ -36,7 +41,7 @@ import java.util.logging.Logger;
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/PipelineBridge.java
  */
 @Extension
-public final class OtelLogStorageFactory implements LogStorageFactory {
+public final class OtelLogStorageFactory extends AbstractOtelComponent implements LogStorageFactory {
 
     private final static Logger logger = Logger.getLogger(OtelLogStorageFactory.class.getName());
 
@@ -46,6 +51,8 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
     }
 
     OpenTelemetrySdkProvider openTelemetrySdkProvider;
+
+    private Tracer tracer;
 
     static OtelLogStorageFactory get() {
         return ExtensionList.lookupSingleton(OtelLogStorageFactory.class);
@@ -76,7 +83,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
                 BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getTraceId(), monitoringAction.getSpanId(), buildInfoContext);
                 logger.log(Level.FINEST, () -> "forBuild(" + buildInfo + ")");
 
-                return new OtelLogStorage(buildInfo, getOpenTelemetrySdkProvider().getTracer());
+                return new OtelLogStorage(buildInfo, tracer);
             } else {
                 return null;
             }
@@ -95,4 +102,8 @@ public final class OtelLogStorageFactory implements LogStorageFactory {
         return openTelemetrySdkProvider;
     }
 
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+        this.tracer = tracer;
+    }
 }

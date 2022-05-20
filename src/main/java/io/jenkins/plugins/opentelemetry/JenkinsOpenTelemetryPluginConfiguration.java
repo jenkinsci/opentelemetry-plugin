@@ -9,6 +9,8 @@ import com.google.common.base.Strings;
 import groovy.text.GStringTemplateEngine;
 import hudson.Extension;
 import hudson.PluginWrapper;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.tasks.BuildStep;
@@ -154,7 +156,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @Override
     public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
-        LOGGER.log(Level.FINE, "Configure...");
+        LOGGER.log(Level.INFO, "Configure...");
         req.bindJSON(this, json);
         // stapler oddity, empty lists coming from the HTTP request are not set on bean by  `req.bindJSON(this, json)`
         this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
@@ -175,6 +177,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     protected Object readResolve() {
+        LOGGER.log(Level.INFO, "readResolve()");
         if (this.disabledResourceProviders == null) {
             this.disabledResourceProviders = OpenTelemetrySdkProvider.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
         }
@@ -210,14 +213,15 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             configurationProperties);
     }
 
-    @PostConstruct
+    @Initializer(after = InitMilestone.SYSTEM_CONFIG_ADAPTED, before = InitMilestone.JOB_LOADED)
+    // @PostConstruct
     public void initializeOpenTelemetry() {
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
-            LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
+            LOGGER.log(Level.INFO, "Configuration didn't change, skip reconfiguration");
             return;
         }
-        LOGGER.log(Level.FINE, "Initialize");
+        LOGGER.log(Level.INFO, "Initialize Jenkins OpenTelemetry Plugin...");
         openTelemetrySdkProvider.initialize(newOpenTelemetryConfiguration);
         this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
     }
@@ -247,6 +251,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setEndpoint(String endpoint) {
         this.endpoint = sanitizeOtlpEndpoint(endpoint);
+        LOGGER.log(Level.INFO, () -> "setEndpoint(" + endpoint + ")");
     }
 
     @Nonnull

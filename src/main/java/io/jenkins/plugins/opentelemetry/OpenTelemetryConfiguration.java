@@ -39,10 +39,6 @@ public class OpenTelemetryConfiguration {
     private final Optional<String> disabledResourceProviders;
     private final Map<String, String> configurationProperties;
 
-    public OpenTelemetryConfiguration() {
-        this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap());
-    }
-
     public OpenTelemetryConfiguration(Optional<String> endpoint, Optional<String> trustedCertificatesPem, Optional<OtlpAuthentication> authentication,
                                       Optional<Integer> exporterTimeoutMillis, Optional<Integer> exporterIntervalMillis,
                                       Optional<String> serviceName, Optional<String> serviceNamespace, Optional<String> disabledResourceProviders, Map<String, String> configurationProperties) {

@@ -5,8 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.runhandler;
 
-import com.google.inject.Inject;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import hudson.Extension;
 import hudson.model.Action;
 import hudson.model.Item;
@@ -21,6 +20,7 @@ import javaposse.jobdsl.plugin.actions.SeedJobTransientActionFactory;
 import jenkins.YesNoMaybe;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 import java.util.Collection;
 
 

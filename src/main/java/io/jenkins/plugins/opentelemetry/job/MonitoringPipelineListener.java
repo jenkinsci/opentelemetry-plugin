@@ -15,6 +15,7 @@ import hudson.model.Descriptor;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
@@ -23,12 +24,15 @@ import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.logs.LogEmitter;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import jenkins.model.CauseOfInterruption;
 import org.apache.commons.compress.utils.Sets;
@@ -70,7 +74,7 @@ import static com.google.common.base.Verify.verifyNotNull;
 
 
 @Extension
-public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener, StepListener {
+public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener, StepListener, OtelComponent {
     private final static Logger LOGGER = Logger.getLogger(MonitoringPipelineListener.class.getName());
 
     private OtelTraceService otelTraceService;
@@ -387,7 +391,6 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     @Inject
     public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
-        this.tracer = this.otelTraceService.getTracer();
     }
 
     @Nonnull
@@ -403,5 +406,15 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     @Override
     public String toString() {
         return "TracingPipelineListener{}";
+    }
+
+    @Override
+    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+        this.tracer = tracer;
+    }
+
+    @Override
+    public void beforeSdkShutdown() {
+
     }
 }

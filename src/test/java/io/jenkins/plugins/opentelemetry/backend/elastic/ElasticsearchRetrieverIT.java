@@ -57,8 +57,7 @@ public class ElasticsearchRetrieverIT {
             url,
             new UsernamePasswordCredentials(username, password),
             ObservabilityBackend.ERROR_TEMPLATE /* TODO better URL template */,
-            TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)),
-            OpenTelemetry.noop().getTracer("test"));
+            TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)));
 
         FormValidation formValidation = FormValidation.aggregate(elasticsearchLogStorageRetriever.checkElasticsearchSetup());
         System.out.println(formValidation);
@@ -93,8 +92,7 @@ public class ElasticsearchRetrieverIT {
             url,
             new UsernamePasswordCredentials(username, password),
             ObservabilityBackend.ERROR_TEMPLATE /* TODO better URL template */,
-            TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)),
-            OpenTelemetry.noop().getTracer("test"));
+            TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)));
         final List<FormValidation> formValidations = elasticsearchLogStorageRetriever.checkElasticsearchSetup();
         for (FormValidation formValidation : formValidations) {
             System.out.println(formValidation);

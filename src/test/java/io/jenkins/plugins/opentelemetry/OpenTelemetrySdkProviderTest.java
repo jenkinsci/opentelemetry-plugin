@@ -56,7 +56,6 @@ public class OpenTelemetrySdkProviderTest {
             configurationProperties);
 
         OpenTelemetrySdkProvider openTelemetrySdkProvider = new OpenTelemetrySdkProvider();
-        openTelemetrySdkProvider.postConstruct();
         openTelemetrySdkProvider.initialize(openTelemetryConfiguration);
 
         Resource resource = openTelemetrySdkProvider.getResource();
@@ -85,6 +84,6 @@ public class OpenTelemetrySdkProviderTest {
             CoreMatchers.is("1.2.3"));
 
 
-        openTelemetrySdkProvider.preDestroy();
+        openTelemetrySdkProvider.shutdown();
     }
 }
