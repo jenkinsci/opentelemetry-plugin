@@ -156,7 +156,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @Override
     public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
-        LOGGER.log(Level.INFO, "Configure...");
+        LOGGER.log(Level.FINE, "Configure...");
         req.bindJSON(this, json);
         // stapler oddity, empty lists coming from the HTTP request are not set on bean by  `req.bindJSON(this, json)`
         this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
@@ -177,7 +177,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     protected Object readResolve() {
-        LOGGER.log(Level.INFO, "readResolve()");
+        LOGGER.log(Level.FINE, "readResolve()");
         if (this.disabledResourceProviders == null) {
             this.disabledResourceProviders = OpenTelemetrySdkProvider.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
         }
@@ -218,10 +218,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     public void initializeOpenTelemetry() {
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
-            LOGGER.log(Level.INFO, "Configuration didn't change, skip reconfiguration");
+            LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
             return;
         }
-        LOGGER.log(Level.INFO, "Initialize Jenkins OpenTelemetry Plugin...");
+        LOGGER.log(Level.FINE, "Initialize Jenkins OpenTelemetry Plugin...");
         openTelemetrySdkProvider.initialize(newOpenTelemetryConfiguration);
         this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
     }
@@ -251,7 +251,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setEndpoint(String endpoint) {
         this.endpoint = sanitizeOtlpEndpoint(endpoint);
-        LOGGER.log(Level.INFO, () -> "setEndpoint(" + endpoint + ")");
+        // debug line used to verify the lifecycle (@Initializer) when using JCasC configuration
+        LOGGER.log(Level.FINE, () -> "setEndpoint(" + endpoint + ")");
     }
 
     @Nonnull

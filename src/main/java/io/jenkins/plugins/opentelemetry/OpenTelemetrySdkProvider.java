@@ -94,7 +94,7 @@ public class OpenTelemetrySdkProvider {
     @PreDestroy
     public void shutdown() {
         if (this.openTelemetrySdk != null) {
-            LOGGER.log(Level.INFO, "shutdown...");
+            LOGGER.log(Level.FINE, "shutdown...");
             for (OtelComponent otelComponent : ExtensionList.lookup(OtelComponent.class)) {
                 LOGGER.log(Level.FINE, () -> "beforeSdkShutdown() " + otelComponent);
                 otelComponent.beforeSdkShutdown();
@@ -113,7 +113,7 @@ public class OpenTelemetrySdkProvider {
         } else {
             initializeNoOp();
         }
-        LOGGER.log(Level.INFO, () -> "Initialize Otel SDK on components: " + ExtensionList.lookup(OtelComponent.class).stream().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
+        LOGGER.log(Level.FINE, () -> "Initialize Otel SDK on components: " + ExtensionList.lookup(OtelComponent.class).stream().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
         for (OtelComponent otelComponent : ExtensionList.lookup(OtelComponent.class)) {
             otelComponent.afterSdkInitialized(meter, logEmitter, tracer, config);
         }
@@ -157,7 +157,7 @@ public class OpenTelemetrySdkProvider {
 
     @VisibleForTesting
     public void initializeNoOp() {
-        LOGGER.log(Level.INFO, "initializeNoOp");
+        LOGGER.log(Level.FINE, "initializeNoOp");
 
         this.openTelemetrySdk = null;
         this.resource = Resource.getDefault();
@@ -173,7 +173,7 @@ public class OpenTelemetrySdkProvider {
 
         this.meter = OpenTelemetry.noop().getMeter("io.jenkins.opentelemetry");
         this.logEmitter = NoopLogEmitter.noop();
-        LOGGER.log(Level.INFO, "OpenTelemetry initialized as NoOp");
+        LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
     }
 
     static public OpenTelemetrySdkProvider get() {

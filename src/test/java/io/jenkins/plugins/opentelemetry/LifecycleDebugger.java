@@ -16,17 +16,17 @@ import java.util.logging.Logger;
 public class LifecycleDebugger {
     private final static Logger logger = Logger.getLogger(LifecycleDebugger.class.getName());
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_LOADED, before = InitMilestone.SYSTEM_CONFIG_ADAPTED)
-    public void stage1(){
-        logger.log(Level.SEVERE, "after = SYSTEM_CONFIG_LOADED, before = SYSTEM_CONFIG_ADAPTED");
+    public void before_stage_SYSTEM_CONFIG_ADAPTED(){
+        logger.log(Level.FINE, "after = SYSTEM_CONFIG_LOADED, before = SYSTEM_CONFIG_ADAPTED");
     }
 
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_ADAPTED, before = InitMilestone.JOB_LOADED)
-    public void stage2(){
-        logger.log(Level.SEVERE,"after = SYSTEM_CONFIG_ADAPTED, before = JOB_LOADED");
+    public void before_stage_JOB_LOADED(){
+        logger.log(Level.FINE,"after = SYSTEM_CONFIG_ADAPTED, before = JOB_LOADED");
     }
 
     @Initializer(after = InitMilestone.JOB_CONFIG_ADAPTED, before = InitMilestone.COMPLETED)
-    public void stage3(){
-        logger.log(Level.SEVERE,"after = JOB_CONFIG_ADAPTED, before = COMPLETED");
+    public void before_stage_COMPLETED(){
+        logger.log(Level.FINE,"after = JOB_CONFIG_ADAPTED, before = COMPLETED");
     }
 }
