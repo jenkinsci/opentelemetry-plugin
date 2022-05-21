@@ -9,10 +9,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import hudson.Extension;
 import hudson.ExtensionList;
-import hudson.init.InitMilestone;
-import hudson.init.Initializer;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
+import io.jenkins.plugins.opentelemetry.opentelemetry.log.NoopLogEmitter;
 import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -24,12 +23,10 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.extension.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.logs.LogEmitter;
-import io.opentelemetry.sdk.logs.SdkLogEmitterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 
 import javax.annotation.Nonnull;
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -56,7 +53,6 @@ public class OpenTelemetrySdkProvider {
 
     public OpenTelemetrySdkProvider() {
     }
-
 
 
     @Nonnull
@@ -99,7 +95,7 @@ public class OpenTelemetrySdkProvider {
     public void shutdown() {
         if (this.openTelemetrySdk != null) {
             LOGGER.log(Level.INFO, "shutdown...");
-            for(OtelComponent otelComponent: ExtensionList.lookup(OtelComponent.class)) {
+            for (OtelComponent otelComponent : ExtensionList.lookup(OtelComponent.class)) {
                 LOGGER.log(Level.FINE, () -> "beforeSdkShutdown() " + otelComponent);
                 otelComponent.beforeSdkShutdown();
             }
@@ -175,8 +171,8 @@ public class OpenTelemetrySdkProvider {
             this.tracer.setDelegate(OpenTelemetry.noop().getTracer("noop"));
         }
 
-        this.meter = openTelemetry.getMeterProvider().get("io.jenkins.opentelemetry");
-        this.logEmitter = SdkLogEmitterProvider.builder().build().get("noop"); // FIXME tear down
+        this.meter = OpenTelemetry.noop().getMeter("io.jenkins.opentelemetry");
+        this.logEmitter = NoopLogEmitter.noop();
         LOGGER.log(Level.INFO, "OpenTelemetry initialized as NoOp");
     }
 
