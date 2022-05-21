@@ -79,7 +79,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     @Nonnull
     private final ElasticsearchClient esClient;
 
-    @Nonnull
     private Tracer _tracer;
 
     /**
