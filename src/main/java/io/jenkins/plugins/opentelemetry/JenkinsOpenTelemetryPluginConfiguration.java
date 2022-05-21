@@ -213,8 +213,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             configurationProperties);
     }
 
+    /**
+     * Initialize the Otel SDK, must happen after the plugin has been configured by the standard config and by JCasC
+     * JCasC configuration happens during `SYSTEM_CONFIG_ADAPTED` (see `io.jenkins.plugins.casc.ConfigurationAsCode#init()`)
+     */
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_ADAPTED, before = InitMilestone.JOB_LOADED)
-    // @PostConstruct
     public void initializeOpenTelemetry() {
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
