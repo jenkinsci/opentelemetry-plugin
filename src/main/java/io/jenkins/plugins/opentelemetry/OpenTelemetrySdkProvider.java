@@ -12,10 +12,10 @@ import hudson.ExtensionList;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.log.NoopLogEmitter;
-import io.jenkins.plugins.opentelemetry.opentelemetry.trace.TracerDelegate;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
@@ -45,7 +45,8 @@ public class OpenTelemetrySdkProvider {
 
     protected transient OpenTelemetry openTelemetry;
     protected transient OpenTelemetrySdk openTelemetrySdk;
-    protected transient TracerDelegate tracer;
+    @Nonnull
+    protected final transient TracerDelegate tracer = new TracerDelegate();
     protected transient Meter meter;
     protected transient Resource resource;
     protected transient ConfigProperties config;
@@ -57,7 +58,7 @@ public class OpenTelemetrySdkProvider {
 
     @Nonnull
     public Tracer getTracer() {
-        return Preconditions.checkNotNull(tracer);
+        return Preconditions.checkNotNull(tracer.getDelegate());
     }
 
     @Nonnull
@@ -142,12 +143,7 @@ public class OpenTelemetrySdkProvider {
         this.resource = autoConfiguredOpenTelemetrySdk.getResource();
         this.config = autoConfiguredOpenTelemetrySdk.getConfig();
         this.openTelemetry = this.openTelemetrySdk;
-        Tracer newTracer = openTelemetry.getTracer(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME, OtelUtils.getOpentelemetryPluginVersion());
-        if (tracer == null) {
-            this.tracer = new TracerDelegate(newTracer);
-        } else {
-            this.tracer.setDelegate(newTracer);
-        }
+        this.tracer.setDelegate(openTelemetry.getTracer(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME, OtelUtils.getOpentelemetryPluginVersion()));
 
         this.logEmitter = openTelemetrySdk.getSdkLogEmitterProvider().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
         this.meter = openTelemetry.getMeterProvider().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
@@ -165,11 +161,7 @@ public class OpenTelemetrySdkProvider {
         this.openTelemetry = OpenTelemetry.noop();
         GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
         GlobalOpenTelemetry.set(OpenTelemetry.noop());
-        if (this.tracer == null) {
-            this.tracer = new TracerDelegate(OpenTelemetry.noop().getTracer("noop"));
-        } else {
-            this.tracer.setDelegate(OpenTelemetry.noop().getTracer("noop"));
-        }
+        this.tracer.setDelegate(OpenTelemetry.noop().getTracer("noop"));
 
         this.meter = OpenTelemetry.noop().getMeter("io.jenkins.opentelemetry");
         this.logEmitter = NoopLogEmitter.noop();
@@ -178,5 +170,22 @@ public class OpenTelemetrySdkProvider {
 
     static public OpenTelemetrySdkProvider get() {
         return ExtensionList.lookupSingleton(OpenTelemetrySdkProvider.class);
+    }
+
+    static class TracerDelegate implements Tracer {
+        private Tracer delegate;
+
+        @Override
+        public synchronized SpanBuilder spanBuilder(String spanName) {
+            return delegate.spanBuilder(spanName);
+        }
+
+        public synchronized void setDelegate(Tracer delegate) {
+            this.delegate = delegate;
+        }
+
+        public synchronized Tracer getDelegate() {
+            return delegate;
+        }
     }
 }
