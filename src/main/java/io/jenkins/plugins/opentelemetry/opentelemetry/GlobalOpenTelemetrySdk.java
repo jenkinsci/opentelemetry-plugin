@@ -274,7 +274,7 @@ public final class GlobalOpenTelemetrySdk {
 
         @Override
         public CompletableResultCode shutDown() {
-            logger.log(Level.INFO, "Shutdown OpenTelemetry " + OtelUtils.prettyPrintOtelSdkConfig(autoConfiguredOpenTelemetrySdk) + "...");
+            logger.log(Level.FINE, "Shutdown OpenTelemetry " + OtelUtils.prettyPrintOtelSdkConfig(autoConfiguredOpenTelemetrySdk) + "...");
             final CompletableResultCode result = CompletableResultCode.ofAll(Arrays.asList(
                 autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkTracerProvider().shutdown(),
                 autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkMeterProvider().shutdown(),
