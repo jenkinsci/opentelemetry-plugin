@@ -30,6 +30,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * TODO improve {@link io.jenkins.plugins.opentelemetry.init.ServletFilterInitializer} to ensure the
@@ -38,6 +40,9 @@ import java.util.Optional;
  */
 @Extension
 public class AuditingSecurityListener extends SecurityListener implements OtelComponent {
+
+    private final static Logger LOGGER = Logger.getLogger(AuditingSecurityListener.class.getName());
+
     private LongCounter loginSuccessCounter;
     private LongCounter loginFailureCounter;
     private LongCounter loginCounter;
@@ -64,6 +69,8 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
                 .setDescription("Logins")
                 .setUnit("1")
                 .build();
+
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins authentication events...");
     }
 
     @Deprecated

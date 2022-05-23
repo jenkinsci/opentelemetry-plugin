@@ -40,7 +40,6 @@ public class JvmMonitoringInitializer extends AbstractOtelComponent {
     @Override
     public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
 
-        LOGGER.log(Level.FINE, "Start monitoring the JVM...");
         List<ObservableLongCounter> observableLongCounters = GarbageCollector.registerObservers(meter);
         observableLongCounters.stream().forEach(this::registerInstrument);
          List<ObservableLongUpDownCounter> observableLongUpDownCounters = MemoryPools.registerObservers(meter);
@@ -156,5 +155,6 @@ public class JvmMonitoringInitializer extends AbstractOtelComponent {
                         }
                     ));
         }
+        LOGGER.log(Level.FINE, "Start monitoring Jenkins JVM...");
     }
 }

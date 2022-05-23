@@ -42,6 +42,8 @@ public class MonitoringCloudListener extends CloudProvisioningListener implement
             .setDescription("Number of provisioned cloud agents")
             .setUnit("1")
             .build();
+
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins cloud agent provisioning...");
     }
 
     @Override

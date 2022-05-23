@@ -142,6 +142,6 @@ public class GitHubClientMonitoring extends AbstractOtelComponent {
                     });
 
                 }));
-        logger.log(Level.FINE, "GitHub client monitoring initialized");
+        logger.log(Level.FINE, () -> "Start monitoring Jenkins GitHub client...");
     }
 }

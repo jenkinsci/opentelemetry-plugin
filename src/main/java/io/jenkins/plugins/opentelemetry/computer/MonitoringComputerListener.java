@@ -87,6 +87,8 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
             .setDescription("Number of ComputerLauncher failures")
             .setUnit("1")
             .build();
+
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins agents management...");
     }
 
     private long getOfflineAgentsCount() {

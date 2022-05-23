@@ -76,6 +76,8 @@ public class MonitoringQueueListener extends QueueListener implements OtelCompon
             .setDescription("Total time spent in queue by the tasks that have been processed")
             .setUnit("ms")
             .build();
+
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins queue...");
     }
 
     @Override

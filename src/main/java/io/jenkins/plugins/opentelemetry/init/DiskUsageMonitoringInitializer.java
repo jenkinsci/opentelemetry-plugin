@@ -47,7 +47,7 @@ public class DiskUsageMonitoringInitializer extends AbstractOtelComponent {
                 .setUnit("byte")
                 .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes())));
 
-        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage");
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage...");
     }
 
     private long calculateDiskUsageInBytes() {

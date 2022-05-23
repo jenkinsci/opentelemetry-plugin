@@ -128,6 +128,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                         .setDescription("Job completed")
                         .setUnit("1")
                         .build();
+
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins build executions...");
     }
 
     @NonNull

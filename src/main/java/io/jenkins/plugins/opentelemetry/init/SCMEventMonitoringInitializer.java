@@ -54,6 +54,6 @@ public class SCMEventMonitoringInitializer extends AbstractOtelComponent {
                 .setUnit("1")
                 .buildWithCallback(valueObserver -> valueObserver.record(SCMEvent.getEventProcessingMetrics().getCompletedTasks())));
 
-        logger.log(Level.FINE, () -> "Start monitoring SCM events");
+        logger.log(Level.FINE, () -> "Start monitoring Jenkins SCM events...");
     }
 }
