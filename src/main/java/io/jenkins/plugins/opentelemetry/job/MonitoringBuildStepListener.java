@@ -27,6 +27,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.logs.LogEmitter;
+import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
 import javax.annotation.CheckForNull;
@@ -38,7 +39,7 @@ import java.util.logging.Logger;
 import static com.google.common.base.Verify.verifyNotNull;
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
 
-@Extension
+@Extension(dynamicLoadable = YesNoMaybe.YES)
 public class MonitoringBuildStepListener extends BuildStepListener implements OtelComponent {
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());

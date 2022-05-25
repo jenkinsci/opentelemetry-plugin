@@ -34,6 +34,7 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.logs.LogEmitter;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import jenkins.YesNoMaybe;
 import jenkins.model.CauseOfInterruption;
 import org.apache.commons.compress.utils.Sets;
 import org.jenkinsci.plugins.structs.SymbolLookup;
@@ -73,7 +74,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Verify.verifyNotNull;
 
 
-@Extension
+@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener, StepListener, OtelComponent {
     private final static Logger LOGGER = Logger.getLogger(MonitoringPipelineListener.class.getName());
 
