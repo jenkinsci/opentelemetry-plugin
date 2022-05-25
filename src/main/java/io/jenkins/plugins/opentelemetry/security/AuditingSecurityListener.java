@@ -22,6 +22,7 @@ import io.opentelemetry.sdk.logs.LogBuilder;
 import io.opentelemetry.sdk.logs.LogEmitter;
 import io.opentelemetry.sdk.logs.data.Severity;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import jenkins.YesNoMaybe;
 import jenkins.security.SecurityListener;
 import org.acegisecurity.userdetails.UserDetails;
 import org.springframework.security.core.Authentication;
@@ -38,7 +39,7 @@ import java.util.logging.Logger;
  * {@link AuditingSecurityListener} events ({@link #loggedIn(String)}, {@link #failedToLogIn(String)}...) are invoked
  * within a trace.
  */
-@Extension
+@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class AuditingSecurityListener extends SecurityListener implements OtelComponent {
 
     private final static Logger LOGGER = Logger.getLogger(AuditingSecurityListener.class.getName());

@@ -22,6 +22,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.logs.LogEmitter;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
@@ -33,7 +34,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Extension
+@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringComputerListener extends ComputerListener implements OtelComponent {
     private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 

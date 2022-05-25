@@ -10,7 +10,6 @@ import hudson.Extension;
 import hudson.model.Node;
 import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.NodeProvisioner;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
@@ -18,14 +17,12 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.logs.LogEmitter;
+import jenkins.YesNoMaybe;
 
-import javax.annotation.Nonnull;
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Extension
+@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringCloudListener extends CloudProvisioningListener implements OtelComponent {
     private final static Logger LOGGER = Logger.getLogger(MonitoringCloudListener.class.getName());
 

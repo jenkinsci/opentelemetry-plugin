@@ -8,11 +8,12 @@ package io.jenkins.plugins.opentelemetry;
 import hudson.Extension;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
+import jenkins.YesNoMaybe;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Extension
+@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class LifecycleDebugger {
     private final static Logger logger = Logger.getLogger(LifecycleDebugger.class.getName());
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_LOADED, before = InitMilestone.SYSTEM_CONFIG_ADAPTED)

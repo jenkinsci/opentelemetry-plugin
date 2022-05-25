@@ -16,6 +16,7 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.logs.LogEmitter;
+import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
 import javax.annotation.Nonnull;
@@ -29,7 +30,7 @@ import java.util.logging.Logger;
 /**
  * Monitor the Jenkins Build queue
  */
-@Extension
+@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringQueueListener extends QueueListener implements OtelComponent {
 
     private final static Logger LOGGER = Logger.getLogger(MonitoringQueueListener.class.getName());
