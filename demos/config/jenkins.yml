@@ -47,7 +47,6 @@ unclassified:
             elasticsearchUrl: "http://elasticsearch:9200"
         kibanaBaseUrl: "http://localhost:5601"
         name: "Elastic Observability"
-
 jobs:
   - file: "/var/jenkins_home/config/ansible.dsl"
   - file: "/var/jenkins_home/config/gradle.dsl"
