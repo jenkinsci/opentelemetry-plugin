@@ -162,15 +162,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
         this.endpoint = sanitizeOtlpEndpoint(this.endpoint);
         initializeOpenTelemetry();
-        if (logStorageRetriever != null && logStorageRetriever instanceof Closeable) {
-            LOGGER.log(Level.FINE, () -> "Close " + logStorageRetriever + "...");
-            try {
-                ((Closeable) logStorageRetriever).close();
-            } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Exception closing currently setup logStorageRetriever: " + logStorageRetriever, e);
-            }
-        }
-        this.logStorageRetriever = resolveLogStorageRetriever();
         save();
         LOGGER.log(Level.FINE, "Configured");
         return true;
@@ -181,7 +172,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         if (this.disabledResourceProviders == null) {
             this.disabledResourceProviders = OpenTelemetrySdkProvider.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
         }
-        this.logStorageRetriever = resolveLogStorageRetriever();
+        // FIXME this.logStorageRetriever = resolveLogStorageRetriever();
+        LOGGER.log(Level.WARNING, "readResolve() verify logStorageRetriever is initialized by #initializeOpenTelemetry()");
         return this;
     }
 
@@ -219,14 +211,24 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      */
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_ADAPTED, before = InitMilestone.JOB_LOADED)
     public void initializeOpenTelemetry() {
+        LOGGER.log(Level.FINE, "Initialize Jenkins OpenTelemetry Plugin...");
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
-            return;
+        } else {
+            openTelemetrySdkProvider.initialize(newOpenTelemetryConfiguration);
+            this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
         }
-        LOGGER.log(Level.FINE, "Initialize Jenkins OpenTelemetry Plugin...");
-        openTelemetrySdkProvider.initialize(newOpenTelemetryConfiguration);
-        this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
+
+        if (logStorageRetriever != null && logStorageRetriever instanceof Closeable) {
+            LOGGER.log(Level.FINE, () -> "Close " + logStorageRetriever + "...");
+            try {
+                ((Closeable) logStorageRetriever).close();
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Exception closing currently setup logStorageRetriever: " + logStorageRetriever, e);
+            }
+        }
+        this.logStorageRetriever = resolveLogStorageRetriever();
     }
 
     /**

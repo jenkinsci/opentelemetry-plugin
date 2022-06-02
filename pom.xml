@@ -424,7 +424,7 @@
             <scope>test</scope>
         </dependency>
         <!--
-        HTML Publisher for blueocen 1.24.7 conflicts with the htmlpublisher we retrieve
+        HTML Publisher for blueocean 1.24.7 conflicts with the htmlpublisher we retrieve
         <dependency>
             <groupId>io.jenkins.blueocean</groupId>
             <artifactId>blueocean</artifactId>
