@@ -513,6 +513,8 @@
                     <loggers>
                         <io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>FINE</io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>
                         <io.jenkins.plugins.opentelemetry.job.log>FINER</io.jenkins.plugins.opentelemetry.job.log>
+                        <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>FINE</io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
+                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>FINE</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                     </loggers>
                 </configuration>
             </plugin>

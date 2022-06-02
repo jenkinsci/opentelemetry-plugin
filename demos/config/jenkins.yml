@@ -17,8 +17,14 @@ jenkins:
                       name: "io.jenkins.plugins.opentelemetry"
                   -   level: "FINE"
                       name: "io.jenkins.plugins.opentelemetry.init"
+                  -   level: "FINE"
+                      name: "io.jenkins.plugins.opentelemetry.job.log.OtelLogStorageFactory"
                   -   level: "ALL"
                       name: "io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider"
+                  -   level: "FINE"
+                      name: "io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener"
+                  -   level: "FINE"
+                      name: "io.jenkins.plugins.opentelemetry.job.MonitoringRunListener"
               name: "Otel"
   mode: EXCLUSIVE
   numExecutors: 5
