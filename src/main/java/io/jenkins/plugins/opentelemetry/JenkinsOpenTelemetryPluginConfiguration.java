@@ -172,8 +172,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         if (this.disabledResourceProviders == null) {
             this.disabledResourceProviders = OpenTelemetrySdkProvider.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
         }
-        // FIXME this.logStorageRetriever = resolveLogStorageRetriever();
-        LOGGER.log(Level.WARNING, "readResolve() verify logStorageRetriever is initialized by #initializeOpenTelemetry()");
         return this;
     }
 
