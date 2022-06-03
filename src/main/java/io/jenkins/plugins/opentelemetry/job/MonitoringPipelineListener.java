@@ -412,6 +412,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     @Override
     public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
         this.tracer = tracer;
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins pipeline executions...");
     }
 
     @Override

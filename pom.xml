@@ -424,7 +424,7 @@
             <scope>test</scope>
         </dependency>
         <!--
-        HTML Publisher for blueocen 1.24.7 conflicts with the htmlpublisher we retrieve
+        HTML Publisher for blueocean 1.24.7 conflicts with the htmlpublisher we retrieve
         <dependency>
             <groupId>io.jenkins.blueocean</groupId>
             <artifactId>blueocean</artifactId>
@@ -513,6 +513,8 @@
                     <loggers>
                         <io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>FINE</io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>
                         <io.jenkins.plugins.opentelemetry.job.log>FINER</io.jenkins.plugins.opentelemetry.job.log>
+                        <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>FINE</io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
+                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>FINE</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                     </loggers>
                 </configuration>
             </plugin>

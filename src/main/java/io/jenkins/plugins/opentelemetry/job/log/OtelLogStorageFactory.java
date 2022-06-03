@@ -62,7 +62,7 @@ public final class OtelLogStorageFactory extends AbstractOtelComponent implement
     @Override
     public LogStorage forBuild(@Nonnull final FlowExecutionOwner owner) {
         if (!getOpenTelemetrySdkProvider().isOtelLogsEnabled()) {
-            logger.log(Level.FINE, () -> "forBuild(): null");
+            logger.log(Level.FINE, () -> "OTel Logs disabled");
             return null;
         }
 

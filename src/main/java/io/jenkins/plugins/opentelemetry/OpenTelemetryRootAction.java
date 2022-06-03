@@ -26,7 +26,7 @@ public class OpenTelemetryRootAction implements RootAction {
             .stream()
             .filter(backend -> backend.getMetricsVisualizationUrlTemplate() != null)
             .findFirst();
-        logger.log(Level.FINE, () -> "OpenTelemetryRootAction.observabilityBackend: " + observabilityBackend);
+        logger.log(Level.FINE, () -> "getFirstMetricsCapableObservabilityBackend: " + observabilityBackend.orElse(null));
         return observabilityBackend;
     }
 
