@@ -394,7 +394,7 @@
             <!--
             can bump to 3.9 because it requires jenkins-core 2.270
             -->
-            <version>3.8</version>
+            <version>3.19</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
