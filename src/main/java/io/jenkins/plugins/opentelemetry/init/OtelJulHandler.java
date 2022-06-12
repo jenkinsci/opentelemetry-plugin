@@ -91,5 +91,11 @@ public class OtelJulHandler extends Handler implements OtelComponent {
 
     }
 
-
+    /**
+     * Hooking Otel logs is the first thing to initialize
+     */
+    @Override
+    public int ordinal() {
+        return Integer.MIN_VALUE;
+    }
 }

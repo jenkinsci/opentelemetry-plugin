@@ -95,11 +95,10 @@ public class OpenTelemetrySdkProvider {
     @PreDestroy
     public void shutdown() {
         if (this.openTelemetrySdk != null) {
-            LOGGER.log(Level.FINE, "shutdown...");
-            for (OtelComponent otelComponent : ExtensionList.lookup(OtelComponent.class)) {
-                LOGGER.log(Level.FINE, () -> "beforeSdkShutdown() " + otelComponent);
-                otelComponent.beforeSdkShutdown();
-            }
+            LOGGER.log(Level.FINE, "Shutdown...");
+            LOGGER.log(Level.FINE, () -> "Shutdown Otel SDK on components: " + ExtensionList.lookup(OtelComponent.class).stream().sorted().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
+
+            ExtensionList.lookup(OtelComponent.class).stream().sorted().forEachOrdered(OtelComponent::beforeSdkShutdown);
             this.openTelemetrySdk.getSdkTracerProvider().shutdown();
             this.openTelemetrySdk.getSdkMeterProvider().shutdown();
             this.openTelemetrySdk.getSdkLogEmitterProvider().shutdown();
@@ -114,10 +113,8 @@ public class OpenTelemetrySdkProvider {
         } else {
             initializeNoOp();
         }
-        LOGGER.log(Level.FINE, () -> "Initialize Otel SDK on components: " + ExtensionList.lookup(OtelComponent.class).stream().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
-        for (OtelComponent otelComponent : ExtensionList.lookup(OtelComponent.class)) {
-            otelComponent.afterSdkInitialized(meter, logEmitter, tracer, config);
-        }
+        LOGGER.log(Level.FINE, () -> "Initialize Otel SDK on components: " + ExtensionList.lookup(OtelComponent.class).stream().sorted().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
+        ExtensionList.lookup(OtelComponent.class).stream().sorted().forEachOrdered(otelComponent -> otelComponent.afterSdkInitialized(meter, logEmitter, tracer, config));
     }
 
     public void initializeOtlp(@Nonnull OpenTelemetryConfiguration configuration) {
