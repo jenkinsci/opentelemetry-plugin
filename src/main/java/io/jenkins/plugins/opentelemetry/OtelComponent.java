@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.ObservableDoubleGauge;
 import io.opentelemetry.api.metrics.ObservableLongCounter;
