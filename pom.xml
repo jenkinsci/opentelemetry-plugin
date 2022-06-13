@@ -68,7 +68,7 @@
                 <!-- okhttp:4.9.3 -> okio:2.8.0 versus okhttp:4.9.3 -> okio:2.8.0 - kotlin-stdlib-->
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-bom</artifactId>
-                <version>1.6.21</version>
+                <version>1.7.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
