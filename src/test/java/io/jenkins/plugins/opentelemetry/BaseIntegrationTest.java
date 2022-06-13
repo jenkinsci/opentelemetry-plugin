@@ -11,6 +11,7 @@ import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
+import hudson.plugins.git.GitSCM;
 import hudson.util.LogTaskListener;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
@@ -64,6 +65,7 @@ public class BaseIntegrationTest {
 
     static {
         OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
+        GitSCM.ALLOW_LOCAL_CHECKOUT = true;
     }
 
     final static AtomicInteger jobNameSuffix = new AtomicInteger();

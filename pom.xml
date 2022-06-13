@@ -22,8 +22,8 @@
         <jenkins.version>2.289.3</jenkins.version>
         <java.level>8</java.level>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.14.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.14.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.15.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.15.0-alpha</opentelemetry-alpha.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.2.2</elasticstack.version>
     </properties>
@@ -39,7 +39,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.289.x</artifactId>
-                <version>1370.vfa_e23fe119c3</version>
+                <version>1409.v7659b_c072f18</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -138,10 +138,18 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-otlp</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-jaeger</artifactId>
+            <exclusions>
+                <exclusion>
+                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
+                    <groupId>com.squareup.okhttp3</groupId>
+                    <artifactId>okhttp</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
+                    <groupId>com.squareup.okio</groupId>
+                    <artifactId>okio</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
@@ -149,51 +157,7 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-otlp-metrics</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-otlp-http-metrics</artifactId>
-            <exclusions>
-                <exclusion>
-                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
-                    <groupId>com.squareup.okhttp3</groupId>
-                    <artifactId>okhttp</artifactId>
-                </exclusion>
-                <exclusion>
-                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
-                    <groupId>com.squareup.okio</groupId>
-                    <artifactId>okio</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-otlp-trace</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-otlp-http-trace</artifactId>
-            <exclusions>
-                <exclusion>
-                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
-                    <groupId>com.squareup.okhttp3</groupId>
-                    <artifactId>okhttp</artifactId>
-                </exclusion>
-                <exclusion>
-                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
-                    <groupId>com.squareup.okio</groupId>
-                    <artifactId>okio</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-logging</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-otlp-logs</artifactId>
         </dependency>
 
         <dependency>
@@ -351,6 +315,10 @@
                 <exclusion>
                     <groupId>com.fasterxml.jackson.jaxrs</groupId>
                     <artifactId>jackson-jaxrs-json-provider</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jakarta.xml.bind</groupId>
+                    <artifactId>jakarta.xml.bind-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
