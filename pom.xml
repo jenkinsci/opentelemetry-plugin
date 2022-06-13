@@ -317,8 +317,8 @@
                     <artifactId>jackson-jaxrs-json-provider</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>org.jboss.resteasy</groupId>
-                    <artifactId>resteasy-client</artifactId>
+                    <groupId>jakarta.xml.bind</groupId>
+                    <artifactId>jakarta.xml.bind-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
