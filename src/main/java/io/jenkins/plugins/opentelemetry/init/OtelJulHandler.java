@@ -91,6 +91,8 @@ public class OtelJulHandler extends Handler implements OtelComponent {
             Thread currentThread = Thread.currentThread();
             attributes.put(SemanticAttributes.THREAD_NAME, currentThread.getName());
             attributes.put(SemanticAttributes.THREAD_ID, currentThread.getId());
+        } else {
+            attributes.put(SemanticAttributes.THREAD_ID, logRecord.getThreadID());
         }
 
         logBuilder = logBuilder
