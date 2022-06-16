@@ -59,13 +59,13 @@ public class OtelJulHandler extends Handler implements OtelComponent {
         // message
         String message = FORMATTER.formatMessage(logRecord);
         if (message != null) {
-            logBuilder.setBody(message);
+            logBuilder = logBuilder.setBody(message);
         }
 
         // time
         // TODO (trask) use getInstant() for more precision on Java 9
         long timestamp = logRecord.getMillis();
-        logBuilder.setEpoch(timestamp, TimeUnit.MILLISECONDS);
+        logBuilder = logBuilder.setEpoch(timestamp, TimeUnit.MILLISECONDS);
 
         // level
         Level level = logRecord.getLevel();
