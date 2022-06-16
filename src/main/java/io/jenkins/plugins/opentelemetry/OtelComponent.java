@@ -30,7 +30,7 @@ import java.util.logging.Logger;
  *
  * Used by components that create counters...
  */
-public interface OtelComponent {
+public interface OtelComponent extends Comparable<OtelComponent>{
 
     /**
      * Invoked soon after the Otel SDK has been initialized.
@@ -81,6 +81,22 @@ public interface OtelComponent {
                     logger.log(Level.INFO, "Exception closing instrument " + instrument, e);
                 }
             }
+        }
+    }
+
+    /**
+     * @return the ordinal of this otel component to execute step handlers in predictable order. The smallest ordinal is handled first.
+     */
+    default int ordinal() {
+        return 0;
+    }
+
+    @Override
+    default int compareTo(OtelComponent other) {
+        if (this.ordinal() == other.ordinal()) {
+            return this.getClass().getName().compareTo(other.getClass().getName());
+        } else {
+            return Integer.compare(this.ordinal(), other.ordinal());
         }
     }
 }
