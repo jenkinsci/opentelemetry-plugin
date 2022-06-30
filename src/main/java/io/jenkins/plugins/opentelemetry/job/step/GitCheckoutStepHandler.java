@@ -131,18 +131,20 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
             }
             return addCloneAttributes(super.createSpanBuilder(gitUrl, gitBranch, credentialsId, stepFunctionName, tracer, run), shallow, depth);
         } else {
-            final Branch branch = branchJobProperty.getBranch();
+            Branch branch = branchJobProperty.getBranch();
             String gitBranch = branch.getName();
 
             final SCM scm = branch.getScm();
             if (scm instanceof GitSCM) {
                 GitSCM gitScm = (GitSCM) scm;
                 CloneOption clone = gitScm.getExtensions().get(CloneOption.class);
-                if (clone != null) {
-                    depth = clone.getDepth();
+                if (clone != null && clone.isShallow()) {
+                    if (clone.getDepth() != null) {
+                        depth = clone.getDepth();
+                    }
                     shallow = clone.isShallow();
                 }
-                final UserRemoteConfig userRemoteConfig = Iterables.getFirst(gitScm.getUserRemoteConfigs(), null);
+                UserRemoteConfig userRemoteConfig = Iterables.getFirst(gitScm.getUserRemoteConfigs(), null);
                 if (userRemoteConfig == null) {
                     return addCloneAttributes(tracer.spanBuilder(stepFunctionName), shallow, depth);
                 }
