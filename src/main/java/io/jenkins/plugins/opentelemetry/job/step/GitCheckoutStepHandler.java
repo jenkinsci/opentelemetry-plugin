@@ -49,16 +49,24 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
             return false;
         }
 
-        final WorkflowJob pipeline = run.getParent();
-        final BranchJobProperty branchJobProperty = pipeline.getProperty(BranchJobProperty.class);
+        WorkflowJob pipeline = run.getParent();
+        BranchJobProperty branchJobProperty = pipeline.getProperty(BranchJobProperty.class);
         if (branchJobProperty == null) {
             // FIXME implement generic `checkout ...` step
-            final Map<String, Object> rootArguments = ArgumentsAction.getFilteredArguments(flowNode);
-            final Map<String, ?> scm = (Map<String, ?>) rootArguments.get("scm");
-            if (scm == null) {
+            Map<String, Object> rootArguments = ArgumentsAction.getFilteredArguments(flowNode);
+            Object scmAsObject = rootArguments.get("scm");
+            if (scmAsObject == null) {
                 return false;
             }
-            final Object clazz = scm.get("$class");
+            if (!(scmAsObject instanceof Map)) {
+                // `scm` is sometime a org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable .
+                // See https://github.com/jenkinsci/opentelemetry-plugin/issues/467
+                LOGGER.log(Level.FINE, () -> "Skip unexpected 'scm' type: " + scmAsObject.getClass().getSimpleName() + ": " + scmAsObject);
+                return false;
+            }
+            Map<String, ?> scm = (Map<String, ?>) scmAsObject;
+
+            Object clazz = scm.get("$class");
             if (!(Objects.equal(GitSCM.class.getSimpleName(), clazz))) {
                 return false;
             }
