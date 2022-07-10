@@ -128,7 +128,17 @@ Note that distributed traces don't require such a clock adjustment because all s
 
 ### Can pipeline logs be stored in other backends than Elastic?
 
-Yes any observability backend that support OpenTelemetry logs  
+Yes any observability backend that support OpenTelemetry logs can be used.
+
+To enable sending pipeline logs to an observability backend for which the Jenkins OpenTelemetry Plugin doesn't provide a dedicated configuration screen with support for logs (ie "Add Visualization Observability Backend" button in the Jenkins OpenTelemetry Plugin configuration), add the configuration property `otel.logs.exporter=otlp` in the "Configuration properties" of the plugin ("Advanced" section) of the plugin.
+
+<img width="400px" src="images/jenkins-pipeline-logs-custom-config.png" />
+
+
+**Known limitation:** The definition of the link to visualize pipeline logs is not yet supported (screenshot below). Users should navigate to the pipeline logs through the pipeline trace link defined in the Custom Observability Visualization Backend configuration. 
+
+
+<img width="400px" src="images/jenkins-pipeline-logs-custom-visualization.png" />
 
 ### Can the Jenkins server logs and the logs of other types of jobs like Freestyle or Matrix jobs be sent through OpenTelemetry to be stored outside of Jenkins?
 
