@@ -12,7 +12,12 @@ import co.elastic.clients.elasticsearch.ilm.GetLifecycleResponse;
 import co.elastic.clients.elasticsearch.ilm.Phases;
 import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
+import co.elastic.clients.elasticsearch.indices.GetIndexResponse;
 import co.elastic.clients.elasticsearch.indices.GetIndexTemplateResponse;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
+import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
+import co.elastic.clients.elasticsearch.indices.IndexTemplate;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import hudson.util.FormValidation;
@@ -35,6 +40,7 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -121,6 +127,13 @@ public class ElasticsearchRetrieverIT {
         ElasticsearchClient elasticsearchClient = new ElasticsearchClient(elasticsearchTransport);
         ElasticsearchIndicesClient elasticsearchIndicesClient = elasticsearchClient.indices();
         GetIndexTemplateResponse indexTemplatesResponse = elasticsearchIndicesClient.getIndexTemplate(b -> b.name("logs-apm.app"));
+        IndexTemplate indexTemplate = indexTemplatesResponse.indexTemplates().stream().findFirst().get().indexTemplate();
+
+        IndexSettings indexTemplateSettings = indexTemplate.template().settings().index();
+
+        IndexSettingsLifecycle lifecycle = indexTemplateSettings.lifecycle();
+
+        System.out.println(lifecycle);
         // TODO the rest
     }
 
