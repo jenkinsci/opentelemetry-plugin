@@ -60,7 +60,7 @@ public class ElasticsearchRetrieverIT {
         String kibanaBaseUrl = env.getProperty("kibana.baseUrl");
 
         ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
-            url,
+            url, false,
             new UsernamePasswordCredentials(username, password),
             ObservabilityBackend.ERROR_TEMPLATE /* TODO better URL template */,
             TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)));
@@ -95,7 +95,7 @@ public class ElasticsearchRetrieverIT {
         String kibanaBaseUrl = env.getProperty("kibana.baseUrl");
 
         ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
-            url,
+            url, false,
             new UsernamePasswordCredentials(username, password),
             ObservabilityBackend.ERROR_TEMPLATE /* TODO better URL template */,
             TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)));

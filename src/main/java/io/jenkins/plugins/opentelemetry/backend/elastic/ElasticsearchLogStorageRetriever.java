@@ -38,16 +38,22 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.elasticsearch.client.RestClient;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import javax.annotation.Nonnull;
+import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -82,10 +88,11 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     private Tracer _tracer;
 
     /**
-     * TODO verify unsername:password auth vs apiKey auth
+     * TODO verify username:password auth vs apiKey auth
      */
     public ElasticsearchLogStorageRetriever(
-        @Nonnull String elasticsearchUrl, @Nonnull Credentials elasticsearchCredentials,
+        @Nonnull String elasticsearchUrl, boolean disableSslVerifications,
+        @Nonnull Credentials elasticsearchCredentials,
         @Nonnull Template buildLogsVisualizationUrlTemplate, @Nonnull TemplateBindingsProvider templateBindingsProvider) {
 
         if (StringUtils.isBlank(elasticsearchUrl)) {
@@ -98,7 +105,19 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         credentialsProvider.setCredentials(AuthScope.ANY, elasticsearchCredentials);
 
         RestClient restClient = RestClient.builder(HttpHost.create(elasticsearchUrl))
-            .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
+            .setHttpClientConfigCallback(httpClientBuilder -> {
+                httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                if (disableSslVerifications) {
+                    try {
+                        SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustAllStrategy()).build();
+                        httpClientBuilder.setSSLContext(sslContext);
+                    } catch (GeneralSecurityException e) {
+                        logger.log(Level.WARNING, "IllegalStateException: failure to disable SSL certs verification");
+                    }
+                    httpClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+                }
+                return httpClientBuilder;
+            })
             .build();
         this.elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
         this.esClient = new ElasticsearchClient(elasticsearchTransport);
@@ -195,12 +214,12 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
      * OK: Logs retention policy: hot[rollover[maxAge=30d, maxSize=50gb]], warm [phase not defined], cold [phase not defined], delete[delete[min_age=10d]].
      * }</pre>
      */
-    public List<FormValidation> checkElasticsearchSetup() throws IOException {
+    public List<FormValidation> checkElasticsearchSetup() {
         List<FormValidation> validations = new ArrayList<>();
         ElasticsearchIndicesClient indicesClient = this.esClient.indices();
         String elasticsearchUsername;
         try {
-            elasticsearchUsername = Optional.ofNullable(elasticsearchCredentials.getUserPrincipal()).map(p -> p.getName()).orElse("No username for credentials type " + elasticsearchCredentials.getClass().getSimpleName());
+            elasticsearchUsername = Optional.ofNullable(elasticsearchCredentials.getUserPrincipal()).map(Principal::getName).orElse("No username for credentials type " + elasticsearchCredentials.getClass().getSimpleName());
         } catch (CredentialsNotFoundException e) {
             validations.add(FormValidation.error("No credentials defined"));
             return validations;
@@ -328,7 +347,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             '}';
     }
 
-    private Tracer getTracer(){
+    private Tracer getTracer() {
         if (_tracer == null) {
             _tracer = OpenTelemetrySdkProvider.get().getTracer();
         }
