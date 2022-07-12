@@ -34,6 +34,7 @@ import java.util.Objects;
 
 public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBackend {
     private String elasticsearchUrl;
+    private boolean disableSslHostnameVerification;
     private String elasticsearchCredentialsId;
 
     @DataBoundConstructor
@@ -49,7 +50,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         } else {
             Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
             return new ElasticsearchLogStorageRetriever(
-                this.elasticsearchUrl, credentials,
+                this.elasticsearchUrl, disableSslHostnameVerification, credentials,
                 buildLogsVisualizationUrlTemplate, templateBindingsProvider);
         }
     }
@@ -74,23 +75,35 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         this.elasticsearchUrl = Util.fixNull(elasticsearchUrl);
     }
 
+    public boolean isDisableSslHostnameVerification() {
+        return disableSslHostnameVerification;
+    }
+
+    @DataBoundSetter
+    public void setDisableSslHostnameVerification(boolean disableSslHostnameVerification) {
+        this.disableSslHostnameVerification = disableSslHostnameVerification;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ElasticLogsBackendWithJenkinsVisualization that = (ElasticLogsBackendWithJenkinsVisualization) o;
-        return Objects.equals(elasticsearchUrl, that.elasticsearchUrl) && Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
+        return Objects.equals(elasticsearchUrl, that.elasticsearchUrl)
+            && Objects.equals(disableSslHostnameVerification, that.disableSslHostnameVerification)
+            && Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(elasticsearchUrl, elasticsearchCredentialsId);
+        return Objects.hash(elasticsearchUrl, disableSslHostnameVerification, elasticsearchCredentialsId);
     }
 
     @Override
     public String toString() {
         return "ElasticLogsBackendWithVisualizationJenkins{" +
             "elasticsearchUrl='" + elasticsearchUrl + '\'' +
+            ", disableSslHostnameVerification='" + disableSslHostnameVerification + '\'' +
             ", elasticsearchCredentialsId='" + elasticsearchCredentialsId + '\'' +
             '}';
     }
@@ -143,7 +156,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             return FormValidation.ok();
         }
 
-        public FormValidation doValidate(@QueryParameter String elasticsearchUrl, @QueryParameter String elasticsearchCredentialsId) {
+        public FormValidation doValidate(@QueryParameter String elasticsearchUrl, @QueryParameter boolean disableSslHostnameVerification, @QueryParameter String elasticsearchCredentialsId) {
             FormValidation elasticsearchUrlValidation = doCheckElasticsearchUrl(elasticsearchUrl);
             if (elasticsearchUrlValidation.kind != FormValidation.Kind.OK) {
                 return elasticsearchUrlValidation;
@@ -153,6 +166,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                 Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
                 ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
+                    disableSslHostnameVerification,
                     credentials,
                     ObservabilityBackend.ERROR_TEMPLATE, // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check the proper configuration of the access to Elasticsearch
                     TemplateBindingsProvider.empty());

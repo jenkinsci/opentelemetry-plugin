@@ -14,11 +14,14 @@
     <f:entry title="${%Elasticsearch URL}" field="elasticsearchUrl"
                  description="e.g. 'https://elasticsearch.example.com:9200'">
             <f:textbox checkMethod="post"/>
-        </f:entry>
+    </f:entry>
+    <f:entry title="${%Disable SSL hostname verification}" field="disableSslHostnameVerification" description="Not recommended in production">
+        <f:checkbox />
+    </f:entry>
         <f:entry title="${%Elasticsearch credentials}" field="elasticsearchCredentialsId"
                  description="Requires read permission on the 'logs-apm.app-*' index template">
             <c:select checkMethod="post"/>
         </f:entry>
         <f:validateButton title="${%Validate Elasticsearch configuration}" progress="Validating..." method="validate/"
-                          with="elasticsearchUrl,elasticsearchCredentialsId"/>
+                          with="elasticsearchUrl,disableSslHostnameVerification,elasticsearchCredentialsId"/>
 </j:jelly>
