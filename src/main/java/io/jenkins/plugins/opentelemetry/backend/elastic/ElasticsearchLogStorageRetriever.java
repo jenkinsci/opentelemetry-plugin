@@ -39,16 +39,20 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.elasticsearch.client.RestClient;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import javax.annotation.Nonnull;
+import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -87,7 +91,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
      * TODO verify username:password auth vs apiKey auth
      */
     public ElasticsearchLogStorageRetriever(
-        @Nonnull String elasticsearchUrl, boolean disableSslHostnameVerification,
+        @Nonnull String elasticsearchUrl, boolean disableSslVerifications,
         @Nonnull Credentials elasticsearchCredentials,
         @Nonnull Template buildLogsVisualizationUrlTemplate, @Nonnull TemplateBindingsProvider templateBindingsProvider) {
 
@@ -103,7 +107,13 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         RestClient restClient = RestClient.builder(HttpHost.create(elasticsearchUrl))
             .setHttpClientConfigCallback(httpClientBuilder -> {
                 httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                if (disableSslHostnameVerification) {
+                if (disableSslVerifications) {
+                    try {
+                        SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustAllStrategy()).build();
+                        httpClientBuilder.setSSLContext(sslContext);
+                    } catch (GeneralSecurityException e) {
+                        logger.log(Level.WARNING, "IllegalStateException: failure to disable SSL certs verification");
+                    }
                     httpClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
                 }
                 return httpClientBuilder;
@@ -337,7 +347,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             '}';
     }
 
-    private Tracer getTracer(){
+    private Tracer getTracer() {
         if (_tracer == null) {
             _tracer = OpenTelemetrySdkProvider.get().getTracer();
         }

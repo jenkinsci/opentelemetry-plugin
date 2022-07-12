@@ -34,7 +34,7 @@ import java.util.Objects;
 
 public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBackend {
     private String elasticsearchUrl;
-    private boolean disableSslHostnameVerification;
+    private boolean disableSslVerifications;
     private String elasticsearchCredentialsId;
 
     @DataBoundConstructor
@@ -50,7 +50,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         } else {
             Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
             return new ElasticsearchLogStorageRetriever(
-                this.elasticsearchUrl, disableSslHostnameVerification, credentials,
+                this.elasticsearchUrl, disableSslVerifications, credentials,
                 buildLogsVisualizationUrlTemplate, templateBindingsProvider);
         }
     }
@@ -75,13 +75,13 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         this.elasticsearchUrl = Util.fixNull(elasticsearchUrl);
     }
 
-    public boolean isDisableSslHostnameVerification() {
-        return disableSslHostnameVerification;
+    public boolean isDisableSslVerifications() {
+        return disableSslVerifications;
     }
 
     @DataBoundSetter
-    public void setDisableSslHostnameVerification(boolean disableSslHostnameVerification) {
-        this.disableSslHostnameVerification = disableSslHostnameVerification;
+    public void setDisableSslVerifications(boolean disableSslVerifications) {
+        this.disableSslVerifications = disableSslVerifications;
     }
 
     @Override
@@ -90,20 +90,20 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         if (o == null || getClass() != o.getClass()) return false;
         ElasticLogsBackendWithJenkinsVisualization that = (ElasticLogsBackendWithJenkinsVisualization) o;
         return Objects.equals(elasticsearchUrl, that.elasticsearchUrl)
-            && Objects.equals(disableSslHostnameVerification, that.disableSslHostnameVerification)
+            && Objects.equals(disableSslVerifications, that.disableSslVerifications)
             && Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(elasticsearchUrl, disableSslHostnameVerification, elasticsearchCredentialsId);
+        return Objects.hash(elasticsearchUrl, disableSslVerifications, elasticsearchCredentialsId);
     }
 
     @Override
     public String toString() {
         return "ElasticLogsBackendWithVisualizationJenkins{" +
             "elasticsearchUrl='" + elasticsearchUrl + '\'' +
-            ", disableSslHostnameVerification='" + disableSslHostnameVerification + '\'' +
+            ", disableSslVerifications='" + disableSslVerifications + '\'' +
             ", elasticsearchCredentialsId='" + elasticsearchCredentialsId + '\'' +
             '}';
     }
@@ -156,7 +156,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             return FormValidation.ok();
         }
 
-        public FormValidation doValidate(@QueryParameter String elasticsearchUrl, @QueryParameter boolean disableSslHostnameVerification, @QueryParameter String elasticsearchCredentialsId) {
+        public FormValidation doValidate(@QueryParameter String elasticsearchUrl, @QueryParameter boolean disableSslVerifications, @QueryParameter String elasticsearchCredentialsId) {
             FormValidation elasticsearchUrlValidation = doCheckElasticsearchUrl(elasticsearchUrl);
             if (elasticsearchUrlValidation.kind != FormValidation.Kind.OK) {
                 return elasticsearchUrlValidation;
@@ -166,7 +166,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                 Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
                 ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
-                    disableSslHostnameVerification,
+                    disableSslVerifications,
                     credentials,
                     ObservabilityBackend.ERROR_TEMPLATE, // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check the proper configuration of the access to Elasticsearch
                     TemplateBindingsProvider.empty());
