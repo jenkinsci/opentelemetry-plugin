@@ -39,7 +39,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * TODO find a more smarter way to instrument each HTTP request path. It should rely on instrumenting the Stapler framework
+ * TODO find a smarter way to instrument each HTTP request path. It should rely on instrumenting the Stapler framework
+ * TODO adopt https://javadoc.jenkins.io/component/stapler/org/kohsuke/stapler/StaplerRequest.html#getAncestors()
  */
 public class OpenTelemetryServletFilter implements Filter {
     private final static Logger logger = Logger.getLogger(OpenTelemetryServletFilter.class.getName());
