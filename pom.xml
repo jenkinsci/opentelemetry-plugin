@@ -22,8 +22,8 @@
         <jenkins.version>2.289.3</jenkins.version>
         <java.level>8</java.level>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.15.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.15.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.16.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.16.0-alpha</opentelemetry-alpha.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.3.1</elasticstack.version>
     </properties>
@@ -64,14 +64,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!--
             <dependency>
-                <!-- okhttp:4.9.3 -> okio:2.8.0 versus okhttp:4.9.3 -> okio:2.8.0 - kotlin-stdlib-->
+                <!- - okhttp:4.9.3 -> okio:2.8.0 versus okhttp:4.9.3 -> okio:2.8.0 - kotlin-stdlib - ->
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-bom</artifactId>
-                <version>1.7.0</version>
+                <version>1.7.10</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+        -->
             <!-- fix RequireUpperBoundDeps caused when using the maven plugin which it's a test dependency -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -171,7 +173,7 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>okhttp-api</artifactId>
-            <version>4.9.3-105.vb96869f8ac3a</version>
+            <version>4.9.3-108.v9a_36cd2c64b_2</version>
         </dependency>
         <dependency> <!-- see maskClasses config -->
             <groupId>com.google.guava</groupId>
@@ -483,10 +485,10 @@
                     <maskClasses>com.google.common.</maskClasses>
                     <minimumJavaVersion>8</minimumJavaVersion>
                     <loggers>
-                        <io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>FINE</io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>
-                        <io.jenkins.plugins.opentelemetry.job.log>FINER</io.jenkins.plugins.opentelemetry.job.log>
-                        <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>FINE</io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
-                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>FINE</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
+                        <io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>INFO</io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>
+                        <io.jenkins.plugins.opentelemetry.job.log>INFO</io.jenkins.plugins.opentelemetry.job.log>
+                        <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
+                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                     </loggers>
                 </configuration>
             </plugin>
