@@ -13,8 +13,8 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogBuilder;
 import io.opentelemetry.sdk.logs.LogEmitter;
+import io.opentelemetry.sdk.logs.LogRecordBuilder;
 import io.opentelemetry.sdk.logs.data.Severity;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
@@ -55,7 +55,7 @@ public class OtelJulHandler extends Handler implements OtelComponent {
      */
     @Override
     public void publish(LogRecord logRecord) {
-        LogBuilder logBuilder =  logEmitter.logBuilder();
+        LogRecordBuilder logBuilder =  logEmitter.logRecordBuilder();
         // message
         String message = FORMATTER.formatMessage(logRecord);
         if (message != null) {
@@ -96,7 +96,7 @@ public class OtelJulHandler extends Handler implements OtelComponent {
         }
 
         logBuilder = logBuilder
-            .setAttributes(attributes.build())
+            .setAllAttributes(attributes.build())
             .setContext(Context.current());// span context
 
         logBuilder.emit();

@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
-import io.jenkins.plugins.opentelemetry.opentelemetry.log.NoopLogEmitter;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
@@ -20,6 +19,7 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.logs.LogEmitter;
+import io.opentelemetry.sdk.logs.SdkLogEmitterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import net.jcip.annotations.GuardedBy;
 
@@ -192,7 +192,7 @@ public final class GlobalOpenTelemetrySdk {
     private static class NoopOpenTelemetrySdkState implements OpenTelemetrySdkState {
         @Override
         public LogEmitter getLogEmitter() {
-            return NoopLogEmitter.noop();
+            return SdkLogEmitterProvider.builder().build().get(INSTRUMENTATION_NAME);
         }
 
         @Override

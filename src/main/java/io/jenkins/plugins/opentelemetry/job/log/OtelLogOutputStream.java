@@ -82,9 +82,9 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
             if (flowNodeId != null) {
                 attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId);
             }
-            logEmitter.logBuilder()
+            logEmitter.logRecordBuilder()
                 .setBody(plainLogLine)
-                .setAttributes(attributesBuilder.build())
+                .setAllAttributes(attributesBuilder.build())
                 .setContext(context)
                 .setEpoch(clock.now(), TimeUnit.NANOSECONDS)
                 .emit();
