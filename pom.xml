@@ -25,7 +25,7 @@
         <opentelemetry.version>1.17.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.17.0-alpha</opentelemetry-alpha.version>
         <useBeta>true</useBeta>
-        <elasticstack.version>8.3.1</elasticstack.version>
+        <elasticstack.version>8.3.3</elasticstack.version>
         <error-prone.version>2.15.0</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
@@ -483,24 +483,6 @@
                     </loggers>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                    <compilerArgs>
-                        <arg>-XDcompilePolicy=simple</arg>
-                        <arg>-Xplugin:ErrorProne</arg>
-                    </compilerArgs>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>com.google.errorprone</groupId>
-                            <artifactId>error_prone_core</artifactId>
-                            <version>${error-prone.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
@@ -518,6 +500,37 @@
         <url>https://github.com/${gitHubRepo}</url>
         <tag>${scmTag}</tag>
     </scm>
+    <profiles>
+        <profile>
+            <!--
+            Error Prone doesn't work to produce Jenkins plugins but it's useful for detecting bugs, particularly bugs of resource not closed
+            Waiting for Jenkins Plugin pom to include Error Prone, we keep the Error Prone activation config in a Maven profile
+            -->
+            <id>error-prone-check</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <encoding>UTF-8</encoding>
+                            <compilerArgs>
+                                <arg>-XDcompilePolicy=simple</arg>
+                                <arg>-Xplugin:ErrorProne</arg>
+                            </compilerArgs>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>com.google.errorprone</groupId>
+                                    <artifactId>error_prone_core</artifactId>
+                                    <version>${error-prone.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
     <contributors>
         <contributor>
             <!-- jenkins id cleclerc -->

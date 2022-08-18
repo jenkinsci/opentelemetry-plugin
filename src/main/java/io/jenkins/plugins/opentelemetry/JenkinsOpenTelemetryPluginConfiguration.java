@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.base.Strings;
+import com.google.errorprone.annotations.MustBeClosed;
 import groovy.text.GStringTemplateEngine;
 import hudson.Extension;
 import hudson.PluginWrapper;
@@ -49,7 +50,6 @@ import org.kohsuke.stapler.StaplerRequest;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
@@ -208,6 +208,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * JCasC configuration happens during `SYSTEM_CONFIG_ADAPTED` (see `io.jenkins.plugins.casc.ConfigurationAsCode#init()`)
      */
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_ADAPTED, before = InitMilestone.JOB_LOADED)
+    @SuppressWarnings("MustBeClosedChecker")
     public void initializeOpenTelemetry() {
         LOGGER.log(Level.FINE, "Initialize Jenkins OpenTelemetry Plugin...");
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
@@ -551,11 +552,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nonnull
+    @MustBeClosed
+    @SuppressWarnings("MustBeClosedChecker") // false positive invoking backend.getLogStorageRetriever(templateBindingsProvider)
     private LogStorageRetriever resolveLogStorageRetriever() {
         LogStorageRetriever logStorageRetriever = null;
         for (ObservabilityBackend backend : getObservabilityBackends()) {
             ObservabilityBackend templateBindingsProvider = backend; // TODO make JenkinsOpenTelemetryPluginConfiguration a templateBindingsProvider
-            logStorageRetriever = backend.getLogStorageRetriever(templateBindingsProvider);
+            logStorageRetriever = backend.newLogStorageRetriever(templateBindingsProvider);
             if (logStorageRetriever != null) {
                 break;
             }
@@ -644,10 +647,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @PreDestroy
-    public void preDestroy() throws IOException {
-        if (logStorageRetriever != null && logStorageRetriever instanceof Closeable) {
+    public void preDestroy() throws Exception {
+        if (logStorageRetriever != null) {
             LOGGER.log(Level.FINE, () -> "Close " + logStorageRetriever + "...");
-            ((Closeable) logStorageRetriever).close();
+            logStorageRetriever.close();
         }
     }
 

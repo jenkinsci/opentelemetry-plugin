@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.google.errorprone.annotations.MustBeClosed;
 import groovy.text.Template;
 import hudson.Extension;
 import hudson.Util;
@@ -43,7 +44,8 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
     }
 
     @Override
-    public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
+    @MustBeClosed
+    public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         Template buildLogsVisualizationUrlTemplate = getBuildLogsVisualizationUrlTemplate();
         if (StringUtils.isBlank(elasticsearchUrl)) {
             return null; // FIXME handle case where this logs retriever is miss configured lacking of an Elasticsearch URL. We should use the rendering  ElasticLogsBackendWithVisualizationOnlyThroughKibana
@@ -162,14 +164,14 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                 return elasticsearchUrlValidation;
             }
 
-            try {
-                Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
-                ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
+            Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
+            // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check the proper configuration of the access to Elasticsearch
+            try (ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
                     disableSslVerifications,
                     credentials,
-                    ObservabilityBackend.ERROR_TEMPLATE, // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check the proper configuration of the access to Elasticsearch
-                    TemplateBindingsProvider.empty());
+                    ObservabilityBackend.ERROR_TEMPLATE,
+                    TemplateBindingsProvider.empty())) {
 
                 return FormValidation.aggregate(elasticsearchLogStorageRetriever.checkElasticsearchSetup());
             } catch (NoSuchElementException e) {

@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import com.google.errorprone.annotations.MustBeClosed;
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
 import hudson.DescriptorExtensionList;
@@ -19,7 +20,6 @@ import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -36,7 +36,8 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
      * Returns {@code null} if the backend is not capable of retrieving logs(ie the {@link NoElasticLogsBackend}
      */
     @CheckForNull
-    public abstract LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider);
+    @MustBeClosed
+    public abstract LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider);
 
     public Template getBuildLogsVisualizationMessageTemplate() {
         try {

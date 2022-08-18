@@ -17,7 +17,7 @@ public class NoElasticLogsBackend extends ElasticLogsBackend {
     }
 
     @Override
-    public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
+    public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         return null;
     }
 

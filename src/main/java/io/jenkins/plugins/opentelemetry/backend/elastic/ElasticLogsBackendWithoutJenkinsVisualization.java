@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.custom.CustomLogStorageRetriever;
@@ -19,7 +20,8 @@ public class ElasticLogsBackendWithoutJenkinsVisualization extends ElasticLogsBa
     }
 
     @Override
-    public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
+    @MustBeClosed
+    public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         return new CustomLogStorageRetriever(getBuildLogsVisualizationUrlTemplate(), templateBindingsProvider);
     }
 

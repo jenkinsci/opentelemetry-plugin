@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend;
 
+import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
@@ -17,7 +18,6 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -185,11 +186,20 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
 
     @Nullable
     @Override
-    public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
+    @MustBeClosed
+    public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         if (elasticLogsBackend == null) {
             return null;
         } else {
-            return elasticLogsBackend.getLogStorageRetriever(templateBindingsProvider);
+            return elasticLogsBackend.newLogStorageRetriever(templateBindingsProvider);
+        }
+    }
+
+    public Map<String, String> getOtelConfigurationProperties() {
+        if (elasticLogsBackend == null) {
+            return Collections.emptyMap();
+        } else {
+            return Collections.singletonMap("otel.logs.exporter", "otlp");
         }
     }
 

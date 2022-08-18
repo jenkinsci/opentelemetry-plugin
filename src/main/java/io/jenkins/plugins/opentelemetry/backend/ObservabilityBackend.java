@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.backend;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ComparisonChain;
+import com.google.errorprone.annotations.MustBeClosed;
 import groovy.lang.MissingPropertyException;
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
@@ -66,7 +67,8 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
      * @return the {@link LogStorageRetriever} of this backend if the backend is configured to retrieve logs. {@code null} otherwise.
      */
     @CheckForNull
-    public LogStorageRetriever getLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
+    @MustBeClosed
+    public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         return null;
     }
 
@@ -161,11 +163,6 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
      */
     @Nonnull
     public Map<String, String> getOtelConfigurationProperties() {
-        LogStorageRetriever logStorageRetriever = getLogStorageRetriever(TemplateBindingsProvider.empty());
-        if (logStorageRetriever != null) {
-            LOGGER.log(Level.FINE, () -> "Configure OpenTelemetry SDK to export logs");
-            return Collections.singletonMap("otel.logs.exporter", "otlp");
-        }
         return Collections.emptyMap();
     }
 
