@@ -14,14 +14,11 @@ import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.tasks.BuildStep;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
-import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
-import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.logs.LogEmitter;
@@ -319,9 +316,7 @@ public class OtelTraceService implements OtelComponent {
     @MustBeClosed
     public Scope setupContext(@Nonnull Run run, boolean verifyIfRemainingSteps) {
         Span span = getSpan(run, verifyIfRemainingSteps);
-        Scope scope = span.makeCurrent();
-        Context.current().with(RunContextKey.KEY, run);
-        return scope;
+        return span.makeCurrent();
     }
 
     public Tracer getTracer() {

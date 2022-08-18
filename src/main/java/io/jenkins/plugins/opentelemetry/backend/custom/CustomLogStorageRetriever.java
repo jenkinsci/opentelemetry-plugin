@@ -64,4 +64,9 @@ public class CustomLogStorageRetriever implements LogStorageRetriever {
             "urlTemplate=" + buildLogsVisualizationUrlTemplate +
             '}';
     }
+
+    @Override
+    public void close() throws Exception {
+
+    }
 }

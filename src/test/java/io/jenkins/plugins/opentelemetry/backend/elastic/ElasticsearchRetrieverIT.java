@@ -59,27 +59,28 @@ public class ElasticsearchRetrieverIT {
         String password = env.getProperty("elasticsearch.password");
         String kibanaBaseUrl = env.getProperty("kibana.baseUrl");
 
-        ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
+        try (ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
             url, false,
             new UsernamePasswordCredentials(username, password),
             ObservabilityBackend.ERROR_TEMPLATE /* TODO better URL template */,
-            TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)));
+            TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)))) {
 
-        FormValidation formValidation = FormValidation.aggregate(elasticsearchLogStorageRetriever.checkElasticsearchSetup());
-        System.out.println(formValidation);
-        Assert.assertEquals(formValidation.kind, FormValidation.Kind.OK);
+            FormValidation formValidation = FormValidation.aggregate(elasticsearchLogStorageRetriever.checkElasticsearchSetup());
+            System.out.println(formValidation);
+            Assert.assertEquals(formValidation.kind, FormValidation.Kind.OK);
 
-        final int MAX = 10;
-        int counter = 0;
-        LogsQueryResult logsQueryResult;
-        boolean complete = true;
-        do {
-            System.out.println("Request " + counter);
-            logsQueryResult = elasticsearchLogStorageRetriever.overallLog("my-war/master", 136, "1253b77680aa4f5a709e76381e5523f1", "", complete);
-            complete = false;
-            counter++;
-        } while (!logsQueryResult.isComplete() && counter < MAX);
-        Assert.assertTrue(counter < MAX);
+            final int MAX = 10;
+            int counter = 0;
+            LogsQueryResult logsQueryResult;
+            boolean complete = true;
+            do {
+                System.out.println("Request " + counter);
+                logsQueryResult = elasticsearchLogStorageRetriever.overallLog("my-war/master", 136, "1253b77680aa4f5a709e76381e5523f1", "", complete);
+                complete = false;
+                counter++;
+            } while (!logsQueryResult.isComplete() && counter < MAX);
+            Assert.assertTrue(counter < MAX);
+        }
     }
 
     @Test
@@ -94,14 +95,15 @@ public class ElasticsearchRetrieverIT {
         String password = env.getProperty("elasticsearch.password");
         String kibanaBaseUrl = env.getProperty("kibana.baseUrl");
 
-        ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
+        try (ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
             url, false,
             new UsernamePasswordCredentials(username, password),
             ObservabilityBackend.ERROR_TEMPLATE /* TODO better URL template */,
-            TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)));
-        final List<FormValidation> formValidations = elasticsearchLogStorageRetriever.checkElasticsearchSetup();
-        for (FormValidation formValidation : formValidations) {
-            System.out.println(formValidation);
+            TemplateBindingsProvider.of(Collections.singletonMap("kibanaBaseUrl", kibanaBaseUrl)))) {
+            final List<FormValidation> formValidations = elasticsearchLogStorageRetriever.checkElasticsearchSetup();
+            for (FormValidation formValidation : formValidations) {
+                System.out.println(formValidation);
+            }
         }
     }
 

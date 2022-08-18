@@ -23,7 +23,6 @@ import hudson.model.User;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
-import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
@@ -287,13 +286,14 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span runSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
-            runSpan.makeCurrent();
-            this.getTraceService().putSpan(run, runSpan);
-            // Support non-pipeline jobs
-            if (run instanceof AbstractBuild) {
-                this.getTraceService().putSpan((AbstractBuild) run, runSpan);
+            try (Scope scope = runSpan.makeCurrent()) {
+                this.getTraceService().putSpan(run, runSpan);
+                // Support non-pipeline jobs
+                if (run instanceof AbstractBuild) {
+                    this.getTraceService().putSpan((AbstractBuild) run, runSpan);
+                }
+                this.runStartedCounter.add(1);
             }
-            this.runStartedCounter.add(1);
         }
     }
 
@@ -302,8 +302,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span finalizeSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(finalizeSpan));
-            finalizeSpan.makeCurrent();
-            this.getTraceService().putSpan(run, finalizeSpan);
+            try (Scope scope = finalizeSpan.makeCurrent()) {
+                this.getTraceService().putSpan(run, finalizeSpan);
+            }
         }
     }
 
@@ -316,9 +317,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
         this.getTraceService().removeJobPhaseSpan(run, pipelinePhaseSpan);
         Span newCurrentSpan = this.getTraceService().getSpan(run);
-        Scope newScope = newCurrentSpan.makeCurrent();
-        Context.current().with(RunContextKey.KEY, run);
-        return newScope;
+        return newCurrentSpan.makeCurrent();
     }
 
     @Override

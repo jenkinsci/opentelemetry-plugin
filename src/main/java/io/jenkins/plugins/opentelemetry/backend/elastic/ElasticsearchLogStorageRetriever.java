@@ -15,6 +15,7 @@ import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.google.errorprone.annotations.MustBeClosed;
 import groovy.text.Template;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
@@ -79,7 +80,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     final Credentials elasticsearchCredentials;
     @Nonnull
     final String elasticsearchUrl;
-
+    @Nonnull
+    final RestClient restClient;
     @Nonnull
     final RestClientTransport elasticsearchTransport;
     @Nonnull
@@ -90,6 +92,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     /**
      * TODO verify username:password auth vs apiKey auth
      */
+    @MustBeClosed
     public ElasticsearchLogStorageRetriever(
         @Nonnull String elasticsearchUrl, boolean disableSslVerifications,
         @Nonnull Credentials elasticsearchCredentials,
@@ -104,7 +107,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(AuthScope.ANY, elasticsearchCredentials);
 
-        RestClient restClient = RestClient.builder(HttpHost.create(elasticsearchUrl))
+        this.restClient = RestClient.builder(HttpHost.create(elasticsearchUrl))
             .setHttpClientConfigCallback(httpClientBuilder -> {
                 httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
                 if (disableSslVerifications) {
@@ -337,13 +340,13 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     public void close() throws IOException {
         logger.log(Level.FINE, () -> "Shutdown Elasticsearch client...");
         this.elasticsearchTransport.close();
+        this.restClient.close();
     }
 
     @Override
     public String toString() {
         return "ElasticsearchLogStorageRetriever{" +
-            "buildLogsVisualizationUrlTemplate=" + buildLogsVisualizationUrlTemplate +
-            ", templateBindingsProvider=" + templateBindingsProvider +
+            "elasticsearchUrl=" + elasticsearchUrl +
             '}';
     }
 

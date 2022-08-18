@@ -19,8 +19,6 @@ import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
-import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.FlowNodeContextKey;
-import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
@@ -53,7 +51,6 @@ import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -378,15 +375,13 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     /**
      * @return {@code null} if no {@link Span} has been created for the {@link Run} of the given {@link FlowNode}
      */
-    @CheckForNull
+    @Nonnull
     @MustBeClosed
     protected Scope setupContext(WorkflowRun run, @Nonnull FlowNode node) {
         run = verifyNotNull(run, "%s No run found for node %s", run, node);
         Span span = this.otelTraceService.getSpan(run, node);
 
-        Scope scope = span.makeCurrent();
-        Context.current().with(RunContextKey.KEY, run).with(FlowNodeContextKey.KEY, node);
-        return scope;
+        return span.makeCurrent();
     }
 
     @Inject

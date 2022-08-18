@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 
-public interface LogStorageRetriever {
+public interface LogStorageRetriever extends AutoCloseable {
 
     /**
      * @param  jobFullName see {@link hudson.model.AbstractItem#getFullName()}
