@@ -346,8 +346,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     @Override
     public String toString() {
         return "ElasticsearchLogStorageRetriever{" +
-            "buildLogsVisualizationUrlTemplate=" + buildLogsVisualizationUrlTemplate +
-            ", templateBindingsProvider=" + templateBindingsProvider +
+            "elasticsearchUrl=" + elasticsearchUrl +
             '}';
     }
 
