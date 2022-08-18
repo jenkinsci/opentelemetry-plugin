@@ -15,8 +15,6 @@ import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
-import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.BuildStepContextKey;
-import io.jenkins.plugins.opentelemetry.job.opentelemetry.context.RunContextKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -28,9 +26,7 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.YesNoMaybe;
-import jenkins.model.Jenkins;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.util.logging.Level;
@@ -103,15 +99,12 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Ot
     /**
      * @return {@code null} if no {@link Span} has been created for the {@link AbstractBuild} of the given {@link BuildStep}
      */
-    @CheckForNull
     @MustBeClosed
+    @Nonnull
     protected Scope setupContext(AbstractBuild build, @Nonnull BuildStep buildStep) {
         build = verifyNotNull(build, "%s No build found for step %s", build, buildStep);
         Span span = this.otelTraceService.getSpan(build, buildStep);
-
-        Scope scope = span.makeCurrent();
-        Context.current().with(RunContextKey.KEY, build).with(BuildStepContextKey.KEY, buildStep);
-        return scope;
+        return span.makeCurrent();
     }
 
     @Inject

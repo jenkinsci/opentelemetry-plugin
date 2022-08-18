@@ -280,7 +280,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @DataBoundSetter
     public void setObservabilityBackends(List<ObservabilityBackend> observabilityBackends) {
-        this.observabilityBackends = Optional.of(observabilityBackends).orElse(Collections.emptyList());
+        this.observabilityBackends = observabilityBackends == null ? Collections.emptyList() : observabilityBackends;
     }
 
     @Nonnull
