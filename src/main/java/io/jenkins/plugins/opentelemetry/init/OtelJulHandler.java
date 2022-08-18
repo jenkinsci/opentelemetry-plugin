@@ -45,7 +45,7 @@ public class OtelJulHandler extends Handler implements OtelComponent {
     private boolean initialized;
 
     /**
-     * Map the {@link LogRecord} data model onto the {@link LogBuilder}. Unmapped fields include:
+     * Map the {@link LogRecord} data model onto the {@link LogRecordBuilder}. Unmapped fields include:
      *
      * <ul>
      *   <li>Fully qualified class name - {@link LogRecord#getSourceClassName()}
