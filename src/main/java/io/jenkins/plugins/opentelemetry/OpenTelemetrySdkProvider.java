@@ -11,7 +11,6 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
-import io.jenkins.plugins.opentelemetry.opentelemetry.log.NoopLogEmitter;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.metrics.Meter;
@@ -23,6 +22,7 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.extension.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.logs.LogEmitter;
+import io.opentelemetry.sdk.logs.SdkLogEmitterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 
@@ -158,10 +158,10 @@ public class OpenTelemetrySdkProvider {
         this.openTelemetry = OpenTelemetry.noop();
         GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
         GlobalOpenTelemetry.set(OpenTelemetry.noop());
-        this.tracer.setDelegate(OpenTelemetry.noop().getTracer("noop"));
+        this.tracer.setDelegate(OpenTelemetry.noop().getTracer("io.jenkins.opentelemetry"));
 
         this.meter = OpenTelemetry.noop().getMeter("io.jenkins.opentelemetry");
-        this.logEmitter = NoopLogEmitter.noop();
+        this.logEmitter = SdkLogEmitterProvider.builder().build().get("io.jenkins.opentelemetry");
         LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
     }
 

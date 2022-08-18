@@ -18,8 +18,8 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogBuilder;
 import io.opentelemetry.sdk.logs.LogEmitter;
+import io.opentelemetry.sdk.logs.LogRecordBuilder;
 import io.opentelemetry.sdk.logs.data.Severity;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
@@ -111,10 +111,10 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
             }
         }
 
-        LogBuilder logBuilder = logEmitter.logBuilder();
+        LogRecordBuilder logBuilder = logEmitter.logRecordBuilder();
         logBuilder
             .setBody(message)
-            .setAttributes(attributesBuilder.build())
+            .setAllAttributes(attributesBuilder.build())
             .setContext(Context.current()) // note there is no span as long as we don't fix the registration of the OpenTelemetryServletFilter
             .setSeverity(Severity.INFO)
             .emit();
@@ -140,10 +140,10 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
 
         // TODO find a solution to retrieve the remoteIpAddress
 
-        LogBuilder logBuilder = logEmitter.logBuilder();
+        LogRecordBuilder logBuilder = logEmitter.logRecordBuilder();
         logBuilder
             .setBody(message)
-            .setAttributes(attributesBuilder.build())
+            .setAllAttributes(attributesBuilder.build())
             .setContext(Context.current()) // note there is no span as long as we don't fix the registration of the OpenTelemetryServletFilter
             .setSeverity(Severity.INFO)
             .emit();

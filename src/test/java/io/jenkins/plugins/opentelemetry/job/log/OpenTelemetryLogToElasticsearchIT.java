@@ -67,10 +67,10 @@ public class OpenTelemetryLogToElasticsearchIT {
                 try (Scope scope = span.makeCurrent()) {
                     for (int i = 0; i < LOG_MESSAGE_COUNT; i++) {
                         logEmitter
-                            .logBuilder()
+                            .logRecordBuilder()
                             .setContext(Context.current())
                             .setBody("Log Message " + i)
-                            .setAttributes(
+                            .setAllAttributes(
                                 Attributes.of(
                                     AttributeKey.stringKey("myStringAttribute"), "Value " + i,
                                     AttributeKey.longKey("myNumericAttribute"), (long) i))

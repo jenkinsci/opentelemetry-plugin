@@ -10,18 +10,12 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.context.Context;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.SPAN_ID;
-import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryTracesSemanticConventions.TRACE_ID;
 
 public final class BuildInfo implements Serializable {
 
