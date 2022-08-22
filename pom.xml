@@ -164,7 +164,7 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>okhttp-api</artifactId>
-            <version>4.9.3-105.vb96869f8ac3a</version>
+            <version>4.9.3-108.v0feda04578cf</version>
         </dependency>
         <dependency> <!-- see maskClasses config -->
             <groupId>com.google.guava</groupId>
