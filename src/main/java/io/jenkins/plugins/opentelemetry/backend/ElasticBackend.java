@@ -10,6 +10,7 @@ import hudson.Extension;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
+import io.jenkins.plugins.opentelemetry.backend.elastic.NoElasticLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import org.apache.commons.lang.StringUtils;
 import org.jenkins.ui.icon.Icon;
@@ -199,7 +200,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
         if (elasticLogsBackend == null) {
             return Collections.emptyMap();
         } else {
-            return Collections.singletonMap("otel.logs.exporter", "otlp");
+            return elasticLogsBackend.getOtelConfigurationProperties();
         }
     }
 

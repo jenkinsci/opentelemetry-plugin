@@ -11,6 +11,9 @@ import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.util.Collections;
+import java.util.Map;
+
 public class NoElasticLogsBackend extends ElasticLogsBackend {
     @DataBoundConstructor
     public NoElasticLogsBackend() {
@@ -19,6 +22,10 @@ public class NoElasticLogsBackend extends ElasticLogsBackend {
     @Override
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         return null;
+    }
+
+    public Map<String, String> getOtelConfigurationProperties() {
+        return Collections.emptyMap();
     }
 
     @Override
