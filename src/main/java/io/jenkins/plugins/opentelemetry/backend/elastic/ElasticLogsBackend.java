@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -74,6 +76,10 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
             }
         }
         return buildLogsVisualizationUrlGTemplate;
+    }
+
+    public Map<String, String> getOtelConfigurationProperties() {
+        return Collections.singletonMap("otel.logs.exporter", "otlp");
     }
 
     private String getKibanaSpaceIdentifier() {
