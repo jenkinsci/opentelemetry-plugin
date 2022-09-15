@@ -21,10 +21,10 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.289.3</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.17.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.17.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.18.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.18.0-alpha</opentelemetry-alpha.version>
         <useBeta>true</useBeta>
-        <elasticstack.version>8.3.3</elasticstack.version>
+        <elasticstack.version>8.4.1</elasticstack.version>
         <error-prone.version>2.15.0</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
@@ -42,6 +42,11 @@
                 <version>1500.ve4d05cd32975</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.jenkins-ci.plugins</groupId>
+                <artifactId>apache-httpcomponents-client-4-api</artifactId>
+                <version>4.5.13-1.0</version>
             </dependency>
             <dependency>
                 <groupId>io.opentelemetry</groupId>
@@ -192,6 +197,10 @@
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>apache-httpcomponents-client-4-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials</artifactId>
         </dependency>
         <dependency>
@@ -328,6 +337,13 @@
             <groupId>co.elastic.clients</groupId>
             <artifactId>elasticsearch-java</artifactId>
             <version>${elasticstack.version}</version>
+            <exclusions>
+                <exclusion>
+                    <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-4-api -->
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpasyncclient</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
