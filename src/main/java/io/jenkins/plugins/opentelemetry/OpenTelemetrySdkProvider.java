@@ -81,6 +81,11 @@ public class OpenTelemetrySdkProvider {
         return otelLogsExporter != null && !otelLogsExporter.equals("none");
     }
 
+    public boolean isOtelLogsMirrorToDisk(){
+        String otelLogsExporter = config.getString("otel.logs.mirror_to_disk");
+        return otelLogsExporter != null && otelLogsExporter.equals("true");
+    }
+
     @Nonnull
     public LogEmitter getLogEmitter() {
         return Preconditions.checkNotNull(this.logEmitter);

@@ -83,7 +83,7 @@ public final class OtelLogStorageFactory extends AbstractOtelComponent implement
                 BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getTraceId(), monitoringAction.getSpanId(), buildInfoContext);
                 logger.log(Level.FINEST, () -> "forBuild(" + buildInfo + ")");
 
-                return new OtelLogStorage(buildInfo, tracer);
+                return new OtelLogStorage(buildInfo, tracer, run.getRootDir().getPath());
             } else {
                 return null;
             }
