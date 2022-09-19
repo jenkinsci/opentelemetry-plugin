@@ -19,7 +19,7 @@
     <properties>
         <revision>2.9.3</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.289.3</jenkins.version>
+        <jenkins.version>2.346.1</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.18.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.18.0-alpha</opentelemetry-alpha.version>
@@ -38,8 +38,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.289.x</artifactId>
-                <version>1500.ve4d05cd32975</version>
+                <artifactId>bom-2.346.x</artifactId>
+                <version>1478.v81d3dc4f9a_43</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -170,16 +170,9 @@
             <artifactId>okhttp-api</artifactId>
             <version>4.9.3-105.vb96869f8ac3a</version>
         </dependency>
-        <dependency> <!-- see maskClasses config -->
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <!--
-            Don't bump beyond 20.0 as 21.0 removes com.google.common.util.concurrent.MoreExecutors#sameThreadExecutor()
-            that is used by
-            org.jenkinsci.plugins.workflow.support.concurrent.Futures.addCallback(com.google.common.util.concurrent.ListenableFuture<V>, com.google.common.util.concurrent.FutureCallback<? super V>)
-            See https://github.com/google/guava/wiki/Release21
-            -->
-            <version>20.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.errorprone</groupId>
@@ -226,7 +219,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>cloudbees-disk-usage-simple</artifactId>
-            <version>0.10</version>
+            <version>170.va_fd5b_4ee6858</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -487,8 +480,6 @@
                 <groupId>org.jenkins-ci.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
                 <configuration>
-                    <!-- JENKINS-50520: since we need a custom version of Guava -->
-                    <maskClasses>com.google.common.</maskClasses>
                     <minimumJavaVersion>8</minimumJavaVersion>
                     <loggers>
                         <io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>INFO</io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>
