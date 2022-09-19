@@ -140,6 +140,11 @@ To enable sending pipeline logs to an observability backend for which the Jenkin
 
 <img width="400px" src="images/jenkins-pipeline-logs-custom-visualization.png" />
 
+### Can build logs be saved in the build folder locally?
+Yes, by adding the configuration property `otel.logs.mirror_to_disk=true` in the "Configuration properties" of the plugin ("Advanced" section) of the plugin.
+With this property, logs will be sent to the otel endpoint and also be stored in the Jenkins build folder.
+Build console log will display the log from the build folder. If no log file is available then configured backend visualization will be displayed.
+
 ### Can the Jenkins server logs and the logs of other types of jobs like Freestyle or Matrix jobs be sent through OpenTelemetry to be stored outside of Jenkins?
 
 We would like to implement this as well, it's an Open Source initiative, contributions are welcome
