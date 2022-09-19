@@ -356,7 +356,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             if (run instanceof AbstractBuild) {
                 Node node = ((AbstractBuild) run).getBuiltOn();
                 if (node != null) {
-                    parentSpan.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL, Strings.emptyToNull(node.getLabelString()));
+                    parentSpan.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL, node.getLabelString());
                     parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID, node.getNodeName());
                     parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME, node.getDisplayName());
                 }
