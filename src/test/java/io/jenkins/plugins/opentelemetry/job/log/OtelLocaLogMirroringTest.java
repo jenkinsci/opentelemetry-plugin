@@ -4,18 +4,16 @@ import hudson.ExtensionList;
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.log.TaskListenerDecorator;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,6 +60,13 @@ public class OtelLocaLogMirroringTest {
         reInitProvider(new HashMap<>());
     }
 
+    @After
+    public void after() throws Exception {
+        jenkinsRule.waitUntilNoActivity();
+        InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
+        InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
+    }
+
     private WorkflowRun runBuild() throws Exception {
         String pipelineScript = "pipeline {\n" +
             "  agent any\n" +
@@ -105,11 +110,11 @@ public class OtelLocaLogMirroringTest {
         reInitProvider(configuration);
 
         WorkflowRun build = runBuild();
-
         TaskListenerDecorator decorator = new OtelLocaLogDecorator.Factory().of(build.asFlowExecutionOwner());
 
         assertNotNull(decorator);
         assertEquals(decorator.getClass(), OtelLocaLogDecorator.class);
+        build.delete();
     }
 
     @Test
@@ -121,6 +126,7 @@ public class OtelLocaLogMirroringTest {
 
         TaskListenerDecorator decorator = new OtelLocaLogDecorator.Factory().of(build.asFlowExecutionOwner());
         assertNull(decorator);
+        build.delete();
     }
 
 
@@ -132,6 +138,7 @@ public class OtelLocaLogMirroringTest {
 
         WorkflowRun build = runBuild();
         assertEquals(build.getLogText().getClass(), OverallLog.class);
+        build.delete();
     }
 
 
@@ -147,6 +154,7 @@ public class OtelLocaLogMirroringTest {
         assertNotEquals(build.getLogText().getClass(), OverallLog.class);
         String logText = build.getLog();
         assertTrue(logText.contains(printedLine));
+        build.delete();
     }
 
 
@@ -161,6 +169,7 @@ public class OtelLocaLogMirroringTest {
         assertNotEquals(build.getLogText().getClass(), OverallLog.class);
         String logText = build.getLog();
         assertTrue(logText.contains(printedLine));
+        build.delete();
     }
 }
 
