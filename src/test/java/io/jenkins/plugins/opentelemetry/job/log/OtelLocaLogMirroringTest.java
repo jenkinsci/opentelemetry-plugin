@@ -6,6 +6,7 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
+import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -25,6 +26,7 @@ import java.util.logging.Logger;
 import static com.google.common.base.Verify.verify;
 import static java.util.Optional.of;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeFalse;
 
 public class OtelLocaLogMirroringTest {
 
@@ -92,6 +94,7 @@ public class OtelLocaLogMirroringTest {
 
     @Test
     public void return_null_when_mirroring_option_disabled() {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         Map<String, String> configuration = new HashMap<>();
         configuration.put("otel.logs.exporter", "otlp");
         reInitProvider(configuration);
@@ -104,6 +107,7 @@ public class OtelLocaLogMirroringTest {
 
     @Test
     public void return_decorator_when_mirroring_option_enabled() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         Map<String, String> configuration = new HashMap<>();
         configuration.put("otel.logs.exporter", "otlp");
         configuration.put("otel.logs.mirror_to_disk", "true");
@@ -114,11 +118,11 @@ public class OtelLocaLogMirroringTest {
 
         assertNotNull(decorator);
         assertEquals(decorator.getClass(), OtelLocaLogDecorator.class);
-        build.delete();
     }
 
     @Test
     public void return_null_when_log_exporter_disabled() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         WorkflowRun build = runBuild();
         Map<String, String> configuration = new HashMap<>();
         configuration.put("otel.logs.mirror_to_disk", "true");
@@ -126,24 +130,24 @@ public class OtelLocaLogMirroringTest {
 
         TaskListenerDecorator decorator = new OtelLocaLogDecorator.Factory().of(build.asFlowExecutionOwner());
         assertNull(decorator);
-        build.delete();
     }
 
 
     @Test
     public void return_otel_log_text_when_otlp_enabled_and_no_log_file() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         Map<String, String> configuration = new HashMap<>();
         configuration.put("otel.logs.exporter", "otlp");
         reInitProvider(configuration);
 
         WorkflowRun build = runBuild();
         assertEquals(build.getLogText().getClass(), OverallLog.class);
-        build.delete();
     }
 
 
     @Test
     public void return_log_from_file_when_log_file_mirrored() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         Map<String, String> configuration = new HashMap<>();
         configuration.put("otel.logs.exporter", "otlp");
         configuration.put("otel.logs.mirror_to_disk", "true");
@@ -154,12 +158,12 @@ public class OtelLocaLogMirroringTest {
         assertNotEquals(build.getLogText().getClass(), OverallLog.class);
         String logText = build.getLog();
         assertTrue(logText.contains(printedLine));
-        build.delete();
     }
 
 
     @Test
     public void return_log_from_file_when_log_file_added_before_otlp_enabled() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
         WorkflowRun build = runBuild();
 
         Map<String, String> configuration = new HashMap<>();
@@ -169,7 +173,6 @@ public class OtelLocaLogMirroringTest {
         assertNotEquals(build.getLogText().getClass(), OverallLog.class);
         String logText = build.getLog();
         assertTrue(logText.contains(printedLine));
-        build.delete();
     }
 }
 
