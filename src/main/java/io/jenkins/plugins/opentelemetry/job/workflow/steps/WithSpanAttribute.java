@@ -78,8 +78,8 @@ public class WithSpanAttribute extends Step {
         this.value = value;
     }
 
-    public AttributeType getType() {
-        return type;
+    public String getType() {
+        return Optional.of(type).map(AttributeType::name).orElse(null);
     }
 
     @DataBoundSetter
