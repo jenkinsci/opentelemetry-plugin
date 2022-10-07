@@ -8,8 +8,11 @@ package io.jenkins.plugins.opentelemetry.job.workflow.steps;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.ExtensionList;
+import hudson.model.Item;
+import hudson.model.ItemGroup;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.util.ListBoxModel;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.common.AttributeKey;
@@ -17,16 +20,15 @@ import io.opentelemetry.api.common.AttributeType;
 import io.opentelemetry.api.trace.Span;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.*;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Extension
 public class WithSpanAttribute extends Step {
@@ -34,8 +36,7 @@ public class WithSpanAttribute extends Step {
 
     String key;
     Object value;
-
-    AttributeType attributeType;
+    AttributeType type;
 
     @DataBoundConstructor
     public WithSpanAttribute() {
@@ -44,7 +45,19 @@ public class WithSpanAttribute extends Step {
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        return new Execution(key, value, attributeType == null ? AttributeType.STRING : attributeType, context);
+        AttributeType type = this.type;
+        if (type == null) {
+            if (value instanceof Boolean) {
+                type = AttributeType.BOOLEAN;
+            } else if (value instanceof Double) {
+                type = AttributeType.BOOLEAN;
+            } else if (value instanceof Long || value instanceof Integer) {
+                type = AttributeType.LONG;
+            } else {
+                type = AttributeType.STRING;
+            }
+        }
+        return new Execution(key, value, type, context);
     }
 
     public String getKey() {
@@ -65,13 +78,13 @@ public class WithSpanAttribute extends Step {
         this.value = value;
     }
 
-    public AttributeType getAttributeType() {
-        return attributeType;
+    public AttributeType getType() {
+        return type;
     }
 
     @DataBoundSetter
-    public void setAttributeType(String attributeType) {
-        this.attributeType = Optional.of(attributeType)
+    public void setType(String type) {
+        this.type = Optional.of(type)
             .map(String::trim)
             .filter(OtelUtils.Predicates.not(String::isEmpty))
             .map(String::toUpperCase)
@@ -81,6 +94,7 @@ public class WithSpanAttribute extends Step {
     @Extension
     public static final class DescriptorImpl extends StepDescriptor {
         public static final String FUNCTION_NAME = "withSpanAttribute";
+
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
@@ -95,6 +109,11 @@ public class WithSpanAttribute extends Step {
         @Override
         public String getDisplayName() {
             return "Set Span Attribute";
+        }
+
+        public ListBoxModel doFillTypeItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
+            List<AttributeType> supportedAttributeTypes = Arrays.asList(AttributeType.STRING, AttributeType.LONG, AttributeType.BOOLEAN, AttributeType.DOUBLE);
+            return new ListBoxModel(supportedAttributeTypes.stream().map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
         }
     }
 
@@ -132,7 +151,7 @@ public class WithSpanAttribute extends Step {
                     break;
                 case DOUBLE:
                     attributeKey = AttributeKey.doubleKey(key);
-                    convertedValue = value instanceof Double ? value : Double.valueOf(value.toString());
+                    convertedValue = value instanceof Number ? ((Number) value).doubleValue() : Double.valueOf(value.toString());
                     break;
                 case STRING:
                     attributeKey = AttributeKey.stringKey(key);
@@ -140,7 +159,7 @@ public class WithSpanAttribute extends Step {
                     break;
                 case LONG:
                     attributeKey = AttributeKey.longKey(key);
-                    convertedValue = value instanceof Long ? value : Long.valueOf(value.toString());
+                    convertedValue = value instanceof Number ? ((Number) value).longValue() : Long.valueOf(value.toString());
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported span attribute type '" + attributeType + "'. " +

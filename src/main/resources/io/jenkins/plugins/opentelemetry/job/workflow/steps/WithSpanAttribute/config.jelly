@@ -1,9 +1,14 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-    <f:entry field="key" title="${%Key}">
+    <f:entry field="key" title="${%Key}" description="Key of the span attribute">
         <f:textbox/>
     </f:entry>
-    <f:entry field="value" title="${%Value}">
+    <f:entry field="value" title="${%Value}"  description="Value of the span attribute">
         <f:textbox/>
     </f:entry>
+    <f:advanced>
+        <f:entry field="type" title="${%Type}" description="Supported attribute types">
+            <f:select/>
+        </f:entry>
+    </f:advanced>
 </j:jelly>

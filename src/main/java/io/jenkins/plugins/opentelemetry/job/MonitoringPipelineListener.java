@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.ExtensionList;
