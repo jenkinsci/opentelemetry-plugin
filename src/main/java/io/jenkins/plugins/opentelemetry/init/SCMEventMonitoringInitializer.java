@@ -9,15 +9,13 @@ import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.AbstractOtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import jenkins.YesNoMaybe;
+import jenkins.scm.api.SCMEvent;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogEmitter;
-import jenkins.YesNoMaybe;
-import jenkins.scm.api.SCMEvent;
 
 /**
  * Capture SCM Events metrics
@@ -28,7 +26,7 @@ public class SCMEventMonitoringInitializer extends AbstractOtelComponent {
     private final static Logger logger = Logger.getLogger(SCMEventMonitoringInitializer.class.getName());
 
     @Override
-    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties) {
 
         registerInstrument(
             meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_SCM_EVENT_POOL_SIZE)

@@ -9,7 +9,6 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.common.Clock;
-import io.opentelemetry.sdk.logs.LogEmitter;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nonnull;
@@ -37,14 +36,14 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
      * {@link Map} version of the {@link Context} used to associate log message with the right {@link Span}
      */
     final Map<String, String> w3cTraceContext;
-    final LogEmitter logEmitter;
+    final io.opentelemetry.api.logs.Logger logEmitter;
     final Context context;
     final Clock clock;
 
     /**
      * @param w3cTraceContext Serializable version of the {@link Context} used to associate log messages with {@link io.opentelemetry.api.trace.Span}s
      */
-    public OtelLogOutputStream(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nonnull Map<String, String> w3cTraceContext, @Nonnull LogEmitter logEmitter, @Nonnull Clock clock) {
+    public OtelLogOutputStream(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nonnull Map<String, String> w3cTraceContext, @Nonnull io.opentelemetry.api.logs.Logger logEmitter, @Nonnull Clock clock) {
         this.buildInfo = buildInfo;
         this.flowNodeId = flowNodeId;
         this.logEmitter = logEmitter;

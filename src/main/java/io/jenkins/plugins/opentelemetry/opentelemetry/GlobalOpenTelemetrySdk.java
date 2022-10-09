@@ -18,8 +18,7 @@ import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.CompletableResultCode;
-import io.opentelemetry.sdk.logs.LogEmitter;
-import io.opentelemetry.sdk.logs.SdkLogEmitterProvider;
+import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import net.jcip.annotations.GuardedBy;
 
@@ -36,7 +35,7 @@ import java.util.logging.Logger;
 
 /**
  * Global singleton similar to the {@link io.opentelemetry.api.GlobalOpenTelemetry} in order to also have a
- * static accessor to the {@link io.opentelemetry.sdk.logs.SdkLogEmitterProvider}
+ * static accessor to the {@link io.opentelemetry.sdk.logs.SdkLoggerProvider}
  * <p>
  * TODO handle reconfiguration
  */
@@ -114,7 +113,7 @@ public final class GlobalOpenTelemetrySdk {
         }
     }
 
-    public static LogEmitter getLogEmitter() {
+    public static io.opentelemetry.api.logs.Logger getLogEmitter() {
         Lock readLock = readWriteLock.readLock();
         readLock.lock();
         try {
@@ -174,7 +173,7 @@ public final class GlobalOpenTelemetrySdk {
 
 
     private interface OpenTelemetrySdkState {
-        LogEmitter getLogEmitter();
+        io.opentelemetry.api.logs.Logger getLogEmitter();
 
         Meter getMeter();
 
@@ -191,8 +190,8 @@ public final class GlobalOpenTelemetrySdk {
 
     private static class NoopOpenTelemetrySdkState implements OpenTelemetrySdkState {
         @Override
-        public LogEmitter getLogEmitter() {
-            return SdkLogEmitterProvider.builder().build().get(INSTRUMENTATION_NAME);
+        public io.opentelemetry.api.logs.Logger getLogEmitter() {
+            return SdkLoggerProvider.builder().build().get(INSTRUMENTATION_NAME);
         }
 
         @Override
@@ -228,7 +227,7 @@ public final class GlobalOpenTelemetrySdk {
 
     private static class OpenTelemetrySdkStateImpl implements OpenTelemetrySdkState {
         private final AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk;
-        private final LogEmitter logEmitter;
+        private final io.opentelemetry.api.logs.Logger logEmitter;
         private final Meter meter;
         private final Tracer tracer;
         private final SdkConfigurationParameters sdkConfigurationParameters;
@@ -237,13 +236,13 @@ public final class GlobalOpenTelemetrySdk {
             this.autoConfiguredOpenTelemetrySdk = autoConfiguredOpenTelemetrySdk;
             this.sdkConfigurationParameters = sdkConfigurationParameters;
             String jenkinsPluginVersion = Objects.toString(autoConfiguredOpenTelemetrySdk.getResource().getAttribute(JenkinsOtelSemanticAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION), "#unknown#");
-            this.logEmitter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLogEmitterProvider().get(INSTRUMENTATION_NAME);
+            this.logEmitter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().get(INSTRUMENTATION_NAME);
             this.tracer = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getTracerProvider().get(INSTRUMENTATION_NAME, jenkinsPluginVersion);
             this.meter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getMeter(INSTRUMENTATION_NAME);
         }
 
         @Override
-        public LogEmitter getLogEmitter() {
+        public io.opentelemetry.api.logs.Logger getLogEmitter() {
             return logEmitter;
         }
 
@@ -278,7 +277,7 @@ public final class GlobalOpenTelemetrySdk {
             final CompletableResultCode result = CompletableResultCode.ofAll(Arrays.asList(
                 autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkTracerProvider().shutdown(),
                 autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkMeterProvider().shutdown(),
-                autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLogEmitterProvider().shutdown()));
+                autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().shutdown()));
             GlobalOpenTelemetry.resetForTest();
 
             return result;

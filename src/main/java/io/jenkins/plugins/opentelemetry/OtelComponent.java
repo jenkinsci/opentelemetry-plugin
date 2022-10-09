@@ -12,8 +12,6 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogEmitter;
-import io.opentelemetry.sdk.logs.SdkLogEmitterProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,9 +22,9 @@ import java.util.logging.Logger;
  * Interface for components that want to be notified when the Otel SDK has been initialized or will be shutdown.
  *
  * The life cycle of consumers of the OpenTelemetry SDK (consumers of {@link io.opentelemetry.api.trace.TracerProvider},
- * {@link io.opentelemetry.api.metrics.MeterProvider}, and {@link SdkLogEmitterProvider}) can NOT use the Jenkins life
- * cycle because those consumers of the Otel SDK need to perform initialization tasks after the Otel SDK has been
- * initialized and have to shut down things before the Otel SDK is shutdown due to a reconfiguration.
+ * {@link io.opentelemetry.api.metrics.MeterProvider}, and {@link io.opentelemetry.sdk.logs.SdkLoggerProvider}) can NOT
+ * use the Jenkins life cycle because those consumers of the Otel SDK need to perform initialization tasks after the
+ * Otel SDK has been initialized and have to shut down things before the Otel SDK is shutdown due to a reconfiguration.
  *
  * Used by components that create counters...
  */
@@ -36,11 +34,11 @@ public interface OtelComponent extends Comparable<OtelComponent>{
      * Invoked soon after the Otel SDK has been initialized.
      *
      * @param meter {@link Meter} of the newly initialized Otel SDK
-     * @param logEmitter {@link LogEmitter} of the newly initialized Otel SDK
+     * @param logEmitter {@link io.opentelemetry.api.logs.Logger} of the newly initialized Otel SDK
      * @param tracer {@link Tracer} of the newly initialized Otel SDK
      * @param configProperties {@link ConfigProperties} of the newly initialized Otel SDK
      */
-    void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties);
+    void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties);
 
     /**
      * Invoked just before the Otel SDK is shutdown

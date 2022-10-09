@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry;
 
 import groovy.text.GStringTemplateEngine;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.junit.AfterClass;
