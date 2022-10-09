@@ -79,12 +79,12 @@ public class WithSpanAttribute extends Step {
     }
 
     public String getType() {
-        return Optional.of(type).map(AttributeType::name).orElse(null);
+        return Optional.ofNullable(type).map(AttributeType::name).orElse(null);
     }
 
     @DataBoundSetter
     public void setType(String type) {
-        this.type = Optional.of(type)
+        this.type = Optional.ofNullable(type)
             .map(String::trim)
             .filter(OtelUtils.Predicates.not(String::isEmpty))
             .map(String::toUpperCase)
