@@ -40,7 +40,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
         this.tracer = tracer;
     }
 

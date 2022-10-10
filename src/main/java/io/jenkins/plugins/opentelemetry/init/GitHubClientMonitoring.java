@@ -85,7 +85,7 @@ public class GitHubClientMonitoring extends AbstractOtelComponent {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
         registerInstrument(
             meter.gaugeBuilder(GITHUB_API_RATE_LIMIT_REMAINING_REQUESTS)
                 .ofLongs()

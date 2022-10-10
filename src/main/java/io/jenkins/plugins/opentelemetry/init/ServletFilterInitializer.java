@@ -32,7 +32,7 @@ public class ServletFilterInitializer implements OtelComponent {
 
     OpenTelemetryServletFilter openTelemetryServletFilter;
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
 
         // TODO support live reload of the config flag
         boolean jenkinsWebInstrumentationEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED)).orElse(true);

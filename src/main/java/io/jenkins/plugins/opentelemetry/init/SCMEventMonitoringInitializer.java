@@ -26,7 +26,7 @@ public class SCMEventMonitoringInitializer extends AbstractOtelComponent {
     private final static Logger logger = Logger.getLogger(SCMEventMonitoringInitializer.class.getName());
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
 
         registerInstrument(
             meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_SCM_EVENT_POOL_SIZE)

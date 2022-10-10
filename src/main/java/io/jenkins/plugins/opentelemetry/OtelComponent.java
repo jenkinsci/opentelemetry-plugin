@@ -34,11 +34,11 @@ public interface OtelComponent extends Comparable<OtelComponent>{
      * Invoked soon after the Otel SDK has been initialized.
      *
      * @param meter {@link Meter} of the newly initialized Otel SDK
-     * @param logEmitter {@link io.opentelemetry.api.logs.Logger} of the newly initialized Otel SDK
+     * @param otelLogger {@link io.opentelemetry.api.logs.Logger} of the newly initialized Otel SDK
      * @param tracer {@link Tracer} of the newly initialized Otel SDK
      * @param configProperties {@link ConfigProperties} of the newly initialized Otel SDK
      */
-    void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties);
+    void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties);
 
     /**
      * Invoked just before the Otel SDK is shutdown

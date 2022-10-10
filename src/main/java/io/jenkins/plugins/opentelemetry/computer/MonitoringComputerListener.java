@@ -42,7 +42,7 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
     private OtelComponent.State state = new State();
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
         final Jenkins jenkins = Jenkins.get();
         Computer controllerComputer = jenkins.getComputer("");
         if (controllerComputer == null) {

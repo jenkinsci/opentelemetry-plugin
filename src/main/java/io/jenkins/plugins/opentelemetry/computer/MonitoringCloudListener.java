@@ -29,7 +29,7 @@ public class MonitoringCloudListener extends CloudProvisioningListener implement
     private LongCounter totalCloudCount;
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
         failureCloudCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_FAILURE)
             .setDescription("Number of failed cloud agents when provisioning")
             .setUnit("1")

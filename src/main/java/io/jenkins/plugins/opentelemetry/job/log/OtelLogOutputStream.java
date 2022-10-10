@@ -36,17 +36,17 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
      * {@link Map} version of the {@link Context} used to associate log message with the right {@link Span}
      */
     final Map<String, String> w3cTraceContext;
-    final io.opentelemetry.api.logs.Logger logEmitter;
+    final io.opentelemetry.api.logs.Logger otelLogger;
     final Context context;
     final Clock clock;
 
     /**
      * @param w3cTraceContext Serializable version of the {@link Context} used to associate log messages with {@link io.opentelemetry.api.trace.Span}s
      */
-    public OtelLogOutputStream(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nonnull Map<String, String> w3cTraceContext, @Nonnull io.opentelemetry.api.logs.Logger logEmitter, @Nonnull Clock clock) {
+    public OtelLogOutputStream(@Nonnull BuildInfo buildInfo, @Nullable String flowNodeId, @Nonnull Map<String, String> w3cTraceContext, @Nonnull io.opentelemetry.api.logs.Logger otelLogger, @Nonnull Clock clock) {
         this.buildInfo = buildInfo;
         this.flowNodeId = flowNodeId;
-        this.logEmitter = logEmitter;
+        this.otelLogger = otelLogger;
         this.clock = clock;
         this.w3cTraceContext = w3cTraceContext;
         this.context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.w3cTraceContext, new TextMapGetter<Map<String, String>>() {
@@ -81,7 +81,7 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
             if (flowNodeId != null) {
                 attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId);
             }
-            logEmitter.logRecordBuilder()
+            otelLogger.logRecordBuilder()
                 .setBody(plainLogLine)
                 .setAllAttributes(attributesBuilder.build())
                 .setContext(context)
@@ -93,7 +93,7 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
 
     @Override
     public void flush() {
-        // there is no flush concept with the Otel LogEmitter
+        // there is no flush concept with the Otel Logger
     }
 
     @Override

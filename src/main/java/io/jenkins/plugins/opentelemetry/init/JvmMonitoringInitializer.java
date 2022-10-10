@@ -37,7 +37,7 @@ public class JvmMonitoringInitializer extends AbstractOtelComponent {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
 
         List<ObservableLongCounter> observableLongCounters = GarbageCollector.registerObservers(meter);
         observableLongCounters.stream().forEach(this::registerInstrument);

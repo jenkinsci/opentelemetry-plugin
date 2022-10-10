@@ -72,7 +72,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
     public synchronized final PrintStream getLogger() {
         if (logger == null) {
             try {
-                logger = new PrintStream(new OtelLogOutputStream(buildInfo, flowNodeId, w3cTraceContext, getLogEmitter(), clock), false, "UTF-8");
+                logger = new PrintStream(new OtelLogOutputStream(buildInfo, flowNodeId, w3cTraceContext, getOtelLogger(), clock), false, "UTF-8");
             } catch (UnsupportedEncodingException e) {
                 throw new AssertionError(e);
             }
@@ -80,7 +80,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         return logger;
     }
 
-    abstract io.opentelemetry.api.logs.Logger getLogEmitter();
+    abstract io.opentelemetry.api.logs.Logger getOtelLogger();
 
     /**
      * {@link OtelLogSenderBuildListener} implementation that runs on the Jenkins Controller and
@@ -102,15 +102,15 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         }
 
         @Override
-        public io.opentelemetry.api.logs.Logger getLogEmitter() {
+        public io.opentelemetry.api.logs.Logger getOtelLogger() {
             JenkinsJVM.checkJenkinsJVM();
-            return OpenTelemetrySdkProvider.get().getLogEmitter();
+            return OpenTelemetrySdkProvider.get().getOtelLogger();
         }
 
         /**
          * Java serialization to send the {@link OtelLogSenderBuildListener} from the Jenkins Controller to a Jenkins Agent.
          * Swap the instance from a {@link OtelLogSenderBuildListenerOnController} to a {@link OtelLogSenderBuildListenerOnAgent}
-         * to change the implementation of {@link #getLogEmitter()}.
+         * to change the implementation of {@link #getOtelLogger()}.
          *
          * See https://docs.oracle.com/en/java/javase/11/docs/specs/serialization/output.html#the-writereplace-method
          */
@@ -151,9 +151,9 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
          * @return
          */
         @Override
-        public io.opentelemetry.api.logs.Logger getLogEmitter() {
+        public io.opentelemetry.api.logs.Logger getOtelLogger() {
             JenkinsJVM.checkNotJenkinsJVM();
-            return GlobalOpenTelemetrySdk.getLogEmitter();
+            return GlobalOpenTelemetrySdk.getOtelLogger();
         }
 
         private void writeObject(ObjectOutputStream stream) throws IOException {

@@ -83,8 +83,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties) {
-        super.afterSdkInitialized(meter, logEmitter, tracer, configProperties);
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
+        super.afterSdkInitialized(meter, otelLogger, tracer, configProperties);
 
         // CAUSE HANDLERS
         List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));

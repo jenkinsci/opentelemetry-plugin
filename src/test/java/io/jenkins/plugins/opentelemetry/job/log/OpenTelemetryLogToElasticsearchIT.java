@@ -58,11 +58,11 @@ public class OpenTelemetryLogToElasticsearchIT {
             try {
                 OpenTelemetrySdk sdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
                 Tracer tracer = sdk.getTracer("test");
-                Logger logEmitter = sdk.getSdkLoggerProvider().get("test");
+                Logger otelLogger = sdk.getSdkLoggerProvider().get("test");
                 Span span = tracer.spanBuilder("my-test-pipeline").startSpan();
                 try (Scope scope = span.makeCurrent()) {
                     for (int i = 0; i < LOG_MESSAGE_COUNT; i++) {
-                        logEmitter
+                        otelLogger
                             .logRecordBuilder()
                             .setContext(Context.current())
                             .setBody("Log Message " + i)

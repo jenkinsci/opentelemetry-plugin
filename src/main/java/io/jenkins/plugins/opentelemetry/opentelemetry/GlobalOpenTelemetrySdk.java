@@ -113,11 +113,11 @@ public final class GlobalOpenTelemetrySdk {
         }
     }
 
-    public static io.opentelemetry.api.logs.Logger getLogEmitter() {
+    public static io.opentelemetry.api.logs.Logger getOtelLogger() {
         Lock readLock = readWriteLock.readLock();
         readLock.lock();
         try {
-            return openTelemetrySdkState.getLogEmitter();
+            return openTelemetrySdkState.getOtelLogger();
         } finally {
             readLock.unlock();
         }
@@ -173,7 +173,7 @@ public final class GlobalOpenTelemetrySdk {
 
 
     private interface OpenTelemetrySdkState {
-        io.opentelemetry.api.logs.Logger getLogEmitter();
+        io.opentelemetry.api.logs.Logger getOtelLogger();
 
         Meter getMeter();
 
@@ -190,7 +190,7 @@ public final class GlobalOpenTelemetrySdk {
 
     private static class NoopOpenTelemetrySdkState implements OpenTelemetrySdkState {
         @Override
-        public io.opentelemetry.api.logs.Logger getLogEmitter() {
+        public io.opentelemetry.api.logs.Logger getOtelLogger() {
             return SdkLoggerProvider.builder().build().get(INSTRUMENTATION_NAME);
         }
 
@@ -227,7 +227,7 @@ public final class GlobalOpenTelemetrySdk {
 
     private static class OpenTelemetrySdkStateImpl implements OpenTelemetrySdkState {
         private final AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk;
-        private final io.opentelemetry.api.logs.Logger logEmitter;
+        private final io.opentelemetry.api.logs.Logger otelLogger;
         private final Meter meter;
         private final Tracer tracer;
         private final SdkConfigurationParameters sdkConfigurationParameters;
@@ -236,14 +236,14 @@ public final class GlobalOpenTelemetrySdk {
             this.autoConfiguredOpenTelemetrySdk = autoConfiguredOpenTelemetrySdk;
             this.sdkConfigurationParameters = sdkConfigurationParameters;
             String jenkinsPluginVersion = Objects.toString(autoConfiguredOpenTelemetrySdk.getResource().getAttribute(JenkinsOtelSemanticAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION), "#unknown#");
-            this.logEmitter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().get(INSTRUMENTATION_NAME);
+            this.otelLogger = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().get(INSTRUMENTATION_NAME);
             this.tracer = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getTracerProvider().get(INSTRUMENTATION_NAME, jenkinsPluginVersion);
             this.meter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getMeter(INSTRUMENTATION_NAME);
         }
 
         @Override
-        public io.opentelemetry.api.logs.Logger getLogEmitter() {
-            return logEmitter;
+        public io.opentelemetry.api.logs.Logger getOtelLogger() {
+            return otelLogger;
         }
 
         @Override

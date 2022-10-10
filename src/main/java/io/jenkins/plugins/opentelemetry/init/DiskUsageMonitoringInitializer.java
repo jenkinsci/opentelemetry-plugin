@@ -37,7 +37,7 @@ public class DiskUsageMonitoringInitializer extends AbstractOtelComponent {
     protected QuickDiskUsagePlugin quickDiskUsagePlugin;
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
         registerInstrument(
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
                 .ofLongs()
