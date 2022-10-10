@@ -219,7 +219,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>cloudbees-disk-usage-simple</artifactId>
-            <version>170.va_fd5b_4ee6858</version>
+            <version>178.v1a_4d2f6359a_8</version>
             <optional>true</optional>
         </dependency>
         <dependency>
