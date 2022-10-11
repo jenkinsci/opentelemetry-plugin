@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.job.workflow.steps;
+package io.jenkins.plugins.opentelemetry.job.step;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
@@ -31,30 +31,42 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Extension
-public class WithSpanAttribute extends Step {
-    private final static Logger logger = Logger.getLogger(WithSpanAttribute.class.getName());
+public class WithSpanAttributeStep extends Step {
+    private final static Logger logger = Logger.getLogger(WithSpanAttributeStep.class.getName());
 
     String key;
     Object value;
     AttributeType type;
 
     @DataBoundConstructor
-    public WithSpanAttribute() {
+    public WithSpanAttributeStep() {
 
     }
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
+        if (value == null) {
+            // null attributes are NOT supported
+            // todo log message
+            return new StepExecution(context) {
+                @Override
+                public boolean start() throws Exception {
+                    return false;
+                }
+            };
+        }
         AttributeType type = this.type;
         if (type == null) {
+            boolean isArray = value.getClass().isArray();
+
             if (value instanceof Boolean) {
-                type = AttributeType.BOOLEAN;
-            } else if (value instanceof Double) {
-                type = AttributeType.BOOLEAN;
+                type = isArray ? AttributeType.BOOLEAN_ARRAY : AttributeType.BOOLEAN;
+            } else if (value instanceof Double || value instanceof Float) {
+                type = isArray ? AttributeType.DOUBLE_ARRAY: AttributeType.DOUBLE;
             } else if (value instanceof Long || value instanceof Integer) {
-                type = AttributeType.LONG;
+                type = isArray ? AttributeType.LONG_ARRAY : AttributeType.LONG;
             } else {
-                type = AttributeType.STRING;
+                type = isArray ? AttributeType.STRING_ARRAY : AttributeType.STRING;
             }
         }
         return new Execution(key, value, type, context);
@@ -161,9 +173,24 @@ public class WithSpanAttribute extends Step {
                     attributeKey = AttributeKey.longKey(key);
                     convertedValue = value instanceof Number ? ((Number) value).longValue() : Long.valueOf(value.toString());
                     break;
+                case BOOLEAN_ARRAY:
+                    attributeKey = AttributeKey.booleanArrayKey(key);
+                    convertedValue = value; // todo try to convert if needed
+                    break;
+                case DOUBLE_ARRAY:
+                    attributeKey = AttributeKey.doubleArrayKey(key);
+                    convertedValue = value; // todo try to convert if needed
+                    break;
+                case LONG_ARRAY:
+                    attributeKey = AttributeKey.longArrayKey(key);
+                    convertedValue = value; // todo try to convert if needed
+                    break;
+                case STRING_ARRAY:
+                    attributeKey = AttributeKey.stringArrayKey(key);
+                    convertedValue = value; // todo try to convert if needed
+                    break;
                 default:
-                    throw new IllegalArgumentException("Unsupported span attribute type '" + attributeType + "'. " +
-                        "Expected: " + Arrays.asList(AttributeType.BOOLEAN, AttributeType.DOUBLE, AttributeType.LONG, AttributeType.STRING));
+                    throw new IllegalArgumentException("Unsupported span attribute type '" + attributeType + "'. ");
             }
             logger.log(Level.FINE, () -> "setSpanAttribute: run=\"" + run.getParent().getName() + "#" + run.getId() + "\", key=" + key + " value=\"" + value + "\" type=" + attributeType);
             span.setAttribute(attributeKey, convertedValue);
