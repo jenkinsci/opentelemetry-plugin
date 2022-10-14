@@ -10,7 +10,7 @@ import io.opentelemetry.api.trace.SpanContext;
 
 public interface ElasticsearchFields {
     /**
-     * Field used by the Elastic-Otel mapping to store the {@link io.opentelemetry.sdk.logs.LogRecordBuilder#setBody(String)}
+     * Field used by the Elastic-Otel mapping to store the {@link io.opentelemetry.api.logs.LogRecordBuilder#setBody(String)}
      */
     String FIELD_MESSAGE = "message";
     /**
