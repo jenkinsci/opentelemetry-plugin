@@ -159,19 +159,19 @@ public class WithSpanAttributeStep extends Step {
             switch (attributeType) {
                 case BOOLEAN:
                     attributeKey = AttributeKey.booleanKey(key);
-                    convertedValue = value instanceof Boolean ? value : Boolean.valueOf(value.toString());
+                    convertedValue = value instanceof Boolean ? value : Boolean.parseBoolean(value.toString());
                     break;
                 case DOUBLE:
                     attributeKey = AttributeKey.doubleKey(key);
-                    convertedValue = value instanceof Number ? ((Number) value).doubleValue() : Double.valueOf(value.toString());
+                    convertedValue = value instanceof Double ? value : value instanceof Float ? ((Float) value).doubleValue() : Double.parseDouble(value.toString());
                     break;
                 case STRING:
                     attributeKey = AttributeKey.stringKey(key);
-                    convertedValue = value instanceof String ? value : String.valueOf(value);
+                    convertedValue = value instanceof String ? value : value.toString();
                     break;
                 case LONG:
                     attributeKey = AttributeKey.longKey(key);
-                    convertedValue = value instanceof Number ? ((Number) value).longValue() : Long.valueOf(value.toString());
+                    convertedValue = value instanceof Long ?  value : value instanceof Integer ?  ((Integer) value).longValue() : Long.parseLong(value.toString());
                     break;
                 case BOOLEAN_ARRAY:
                     attributeKey = AttributeKey.booleanArrayKey(key);
