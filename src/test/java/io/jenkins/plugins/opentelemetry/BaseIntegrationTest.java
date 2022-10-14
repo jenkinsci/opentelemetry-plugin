@@ -20,6 +20,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
@@ -272,6 +273,7 @@ public class BaseIntegrationTest {
     @AfterClass
     public static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
+        GlobalLoggerProvider.resetForTest();
     }
 
     static class SpanDataWrapper {

@@ -11,6 +11,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
@@ -279,6 +280,7 @@ public final class GlobalOpenTelemetrySdk {
                 autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkMeterProvider().shutdown(),
                 autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().shutdown()));
             GlobalOpenTelemetry.resetForTest();
+            GlobalLoggerProvider.resetForTest();
 
             return result;
         }

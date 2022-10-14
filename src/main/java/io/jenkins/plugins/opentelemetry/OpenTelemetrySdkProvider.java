@@ -13,6 +13,7 @@ import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
@@ -108,6 +109,7 @@ public class OpenTelemetrySdkProvider {
             this.openTelemetrySdk.getSdkLoggerProvider().shutdown();
         }
         GlobalOpenTelemetry.resetForTest();
+        GlobalLoggerProvider.resetForTest();
     }
 
     public void initialize(@Nonnull OpenTelemetryConfiguration configuration) {
@@ -161,6 +163,7 @@ public class OpenTelemetrySdkProvider {
         this.config = ConfigPropertiesUtils.emptyConfig();
         this.openTelemetry = OpenTelemetry.noop();
         GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
+        GlobalLoggerProvider.resetForTest();
         GlobalOpenTelemetry.set(OpenTelemetry.noop());
         this.tracer.setDelegate(OpenTelemetry.noop().getTracer("io.jenkins.opentelemetry"));
 

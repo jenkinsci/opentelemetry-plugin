@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry;
 import groovy.text.GStringTemplateEngine;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,10 +67,12 @@ public class MonitoringActionTest {
     @BeforeClass
     public static void beforeClass() {
         GlobalOpenTelemetry.resetForTest();
+        GlobalLoggerProvider.resetForTest();
     }
 
     @AfterClass
     public static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
+        GlobalLoggerProvider.resetForTest();
     }
 }
