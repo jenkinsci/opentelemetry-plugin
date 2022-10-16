@@ -70,7 +70,7 @@ public class BaseIntegrationTest {
         GitSCM.ALLOW_LOCAL_CHECKOUT = true;
     }
 
-    final static AtomicInteger jobNameSuffix = new AtomicInteger();
+    public final static AtomicInteger jobNameSuffix = new AtomicInteger();
 
     @ClassRule
     public static BuildWatcher buildWatcher = new BuildWatcher();
@@ -276,8 +276,8 @@ public class BaseIntegrationTest {
         GlobalLoggerProvider.resetForTest();
     }
 
-    static class SpanDataWrapper {
-        final SpanData spanData;
+    public static class SpanDataWrapper {
+        public final SpanData spanData;
 
         public SpanDataWrapper(SpanData spanData) {
             this.spanData = spanData;

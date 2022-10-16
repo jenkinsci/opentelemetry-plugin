@@ -19,6 +19,7 @@ import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
+import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributeStep;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.metrics.Meter;
@@ -221,7 +222,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         if (stepDescriptor == null) {
             return true;
         }
-        boolean ignoreStep = this.ignoredSteps.contains(stepDescriptor.getFunctionName());
+        String stepFunctionName = stepDescriptor.getFunctionName();
+        boolean ignoreStep = WithSpanAttributeStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName) || this.ignoredSteps.contains(stepFunctionName);
         LOGGER.log(Level.FINER, ()-> "isIgnoreStep(" + stepDescriptor + "): " + ignoreStep);
         return ignoreStep;
     }

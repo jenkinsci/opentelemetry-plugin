@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class OtelUtils {
@@ -313,5 +314,14 @@ public class OtelUtils {
             }
         }
         return message.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).collect(Collectors.joining(", "));
+    }
+
+    public static class Predicates {
+        /**
+         * Waiting for Java 11
+         */
+        public static <T> Predicate<T> not(Predicate<? super T> target) {
+            return (Predicate<T>)target.negate();
+        }
     }
 }
