@@ -10,6 +10,22 @@ The Jenkins OpenTelemetry integration collects comprehensive contextual attribut
 
 The attributes of the traces and spans are normalized in order
 
+### Enriching pipeline build traces with custom span attributes
+
+[Attributes](https://opentelemetry.io/docs/reference/specification/common/#attribute) can be added to the spans associated with pipeline steps using the `withSpanAttribute(key, value[, type]) ` step.
+
+Example:
+
+````groovy
+withSpanAttribute(key: "pipeline_type", value: "release_pipeline")
+````
+
+Supported attribute types are `STRING`, `BOOLEAN`, `LONG`, `DOUBLE`, `STRING_ARRAY`, `BOOLEAN_ARRAY`, `LONG_ARRAY`, `DOUBLE_ARRAY`.
+If not specified, the `type` of the attribute is inferred from the passed `value`. It is recommended to not specify the type and to rely on the inference from the `value`.
+
+
+Note that the `withSpanAttribute` doesn't create a span in the pipeline build trace.
+
 ### Pipeline, freestyle, and matrix project build spans
 
 Attributes reported on the root span of Jenkins job and pipeline builds:
