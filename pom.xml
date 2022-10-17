@@ -25,7 +25,7 @@
         <opentelemetry-alpha.version>1.18.0-alpha</opentelemetry-alpha.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.4.3</elasticstack.version>
-        <error-prone.version>2.15.0</error-prone.version>
+        <error-prone.version>2.16</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
