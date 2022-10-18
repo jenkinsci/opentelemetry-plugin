@@ -4,28 +4,6 @@ jenkins:
     standard:
       excludeClientIPFromCrumb: false
   labelString: flyweight
-  log:
-      recorders:
-          -   loggers:
-                  -   level: "FINER"
-                      name: "io.jenkins.plugins.opentelemetry.job.log.OverallLog"
-                  -   level: "FINER"
-                      name: "io.jenkins.plugins.opentelemetry.backend.elastic"
-                  -   level: "FINER"
-                      name: "io.jenkins.plugins.opentelemetry.job.log.util"
-                  -   level: "FINE"
-                      name: "io.jenkins.plugins.opentelemetry"
-                  -   level: "FINE"
-                      name: "io.jenkins.plugins.opentelemetry.init"
-                  -   level: "FINE"
-                      name: "io.jenkins.plugins.opentelemetry.job.log.OtelLogStorageFactory"
-                  -   level: "ALL"
-                      name: "io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider"
-                  -   level: "FINE"
-                      name: "io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener"
-                  -   level: "FINE"
-                      name: "io.jenkins.plugins.opentelemetry.job.MonitoringRunListener"
-              name: "Otel"
   mode: EXCLUSIVE
   numExecutors: 5
   remotingSecurity:
@@ -54,7 +32,7 @@ credentials:
           id: "elasticsearch-logs"
           password: "changeme"
           scope: GLOBAL
-          username: "admin"
+          username: "jenkins_logs_user"
 unclassified:
   openTelemetry:
     authentication: "noAuthentication"
