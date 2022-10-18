@@ -3,7 +3,7 @@
 Jenkins pipeline build logs can be sent through OpenTelemetry Protocol in order to be stored in an observability backend alongside the traces of the pipeline builds and the health metrics of Jenkins. Doing so provides the following benefits
 * Better observability, monitoring, alerting, and troubleshooting of the Jenkins instance thanks to the unification of all the signals in the observability backend
 * Better traceability and audit of the Software Delivery Lifecycle having better control on the long term storage of the builds
-* Better scalability and reliability of Jenkins greatly reducing the quantity of data stored in Jenkins home and limiting the well known file system performance challenges of Jenkins when storing a large history of builds  
+* Better scalability and reliability of Jenkins greatly reducing the quantity of data stored in Jenkins home and limiting the well known file system performance challenges of Jenkins when storing a large history of builds
 
 > **_BEST PRACTICE:_** When sending Jenkins pipeline logs through OpenTelemetry, it is recommended to deploy OpenTelemetry Collectors next to the Jenkins deployment for improved scalability and reliability.
 
@@ -11,12 +11,12 @@ Jenkins pipeline build logs can be sent through OpenTelemetry Protocol in order 
 
 > **_PRE REQUISITES:_** storing Jenkins pipeline logs in Elasticsearch requires :
 > * Elastic Observability version 8.1+
-> * The OTLP endpoint configured on the Jenkins OpenTelemetry plugin configuration MUST be reachable from the Jenkins Agents (don't specify a `localhost` OTLP endpoint unless OpenTelemetry collectors are also deployed on the Jenkins Agents)  
-> * When using OpenTelemetry Collectors, requires setting up a logs pipeline in addition to the traces and metrics pipelines. See FAQ below 
+> * The OTLP endpoint configured on the Jenkins OpenTelemetry plugin configuration MUST be reachable from the Jenkins Agents (don't specify a `localhost` OTLP endpoint unless OpenTelemetry collectors are also deployed on the Jenkins Agents)
+> * When using OpenTelemetry Collectors, requires setting up a logs pipeline in addition to the traces and metrics pipelines. See FAQ below
 
-To store pipeline logs in Elastic, 
+To store pipeline logs in Elastic,
 
-* Navigate to the OpenTelemetry section of Jenkins configuration screen, 
+* Navigate to the OpenTelemetry section of Jenkins configuration screen,
 * Ensure the OTLP configuration is set
 * Add the Elastic Observability backend
 * Set the Kibana URL
@@ -38,7 +38,7 @@ The Jenkins pipeline build console then displays a hyperlink to Kibana rather th
 
 #### Example configuration
 
-<img width="400px" 
+<img width="400px"
    alt="Configuration - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana"
    src="./images/jenkins-pipeline-logs-elastic-without-visualization-through-jenkins.png" />
 
@@ -57,9 +57,11 @@ The Jenkins OpenTelemetry can also store of pipeline logs in Elasticsearch provi
    src="./images/jenkins-pipeline-build-console-with-hlink-elastic-and-logs-zoom.png" />
 
 
-This more advanced setup requires connecting from the Jenkins Controller to Elasticsearch with read permissions on the `logs-apm.app` and preferably on the Metadata of the ILM policy of this index template (by default it's the `logs-apm.app_logs-default_policy` policy).  
+This more advanced setup requires connecting from the Jenkins Controller to Elasticsearch with read permissions on the `logs-apm.app` and preferably on the Metadata of the ILM policy of this index template (by default it's the `logs-apm.app_logs-default_policy` policy).
 
 Please use the "Validate Elasticsearch configuration" to verify the setup.
+
+> :warning: If you add some Jenkins Logging for the OpenTelemetry plugin then the build logs won't be shown in Elastic.
 
 #### Configuration
 
@@ -73,13 +75,32 @@ Please use the "Validate Elasticsearch configuration" to verify the setup.
 alt="Configuration - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana and through Jenkins"
 src="./images/jenkins-pipeline-logs-elastic-with-visualization-through-jenkins.png" />
 
+
+#### Configuring Roles/Users in Elastic
+
+In order to retrieve the logs from Elasticsearch you can configure an Elastic user with the required permissions, please follow the below steps.
+
+1. Create the role `jenkins_logs` in your Kibana instance.
+
+<img width="400px"
+alt="Configuration - Role creation in Kibana"
+src="./images/jenkins-pipeline-logs-elastic-kibana-role.png" />
+
+
+2. Create the user `jenkins_logs_user` in your Kibana instance
+
+<img width="400px"
+alt="Configuration - User creation in Kibana"
+src="./images/jenkins-pipeline-logs-elastic-kibana-user.png" />
+
+
 ## FAQ
 
 ### Enabling logs forwarding on the OpenTelemetry Collector
 
-OpenTelemetry collectors requires to define a [logs pipeline](https://opentelemetry.io/docs/collector/configuration/#service) in order to transfer the logs received by the receivers like the [OTLP receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/otlpreceiver) to the observability backends. 
+OpenTelemetry collectors requires to define a [logs pipeline](https://opentelemetry.io/docs/collector/configuration/#service) in order to transfer the logs received by the receivers like the [OTLP receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/otlpreceiver) to the observability backends.
 
-Minimalistic example of an OpenTelemetry Collector transferring all signals, traces, metrics, and logs, to  Elastic Observability.  
+Minimalistic example of an OpenTelemetry Collector transferring all signals, traces, metrics, and logs, to Elastic Observability.
 
 ````yaml
 receivers:
@@ -135,7 +156,7 @@ To enable sending pipeline logs to an observability backend for which the Jenkin
 <img width="400px" src="images/jenkins-pipeline-logs-custom-config.png" />
 
 
-**Known limitation:** The definition of the link to visualize pipeline logs is not yet supported (screenshot below). Users should navigate to the pipeline logs through the pipeline trace link defined in the Custom Observability Visualization Backend configuration. 
+**Known limitation:** The definition of the link to visualize pipeline logs is not yet supported (screenshot below). Users should navigate to the pipeline logs through the pipeline trace link defined in the Custom Observability Visualization Backend configuration.
 
 
 <img width="400px" src="images/jenkins-pipeline-logs-custom-visualization.png" />
@@ -148,3 +169,9 @@ Build console log will display the log from the build folder. If no log file is 
 ### Can the Jenkins server logs and the logs of other types of jobs like Freestyle or Matrix jobs be sent through OpenTelemetry to be stored outside of Jenkins?
 
 We would like to implement this as well, it's an Open Source initiative, contributions are welcome
+
+### Why cannot I see the build logs but some OpenTelemetry logs?
+
+That happens if the Jenkins logging was enabled for any of the classes of the OpenTelemetry plugin.
+
+Please remove them from your Jenkins controller in, http://jenkins:8080/manage/log/

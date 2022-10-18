@@ -22,6 +22,11 @@ heartbeat:
   indices:
     - names: ['heartbeat-*','shrink-heartbeat-*']
       privileges: ['all']
+jenkins_logs:
+  cluster: ['read_ilm']
+  indices:
+    - names: ['logs-apm.app']
+      privileges: ['read']
 metricbeat:
   cluster: ['manage_index_templates','monitor','manage_ingest_pipelines','manage_ilm']
   indices:
