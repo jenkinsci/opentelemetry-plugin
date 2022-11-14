@@ -7,7 +7,7 @@
     <div class="alert alert-warning">
         <form method="post" action="${rootURL}/${it.url}/act" name="${it.id}">
             <f:submit name="yes" value="${%Configure OpenTelemetry Plugin Observability Backend}"/>
-            <f:submit name="no" value="${%Dismiss}"/>
+            <f:submit primary="false" clazz="jenkins-!-destructive-color" name="no" value="${%Dismiss}"/>
         </form>
         The OpenTelemetry Plugin is configured to send observability data but no observability backend is configured
         to navigate from Jenkins GUI to the observability screens and data (Jenkins health and performance dashboard,
