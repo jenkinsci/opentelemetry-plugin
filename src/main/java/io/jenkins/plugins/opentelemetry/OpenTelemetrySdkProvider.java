@@ -13,6 +13,7 @@ import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
@@ -21,8 +22,7 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.extension.resources.ProcessResourceProvider;
-import io.opentelemetry.sdk.logs.LogEmitter;
-import io.opentelemetry.sdk.logs.SdkLogEmitterProvider;
+import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 
@@ -50,7 +50,7 @@ public class OpenTelemetrySdkProvider {
     protected transient Meter meter;
     protected transient Resource resource;
     protected transient ConfigProperties config;
-    protected transient LogEmitter logEmitter;
+    protected transient io.opentelemetry.api.logs.Logger otelLogger;
 
     public OpenTelemetrySdkProvider() {
     }
@@ -87,8 +87,8 @@ public class OpenTelemetrySdkProvider {
     }
 
     @Nonnull
-    public LogEmitter getLogEmitter() {
-        return Preconditions.checkNotNull(this.logEmitter);
+    public io.opentelemetry.api.logs.Logger getOtelLogger() {
+        return Preconditions.checkNotNull(this.otelLogger);
     }
 
     @VisibleForTesting
@@ -106,9 +106,10 @@ public class OpenTelemetrySdkProvider {
             ExtensionList.lookup(OtelComponent.class).stream().sorted().forEachOrdered(OtelComponent::beforeSdkShutdown);
             this.openTelemetrySdk.getSdkTracerProvider().shutdown();
             this.openTelemetrySdk.getSdkMeterProvider().shutdown();
-            this.openTelemetrySdk.getSdkLogEmitterProvider().shutdown();
+            this.openTelemetrySdk.getSdkLoggerProvider().shutdown();
         }
         GlobalOpenTelemetry.resetForTest();
+        GlobalLoggerProvider.resetForTest();
     }
 
     public void initialize(@Nonnull OpenTelemetryConfiguration configuration) {
@@ -119,7 +120,7 @@ public class OpenTelemetrySdkProvider {
             initializeNoOp();
         }
         LOGGER.log(Level.FINE, () -> "Initialize Otel SDK on components: " + ExtensionList.lookup(OtelComponent.class).stream().sorted().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
-        ExtensionList.lookup(OtelComponent.class).stream().sorted().forEachOrdered(otelComponent -> otelComponent.afterSdkInitialized(meter, logEmitter, tracer, config));
+        ExtensionList.lookup(OtelComponent.class).stream().sorted().forEachOrdered(otelComponent -> otelComponent.afterSdkInitialized(meter, otelLogger, tracer, config));
     }
 
     public void initializeOtlp(@Nonnull OpenTelemetryConfiguration configuration) {
@@ -147,7 +148,7 @@ public class OpenTelemetrySdkProvider {
         this.openTelemetry = this.openTelemetrySdk;
         this.tracer.setDelegate(openTelemetry.getTracer(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME, OtelUtils.getOpentelemetryPluginVersion()));
 
-        this.logEmitter = openTelemetrySdk.getSdkLogEmitterProvider().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
+        this.otelLogger = openTelemetrySdk.getSdkLoggerProvider().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
         this.meter = openTelemetry.getMeterProvider().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
 
         LOGGER.log(Level.INFO, () -> "OpenTelemetry SDK initialized: " + OtelUtils.prettyPrintOtelSdkConfig(autoConfiguredOpenTelemetrySdk));
@@ -162,11 +163,12 @@ public class OpenTelemetrySdkProvider {
         this.config = ConfigPropertiesUtils.emptyConfig();
         this.openTelemetry = OpenTelemetry.noop();
         GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
+        GlobalLoggerProvider.resetForTest();
         GlobalOpenTelemetry.set(OpenTelemetry.noop());
         this.tracer.setDelegate(OpenTelemetry.noop().getTracer("io.jenkins.opentelemetry"));
 
         this.meter = OpenTelemetry.noop().getMeter("io.jenkins.opentelemetry");
-        this.logEmitter = SdkLogEmitterProvider.builder().build().get("io.jenkins.opentelemetry");
+        this.otelLogger = SdkLoggerProvider.builder().build().get("io.jenkins.opentelemetry");
         LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
     }
 

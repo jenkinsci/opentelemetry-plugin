@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import com.cloudbees.simplediskusage.DiskItem;
-import com.cloudbees.simplediskusage.QuickDiskUsageInitializer;
 import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.AbstractOtelComponent;
@@ -14,7 +13,6 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
@@ -39,7 +37,7 @@ public class DiskUsageMonitoringInitializer extends AbstractOtelComponent {
     protected QuickDiskUsagePlugin quickDiskUsagePlugin;
 
     @Override
-    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
         registerInstrument(
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
                 .ofLongs()

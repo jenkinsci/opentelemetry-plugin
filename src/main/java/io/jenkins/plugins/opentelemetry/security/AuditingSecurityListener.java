@@ -13,14 +13,14 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.logs.EventBuilder;
+import io.opentelemetry.api.logs.LogRecordBuilder;
+import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogEmitter;
-import io.opentelemetry.sdk.logs.LogRecordBuilder;
-import io.opentelemetry.sdk.logs.data.Severity;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.security.SecurityListener;
@@ -48,11 +48,11 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
     private LongCounter loginFailureCounter;
     private LongCounter loginCounter;
 
-    private LogEmitter logEmitter;
+    private io.opentelemetry.api.logs.Logger otelLogger;
 
     @Override
-    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
-        this.logEmitter = logEmitter;
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
+        this.otelLogger = otelLogger;
 
         loginSuccessCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_SUCCESS)
@@ -106,13 +106,13 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
             if (details instanceof WebAuthenticationDetails) {
                 WebAuthenticationDetails webAuthenticationDetails = (WebAuthenticationDetails) details;
                 attributesBuilder
-                    .put(SemanticAttributes.NET_PEER_IP, webAuthenticationDetails.getRemoteAddress());
+                    .put(SemanticAttributes.NET_SOCK_PEER_ADDR, webAuthenticationDetails.getRemoteAddress());
                 message += " from " + webAuthenticationDetails.getRemoteAddress();
             }
         }
 
-        LogRecordBuilder logBuilder = logEmitter.logRecordBuilder();
-        logBuilder
+        EventBuilder eventBuilder = otelLogger.eventBuilder("authentication");
+        eventBuilder
             .setBody(message)
             .setAllAttributes(attributesBuilder.build())
             .setContext(Context.current()) // note there is no span as long as we don't fix the registration of the OpenTelemetryServletFilter
@@ -140,7 +140,7 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
 
         // TODO find a solution to retrieve the remoteIpAddress
 
-        LogRecordBuilder logBuilder = logEmitter.logRecordBuilder();
+        LogRecordBuilder logBuilder = otelLogger.logRecordBuilder();
         logBuilder
             .setBody(message)
             .setAllAttributes(attributesBuilder.build())

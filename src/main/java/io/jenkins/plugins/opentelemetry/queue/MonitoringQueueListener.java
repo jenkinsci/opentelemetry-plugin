@@ -8,20 +8,15 @@ package io.jenkins.plugins.opentelemetry.queue;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
-import javax.annotation.Nonnull;
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -42,7 +37,7 @@ public class MonitoringQueueListener extends QueueListener implements OtelCompon
     private LongCounter timeInQueueInMillisCounter;
 
     @Override
-    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
 
         state.registerInstrument(
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_WAITING)

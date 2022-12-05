@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry.job;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
@@ -38,7 +37,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogEmitter;
 import io.opentelemetry.sdk.trace.ReadWriteSpan;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
@@ -85,8 +83,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
-        super.afterSdkInitialized(meter, logEmitter, tracer, configProperties);
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
+        super.afterSdkInitialized(meter, otelLogger, tracer, configProperties);
 
         // CAUSE HANDLERS
         List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));

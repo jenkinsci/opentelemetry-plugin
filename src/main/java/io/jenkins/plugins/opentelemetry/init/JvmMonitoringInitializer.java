@@ -15,7 +15,6 @@ import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.YesNoMaybe;
 
 import java.lang.management.ManagementFactory;
@@ -38,7 +37,7 @@ public class JvmMonitoringInitializer extends AbstractOtelComponent {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
 
         List<ObservableLongCounter> observableLongCounters = GarbageCollector.registerObservers(meter);
         observableLongCounters.stream().forEach(this::registerInstrument);

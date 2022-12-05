@@ -21,8 +21,8 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.346.1</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.18.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.18.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.19.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.19.0-alpha</opentelemetry-alpha.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.4.3</elasticstack.version>
         <error-prone.version>2.16</error-prone.version>
@@ -87,6 +87,10 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api-logs</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>

@@ -16,13 +16,13 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.logs.Logger;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
-import io.opentelemetry.sdk.logs.LogEmitter;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -32,11 +32,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
+import java.util.*;
 
 public class OpenTelemetryLogToElasticsearchIT {
     private final static Random RANDOM = new Random();
@@ -62,11 +58,11 @@ public class OpenTelemetryLogToElasticsearchIT {
             try {
                 OpenTelemetrySdk sdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
                 Tracer tracer = sdk.getTracer("test");
-                LogEmitter logEmitter = sdk.getSdkLogEmitterProvider().get("test");
+                Logger otelLogger = sdk.getSdkLoggerProvider().get("test");
                 Span span = tracer.spanBuilder("my-test-pipeline").startSpan();
                 try (Scope scope = span.makeCurrent()) {
                     for (int i = 0; i < LOG_MESSAGE_COUNT; i++) {
-                        logEmitter
+                        otelLogger
                             .logRecordBuilder()
                             .setContext(Context.current())
                             .setBody("Log Message " + i)
@@ -82,7 +78,7 @@ public class OpenTelemetryLogToElasticsearchIT {
                 }
                 traceId = span.getSpanContext().getTraceId();
             } finally {
-                autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLogEmitterProvider().close();
+                autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().close();
                 autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkTracerProvider().close();
             }
         }

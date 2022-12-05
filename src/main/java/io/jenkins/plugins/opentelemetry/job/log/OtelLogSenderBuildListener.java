@@ -10,7 +10,6 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.common.OffsetClock;
 import io.opentelemetry.sdk.common.Clock;
-import io.opentelemetry.sdk.logs.LogEmitter;
 import jenkins.util.JenkinsJVM;
 
 import javax.annotation.CheckForNull;
@@ -73,7 +72,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
     public synchronized final PrintStream getLogger() {
         if (logger == null) {
             try {
-                logger = new PrintStream(new OtelLogOutputStream(buildInfo, flowNodeId, w3cTraceContext, getLogEmitter(), clock), false, "UTF-8");
+                logger = new PrintStream(new OtelLogOutputStream(buildInfo, flowNodeId, w3cTraceContext, getOtelLogger(), clock), false, "UTF-8");
             } catch (UnsupportedEncodingException e) {
                 throw new AssertionError(e);
             }
@@ -81,11 +80,11 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         return logger;
     }
 
-    abstract LogEmitter getLogEmitter();
+    abstract io.opentelemetry.api.logs.Logger getOtelLogger();
 
     /**
      * {@link OtelLogSenderBuildListener} implementation that runs on the Jenkins Controller and
-     * that retrieves the {@link LogEmitter} from the {@link OpenTelemetrySdkProvider}
+     * that retrieves the {@link io.opentelemetry.api.logs.Logger} from the {@link OpenTelemetrySdkProvider}
      */
     static final class OtelLogSenderBuildListenerOnController extends OtelLogSenderBuildListener {
         private static final long serialVersionUID = 1;
@@ -103,15 +102,15 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         }
 
         @Override
-        public LogEmitter getLogEmitter() {
+        public io.opentelemetry.api.logs.Logger getOtelLogger() {
             JenkinsJVM.checkJenkinsJVM();
-            return OpenTelemetrySdkProvider.get().getLogEmitter();
+            return OpenTelemetrySdkProvider.get().getOtelLogger();
         }
 
         /**
          * Java serialization to send the {@link OtelLogSenderBuildListener} from the Jenkins Controller to a Jenkins Agent.
          * Swap the instance from a {@link OtelLogSenderBuildListenerOnController} to a {@link OtelLogSenderBuildListenerOnAgent}
-         * to change the implementation of {@link #getLogEmitter()}.
+         * to change the implementation of {@link #getOtelLogger()}.
          *
          * See https://docs.oracle.com/en/java/javase/11/docs/specs/serialization/output.html#the-writereplace-method
          */
@@ -124,8 +123,9 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
 
     /**
      * {@link OtelLogSenderBuildListener} implementation that runs on the Jenkins Agents and
-     * that retrieves the {@link LogEmitter} instantiating an {@link io.opentelemetry.sdk.OpenTelemetrySdk} with
-     * configuration parameters transmitted via Jenkins remoting serialization
+     * that retrieves the {@link io.opentelemetry.api.logs.Logger} instantiating an
+     * {@link io.opentelemetry.sdk.OpenTelemetrySdk} with configuration parameters transmitted via Jenkins remoting
+     * serialization
      */
     private static class OtelLogSenderBuildListenerOnAgent extends OtelLogSenderBuildListener {
         private static final long serialVersionUID = 1;
@@ -151,9 +151,9 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
          * @return
          */
         @Override
-        public LogEmitter getLogEmitter() {
+        public io.opentelemetry.api.logs.Logger getOtelLogger() {
             JenkinsJVM.checkNotJenkinsJVM();
-            return GlobalOpenTelemetrySdk.getLogEmitter();
+            return GlobalOpenTelemetrySdk.getOtelLogger();
         }
 
         private void writeObject(ObjectOutputStream stream) throws IOException {

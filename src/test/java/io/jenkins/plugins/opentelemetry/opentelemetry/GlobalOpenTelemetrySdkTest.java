@@ -21,7 +21,7 @@ public class GlobalOpenTelemetrySdkTest {
     public void testNotSdkConfigured() {
         try {
             GlobalOpenTelemetrySdk.getConfigProperties();
-            GlobalOpenTelemetrySdk.getLogEmitter();
+            GlobalOpenTelemetrySdk.getOtelLogger();
             GlobalOpenTelemetrySdk.getMeter();
             GlobalOpenTelemetrySdk.getTracer();
             Resource resource = GlobalOpenTelemetrySdk.getResource();
@@ -51,7 +51,7 @@ public class GlobalOpenTelemetrySdkTest {
             GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
             ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
             config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-            GlobalOpenTelemetrySdk.getLogEmitter();
+            GlobalOpenTelemetrySdk.getOtelLogger();
             GlobalOpenTelemetrySdk.getMeter();
             GlobalOpenTelemetrySdk.getTracer();
             Resource actualResource = GlobalOpenTelemetrySdk.getResource();
@@ -85,7 +85,7 @@ public class GlobalOpenTelemetrySdkTest {
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
                 ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
                 config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getLogEmitter();
+                GlobalOpenTelemetrySdk.getOtelLogger();
                 GlobalOpenTelemetrySdk.getMeter();
                 GlobalOpenTelemetrySdk.getTracer();
                 Resource actualResource = GlobalOpenTelemetrySdk.getResource();
@@ -98,7 +98,7 @@ public class GlobalOpenTelemetrySdkTest {
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
                 ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
                 config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getLogEmitter();
+                GlobalOpenTelemetrySdk.getOtelLogger();
                 GlobalOpenTelemetrySdk.getMeter();
                 GlobalOpenTelemetrySdk.getTracer();
                 Resource actualResource = GlobalOpenTelemetrySdk.getResource();
@@ -136,7 +136,7 @@ public class GlobalOpenTelemetrySdkTest {
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
                 ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
                 config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getLogEmitter();
+                GlobalOpenTelemetrySdk.getOtelLogger();
                 GlobalOpenTelemetrySdk.getMeter();
                 GlobalOpenTelemetrySdk.getTracer();
                 Resource actualResource = GlobalOpenTelemetrySdk.getResource();
@@ -157,7 +157,7 @@ public class GlobalOpenTelemetrySdkTest {
                 GlobalOpenTelemetrySdk.configure(config, differentResourceAttributes, false);
                 ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
                 config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getLogEmitter();
+                GlobalOpenTelemetrySdk.getOtelLogger();
                 GlobalOpenTelemetrySdk.getMeter();
                 GlobalOpenTelemetrySdk.getTracer();
                 Resource actualResource = GlobalOpenTelemetrySdk.getResource();
@@ -196,7 +196,7 @@ public class GlobalOpenTelemetrySdkTest {
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
                 ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
                 config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getLogEmitter();
+                GlobalOpenTelemetrySdk.getOtelLogger();
                 GlobalOpenTelemetrySdk.getMeter();
                 GlobalOpenTelemetrySdk.getTracer();
                 Resource actualResource = GlobalOpenTelemetrySdk.getResource();
@@ -215,7 +215,7 @@ public class GlobalOpenTelemetrySdkTest {
                 GlobalOpenTelemetrySdk.configure(differentConfig, resourceAttributes, false);
                 ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
                 differentConfig.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getLogEmitter();
+                GlobalOpenTelemetrySdk.getOtelLogger();
                 GlobalOpenTelemetrySdk.getMeter();
                 GlobalOpenTelemetrySdk.getTracer();
                 Resource actualResource = GlobalOpenTelemetrySdk.getResource();

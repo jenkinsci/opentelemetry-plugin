@@ -8,14 +8,11 @@ package io.jenkins.plugins.opentelemetry.init;
 import com.google.common.base.Preconditions;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.AbstractOtelComponent;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogEmitter;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
 import org.jenkinsci.plugins.github_branch_source.Connector;
@@ -88,7 +85,7 @@ public class GitHubClientMonitoring extends AbstractOtelComponent {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
         registerInstrument(
             meter.gaugeBuilder(GITHUB_API_RATE_LIMIT_REMAINING_REQUESTS)
                 .ofLongs()

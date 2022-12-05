@@ -9,24 +9,19 @@ import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.logs.LogRecordBuilder;
+import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.LogEmitter;
-import io.opentelemetry.sdk.logs.LogRecordBuilder;
-import io.opentelemetry.sdk.logs.data.Severity;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Formatter;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 /**
  * Inspired by https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v1.14.0/instrumentation/java-util-logging/javaagent/src/main/java/io/opentelemetry/javaagent/instrumentation/jul/JavaUtilLoggingHelper.java
@@ -40,12 +35,12 @@ public class OtelJulHandler extends Handler implements OtelComponent {
 
     private  boolean captureExperimentalAttributes;
 
-    private LogEmitter logEmitter;
+    private io.opentelemetry.api.logs.Logger otelLogger;
 
     private boolean initialized;
 
     /**
-     * Map the {@link LogRecord} data model onto the {@link LogRecordBuilder}. Unmapped fields include:
+     * Map the {@link LogRecord} data model onto the {@link io.opentelemetry.api.logs.LogRecordBuilder}. Unmapped fields include:
      *
      * <ul>
      *   <li>Fully qualified class name - {@link LogRecord#getSourceClassName()}
@@ -55,7 +50,7 @@ public class OtelJulHandler extends Handler implements OtelComponent {
      */
     @Override
     public void publish(LogRecord logRecord) {
-        LogRecordBuilder logBuilder =  logEmitter.logRecordBuilder();
+        LogRecordBuilder logBuilder =  otelLogger.logRecordBuilder();
         // message
         String message = FORMATTER.formatMessage(logRecord);
         if (message != null) {
@@ -140,8 +135,8 @@ public class OtelJulHandler extends Handler implements OtelComponent {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, LogEmitter logEmitter, Tracer tracer, ConfigProperties configProperties) {
-        this.logEmitter = logEmitter;
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
+        this.otelLogger = otelLogger;
         this.captureExperimentalAttributes = configProperties.getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
         if (!initialized) {
             Logger.getLogger("").addHandler(this);
