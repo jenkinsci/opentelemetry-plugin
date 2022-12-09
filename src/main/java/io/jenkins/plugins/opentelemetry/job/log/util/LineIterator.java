@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.job.log.util;
 
 import io.jenkins.plugins.opentelemetry.job.RunFlowNodeIdentifier;
 import org.kohsuke.stapler.Stapler;
+import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpSession;
@@ -16,6 +17,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public interface LineIterator extends Iterator<String> {
     void skipLines(long skip);
@@ -35,6 +38,8 @@ public interface LineIterator extends Iterator<String> {
      * Converter gets garbage collected when the HTTP session expires
      */
     class JenkinsHttpSessionLineBytesToLineNumberConverter implements LineBytesToLineNumberConverter {
+        private final static Logger logger = Logger.getLogger(JenkinsHttpSessionLineBytesToLineNumberConverter.class.getName());
+
         public static final String HTTP_SESSION_KEY = "JenkinsHttpSessionLineBytesToLineNumberConverter";
         final String jobFullName;
         final int runNumber;
@@ -64,7 +69,14 @@ public interface LineIterator extends Iterator<String> {
         }
 
         Map<RunFlowNodeIdentifier, Map<Long, Long>> getContext() {
-            HttpSession session = Stapler.getCurrentRequest().getSession();
+            StaplerRequest currentRequest = Stapler.getCurrentRequest();
+            if (currentRequest == null) {
+                // happens when reading logs is not tied to a web request
+                // (e.g. API call from within a pipeline as described in https://github.com/jenkinsci/opentelemetry-plugin/issues/564)
+                logger.log(Level.WARNING, "No current request found, default to default LogLineNumber context");
+                return new HashMap<>();
+            }
+            HttpSession session = currentRequest.getSession();
             synchronized (session) {
                 Map<RunFlowNodeIdentifier, Map<Long, Long>> context = (Map<RunFlowNodeIdentifier, Map<Long, Long>>) session.getAttribute(HTTP_SESSION_KEY);
                 if (context == null) {
