@@ -7,7 +7,7 @@
     <div class="alert alert-warning">
         <form method="post" action="${rootURL}/${it.url}/act" name="${it.id}">
             <f:submit name="yes" value="${%Configure Kibana base URL}"/>
-            <f:submit primary="false" clazz="jenkins-!-destructive-color" name="no" value="${%Dismiss}"/>
+            <f:submit name="no" value="${%Dismiss}"/>
         </form>
         The OpenTelemetry Plugin is configured with an Elastic Observability backend but the Kibana base URL is not
         defined, preventing displaying links from Jenkins GUI to Kibana to visualize traces of the job executions and
