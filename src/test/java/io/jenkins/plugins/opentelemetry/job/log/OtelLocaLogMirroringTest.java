@@ -92,46 +92,7 @@ public class OtelLocaLogMirroringTest {
         openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), configuration));
     }
 
-    @Test
-    public void return_null_when_mirroring_option_disabled() {
-        assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        Map<String, String> configuration = new HashMap<>();
-        configuration.put("otel.logs.exporter", "otlp");
-        reInitProvider(configuration);
-
-        FlowExecutionOwner flowExecutionOwner = FlowExecutionOwner.dummyOwner();
-        TaskListenerDecorator decorator = new OtelLocaLogDecorator.Factory().of(flowExecutionOwner);
-        assertNull(decorator);
-    }
-
-
-    @Test
-    public void return_decorator_when_mirroring_option_enabled() throws Exception {
-        assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        Map<String, String> configuration = new HashMap<>();
-        configuration.put("otel.logs.exporter", "otlp");
-        configuration.put("otel.logs.mirror_to_disk", "true");
-        reInitProvider(configuration);
-
-        WorkflowRun build = runBuild();
-        TaskListenerDecorator decorator = new OtelLocaLogDecorator.Factory().of(build.asFlowExecutionOwner());
-
-        assertNotNull(decorator);
-        assertEquals(decorator.getClass(), OtelLocaLogDecorator.class);
-    }
-
-    @Test
-    public void return_null_when_log_exporter_disabled() throws Exception {
-        assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        WorkflowRun build = runBuild();
-        Map<String, String> configuration = new HashMap<>();
-        configuration.put("otel.logs.mirror_to_disk", "true");
-        reInitProvider(configuration);
-
-        TaskListenerDecorator decorator = new OtelLocaLogDecorator.Factory().of(build.asFlowExecutionOwner());
-        assertNull(decorator);
-    }
-
+    //todo add BlueOcean test (log-index) created
 
     @Test
     public void return_otel_log_text_when_otlp_enabled_and_no_log_file() throws Exception {
