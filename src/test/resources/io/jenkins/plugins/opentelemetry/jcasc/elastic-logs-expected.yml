@@ -1,5 +1,5 @@
 authentication: "noAuthentication"
-disabledResourceProviders: "io.opentelemetry.sdk.extension.resources.ProcessResourceProvider"
+disabledResourceProviders: "io.opentelemetry.instrumentation.resources.ProcessResourceProvider"
 endpoint: "http://otel-collector-contrib:4317"
 exportOtelConfigurationAsEnvironmentVariables: false
 ignoredSteps: "dir,echo,isUnix,pwd,properties"

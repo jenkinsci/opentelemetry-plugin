@@ -2,7 +2,7 @@ authentication:
   bearerTokenAuthentication:
     tokenId: "apm-server-token"
 configurationProperties: "otel.exporter.otlp.protocol=grpc"
-disabledResourceProviders: "io.opentelemetry.sdk.extension.resources.ProcessResourceProvider"
+disabledResourceProviders: "io.opentelemetry.instrumentation.resources.ProcessResourceProvider"
 endpoint: "https://my-deployment.apm.europe-west1.gcp.cloud.es.io"
 exportOtelConfigurationAsEnvironmentVariables: false
 exporterIntervalMillis: 60000
