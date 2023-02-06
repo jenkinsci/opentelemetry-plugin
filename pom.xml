@@ -21,8 +21,11 @@
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.346.1</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.19.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.19.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.22.0</opentelemetry.version>
+        <!--
+        Don't forget to bump opentelemetry-resources
+        -->
+        <opentelemetry-alpha.version>1.22.0-alpha</opentelemetry-alpha.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.4.3</elasticstack.version>
         <error-prone.version>2.16</error-prone.version>
@@ -117,12 +120,14 @@
             <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk-extension-resources</artifactId>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-resources</artifactId>
+            <version>1.22.1-alpha</version>
         </dependency>
         <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk-extension-aws</artifactId>
+            <groupId>io.opentelemetry.contrib</groupId>
+            <artifactId>opentelemetry-aws-resources</artifactId>
+            <version>${opentelemetry-alpha.version}</version>
             <exclusions>
                 <exclusion>
                     <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
