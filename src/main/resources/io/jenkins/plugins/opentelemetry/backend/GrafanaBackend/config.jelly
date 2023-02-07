@@ -1,0 +1,26 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form"
+>
+    <f:entry title="Grafana base URL" field="grafanaBaseUrl" description="e.g. 'https://example.grafana.net/'">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="Grafana metrics dashboard URL" field="grafanaMetricsDashboard" description="e.g. 'https://example.grafana.net/...'">
+        <f:textbox/>
+    </f:entry>
+    <f:advanced>
+        <p>
+            <strong>Grafana</strong>
+        </p>
+        <f:entry title="Tempo data source identifier" field="tempoDataSourceIdentifier"
+                 description="Identifier of the Tempo datasource in which the Jenkins pipeline build traces are stored.">
+            <f:textbox default="${descriptor.defaultTempoDataSourceIdentifier}"/>
+        </f:entry>
+        <f:entry title="Grafana Org Id" field="grafanaOrgId">
+            <f:textbox default="${descriptor.defaultGrafanaOrgId}"/>
+        </f:entry>
+        <f:entry title="Display Name" field="name" description="Name used in Jenkins GUI">
+            <f:textbox default="${descriptor.displayName}"/>
+        </f:entry>
+    </f:advanced>
+</j:jelly>
