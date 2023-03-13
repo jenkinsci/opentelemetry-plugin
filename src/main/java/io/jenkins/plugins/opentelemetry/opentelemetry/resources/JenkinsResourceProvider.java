@@ -31,7 +31,9 @@ public class JenkinsResourceProvider implements ResourceProvider {
 
         String jenkinsUrl = config.getString(JenkinsOtelSemanticAttributes.JENKINS_URL.getKey());
         resourceBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_URL, jenkinsUrl);
-        final Resource resource = resourceBuilder.build();
+
+        resourceBuilder.put(ResourceAttributes.SERVICE_INSTANCE_ID, config.getString(ResourceAttributes.SERVICE_INSTANCE_ID.getKey()));
+        Resource resource = resourceBuilder.build();
         LOGGER.log(Level.FINER, () -> "Jenkins resource: " + resource);
         return resource;
     }
