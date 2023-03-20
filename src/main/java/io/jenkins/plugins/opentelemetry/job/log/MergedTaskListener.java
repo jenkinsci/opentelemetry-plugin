@@ -3,6 +3,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import hudson.model.TaskListener;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.io.PrintStream;
 
 public class MergedTaskListener implements TaskListener {
@@ -18,7 +19,11 @@ public class MergedTaskListener implements TaskListener {
     @NotNull
     @Override
     public PrintStream getLogger() {
-        return new MergedPrintStream(main.getLogger(), secondary.getLogger());
+        try {
+            return new MergedPrintStream(main.getLogger(), secondary.getLogger());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
 

@@ -2,14 +2,15 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.io.PrintStream;
 
 public class MergedPrintStream extends PrintStream {
     final PrintStream primary;
     final PrintStream secondary;
 
-    public MergedPrintStream(@NotNull PrintStream primary, @NotNull PrintStream secondary) {
-        super(primary);
+    public MergedPrintStream(@NotNull PrintStream primary, @NotNull PrintStream secondary) throws IOException {
+        super(primary, false, "UTF-8");
         this.primary = primary;
         this.secondary = secondary;
     }
