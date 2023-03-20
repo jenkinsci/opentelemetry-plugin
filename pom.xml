@@ -25,7 +25,7 @@
         <!--
         Don't forget to bump opentelemetry-resources
         -->
-        <opentelemetry-alpha.version>1.22.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry-alpha.version>1.23.0-alpha</opentelemetry-alpha.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.6.2</elasticstack.version>
         <error-prone.version>2.16</error-prone.version>
