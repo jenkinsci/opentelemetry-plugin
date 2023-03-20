@@ -59,8 +59,12 @@ class OtelLogStorage implements LogStorage {
         OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, otelConfigurationProperties, otelResourceAttributes);
 
         if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
-            File logFile = new File(buildFolderPath, "log");
-            return new MergedBuildListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).overallListener());
+            try {
+              File logFile = new File(buildFolderPath, "log");
+              return new MergedBuildListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).overallListener());
+              } catch (IOException|InterruptedException e) {
+                throw new IOException("Was not possible to create the mirror logs.", e)
+              }
         }
         return otelLogSenderBuildListenerOnController;
     }
