@@ -11,7 +11,9 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.events.GlobalEventEmitterProvider;
 import io.opentelemetry.api.logs.GlobalLoggerProvider;
+import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
@@ -19,7 +21,6 @@ import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.CompletableResultCode;
-import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import net.jcip.annotations.GuardedBy;
 
@@ -192,7 +193,7 @@ public final class GlobalOpenTelemetrySdk {
     private static class NoopOpenTelemetrySdkState implements OpenTelemetrySdkState {
         @Override
         public io.opentelemetry.api.logs.Logger getOtelLogger() {
-            return SdkLoggerProvider.builder().build().get(INSTRUMENTATION_NAME);
+            return LoggerProvider.noop().get(INSTRUMENTATION_NAME);
         }
 
         @Override
@@ -281,6 +282,7 @@ public final class GlobalOpenTelemetrySdk {
                 autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().shutdown()));
             GlobalOpenTelemetry.resetForTest();
             GlobalLoggerProvider.resetForTest();
+            GlobalEventEmitterProvider.resetForTest();
 
             return result;
         }

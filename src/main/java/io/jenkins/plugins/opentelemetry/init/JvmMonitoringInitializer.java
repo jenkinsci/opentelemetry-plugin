@@ -10,6 +10,7 @@ import io.jenkins.plugins.opentelemetry.AbstractOtelComponent;
 import io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics.GarbageCollector;
 import io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics.MemoryPools;
 import io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryMetricsSemanticConventions;
+import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
@@ -37,7 +38,7 @@ public class JvmMonitoringInitializer extends AbstractOtelComponent {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
 
         List<ObservableLongCounter> observableLongCounters = GarbageCollector.registerObservers(meter);
         observableLongCounters.stream().forEach(this::registerInstrument);

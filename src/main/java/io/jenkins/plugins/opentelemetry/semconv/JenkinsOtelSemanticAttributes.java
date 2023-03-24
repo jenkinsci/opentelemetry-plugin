@@ -140,9 +140,6 @@ public final class JenkinsOtelSemanticAttributes {
 
     public static final String OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED = "otel.instrumentation.jenkins.web.enabled";
 
-
-    public static final AttributeKey<String> EVENT_ACTION = AttributeKey.stringKey("event.action");
-
     /**
      * Values in {@link EventCategoryValues}
      */
