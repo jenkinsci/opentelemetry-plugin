@@ -9,8 +9,8 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Queue;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.AbstractOtelComponent;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.metrics.Meter;
@@ -35,7 +35,7 @@ import java.util.logging.Logger;
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/PipelineBridge.java
  */
 @Extension
-public final class OtelLogStorageFactory extends AbstractOtelComponent implements LogStorageFactory {
+public final class OtelLogStorageFactory implements LogStorageFactory, OtelComponent {
 
     private final static Logger logger = Logger.getLogger(OtelLogStorageFactory.class.getName());
 

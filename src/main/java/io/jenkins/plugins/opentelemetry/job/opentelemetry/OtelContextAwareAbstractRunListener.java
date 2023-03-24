@@ -33,7 +33,6 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     private OtelTraceService otelTraceService;
     private Tracer tracer;
-    private OtelComponent.State state = new State();
 
     @Inject
     public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService) {
@@ -118,13 +117,4 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         return tracer;
     }
 
-    @NonNull
-    protected State getState() {
-        return state;
-    }
-
-    @Override
-    public void beforeSdkShutdown() {
-        state.closeInstruments();
-    }
 }

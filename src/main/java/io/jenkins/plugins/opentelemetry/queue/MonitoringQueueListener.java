@@ -31,8 +31,6 @@ public class MonitoringQueueListener extends QueueListener implements OtelCompon
 
     private final static Logger LOGGER = Logger.getLogger(MonitoringQueueListener.class.getName());
 
-    private OtelComponent.State state = new OtelComponent.State();
-
     private final AtomicInteger blockedItemGauge = new AtomicInteger();
     private LongCounter leftItemCounter;
     private LongCounter timeInQueueInMillisCounter;
@@ -40,30 +38,27 @@ public class MonitoringQueueListener extends QueueListener implements OtelCompon
     @Override
     public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
 
-        state.registerInstrument(
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_WAITING)
                 .ofLongs()
                 .setDescription("Number of tasks in the queue with the status 'waiting', 'buildable' or 'pending'")
                 .setUnit("1")
                 .buildWithCallback(valueObserver -> valueObserver.record((long)
                     Optional.ofNullable(Jenkins.getInstanceOrNull()).map(j -> j.getQueue()).
-                        map(q -> q.getUnblockedItems().size()).orElse(0))));
+                        map(q -> q.getUnblockedItems().size()).orElse(0)));
 
-        state.registerInstrument(
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BLOCKED)
                 .ofLongs()
                 .setDescription("Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked")
                 .setUnit("1")
-                .buildWithCallback(valueObserver -> valueObserver.record(this.blockedItemGauge.longValue())));
+                .buildWithCallback(valueObserver -> valueObserver.record(this.blockedItemGauge.longValue()));
 
-        state.registerInstrument(
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BUILDABLE)
                 .ofLongs()
                 .setDescription("Number of tasks in the queue with the status 'buildable' or 'pending'")
                 .setUnit("1")
                 .buildWithCallback(valueObserver -> valueObserver.record((long)
                     Optional.ofNullable(Jenkins.getInstanceOrNull()).map(j -> j.getQueue()).
-                        map(q -> q.countBuildableItems()).orElse(0))));
+                        map(q -> q.countBuildableItems()).orElse(0)));
 
         leftItemCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_LEFT)
             .setDescription("Total count of tasks that have been processed")
@@ -92,10 +87,5 @@ public class MonitoringQueueListener extends QueueListener implements OtelCompon
         this.leftItemCounter.add(1);
         this.timeInQueueInMillisCounter.add(System.currentTimeMillis() - li.getInQueueSince());
         LOGGER.log(Level.FINE, () -> "onLeft(): " + li);
-    }
-
-    @Override
-    public void beforeSdkShutdown() {
-        state.closeInstruments();
     }
 }

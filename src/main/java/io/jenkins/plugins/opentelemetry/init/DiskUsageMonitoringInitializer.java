@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.init;
 import com.cloudbees.simplediskusage.DiskItem;
 import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.AbstractOtelComponent;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.metrics.Meter;
@@ -27,7 +27,7 @@ import java.util.logging.Logger;
  * Capture disk usage metrics relying on the {@link QuickDiskUsagePlugin}
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class DiskUsageMonitoringInitializer extends AbstractOtelComponent {
+public class DiskUsageMonitoringInitializer implements OtelComponent {
 
     private final static Logger LOGGER = Logger.getLogger(DiskUsageMonitoringInitializer.class.getName());
 
@@ -39,12 +39,11 @@ public class DiskUsageMonitoringInitializer extends AbstractOtelComponent {
 
     @Override
     public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-        registerInstrument(
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
                 .ofLongs()
                 .setDescription("Disk usage of first level folder in JENKINS_HOME.")
                 .setUnit("byte")
-                .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes())));
+                .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes()));
 
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage...");
     }
