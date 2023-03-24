@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.51</version>
+        <version>4.56</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -19,7 +19,7 @@
     <properties>
         <revision>2.11.1</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.346.1</jenkins.version>
+        <jenkins.version>2.361.4</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.22.0</opentelemetry.version>
         <!--
@@ -41,15 +41,14 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.346.x</artifactId>
-                <version>1478.v81d3dc4f9a_43</version>
+                <artifactId>bom-2.361.x</artifactId>
+                <version>1887.vda_d0ddb_c15c4</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
             <dependency>
                 <groupId>org.jenkins-ci.plugins</groupId>
                 <artifactId>apache-httpcomponents-client-4-api</artifactId>
-                <version>4.5.13-1.0</version>
             </dependency>
             <dependency>
                 <groupId>io.opentelemetry</groupId>
@@ -82,7 +81,6 @@
                 <!-- Jenkins core ships this till 2.330, can probably remove this after the baseline is above that  -->
                 <groupId>com.sun.activation</groupId>
                 <artifactId>jakarta.activation</artifactId>
-                <version>1.2.2</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -199,10 +197,6 @@
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>apache-httpcomponents-client-4-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>credentials</artifactId>
         </dependency>
         <dependency>
@@ -238,10 +232,6 @@
             <optional>true</optional>
             <exclusions>
                 <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-lang3</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>com.squareup.okio</groupId>
                     <artifactId>okio</artifactId>
                 </exclusion>
@@ -266,24 +256,6 @@
         <dependency>
             <groupId>org.jenkinsci.plugins</groupId>
             <artifactId>pipeline-model-definition</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jenkins-ci.plugins</groupId>
-                    <artifactId>jackson2-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.datatype</groupId>
-                    <artifactId>jackson-datatype-json-org</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -319,10 +291,6 @@
             <version>1.5.29</version>
             <optional>true</optional>
             <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.jaxrs</groupId>
-                    <artifactId>jackson-jaxrs-json-provider</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>jakarta.xml.bind</groupId>
                     <artifactId>jakarta.xml.bind-api</artifactId>
@@ -373,10 +341,7 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
-            <!--
-            can bump to 3.9 because it requires jenkins-core 2.270
-            -->
-            <version>3.20</version>
+            <version>3.21</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -385,6 +350,10 @@
                     -->
                     <groupId>commons-net</groupId>
                     <artifactId>commons-net</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.annotation</groupId>
+                    <artifactId>javax.annotation-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -405,21 +374,6 @@
             <artifactId>configuration-as-code</artifactId>
             <scope>test</scope>
         </dependency>
-        <!--
-        HTML Publisher for blueocean 1.24.7 conflicts with the htmlpublisher we retrieve
-        <dependency>
-            <groupId>io.jenkins.blueocean</groupId>
-            <artifactId>blueocean</artifactId>
-            <version>1.24.7</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jenkins-ci.plugins</groupId>
-                    <artifactId>htmlpublisher</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        -->
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ssh-slaves</artifactId>
@@ -430,18 +384,6 @@
             <artifactId>test-harness</artifactId>
             <scope>test</scope>
             <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.datatype</groupId>
-                    <artifactId>jackson-datatype-json-org</artifactId>
-                </exclusion>
                 <exclusion>
                     <!-- conflicts with pipeline-model-definition -->
                     <groupId>joda-time</groupId>
@@ -489,7 +431,7 @@
                 <groupId>org.jenkins-ci.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
                 <configuration>
-                    <minimumJavaVersion>8</minimumJavaVersion>
+                    <minimumJavaVersion>11</minimumJavaVersion>
                     <loggers>
                         <io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>INFO</io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>
                         <io.jenkins.plugins.opentelemetry.job.log>INFO</io.jenkins.plugins.opentelemetry.job.log>
