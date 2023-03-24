@@ -12,6 +12,7 @@ import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.NodeProvisioner;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
@@ -29,7 +30,7 @@ public class MonitoringCloudListener extends CloudProvisioningListener implement
     private LongCounter totalCloudCount;
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
         failureCloudCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_FAILURE)
             .setDescription("Number of failed cloud agents when provisioning")
             .setUnit("1")

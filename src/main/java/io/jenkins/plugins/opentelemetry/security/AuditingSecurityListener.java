@@ -13,23 +13,21 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.logs.EventBuilder;
-import io.opentelemetry.api.logs.LogRecordBuilder;
-import io.opentelemetry.api.logs.Severity;
+import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.security.SecurityListener;
-import org.acegisecurity.userdetails.UserDetails;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
+import javax.annotation.Nonnull;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,11 +46,11 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
     private LongCounter loginFailureCounter;
     private LongCounter loginCounter;
 
-    private io.opentelemetry.api.logs.Logger otelLogger;
+    private EventEmitter eventEmitter;
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
-        this.otelLogger = otelLogger;
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+        this.eventEmitter = eventEmitter;
 
         loginSuccessCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_SUCCESS)
@@ -74,10 +72,9 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins authentication events...");
     }
 
-    @Deprecated
     @Override
-    protected void authenticated(@NonNull UserDetails details) {
-        super.authenticated(details);
+    protected void authenticated2(@Nonnull UserDetails details) {
+        super.authenticated2(details);
     }
 
     @Override
@@ -93,10 +90,10 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
         AttributesBuilder attributesBuilder = Attributes.builder();
         Optional<User> user = Optional.ofNullable(User.current());
         attributesBuilder
-            .put(SemanticAttributes.ENDUSER_ID, user.map(u -> u.getId()).orElse(username))
             .put(JenkinsOtelSemanticAttributes.EVENT_CATEGORY, JenkinsOtelSemanticAttributes.EventCategoryValues.AUTHENTICATION)
-            .put(JenkinsOtelSemanticAttributes.EVENT_ACTION, "user_login")
-            .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.SUCCESS);
+            .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.SUCCESS)
+            .put(SemanticAttributes.ENDUSER_ID, user.map(User::getId).orElse(username))
+        ;
 
         // Stapler.getCurrentRequest() returns null, it's not yet initialized
         SecurityContext securityContext = SecurityContextHolder.getContext();
@@ -110,14 +107,9 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
                 message += " from " + webAuthenticationDetails.getRemoteAddress();
             }
         }
+        attributesBuilder.put("message", message);
 
-        EventBuilder eventBuilder = otelLogger.eventBuilder("authentication");
-        eventBuilder
-            .setBody(message)
-            .setAllAttributes(attributesBuilder.build())
-            .setContext(Context.current()) // note there is no span as long as we don't fix the registration of the OpenTelemetryServletFilter
-            .setSeverity(Severity.INFO)
-            .emit();
+        eventEmitter.emit("user_login", attributesBuilder.build());
     }
 
     @Override
@@ -133,20 +125,16 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
         String message = "Failed login of user '" + username + "'";
         AttributesBuilder attributesBuilder = Attributes.builder();
         attributesBuilder
-            .put(SemanticAttributes.ENDUSER_ID, username)
             .put(JenkinsOtelSemanticAttributes.EVENT_CATEGORY, JenkinsOtelSemanticAttributes.EventCategoryValues.AUTHENTICATION)
-            .put(JenkinsOtelSemanticAttributes.EVENT_ACTION, "user_login")
-            .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.FAILURE);
+            .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.FAILURE)
+            .put(SemanticAttributes.ENDUSER_ID, username)
+        ;
 
         // TODO find a solution to retrieve the remoteIpAddress
 
-        LogRecordBuilder logBuilder = otelLogger.logRecordBuilder();
-        logBuilder
-            .setBody(message)
-            .setAllAttributes(attributesBuilder.build())
-            .setContext(Context.current()) // note there is no span as long as we don't fix the registration of the OpenTelemetryServletFilter
-            .setSeverity(Severity.INFO)
-            .emit();
+        attributesBuilder.put("message", message);
+
+        eventEmitter.emit("user_login", attributesBuilder.build());
     }
 
     @Override

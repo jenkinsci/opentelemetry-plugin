@@ -22,6 +22,7 @@ import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
 import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributeStep;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -401,7 +402,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
         this.tracer = tracer;
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins pipeline executions...");
     }

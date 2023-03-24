@@ -9,6 +9,7 @@ import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.Meter;
@@ -135,7 +136,7 @@ public class OtelJulHandler extends Handler implements OtelComponent {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
         this.otelLogger = otelLogger;
         this.captureExperimentalAttributes = configProperties.getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
         if (!initialized) {
