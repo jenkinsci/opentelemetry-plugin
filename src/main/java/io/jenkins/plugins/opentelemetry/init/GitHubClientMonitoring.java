@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import com.google.common.base.Preconditions;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.AbstractOtelComponent;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.events.EventEmitter;
@@ -38,7 +38,7 @@ import static io.jenkins.plugins.opentelemetry.semconv.GitHubSemanticAttributes.
  * field of the {@link Connector} class because we have not found any public API to observe the state of this GitHub client.
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class GitHubClientMonitoring extends AbstractOtelComponent {
+public class GitHubClientMonitoring implements OtelComponent {
     private final static Logger logger = Logger.getLogger(GitHubClientMonitoring.class.getName());
 
     private final Field gitHub_clientField;
@@ -87,7 +87,6 @@ public class GitHubClientMonitoring extends AbstractOtelComponent {
 
     @Override
     public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-        registerInstrument(
             meter.gaugeBuilder(GITHUB_API_RATE_LIMIT_REMAINING_REQUESTS)
                 .ofLongs()
                 .setDescription("GitHub Repository API rate limit remaining requests")
@@ -139,7 +138,7 @@ public class GitHubClientMonitoring extends AbstractOtelComponent {
                         }
                     });
 
-                }));
+                });
         logger.log(Level.FINE, () -> "Start monitoring Jenkins GitHub client...");
     }
 }

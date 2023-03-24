@@ -40,8 +40,6 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
 
     private LongCounter failureAgentCounter;
 
-    private OtelComponent.State state = new State();
-
     @Override
     public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
         final Jenkins jenkins = Jenkins.get();
@@ -66,24 +64,21 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
                 LOGGER.log(Level.WARNING, "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
             }
         }
-        state.registerInstrument(
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
             .ofLongs()
             .setDescription("Number of offline agents")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount())));
-        state.registerInstrument(
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount()));
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
             .ofLongs()
             .setDescription("Number of online agents")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount())));
-        state.registerInstrument(
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount()));
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
             .ofLongs()
             .setDescription("Number of agents")
             .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount())));
+            .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount()));
         failureAgentCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
             .setDescription("Number of ComputerLauncher failures")
             .setUnit("1")
@@ -134,11 +129,6 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
     public void onLaunchFailure(Computer computer, TaskListener taskListener) throws IOException, InterruptedException {
         failureAgentCounter.add(1);
         LOGGER.log(Level.FINE, () -> "onLaunchFailure(" + computer + "): ");
-    }
-
-    @Override
-    public void beforeSdkShutdown() {
-        state.closeInstruments();
     }
 
     private static class GetComputerAttributes extends MasterToSlaveCallable<Map<String, String>, IOException> {

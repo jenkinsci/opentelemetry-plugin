@@ -101,12 +101,11 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
         // METRICS
         activeRun = new AtomicInteger();
-        getState().registerInstrument(
             meter.gaugeBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
                 .ofLongs()
                 .setDescription("Gauge of active jobs")
                 .setUnit("1")
-                .buildWithCallback(valueObserver -> this.activeRun.get()));
+                .buildWithCallback(valueObserver -> this.activeRun.get());
         runLaunchedCounter =
                 meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
                         .setDescription("Job launched")

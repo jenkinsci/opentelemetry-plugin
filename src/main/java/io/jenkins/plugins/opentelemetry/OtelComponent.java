@@ -5,34 +5,30 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.metrics.ObservableDoubleGauge;
 import io.opentelemetry.api.metrics.ObservableLongCounter;
-import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * Interface for components that want to be notified when the Otel SDK has been initialized or will be shutdown.
- *
+ * <p>
  * The life cycle of consumers of the OpenTelemetry SDK (consumers of {@link io.opentelemetry.api.trace.TracerProvider},
  * {@link io.opentelemetry.api.metrics.MeterProvider}, and {@link io.opentelemetry.sdk.logs.SdkLoggerProvider}) can NOT
  * use the Jenkins life cycle because those consumers of the Otel SDK need to perform initialization tasks after the
  * Otel SDK has been initialized and have to shut down things before the Otel SDK is shutdown due to a reconfiguration.
- *
+ * <p>
  * Used by components that create counters...
  */
 public interface OtelComponent extends Comparable<OtelComponent>{
 
     /**
      * Invoked soon after the Otel SDK has been initialized.
+     * Created {@link AutoCloseable} metering instruments don't have to be closed by Otel components, the OpenTelemetry
+     * plugin takes care of this  (eg {@link ObservableLongUpDownCounter}, {@link ObservableLongCounter}...)
      *
      * @param meter            {@link Meter} of the newly initialized Otel SDK
      * @param otelLogger       {@link io.opentelemetry.api.logs.Logger} of the newly initialized Otel SDK
@@ -40,49 +36,24 @@ public interface OtelComponent extends Comparable<OtelComponent>{
      * @param tracer           {@link Tracer} of the newly initialized Otel SDK
      * @param configProperties {@link ConfigProperties} of the newly initialized Otel SDK
      */
-    void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties);
+    default void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {}
 
     /**
-     * Invoked just before the Otel SDK is shutdown
+     * Invoked soon after the Otel SDK has been initialized.
+     * Created {@link AutoCloseable} metering instruments don't have to be closed by Otel components, the OpenTelemetry
+     * plugin takes care of this  (eg {@link ObservableLongUpDownCounter}, {@link ObservableLongCounter}...)
+     *
+     * @param openTelemetry
+     * @param configProperties {@link ConfigProperties} of the newly initialized Otel SDK
      */
-    void beforeSdkShutdown();
+    default void afterSdkInitialized(OpenTelemetry openTelemetry, ConfigProperties configProperties) {}
 
     /**
-     * Helper for {@link OtelComponent} implementations to manage the created metric instruments
+     * Invoked just before the Otel SDK is shutdown.
+     * Created {@link AutoCloseable} metering instruments don't have to be closed by Otel components, the OpenTelemetry
+     * plugin takes care of this  (eg {@link ObservableLongUpDownCounter}, {@link ObservableLongCounter}...)
      */
-    class State {
-        private final static Logger logger = Logger.getLogger(State.class.getName());
-        private final List<AutoCloseable> instruments = new ArrayList<>();
-
-        public void registerInstrument(ObservableLongCounter instrument) {
-            instruments.add(instrument);
-        }
-
-        public void registerInstrument(ObservableLongGauge instrument) {
-            instruments.add(instrument);
-        }
-
-        public void registerInstrument(ObservableLongUpDownCounter instrument) {
-            instruments.add(instrument);
-        }
-
-        public void registerInstrument(ObservableDoubleGauge instrument) {
-            instruments.add(instrument);
-        }
-
-        public void closeInstruments() {
-            List<AutoCloseable> instruments = this.instruments;
-            this.instruments.clear(); // reset the list of instruments for reuse
-            for (AutoCloseable instrument : instruments) {
-                try {
-                    instrument.close();
-                } catch (Exception e) {
-                    // should never happen, Otel instruments override the #close method to indicate they don't throw exceptions
-                    logger.log(Level.INFO, "Exception closing instrument " + instrument, e);
-                }
-            }
-        }
-    }
+    default void beforeSdkShutdown() {}
 
     /**
      * @return the ordinal of this otel component to execute step handlers in predictable order. The smallest ordinal is handled first.

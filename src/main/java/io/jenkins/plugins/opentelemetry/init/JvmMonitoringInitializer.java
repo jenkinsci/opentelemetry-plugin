@@ -6,30 +6,20 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.AbstractOtelComponent;
-import io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics.GarbageCollector;
-import io.jenkins.plugins.opentelemetry.opentelemetry.instrumentation.runtimemetrics.MemoryPools;
-import io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryMetricsSemanticConventions;
-import io.opentelemetry.api.events.EventEmitter;
-import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.metrics.ObservableLongCounter;
-import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
-import io.opentelemetry.api.trace.Tracer;
+import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.instrumentation.runtimemetrics.*;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static io.jenkins.plugins.opentelemetry.semconv.OpenTelemetryMetricsSemanticConventions.*;
-
+/**
+ * Inspired by io.opentelemetry.instrumentation.javaagent.runtimemetrics.RuntimeMetricsInstaller
+ */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class JvmMonitoringInitializer extends AbstractOtelComponent {
+public class JvmMonitoringInitializer implements OtelComponent {
 
     private final static Logger LOGGER = Logger.getLogger(JvmMonitoringInitializer.class.getName());
 
@@ -38,123 +28,19 @@ public class JvmMonitoringInitializer extends AbstractOtelComponent {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(OpenTelemetry openTelemetry, ConfigProperties config) {
 
-        List<ObservableLongCounter> observableLongCounters = GarbageCollector.registerObservers(meter);
-        observableLongCounters.stream().forEach(this::registerInstrument);
-         List<ObservableLongUpDownCounter> observableLongUpDownCounters = MemoryPools.registerObservers(meter);
-        observableLongUpDownCounters.stream().forEach(this::registerInstrument);
-
-        OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
-
-        registerInstrument(
-            meter
-                .gaugeBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_CPU_LOAD_AVERAGE_1M)
-                .setDescription("System CPU load average 1 minute")
-                .setUnit("%")
-                .buildWithCallback(resultObserver -> resultObserver.record(operatingSystemMXBean.getSystemLoadAverage())));
-
-        if (operatingSystemMXBean instanceof com.sun.management.OperatingSystemMXBean) {
-            com.sun.management.OperatingSystemMXBean osBean = (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
-
-            // PROCESS CPU
-            registerInstrument(
-                meter
-                    .gaugeBuilder(OpenTelemetryMetricsSemanticConventions.PROCESS_CPU_LOAD)
-                    .setDescription("Process CPU load")
-                    .setUnit("%")
-                    .buildWithCallback(resultObserver -> resultObserver.record(osBean.getProcessCpuLoad())));
-            registerInstrument(
-                meter
-                    .counterBuilder(OpenTelemetryMetricsSemanticConventions.PROCESS_CPU_TIME)
-                    .setDescription("Process CPU time")
-                    .setUnit("ns")
-                    .buildWithCallback(valueObserver -> valueObserver.record(osBean.getProcessCpuTime())));
-
-            // SYSTEM CPU
-            registerInstrument(
-                meter
-                    .gaugeBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_CPU_LOAD)
-                    .setDescription("System CPU load")
-                    .setUnit("%")
-                    .buildWithCallback(valueObserver -> valueObserver.record(osBean.getSystemCpuLoad())));
-
-            // SYSTEM MEMORY
-            /*
-            Extract from the Otel Collector Host Metrics
-            system_memory_usage{state="free"} 3.06987008e+08
-            system_memory_usage{state="inactive"} 4.968194048e+09
-            system_memory_usage{state="used"} 1.1904688128e+10
-            */
-            registerInstrument(
-                meter
-                    .gaugeBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_MEMORY_USAGE)
-                    .ofLongs()
-                    .setDescription("System memory usage")
-                    .setUnit("bytes")
-                    .buildWithCallback(valueObserver -> {
-                            final long totalSize = osBean.getTotalPhysicalMemorySize();
-                            final long freeSize = osBean.getFreePhysicalMemorySize();
-                            valueObserver.record((totalSize - freeSize), STATE_USED);
-                            valueObserver.record(freeSize, STATE_FREE);
-                        }
-                    ));
-            registerInstrument(
-                meter
-                    .gaugeBuilder(OpenTelemetryMetricsSemanticConventions.SYSTEM_MEMORY_UTILIZATION)
-                    .setDescription("System memory utilization (0.0 to 1.0)")
-                    .setUnit("1")
-                    .buildWithCallback(valueObserver ->
-                        {
-                            final long totalSize = osBean.getTotalPhysicalMemorySize();
-                            final long freeSize = osBean.getFreePhysicalMemorySize();
-                            final long usedSize = totalSize - freeSize;
-                            final BigDecimal utilization;
-                            if (totalSize == 0) {
-                                utilization = new BigDecimal(0);  // unexpected no physical reported, report 0% utilization
-                            } else {
-                                utilization = new BigDecimal(usedSize).divide(new BigDecimal(totalSize), MathContext.DECIMAL64);
-                            }
-                            LOGGER.log(Level.FINER, () -> "Memory utilization: " + utilization + ", used: " + usedSize + " bytes, free: " + freeSize + " bytes, total: " + totalSize + " bytes");
-                            valueObserver.record(utilization.doubleValue());
-                        }
-                    ));
-
-            // SYSTEM SWAP
-            registerInstrument(
-                meter
-                    .gaugeBuilder(SYSTEM_PAGING_USAGE)
-                    .ofLongs()
-                    .setDescription("System swap usage")
-                    .setUnit("bytes")
-                    .buildWithCallback(valueObserver -> {
-                            final long freeSize = osBean.getFreeSwapSpaceSize();
-                            final long totalSize = osBean.getTotalSwapSpaceSize();
-                            valueObserver.record((totalSize - freeSize), STATE_USED);
-                            valueObserver.record(freeSize, STATE_FREE);
-                        }
-                    ));
-            registerInstrument(
-                meter
-                    .gaugeBuilder(SYSTEM_PAGING_UTILIZATION)
-                    .setDescription("System swap utilization (0.0 to 1.0)")
-                    .setUnit("1")
-                    .buildWithCallback(valueObserver ->
-                        {
-                            final long freeSize = osBean.getFreeSwapSpaceSize();
-                            final long totalSize = osBean.getTotalSwapSpaceSize();
-                            final long usedSize = totalSize - freeSize;
-                            final BigDecimal utilization;
-                            if (totalSize == 0) {
-                                utilization = new BigDecimal(0); // if no swap is allocated, report 0% utilization. Can happen in unit tests...
-                            } else {
-                                utilization = new BigDecimal(usedSize).divide(new BigDecimal(totalSize), MathContext.DECIMAL64);
-                            }
-                            LOGGER.log(Level.FINER, () -> "Swap utilization: " + utilization + ", used: " + usedSize + " bytes, free: " + freeSize + " bytes, total: " + totalSize + " bytes");
-                            valueObserver.record(utilization.doubleValue());
-                        }
-                    ));
+        boolean defaultEnabled = config.getBoolean("otel.instrumentation.common.default-enabled", true);
+        if (!config.getBoolean("otel.instrumentation.runtime-metrics.enabled", defaultEnabled)) {
+            return;
         }
+
+        BufferPools.registerObservers(openTelemetry);
+        Classes.registerObservers(openTelemetry);
+        Cpu.registerObservers(openTelemetry);
+        GarbageCollector.registerObservers(openTelemetry);
+        MemoryPools.registerObservers(openTelemetry);
+        Threads.registerObservers(openTelemetry);
         LOGGER.log(Level.FINE, "Start monitoring Jenkins JVM...");
     }
 }

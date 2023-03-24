@@ -129,6 +129,11 @@
             <version>${opentelemetry-instrumentation-alpha.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-runtime-metrics</artifactId>
+            <version>${opentelemetry-instrumentation-alpha.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.opentelemetry.contrib</groupId>
             <artifactId>opentelemetry-aws-resources</artifactId>
             <version>${opentelemetry-contrib.version}</version>
