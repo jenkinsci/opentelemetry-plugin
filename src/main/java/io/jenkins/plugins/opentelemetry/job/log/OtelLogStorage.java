@@ -7,6 +7,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -21,6 +22,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,22 +50,43 @@ class OtelLogStorage implements LogStorage {
 
     @Nonnull
     @Override
-    public BuildListener overallListener() {
+    public BuildListener overallListener() throws IOException {
         OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
         Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelResourceAttributes = new HashMap<>();
         otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
-        return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, otelConfigurationProperties, otelResourceAttributes);
+
+        OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, otelConfigurationProperties, otelResourceAttributes);
+
+        if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
+            try {
+              File logFile = new File(buildFolderPath, "log");
+              return new MergedBuildListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).overallListener());
+              } catch (IOException|InterruptedException e) {
+                throw new IOException("Was not possible to create the mirror logs.", e);
+              }
+        }
+        return otelLogSenderBuildListenerOnController;
     }
 
     @Nonnull
     @Override
-    public TaskListener nodeListener(@Nonnull FlowNode flowNode) {
+    public TaskListener nodeListener(@Nonnull FlowNode flowNode) throws IOException {
         OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
         Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelResourceAttributes = new HashMap<>();
         otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
-        return new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, flowNode.getId(),  otelConfigurationProperties, otelResourceAttributes);
+        OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, flowNode.getId(), otelConfigurationProperties, otelResourceAttributes);
+
+        if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
+            try {
+              File logFile = new File(buildFolderPath, "log");
+              return new MergedTaskListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).nodeListener(flowNode));
+             } catch (IOException|InterruptedException e) {
+                throw new IOException("Was not possible to create the mirror logs.", e);
+              }
+        }
+        return otelLogSenderBuildListenerOnController;
     }
 
     /**
