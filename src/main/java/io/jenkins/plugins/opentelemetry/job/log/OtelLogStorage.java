@@ -71,7 +71,7 @@ class OtelLogStorage implements LogStorage {
 
     @Nonnull
     @Override
-    public TaskListener nodeListener(@Nonnull FlowNode flowNode) throws IOException, InterruptedException {
+    public TaskListener nodeListener(@Nonnull FlowNode flowNode) throws IOException {
         OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
         Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelResourceAttributes = new HashMap<>();
