@@ -338,7 +338,7 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         </td>
     </tr>
     <tr>
-        <td>process.runtime.jvm.system.cpu.load.1m</td>
+        <td>process.runtime.jvm.system.cpu.load_1m</td>
         <td>Average CPU load of the whole system for the last minute</td>
         <td> gauge</td>
         <td></td>
@@ -347,6 +347,13 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     <tr>
         <td>process.runtime.jvm.system.cpu.utilization</td>
         <td>Recent cpu utilization for the whole system</td>
+        <td> gauge</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>process.runtime.jvm.cpu.utilization</td>
+        <td>Recent cpu utilization for the process</td>
         <td> gauge</td>
         <td></td>
         <td></td>
