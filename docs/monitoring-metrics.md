@@ -228,6 +228,8 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
 
 ## JVM and system metrics
 
+See OpenTelemetry [Semantic Conventions for Runtime Environment Metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/semantic_conventions/runtime-environment-metrics.md#jvm-metrics).
+
 <table>
     <tr>
         <th>Metric</th>
@@ -258,7 +260,7 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td>direct, mapped, mapped - 'non-volatile memory'</td>
     </tr>
     <tr>
-        <td>process.runtime.jvm.classes.current.loaded</td>
+        <td>process.runtime.jvm.classes.current_loaded</td>
         <td>Number of classes currently loaded</td>
         <td> gauge</td>
         <td></td>
