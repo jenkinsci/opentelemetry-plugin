@@ -15,19 +15,21 @@ import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.*;
 
 /**
  * Inspired by https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v1.14.0/instrumentation/java-util-logging/javaagent/src/main/java/io/opentelemetry/javaagent/instrumentation/jul/JavaUtilLoggingHelper.java
  */
-@Extension(dynamicLoadable = YesNoMaybe.YES)
+@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class OtelJulHandler extends Handler implements OtelComponent {
 
     private final static Logger logger = Logger.getLogger(OtelJulHandler.class.getName());
@@ -40,6 +42,22 @@ public class OtelJulHandler extends Handler implements OtelComponent {
 
     private boolean initialized;
 
+    public OtelJulHandler() {
+        try {
+            // protect against init errors. https://github.com/jenkinsci/opentelemetry-plugin/issues/622
+            Context context = Context.current();
+            logger.log(Level.FINER, () -> "OtelJulHandler initialization - context: " + context);
+        } catch (NoClassDefFoundError|RuntimeException e) {
+            logger.log(Level.WARNING, "Exception initializing OPenTelemetry SDK logging apis, disable OtelJulHandler");
+            throw e;
+        }
+    }
+
+    /**
+     * Circuit breaker
+     */
+    private boolean disabled = false;
+
     /**
      * Map the {@link LogRecord} data model onto the {@link io.opentelemetry.api.logs.LogRecordBuilder}. Unmapped fields include:
      *
@@ -51,51 +69,59 @@ public class OtelJulHandler extends Handler implements OtelComponent {
      */
     @Override
     public void publish(LogRecord logRecord) {
-        LogRecordBuilder logBuilder =  otelLogger.logRecordBuilder();
-        // message
-        String message = FORMATTER.formatMessage(logRecord);
-        if (message != null) {
-            logBuilder = logBuilder.setBody(message);
+        if (disabled) {
+            return;
         }
+        try {
+            LogRecordBuilder logBuilder = otelLogger.logRecordBuilder();
+            // message
+            String message = FORMATTER.formatMessage(logRecord);
+            if (message != null) {
+                logBuilder = logBuilder.setBody(message);
+            }
 
-        // time
-        // TODO (trask) use getInstant() for more precision on Java 9
-        long timestamp = logRecord.getMillis();
-        logBuilder = logBuilder.setEpoch(timestamp, TimeUnit.MILLISECONDS);
+            // time
+            Instant timestamp = logRecord.getInstant();
+            logBuilder = logBuilder.setEpoch(timestamp);
 
-        // level
-        Level level = logRecord.getLevel();
-        if (level != null) {
+            // level
+            Level level = logRecord.getLevel();
+            if (level != null) {
+                logBuilder = logBuilder
+                    .setSeverity(levelToSeverity(level))
+                    .setSeverityText(logRecord.getLevel().getName());
+            }
+
+            AttributesBuilder attributes = Attributes.builder();
+
+            // throwable
+            Throwable throwable = logRecord.getThrown();
+            if (throwable != null) {
+                attributes.put(SemanticAttributes.EXCEPTION_TYPE, throwable.getClass().getName());
+                attributes.put(SemanticAttributes.EXCEPTION_MESSAGE, throwable.getMessage());
+                StringWriter writer = new StringWriter();
+                throwable.printStackTrace(new PrintWriter(writer));
+                attributes.put(SemanticAttributes.EXCEPTION_STACKTRACE, writer.toString());
+            }
+
+            if (captureExperimentalAttributes) {
+                Thread currentThread = Thread.currentThread();
+                attributes.put(SemanticAttributes.THREAD_NAME, currentThread.getName());
+                attributes.put(SemanticAttributes.THREAD_ID, currentThread.getId());
+            } else {
+                attributes.put(SemanticAttributes.THREAD_ID, logRecord.getThreadID());
+            }
+
             logBuilder = logBuilder
-                .setSeverity(levelToSeverity(level))
-                .setSeverityText(logRecord.getLevel().getName());
+                .setAllAttributes(attributes.build())
+                .setContext(Context.current());// span context
+
+            logBuilder.emit();
+        } catch (RuntimeException e) {
+            System.err.println("Exception sending logs to OTLP endpoint, disable OTelJulHandler");
+            e.printStackTrace();
+            disabled = true;
         }
-
-        AttributesBuilder attributes = Attributes.builder();
-
-        // throwable
-        Throwable throwable = logRecord.getThrown();
-        if (throwable != null) {
-            attributes.put(SemanticAttributes.EXCEPTION_TYPE, throwable.getClass().getName());
-            attributes.put(SemanticAttributes.EXCEPTION_MESSAGE, throwable.getMessage());
-            StringWriter writer = new StringWriter();
-            throwable.printStackTrace(new PrintWriter(writer));
-            attributes.put(SemanticAttributes.EXCEPTION_STACKTRACE, writer.toString());
-        }
-
-        if (captureExperimentalAttributes) {
-            Thread currentThread = Thread.currentThread();
-            attributes.put(SemanticAttributes.THREAD_NAME, currentThread.getName());
-            attributes.put(SemanticAttributes.THREAD_ID, currentThread.getId());
-        } else {
-            attributes.put(SemanticAttributes.THREAD_ID, logRecord.getThreadID());
-        }
-
-        logBuilder = logBuilder
-            .setAllAttributes(attributes.build())
-            .setContext(Context.current());// span context
-
-        logBuilder.emit();
     }
 
 
