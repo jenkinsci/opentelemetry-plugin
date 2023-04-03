@@ -71,6 +71,69 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td>Job aborted</td>
     </tr>
     <tr>
+        <td>ci.pipeline.run.success</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Job successful</td>
+    </tr>
+    <tr>
+        <td>ci.pipeline.run.failed</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Job failed</td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.available</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.busy</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.idle</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.online</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.connecting</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.defined</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.queue</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
         <td>jenkins.queue.waiting</td>
         <td>1</td>
         <td></td>

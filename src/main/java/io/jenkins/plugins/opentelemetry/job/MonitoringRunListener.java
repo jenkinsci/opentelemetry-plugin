@@ -76,6 +76,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     private LongCounter runStartedCounter;
     private LongCounter runCompletedCounter;
     private LongCounter runAbortedCounter;
+    private LongCounter runSuccessCounter;
+    private LongCounter runFailedCounter;
     private List<RunHandler> runHandlers;
 
     @PostConstruct
@@ -116,8 +118,18 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                         .setDescription("Job started")
                         .setUnit("1")
                         .build();
+        runSuccessCounter =
+                meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_SUCCESS)
+                    .setDescription("Job succeed")
+                    .setUnit("1")
+                    .build();
+        runFailedCounter =
+            meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_FAILED)
+                .setDescription("Job failed")
+                .setUnit("1")
+                .build();
         runAbortedCounter =
-                meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
+                    meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
                         .setDescription("Job aborted")
                         .setUnit("1")
                         .build();
@@ -366,11 +378,18 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
             this.getTraceService().purgeRun(run);
 
-            LOGGER.log(Level.FINE, () -> "Increment completion counters");
-            this.runCompletedCounter.add(1);
+
             Result result = verifyNotNull(run.getResult(), "%s", run);
 
-            if (!result.isCompleteBuild()) {
+            if (result.isCompleteBuild()) {
+                LOGGER.log(Level.FINE, () -> "Increment completion counters");
+                this.runCompletedCounter.add(1);
+                if (result.equals(Result.SUCCESS)) {
+                    this.runSuccessCounter.add(1);
+                } else {
+                    this.runFailedCounter.add(1);
+                }
+            } else {
                 this.runAbortedCounter.add(1);
             }
         } finally {
