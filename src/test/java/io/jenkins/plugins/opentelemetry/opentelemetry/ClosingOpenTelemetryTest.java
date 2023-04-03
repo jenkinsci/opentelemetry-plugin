@@ -25,7 +25,7 @@ public class ClosingOpenTelemetryTest {
         Meter meter = closingOpenTelemetry.meterBuilder("test-meter").setSchemaUrl("https://example.com").setInstrumentationVersion("123").build();
         testMeter(meter, closingOpenTelemetry);
 
-        System.out.println("number of tests: " + closingOpenTelemetry.instruments.size());
+        System.out.println("number of tests: " + closingOpenTelemetry.closeables.size());
 
     }
 
@@ -45,30 +45,38 @@ public class ClosingOpenTelemetryTest {
     private static void testMeter(Meter meter, ClosingOpenTelemetry closingOpenTelemetry) {
         assertThat(meter, instanceOf(ClosingOpenTelemetry.ClosingMeter.class));
 
-        int before = closingOpenTelemetry.instruments.size();
+        int before = closingOpenTelemetry.closeables.size();
         ObservableLongCounter observableLongCounter = meter.counterBuilder("test-counter").setDescription("desc").setUnit("s").buildWithCallback(om -> om.record(1L));
-        int after = closingOpenTelemetry.instruments.size();
+        int after = closingOpenTelemetry.closeables.size();
         assertThat(after, is(before + 1));
 
-        before = closingOpenTelemetry.instruments.size();
+        before = closingOpenTelemetry.closeables.size();
         meter.gaugeBuilder("test-double-gauge").setDescription("desc").setUnit("ms").buildWithCallback(om -> om.record(1.0));
-        after = closingOpenTelemetry.instruments.size();
+        after = closingOpenTelemetry.closeables.size();
         assertThat(after, is(before + 1));
 
-        before = closingOpenTelemetry.instruments.size();
+        before = closingOpenTelemetry.closeables.size();
         meter.gaugeBuilder("test-long-gauge").ofLongs().setDescription("desc").setUnit("ms").buildWithCallback(om -> om.record(1L));
-        after = closingOpenTelemetry.instruments.size();
+        after = closingOpenTelemetry.closeables.size();
         assertThat(after, is(before + 1));
 
-        before = closingOpenTelemetry.instruments.size();
+        before = closingOpenTelemetry.closeables.size();
         meter.upDownCounterBuilder("test-up-down-counter").setDescription("desc").setUnit("ms").buildWithCallback(om -> om.record(1L));
-        after = closingOpenTelemetry.instruments.size();
+        after = closingOpenTelemetry.closeables.size();
         assertThat(after, is(before + 1));
 
-        before = closingOpenTelemetry.instruments.size();
+        before = closingOpenTelemetry.closeables.size();
         meter.upDownCounterBuilder("test-double-up-down-counter").ofDoubles().setDescription("desc").setUnit("ms").buildWithCallback(om -> om.record(1.0));
-        after = closingOpenTelemetry.instruments.size();
+        after = closingOpenTelemetry.closeables.size();
         assertThat(after, is(before + 1));
+
+        before = closingOpenTelemetry.closeables.size();
+        final ObservableDoubleMeasurement observableDoubleMeasurement = meter.gaugeBuilder("another-gauge").setUnit("1").setDescription("desc").buildObserver();
+        after = closingOpenTelemetry.closeables.size();
+        assertThat(after, is(before));
+        meter.batchCallback(() -> observableDoubleMeasurement.record(1), observableDoubleMeasurement);
+        after = closingOpenTelemetry.closeables.size();
+        assertThat(after, is(before+1));
     }
 
 }
