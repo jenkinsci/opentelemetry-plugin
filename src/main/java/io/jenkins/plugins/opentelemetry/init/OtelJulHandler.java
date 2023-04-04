@@ -118,6 +118,8 @@ public class OtelJulHandler extends Handler implements OtelComponent {
 
             logBuilder.emit();
         } catch (RuntimeException e) {
+            // directly use `System.err` rather than the `logger` 
+            //because the OTelJulHandler is a handler of this logger, risking an infinite loop
             System.err.println("Exception sending logs to OTLP endpoint, disable OTelJulHandler");
             e.printStackTrace();
             disabled = true;
