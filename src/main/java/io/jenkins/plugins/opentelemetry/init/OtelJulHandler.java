@@ -63,7 +63,6 @@ public class OtelJulHandler extends Handler implements OtelComponent {
      * <ul>
      *   <li>Fully qualified class name - {@link LogRecord#getSourceClassName()}
      *   <li>Fully qualified method name - {@link LogRecord#getSourceMethodName()}
-     *   <li>Thread id - {@link LogRecord#getThreadID()}
      * </ul>
      */
     @Override
@@ -76,7 +75,6 @@ public class OtelJulHandler extends Handler implements OtelComponent {
             if (instrumentationName == null || instrumentationName.isEmpty()) {
                 instrumentationName = "ROOT";
             }
-            // TODO set instrumentationScope / logger.name
             LogRecordBuilder logBuilder = loggerProvider.get(instrumentationName).logRecordBuilder();
             // message
             String message = FORMATTER.formatMessage(logRecord);
