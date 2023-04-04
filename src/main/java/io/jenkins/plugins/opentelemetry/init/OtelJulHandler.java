@@ -11,11 +11,11 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.logs.LogRecordBuilder;
+import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
@@ -23,7 +23,6 @@ import jenkins.YesNoMaybe;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.*;
 
 /**
@@ -38,7 +37,7 @@ public class OtelJulHandler extends Handler implements OtelComponent {
 
     private  boolean captureExperimentalAttributes;
 
-    private io.opentelemetry.api.logs.Logger otelLogger;
+    private LoggerProvider loggerProvider;
 
     private boolean initialized;
 
@@ -73,7 +72,12 @@ public class OtelJulHandler extends Handler implements OtelComponent {
             return;
         }
         try {
-            LogRecordBuilder logBuilder = otelLogger.logRecordBuilder();
+            String instrumentationName = logRecord.getLoggerName();
+            if (instrumentationName == null || instrumentationName.isEmpty()) {
+                instrumentationName = "ROOT";
+            }
+            // TODO set instrumentationScope / logger.name
+            LogRecordBuilder logBuilder = loggerProvider.get(instrumentationName).logRecordBuilder();
             // message
             String message = FORMATTER.formatMessage(logRecord);
             if (message != null) {
@@ -164,8 +168,8 @@ public class OtelJulHandler extends Handler implements OtelComponent {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-        this.otelLogger = otelLogger;
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+        this.loggerProvider = loggerProvider;
         this.captureExperimentalAttributes = configProperties.getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
         if (!initialized) {
             Logger.getLogger("").addHandler(this);

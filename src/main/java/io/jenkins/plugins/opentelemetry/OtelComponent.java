@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.ObservableLongCounter;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
@@ -31,12 +32,12 @@ public interface OtelComponent extends Comparable<OtelComponent>{
      * plugin takes care of this  (eg {@link ObservableLongUpDownCounter}, {@link ObservableLongCounter}...)
      *
      * @param meter            {@link Meter} of the newly initialized Otel SDK
-     * @param otelLogger       {@link io.opentelemetry.api.logs.Logger} of the newly initialized Otel SDK
+     * @param loggerProvider   {@link io.opentelemetry.api.logs.Logger} of the newly initialized Otel SDK
      * @param eventEmitter
      * @param tracer           {@link Tracer} of the newly initialized Otel SDK
      * @param configProperties {@link ConfigProperties} of the newly initialized Otel SDK
      */
-    default void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {}
+    default void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {}
 
     /**
      * Invoked soon after the Otel SDK has been initialized.
