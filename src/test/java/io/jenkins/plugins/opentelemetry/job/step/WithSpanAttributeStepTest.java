@@ -30,7 +30,7 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         // BEFORE
 
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-            "withSpanAttribute(key: 'pipeline.type', value: 'release', target='PIPELINE_ROOT_SPAN')\n" +
+            "withSpanAttribute(key: 'pipeline.type', value: 'release', target: 'PIPELINE_ROOT_SPAN')\n" +
             "node() {\n" +
             "    stage('build') {\n" +
             "       withSpanAttribute(key: 'stage.type', value: 'build-java-maven', target: 'CURRENT_SPAN')\n" +
@@ -51,7 +51,7 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "release-script", "Stage: release", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
         { // attribute 'pipeline.type' - PIPELINE_ROOT_SPAN
