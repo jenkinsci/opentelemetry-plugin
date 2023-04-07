@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Item;
@@ -26,8 +25,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -57,7 +54,7 @@ public class WithSpanAttributeStep extends Step {
             // todo log message
             return new StepExecution(context) {
                 @Override
-                public boolean start() throws Exception {
+                public boolean start() {
                     return false;
                 }
             };
@@ -193,6 +190,7 @@ public class WithSpanAttributeStep extends Step {
                     break;
                 case CURRENT_SPAN:
                     span= otelTraceService.getSpan(run, flowNode);
+                    break;
                 default:
                     throw new IllegalArgumentException("Unsupported target span '" + target + "'. ");
             }
