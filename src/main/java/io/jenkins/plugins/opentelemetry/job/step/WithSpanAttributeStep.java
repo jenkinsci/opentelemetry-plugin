@@ -26,6 +26,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -98,7 +99,7 @@ public class WithSpanAttributeStep extends Step {
     public void setType(String type) {
         this.type = Optional.ofNullable(type)
             .map(String::trim)
-            .filter(OtelUtils.Predicates.not(String::isEmpty))
+            .filter(Predicate.not(String::isEmpty))
             .map(String::toUpperCase)
             .map(s -> AttributeType.valueOf(s)).orElse(null);
     }
