@@ -6,6 +6,9 @@
     <f:entry field="value" title="${%Value}"  description="Value of the span attribute">
         <f:textbox/>
     </f:entry>
+    <f:entry field="target" title="${%Target}"  description="Span on which the attribute is set">
+        <f:select/>
+    </f:entry>
     <f:advanced>
         <f:entry field="type" title="${%Type}" description="Supported attribute types">
             <f:select/>

@@ -74,8 +74,19 @@ public class OtelTraceService implements OtelComponent {
         return getSpan(run, true);
     }
 
+    /**
+     * Returns the span of the current run phase.
+     *
+     * @param run
+     * @param verifyIfRemainingSteps
+     * @return the span of the current pipeline run phase:
+     *      * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_START_NAME},
+     *      * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_RUN_NAME},
+     *      * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
+     * @throws VerifyException if there are ongoing step spans and {@code verifyIfRemainingSteps} is set to {@code true}
+     */
     @Nonnull
-    public Span getSpan(@Nonnull Run run, boolean verifyIfRemainingSteps) {
+    public Span getSpan(@Nonnull Run run, boolean verifyIfRemainingSteps) throws VerifyException {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
 
@@ -89,6 +100,13 @@ public class OtelTraceService implements OtelComponent {
             return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
         }
         return span;
+    }
+
+    @Nonnull
+    public Span getPipelineRootSpan(@Nonnull Run run) {
+        RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
+        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
+        return runSpans.runPhasesSpans.stream().findFirst().orElse(Span.getInvalid()); // absent when Jenkins restarts during build
     }
 
     @Nonnull
@@ -336,6 +354,10 @@ public class OtelTraceService implements OtelComponent {
     @Immutable
     public static class RunSpans {
         final Multimap<String, PipelineSpanContext> pipelineStepSpansByFlowNodeId = ArrayListMultimap.create();
+
+        /**
+         * Root span and run phases spans
+         */
         final List<Span> runPhasesSpans = new ArrayList<>();
 
         @Override

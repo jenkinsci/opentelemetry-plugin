@@ -30,9 +30,11 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         // BEFORE
 
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+            "withSpanAttribute(key: 'pipeline.type', value: 'release', target='PIPELINE_ROOT_SPAN')\n" +
             "node() {\n" +
-            "    stage('release') {\n" +
-            "       withSpanAttribute(key: 'job.type', value: 'release')\n" +
+            "    stage('build') {\n" +
+            "       withSpanAttribute(key: 'stage.type', value: 'build-java-maven', target: 'CURRENT_SPAN')\n" +
+            "       withSpanAttribute(key: 'build.tool', value: 'maven')\n" +
             "       xsh (label: 'release-script', script: 'echo ze-echo-1') \n" +
             "    }\n" +
             "}";
@@ -52,9 +54,23 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "release-script", "Stage: release", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
-        SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: release".equals(sdw.spanData.getName())).findFirst().get().spanData;
-        String actualJobTypeAttributeValue = actualSpanData.getAttributes().get(AttributeKey.stringKey("job.type"));
-         MatcherAssert.assertThat(actualJobTypeAttributeValue, CoreMatchers.is("release"));
+        { // attribute 'pipeline.type' - PIPELINE_ROOT_SPAN
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineType = actualSpanData.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualPipelineType, CoreMatchers.is("release"));
+        }
+
+        { // attribute 'stage.type' - CURRENT_SPAN
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualStageType = actualSpanData.getAttributes().get(AttributeKey.stringKey("stage.type"));
+            MatcherAssert.assertThat(actualStageType, CoreMatchers.is("build-java-maven"));
+        }
+
+        { // attribute 'build.tool' - implicitly CURRENT_SPAN
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualStageType = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualStageType, CoreMatchers.is("maven"));
+        }
 
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
     }
