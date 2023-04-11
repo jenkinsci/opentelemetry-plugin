@@ -120,7 +120,7 @@ public class WithSpanAttributeStep extends Step {
     public void setTarget(String target) {
         this.target = Optional.ofNullable(target)
             .map(String::trim)
-            .filter(OtelUtils.Predicates.not(String::isEmpty))
+            .filter(Predicate.not(String::isEmpty))
             .map(String::toUpperCase)
             .map(Target::valueOf)
             .orElse(null);
