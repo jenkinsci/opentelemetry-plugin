@@ -17,12 +17,18 @@ The attributes of the traces and spans are normalized in order
 Example:
 
 ````groovy
-withSpanAttribute(key: "pipeline_type", value: "release_pipeline")
+withSpanAttribute(key: "pipeline_type", value: "release_pipeline", target: "PIPELINE_ROOT_SPAN")
+...
+stage ("build") {
+    withSpanAttribute(key: "build.tool", value: "maven")
+}
 ````
 
-Supported attribute types are `STRING`, `BOOLEAN`, `LONG`, `DOUBLE`, `STRING_ARRAY`, `BOOLEAN_ARRAY`, `LONG_ARRAY`, `DOUBLE_ARRAY`.
+* Supported attribute types are `STRING`, `BOOLEAN`, `LONG`, `DOUBLE`, `STRING_ARRAY`, `BOOLEAN_ARRAY`, `LONG_ARRAY`, `DOUBLE_ARRAY`.
 If not specified, the `type` of the attribute is inferred from the passed `value`. It is recommended to not specify the type and to rely on the inference from the `value`.
-
+* Supported targets are:
+   * `CURRENT_SPAN` (default value): the attribute is set on the span of the current pipeline phase (current node, stage, step...)
+   * `PIPELINE_ROOT_SPAN`: the attribute is set on the root span of the pipeline (ie the "BUILD ..." span)
 
 Note that the `withSpanAttribute` doesn't create a span in the pipeline build trace.
 

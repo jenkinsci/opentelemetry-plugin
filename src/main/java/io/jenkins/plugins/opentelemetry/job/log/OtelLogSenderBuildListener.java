@@ -104,7 +104,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         @Override
         public io.opentelemetry.api.logs.Logger getOtelLogger() {
             JenkinsJVM.checkJenkinsJVM();
-            return OpenTelemetrySdkProvider.get().getOtelLogger();
+            return OpenTelemetrySdkProvider.get().getLoggerProvider().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
         }
 
         /**

@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import com.google.common.collect.Lists;
 import hudson.Plugin;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
@@ -30,20 +29,10 @@ import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class OtelUtils {
@@ -72,41 +61,6 @@ public class OtelUtils {
             return environmentVariable;
         }
         return null;
-    }
-
-    public static String getComaSeparatedString(@Nonnull Map<String, String> keyValuePairs) {
-        return keyValuePairs.entrySet().stream()
-            .map(keyValuePair -> keyValuePair.getKey() + "=" + keyValuePair.getValue())
-            .collect(Collectors.joining(","));
-    }
-
-    @Nonnull
-    public static Map<String, String> getCommaSeparatedMap(@Nullable String comaSeparatedKeyValuePairs) {
-        if (StringUtils.isBlank(comaSeparatedKeyValuePairs)) {
-            return new HashMap<>();
-        }
-        return filterBlanksAndNulls(comaSeparatedKeyValuePairs.split(",")).stream()
-            .map(keyValuePair -> filterBlanksAndNulls(keyValuePair.split("=", 2)))
-            .map(
-                splitKeyValuePairs -> {
-                    if (splitKeyValuePairs.size() != 2) {
-                        throw new RuntimeException("Invalid key-value pair: " + comaSeparatedKeyValuePairs);
-                    }
-                    return new AbstractMap.SimpleImmutableEntry<>(
-                        splitKeyValuePairs.get(0), splitKeyValuePairs.get(1));
-                })
-            // If duplicate keys, prioritize later ones similar to duplicate system properties on a
-            // Java command line.
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey, Map.Entry::getValue, (first, next) -> next, LinkedHashMap::new));
-    }
-
-    private static List<String> filterBlanksAndNulls(String[] values) {
-        return Arrays.stream(values)
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.toList());
     }
 
     @Nonnull
@@ -186,7 +140,6 @@ public class OtelUtils {
         return false;
     }
 
-    @Nonnull
     public static boolean isMultibranch(Run run) {
         if (run == null) {
             return false;
@@ -194,7 +147,6 @@ public class OtelUtils {
         return (run instanceof WorkflowRun && run.getParent().getParent() instanceof WorkflowMultiBranchProject);
     }
 
-    @Nonnull
     public static boolean isWorkflow(Run run) {
         if (run == null) {
             return false;
@@ -202,7 +154,6 @@ public class OtelUtils {
         return (run instanceof WorkflowRun && !(run.getParent().getParent() instanceof WorkflowMultiBranchProject));
     }
 
-    @Nonnull
     public static boolean isFreestyle(Run run) {
         if (run == null) {
             return false;
@@ -220,7 +171,6 @@ public class OtelUtils {
             isInstance(run, "hudson.matrix.MatrixRun");
     }
 
-    @Nonnull
     public static boolean isMaven(Run run) {
         if (run == null) {
             return false;
@@ -231,10 +181,7 @@ public class OtelUtils {
     }
 
     private static boolean isInstance(Object o, String clazz) {
-        if (o != null && o.getClass().getName().equals(clazz)) {
-            return true;
-        }
-        return false;
+        return o != null && o.getClass().getName().equals(clazz);
     }
 
     @Nonnull
@@ -244,11 +191,7 @@ public class OtelUtils {
 
     @Nonnull
     public static String urlEncode(String value) {
-        try {
-            return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
-        } catch (UnsupportedEncodingException ex) {
-            throw new RuntimeException(ex.getCause());
-        }
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     @Nonnull
@@ -297,7 +240,7 @@ public class OtelUtils {
 
     public static Map<String, String> noteworthyConfigProperties(ConfigProperties configProperties) {
         Map<String, String> noteworthyConfigProperties = new TreeMap<>();
-        noteworthyConfigurationPropertyNames.stream().forEach(k -> {
+        noteworthyConfigurationPropertyNames.forEach(k -> {
             if (configProperties.getString(k) != null) {
                 noteworthyConfigProperties.put(k, configProperties.getString(k));
             }
@@ -314,14 +257,5 @@ public class OtelUtils {
             }
         }
         return message.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).collect(Collectors.joining(", "));
-    }
-
-    public static class Predicates {
-        /**
-         * Waiting for Java 11
-         */
-        public static <T> Predicate<T> not(Predicate<? super T> target) {
-            return (Predicate<T>)target.negate();
-        }
     }
 }
