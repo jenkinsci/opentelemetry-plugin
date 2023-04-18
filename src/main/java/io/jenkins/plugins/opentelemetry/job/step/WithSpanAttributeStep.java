@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Item;
@@ -24,8 +23,10 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -34,9 +35,13 @@ import java.util.stream.Collectors;
 public class WithSpanAttributeStep extends Step {
     private final static Logger logger = Logger.getLogger(WithSpanAttributeStep.class.getName());
 
+    enum Target {CURRENT_SPAN, PIPELINE_ROOT_SPAN}
+
     String key;
     Object value;
     AttributeType type;
+
+    Target target;
 
     @DataBoundConstructor
     public WithSpanAttributeStep() {
@@ -50,7 +55,7 @@ public class WithSpanAttributeStep extends Step {
             // todo log message
             return new StepExecution(context) {
                 @Override
-                public boolean start() throws Exception {
+                public boolean start() {
                     return false;
                 }
             };
@@ -69,7 +74,8 @@ public class WithSpanAttributeStep extends Step {
                 type = isArray ? AttributeType.STRING_ARRAY : AttributeType.STRING;
             }
         }
-        return new Execution(key, value, type, context);
+
+        return new Execution(key, value, type, Objects.requireNonNullElse(target, Target.CURRENT_SPAN), context);
     }
 
     public String getKey() {
@@ -90,17 +96,39 @@ public class WithSpanAttributeStep extends Step {
         this.value = value;
     }
 
+    @CheckForNull
     public String getType() {
         return Optional.ofNullable(type).map(AttributeType::name).orElse(null);
     }
 
+    /**
+     * @param type case-insensitive representation of {@link AttributeType}
+     */
     @DataBoundSetter
     public void setType(String type) {
         this.type = Optional.ofNullable(type)
             .map(String::trim)
-            .filter(OtelUtils.Predicates.not(String::isEmpty))
+            .filter(Predicate.not(String::isEmpty))
             .map(String::toUpperCase)
-            .map(s -> AttributeType.valueOf(s)).orElse(null);
+            .map(AttributeType::valueOf).orElse(null);
+    }
+
+    /**
+     * @param target case-insensitive representation of {@link Target}
+     */
+    @DataBoundSetter
+    public void setTarget(String target) {
+        this.target = Optional.ofNullable(target)
+            .map(String::trim)
+            .filter(Predicate.not(String::isEmpty))
+            .map(String::toUpperCase)
+            .map(Target::valueOf)
+            .orElse(null);
+    }
+
+    @CheckForNull
+    public String getTarget() {
+        return Optional.ofNullable(target).map(Target::name).orElse(null);
     }
 
     @Extension
@@ -127,33 +155,46 @@ public class WithSpanAttributeStep extends Step {
             List<AttributeType> supportedAttributeTypes = Arrays.asList(AttributeType.STRING, AttributeType.LONG, AttributeType.BOOLEAN, AttributeType.DOUBLE);
             return new ListBoxModel(supportedAttributeTypes.stream().map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
         }
+
+        public ListBoxModel doFillTargetItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
+            return new ListBoxModel(Arrays.stream(Target.values()).map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
+        }
     }
 
     public static class Execution extends SynchronousStepExecution<Void> {
 
-        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
-        private transient final String key;
+        private final String key;
 
-        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
-        private transient final Object value;
+        private final Object value;
 
-        @SuppressFBWarnings(value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Only used when starting.")
-        private transient final AttributeType attributeType;
+        private final AttributeType attributeType;
 
-        Execution(String key, Object value, AttributeType attributeType, StepContext context) {
+        private final Target target;
+
+        Execution(String key, Object value, AttributeType attributeType, Target target, StepContext context) {
             super(context);
             this.key = key;
             this.value = value;
             this.attributeType = attributeType;
+            this.target = target;
         }
 
         @Override
         protected Void run() throws Exception {
-
             OtelTraceService otelTraceService = ExtensionList.lookupSingleton(OtelTraceService.class);
             Run run = getContext().get(Run.class);
             FlowNode flowNode = getContext().get(FlowNode.class);
-            Span span = otelTraceService.getSpan(run, flowNode);
+            final Span span;
+            switch (target) {
+                case PIPELINE_ROOT_SPAN:
+                    span= otelTraceService.getPipelineRootSpan(run);
+                    break;
+                case CURRENT_SPAN:
+                    span= otelTraceService.getSpan(run, flowNode);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported target span '" + target + "'. ");
+            }
             Object convertedValue;
             AttributeKey attributeKey;
             switch (attributeType) {
