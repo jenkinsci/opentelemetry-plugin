@@ -11,6 +11,7 @@ import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
@@ -38,7 +39,7 @@ public class DiskUsageMonitoringInitializer implements OtelComponent {
     protected QuickDiskUsagePlugin quickDiskUsagePlugin;
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
                 .ofLongs()
                 .setDescription("Disk usage of first level folder in JENKINS_HOME.")

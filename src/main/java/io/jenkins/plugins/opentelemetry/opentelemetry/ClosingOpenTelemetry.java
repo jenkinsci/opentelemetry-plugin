@@ -13,7 +13,6 @@ import io.opentelemetry.api.trace.TracerBuilder;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.propagation.ContextPropagators;
 
-import javax.annotation.CheckReturnValue;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,12 +34,12 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
 
     final OpenTelemetry delegate;
 
-    final List<AutoCloseable> instruments = new ArrayList<>();
+    final List<AutoCloseable> closeables = new ArrayList<>();
 
     @Override
     public void close() {
-        List<AutoCloseable> instruments = new ArrayList<>(this.instruments);
-        this.instruments.clear(); // reset the list of instruments for reuse
+        List<AutoCloseable> instruments = new ArrayList<>(this.closeables);
+        this.closeables.clear(); // reset the list of instruments for reuse
         LOGGER.log(Level.FINE, () -> "Close " + instruments.size() + " instruments");
         LOGGER.log(Level.FINEST, () -> "Close " + instruments);
         for (AutoCloseable instrument : instruments) {
@@ -171,7 +170,9 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
 
         @Override
         public BatchCallback batchCallback(Runnable callback, ObservableMeasurement observableMeasurement, ObservableMeasurement... additionalMeasurements) {
-            return delegate.batchCallback(callback, observableMeasurement, additionalMeasurements);
+            BatchCallback batchCallback = delegate.batchCallback(callback, observableMeasurement, additionalMeasurements);
+            closeables.add(batchCallback);
+            return batchCallback;
         }
     }
 
@@ -209,7 +210,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         @Override
         public ObservableLongCounter buildWithCallback(Consumer<ObservableLongMeasurement> callback) {
             ObservableLongCounter observableLongCounter = delegate.buildWithCallback(callback);
-            instruments.add(observableLongCounter);
+            closeables.add(observableLongCounter);
             return observableLongCounter;
         }
 
@@ -247,7 +248,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         @Override
         public ObservableLongUpDownCounter buildWithCallback(Consumer<ObservableLongMeasurement> callback) {
             ObservableLongUpDownCounter observableLongUpDownCounter = delegate.buildWithCallback(callback);
-            instruments.add(observableLongUpDownCounter);
+            closeables.add(observableLongUpDownCounter);
             return observableLongUpDownCounter;
         }
 
@@ -293,7 +294,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         @Override
         public ObservableDoubleUpDownCounter buildWithCallback(Consumer<ObservableDoubleMeasurement> callback) {
             ObservableDoubleUpDownCounter observableDoubleUpDownCounter = delegate.buildWithCallback(callback);
-            instruments.add(observableDoubleUpDownCounter);
+            closeables.add(observableDoubleUpDownCounter);
             return observableDoubleUpDownCounter;
         }
 
@@ -332,7 +333,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         @Override
         public ObservableDoubleGauge buildWithCallback(Consumer<ObservableDoubleMeasurement> callback) {
             ObservableDoubleGauge observableDoubleGauge = delegate.buildWithCallback(callback);
-            instruments.add(observableDoubleGauge);
+            closeables.add(observableDoubleGauge);
             return observableDoubleGauge;
         }
 
@@ -366,7 +367,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         @Override
         public ObservableLongGauge buildWithCallback(Consumer<ObservableLongMeasurement> callback) {
             ObservableLongGauge observableLongGauge = delegate.buildWithCallback(callback);
-            instruments.add(observableLongGauge);
+            closeables.add(observableLongGauge);
             return observableLongGauge;
         }
 
@@ -405,7 +406,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         @Override
         public ObservableDoubleCounter buildWithCallback(Consumer<ObservableDoubleMeasurement> callback) {
             ObservableDoubleCounter observableDoubleCounter = delegate.buildWithCallback(callback);
-            instruments.add(observableDoubleCounter);
+            closeables.add(observableDoubleCounter);
             return observableDoubleCounter;
         }
 

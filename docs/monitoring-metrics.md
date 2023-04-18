@@ -31,8 +31,8 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     <tr>
         <th>Metric</th>
         <th>Unit</th>
-        <th>Label / attribute key</th>
-        <th>Label / attribute value</th>
+        <th>Attribute Key</th>
+        <th>Attribute value</th>
         <th>Description</th>
     </tr>
     <tr>
@@ -69,6 +69,69 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td></td>
         <td></td>
         <td>Job aborted</td>
+    </tr>
+    <tr>
+        <td>ci.pipeline.run.success</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Job successful</td>
+    </tr>
+    <tr>
+        <td>ci.pipeline.run.failed</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td>Job failed</td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.available</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.busy</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.idle</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.online</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.connecting</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.defined</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.queue</td>
+        <td>1</td>
+        <td>label</td>
+        <td></td>
+        <td></td>
     </tr>
     <tr>
         <td>jenkins.queue.waiting</td>
@@ -120,8 +183,8 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     <tr>
         <th>Metric</th>
         <th>Unit</th>
-        <th>Label / attribute key</th>
-        <th>Label / attribute value</th>
+        <th>Attribute Key</th>
+        <th>Attribute value</th>
         <th>Description</th>
     </tr>
     <tr>
@@ -174,8 +237,8 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     <tr>
         <th>Metric</th>
         <th>Unit</th>
-        <th>Label / attribute key</th>
-        <th>Label / attribute value</th>
+        <th>Attribute Key</th>
+        <th>Attribute value</th>
         <th>Description</th>
     </tr>
     <tr>
@@ -228,103 +291,151 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
 
 ## JVM and system metrics
 
+See OpenTelemetry [Semantic Conventions for Runtime Environment Metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/semantic_conventions/runtime-environment-metrics.md#jvm-metrics).
+
 <table>
     <tr>
         <th>Metric</th>
-        <th>Unit</th>
-        <th>Label / attribute key</th>
-        <th>Label / attribute value</th>
         <th>Description</th>
-    </tr>
-   <tr>
-        <td>runtime.jvm.gc.time</td>
-        <td>ms</td>
-        <td>gc</td>
-        <td>`G1 Young Generation`, `G1 Old Generation...`</td>
-        <td>see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html">GarbageCollectorMXBean</a></td>
+        <th>Type</th>
+        <th>Attribute Key</th>
+        <th>Attribute value</th>
     </tr>
     <tr>
-        <td>runtime.jvm.gc.count</td>
-        <td>1</td>
-        <td>gc</td>
-        <td>`G1 Young Generation`, `G1 Old Generation...`</td>
-        <td>see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/jdk.management/com/sun/management/GarbageCollectorMXBean.html">GarbageCollectorMXBean</a></td>
+        <td>process.runtime.jvm.buffer.count</td>
+        <td>The number of buffers in the pool</td>
+        <td> gauge</td>
+        <td>pool</td>
+        <td>direct, mapped, mapped - 'non-volatile memory'</td>
     </tr>
     <tr>
-        <td>runtime.jvm.memory.area</td>
-        <td>bytes</td>
-        <td>type<br/> area</td>
-        <td>`used`, `committed`, `max` <br/> `heap`, `non_heap`</td>
-        <td>see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html">MemoryUsage</a></td>
+        <td>process.runtime.jvm.buffer.limit</td>
+        <td>Total capacity of the buffers in this pool</td>
+        <td> gauge</td>
+        <td>pool</td>
+        <td>direct, mapped, mapped - 'non-volatile memory'</td>
     </tr>
     <tr>
-        <td>runtime.jvm.memory.pool</td>
-        <td>bytes</td>
-        <td>type<br/> pool</td>
-        <td>`used`, `committed`, `max`. &lt;br/&gt; `PS Eden Space`, `G1 Old Gen...`</td>
-        <td>see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.management/java/lang/management/MemoryUsage.html">MemoryUsage</a></td>
+        <td>process.runtime.jvm.buffer.usage</td>
+        <td>Memory that the Java virtual machine is using for this buffer pool</td>
+        <td> gauge</td>
+        <td>pool</td>
+        <td>direct, mapped, mapped - 'non-volatile memory'</td>
     </tr>
     <tr>
-        <td>system.cpu.load</td>
-        <td>1</td>
+        <td>process.runtime.jvm.classes.current_loaded</td>
+        <td>Number of classes currently loaded</td>
+        <td> gauge</td>
         <td></td>
         <td></td>
-        <td>System CPU load. See `com.sun.management.OperatingSystemMXBean.getSystemCpuLoad`</td>
     </tr>
     <tr>
-        <td>system.cpu.load.average.1m</td>
-        <td>1</td>
+        <td>process.runtime.jvm.classes.loaded</td>
+        <td>Number of classes loaded since JVM start</td>
+        <td> counter</td>
         <td></td>
         <td></td>
-        <td>System CPU load average 1 minute See `java.lang.management.OperatingSystemMXBean.getSystemLoadAverage`</td>
     </tr>
     <tr>
-        <td>system.memory.usage</td>
-        <td>By</td>
-        <td>state</td>
-        <td>`used`, `free`</td>
-        <td>see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize`</td>
+        <td>process.runtime.jvm.classes.unloaded</td>
+        <td>Number of classes unloaded since JVM start</td>
+        <td> counter</td>
+        <td></td>
+        <td></td>
     </tr>
     <tr>
-        <td>system.memory.utilization</td>
-        <td>1</td>
+        <td>process.runtime.jvm.cpu.utilization</td>
+        <td>Recent cpu utilization for the process</td>
+        <td> gauge</td>
         <td></td>
         <td></td>
-        <td>System memory utilization, see `com.sun.management.OperatingSystemMXBean.getTotalPhysicalMemorySize` and `com.sun.management.OperatingSystemMXBean.getFreePhysicalMemorySize`. Report `0%` if no physical memory is discovered by the JVM.</td>
     </tr>
     <tr>
-        <td>system.paging.usage</td>
-        <td>By</td>
-        <td>state</td>
-        <td>`used`, `free`</td>
-        <td>see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize`</td>
+        <td>process.runtime.jvm.gc.duration</td>
+        <td>Duration of JVM garbage collection actions</td>
+        <td> histogram</td>
+        <td>action<br/>gc</td>
+        <td>end of minor GC...<br/>G1 Young Generation...</td>
     </tr>
     <tr>
-        <td>system.paging.utilization</td>
-        <td>1</td>
-        <td></td>
-        <td></td>
-        <td>see `com.sun.management.OperatingSystemMXBean.getFreeSwapSpaceSize` and `com.sun.management.OperatingSystemMXBean.getTotalSwapSpaceSize`. Report `0%` if no swap memory is discovered by the JVM.</td>
+        <td>process.runtime.jvm.memory.committed</td>
+        <td>Measure of memory committed</td>
+        <td> gauge</td>
+        <td>pool<br/>type</td>
+        <td>CodeHeap 'non-nmethods', CodeHeap 'non-profiled nmethods', CodeHeap
+            'profiled nmethods', Compressed Class Space, G1 Eden Space, G1..., Metaspace<br/>heap, non_heap
+        </td>
     </tr>
     <tr>
-        <td>process.cpu.load</td>
-        <td>1</td>
-        <td></td>
-        <td></td>
-        <td>Process CPU load. See `com.sun.management.OperatingSystemMXBean.getProcessCpuLoad`</td>
+        <td>process.runtime.jvm.memory.init</td>
+        <td>Measure of initial memory requested</td>
+        <td> gauge</td>
+        <td>pool<br/>type</td>
+        <td>CodeHeap 'non-nmethods', CodeHeap 'non-profiled nmethods', CodeHeap
+            'profiled nmethods', Compressed Class Space, G1 Eden Space, G1..., Metaspace<br/>heap, non_heap
+        </td>
     </tr>
     <tr>
-        <td>process.cpu.time</td>
-        <td>ns</td>
+        <td>process.runtime.jvm.memory.limit</td>
+        <td>Measure of max obtainable memory</td>
+        <td> gauge</td>
+        <td>pool<br/>type</td>
+        <td>CodeHeap 'non-nmethods', CodeHeap 'non-profiled nmethods', CodeHeap
+            'profiled nmethods', Compressed Class Space, G1 Eden Space, G1..., Metaspace<br/>heap, non_heap
+        </td>
+    </tr>
+    <tr>
+        <td>process.runtime.jvm.memory.usage</td>
+        <td>Measure of memory used</td>
+        <td> gauge</td>
+        <td>pool<br/>type</td>
+        <td>CodeHeap 'non-nmethods', CodeHeap 'non-profiled nmethods', CodeHeap
+            'profiled nmethods', Compressed Class Space, G1 Eden Space, G1..., Metaspace<br/>heap, non_heap
+        </td>
+    </tr>
+    <tr>
+        <td>process.runtime.jvm.memory.usage_after_last_gc</td>
+        <td>Measure of memory used after the most recent garbage collection event on this pool</td>
+        <td> gauge</td>
+        <td>pool<br/>type</td>
+        <td>CodeHeap 'non-nmethods', CodeHeap 'G1 Eden Space, G1 Old Gen, G1 Survivor
+            Space<br/>heap, non_heap
+        </td>
+    </tr>
+    <tr>
+        <td>process.runtime.jvm.system.cpu.load_1m</td>
+        <td>Average CPU load of the whole system for the last minute</td>
+        <td> gauge</td>
         <td></td>
         <td></td>
-        <td>Process CPU time. See `com.sun.management.OperatingSystemMXBean.getProcessCpuTime`</td>
+    </tr>
+    <tr>
+        <td>process.runtime.jvm.system.cpu.utilization</td>
+        <td>Recent cpu utilization for the whole system</td>
+        <td> gauge</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>process.runtime.jvm.cpu.utilization</td>
+        <td>Recent cpu utilization for the process</td>
+        <td> gauge</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>process.runtime.jvm.threads.count</td>
+        <td>Number of executing threads</td>
+        <td> gauge</td>
+        <td>daemon</td>
+        <td>true, false</td>
     </tr>
 </table>
 
+
 ## Jenkins Security Metrics
 
-| Metrics                          | Unit  | Label / attribute key | Label / attribute value | Description            |
+| Metrics                          | Unit  | Attribute Key | Attribute value | Description            |
 |----------------------------------|-------|-----------------------|-------------------------|------------------------|
 | login                            | 1     |                       |                         | Login count            |
 | login_success                    | 1     |                       |                         | Successful login count |

@@ -26,6 +26,7 @@ import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -76,6 +77,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     private LongCounter runStartedCounter;
     private LongCounter runCompletedCounter;
     private LongCounter runAbortedCounter;
+    private LongCounter runSuccessCounter;
+    private LongCounter runFailedCounter;
     private List<RunHandler> runHandlers;
 
     @PostConstruct
@@ -84,8 +87,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-        super.afterSdkInitialized(meter, otelLogger, eventEmitter, tracer, configProperties);
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+        super.afterSdkInitialized(meter, loggerProvider, eventEmitter, tracer, configProperties);
 
         // CAUSE HANDLERS
         List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));
@@ -116,8 +119,18 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                         .setDescription("Job started")
                         .setUnit("1")
                         .build();
+        runSuccessCounter =
+                meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_SUCCESS)
+                    .setDescription("Job succeed")
+                    .setUnit("1")
+                    .build();
+        runFailedCounter =
+            meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_FAILED)
+                .setDescription("Job failed")
+                .setUnit("1")
+                .build();
         runAbortedCounter =
-                meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
+                    meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
                         .setDescription("Job aborted")
                         .setUnit("1")
                         .build();
@@ -366,11 +379,18 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
             this.getTraceService().purgeRun(run);
 
-            LOGGER.log(Level.FINE, () -> "Increment completion counters");
-            this.runCompletedCounter.add(1);
+
             Result result = verifyNotNull(run.getResult(), "%s", run);
 
-            if (!result.isCompleteBuild()) {
+            if (result.isCompleteBuild()) {
+                LOGGER.log(Level.FINE, () -> "Increment completion counters");
+                this.runCompletedCounter.add(1);
+                if (result.equals(Result.SUCCESS)) {
+                    this.runSuccessCounter.add(1);
+                } else {
+                    this.runFailedCounter.add(1);
+                }
+            } else {
                 this.runAbortedCounter.add(1);
             }
         } finally {

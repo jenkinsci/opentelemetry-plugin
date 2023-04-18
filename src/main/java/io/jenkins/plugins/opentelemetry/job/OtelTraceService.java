@@ -16,6 +16,7 @@ import hudson.model.Run;
 import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -74,8 +75,19 @@ public class OtelTraceService implements OtelComponent {
         return getSpan(run, true);
     }
 
+    /**
+     * Returns the span of the current run phase.
+     *
+     * @param run
+     * @param verifyIfRemainingSteps
+     * @return the span of the current pipeline run phase:
+     *      * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_START_NAME},
+     *      * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_RUN_NAME},
+     *      * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
+     * @throws VerifyException if there are ongoing step spans and {@code verifyIfRemainingSteps} is set to {@code true}
+     */
     @Nonnull
-    public Span getSpan(@Nonnull Run run, boolean verifyIfRemainingSteps) {
+    public Span getSpan(@Nonnull Run run, boolean verifyIfRemainingSteps) throws VerifyException {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
 
@@ -89,6 +101,13 @@ public class OtelTraceService implements OtelComponent {
             return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
         }
         return span;
+    }
+
+    @Nonnull
+    public Span getPipelineRootSpan(@Nonnull Run run) {
+        RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
+        RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
+        return runSpans.runPhasesSpans.stream().findFirst().orElse(Span.getInvalid()); // absent when Jenkins restarts during build
     }
 
     @Nonnull
@@ -324,7 +343,7 @@ public class OtelTraceService implements OtelComponent {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, io.opentelemetry.api.logs.Logger otelLogger, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
         this.tracer = tracer;
     }
 
@@ -336,6 +355,10 @@ public class OtelTraceService implements OtelComponent {
     @Immutable
     public static class RunSpans {
         final Multimap<String, PipelineSpanContext> pipelineStepSpansByFlowNodeId = ArrayListMultimap.create();
+
+        /**
+         * Root span and run phases spans
+         */
         final List<Span> runPhasesSpans = new ArrayList<>();
 
         @Override
