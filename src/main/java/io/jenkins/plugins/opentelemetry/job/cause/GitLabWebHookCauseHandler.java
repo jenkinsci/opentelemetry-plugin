@@ -10,7 +10,7 @@ import hudson.Extension;
 import hudson.model.Cause;
 import jenkins.YesNoMaybe;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class GitLabWebHookCauseHandler implements CauseHandler {
@@ -21,12 +21,12 @@ public class GitLabWebHookCauseHandler implements CauseHandler {
     }
 
     @Override
-    public boolean isSupported(@Nonnull Cause cause) {
+    public boolean isSupported(@NonNull Cause cause) {
         return cause instanceof GitLabWebHookCause;
     }
 
     @Override
-    public String getStructuredDescription(@Nonnull Cause cause) {
+    public String getStructuredDescription(@NonNull Cause cause) {
         // https://github.com/jenkinsci/gitlab-plugin/blob/master/src/main/resources/com/dabsquared/gitlabjenkins/cause/Messages.properties#L2
         String id = cause.getShortDescription().replaceAll(".* by ", "");
         return cause.getClass().getSimpleName() + ":" + id;

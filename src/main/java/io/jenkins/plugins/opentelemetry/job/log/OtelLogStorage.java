@@ -18,8 +18,8 @@ import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.FileLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -42,13 +42,13 @@ class OtelLogStorage implements LogStorage {
     final String buildFolderPath;
     final Tracer tracer;
 
-    public OtelLogStorage(@Nonnull BuildInfo buildInfo, @Nonnull Tracer tracer, @Nullable String buildFolderPath) {
+    public OtelLogStorage(@NonNull BuildInfo buildInfo, @NonNull Tracer tracer, @Nullable String buildFolderPath) {
         this.buildInfo = buildInfo;
         this.tracer = tracer;
         this.buildFolderPath = buildFolderPath;
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public BuildListener overallListener() throws IOException {
         OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
@@ -69,9 +69,9 @@ class OtelLogStorage implements LogStorage {
         return otelLogSenderBuildListenerOnController;
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public TaskListener nodeListener(@Nonnull FlowNode flowNode) throws IOException {
+    public TaskListener nodeListener(@NonNull FlowNode flowNode) throws IOException {
         OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
         Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelResourceAttributes = new HashMap<>();
@@ -100,9 +100,9 @@ class OtelLogStorage implements LogStorage {
      *       |- hudson.model.Run#writeLogTo(long, org.apache.commons.jelly.XMLOutput)
      *          |- workflowRun/console.jelly
      */
-    @Nonnull
+    @NonNull
     @Override
-    public AnnotatedLargeText<FlowExecutionOwner.Executable> overallLog(@Nonnull FlowExecutionOwner.Executable build, boolean complete) {
+    public AnnotatedLargeText<FlowExecutionOwner.Executable> overallLog(@NonNull FlowExecutionOwner.Executable build, boolean complete) {
         File logFile = new File(buildFolderPath, "log");
         if (logFile.exists()) {
             return FileLogStorage.forFile(logFile).overallLog(build, complete);
@@ -126,9 +126,9 @@ class OtelLogStorage implements LogStorage {
         }
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public AnnotatedLargeText<FlowNode> stepLog(@Nonnull FlowNode flowNode, boolean complete) {
+    public AnnotatedLargeText<FlowNode> stepLog(@NonNull FlowNode flowNode, boolean complete) {
         File logFile = new File(buildFolderPath, "log");
         if (logFile.exists()) {
             return FileLogStorage.forFile(logFile).stepLog(flowNode, complete);
@@ -199,7 +199,7 @@ class OtelLogStorage implements LogStorage {
             '}';
     }
 
-    @Nonnull
+    @NonNull
     public LogStorageRetriever getLogStorageRetriever() {
         return JenkinsOpenTelemetryPluginConfiguration.get().getLogStorageRetriever();
     }

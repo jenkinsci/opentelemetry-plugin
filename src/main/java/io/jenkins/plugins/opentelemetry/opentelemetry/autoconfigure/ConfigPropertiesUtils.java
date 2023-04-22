@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure;
 
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;

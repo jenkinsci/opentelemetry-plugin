@@ -30,8 +30,8 @@ import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
 import net.sf.json.JSONArray;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
@@ -68,11 +68,11 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
     Iterator<String> delegate;
     boolean endOfStream;
 
-    public ElasticsearchBuildLogsLineIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
+    public ElasticsearchBuildLogsLineIterator(@NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull ElasticsearchClient esClient, @NonNull Tracer tracer) {
         this(jobFullName, runNumber, traceId, null, esClient, tracer);
     }
 
-    public ElasticsearchBuildLogsLineIterator(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nullable String flowNodeId, @Nonnull ElasticsearchClient esClient, @Nonnull Tracer tracer) {
+    public ElasticsearchBuildLogsLineIterator(@NonNull String jobFullName, int runNumber, @NonNull String traceId, @Nullable String flowNodeId, @NonNull ElasticsearchClient esClient, @NonNull Tracer tracer) {
         this.tracer = tracer;
         this.jobFullName = jobFullName;
         this.runNumber = runNumber;
@@ -97,7 +97,7 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
         return pointInTimeId;
     }
 
-    @Nonnull
+    @NonNull
     Iterator<String> getCurrentIterator() {
         try {
             if (endOfStream) {

@@ -46,7 +46,7 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.elasticsearch.client.RestClient;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
@@ -71,20 +71,20 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
     private final static Logger logger = Logger.getLogger(ElasticsearchLogStorageRetriever.class.getName());
 
-    @Nonnull
+    @NonNull
     private final Template buildLogsVisualizationUrlTemplate;
 
     private final TemplateBindingsProvider templateBindingsProvider;
 
-    @Nonnull
+    @NonNull
     final Credentials elasticsearchCredentials;
-    @Nonnull
+    @NonNull
     final String elasticsearchUrl;
-    @Nonnull
+    @NonNull
     final RestClient restClient;
-    @Nonnull
+    @NonNull
     final RestClientTransport elasticsearchTransport;
-    @Nonnull
+    @NonNull
     private final ElasticsearchClient esClient;
 
     private Tracer _tracer;
@@ -94,9 +94,9 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
      */
     @MustBeClosed
     public ElasticsearchLogStorageRetriever(
-        @Nonnull String elasticsearchUrl, boolean disableSslVerifications,
-        @Nonnull Credentials elasticsearchCredentials,
-        @Nonnull Template buildLogsVisualizationUrlTemplate, @Nonnull TemplateBindingsProvider templateBindingsProvider) {
+        @NonNull String elasticsearchUrl, boolean disableSslVerifications,
+        @NonNull Credentials elasticsearchCredentials,
+        @NonNull Template buildLogsVisualizationUrlTemplate, @NonNull TemplateBindingsProvider templateBindingsProvider) {
 
         if (StringUtils.isBlank(elasticsearchUrl)) {
             throw new IllegalArgumentException("Elasticsearch url cannot be blank");
@@ -129,10 +129,10 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         this.templateBindingsProvider = templateBindingsProvider;
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public LogsQueryResult overallLog(
-        @Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete) {
+        @NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete) {
         Charset charset = StandardCharsets.UTF_8;
 
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.overallLog")
@@ -166,9 +166,9 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         }
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public LogsQueryResult stepLog(@Nonnull String jobFullName, int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete) {
+    public LogsQueryResult stepLog(@NonNull String jobFullName, int runNumber, @NonNull String flowNodeId, @NonNull String traceId, @NonNull String spanId, boolean complete) {
         final Charset charset = StandardCharsets.UTF_8;
 
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.stepLog")
@@ -313,7 +313,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         return validations;
     }
 
-    @Nonnull
+    @NonNull
     protected static String prettyPrintPhaseRetentionPolicy(Phase phase, String phaseName) {
         if (phase == null) {
             return phaseName + " [phase not defined]";

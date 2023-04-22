@@ -31,7 +31,7 @@ import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.annotation.PreDestroy;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,7 +50,7 @@ public class OpenTelemetrySdkProvider {
 
     protected transient ClosingOpenTelemetry openTelemetry;
     protected transient OpenTelemetrySdk openTelemetrySdk;
-    @Nonnull
+    @NonNull
     protected final transient TracerDelegate tracer = new TracerDelegate();
     protected transient Meter meter;
     protected transient Resource resource;
@@ -62,22 +62,22 @@ public class OpenTelemetrySdkProvider {
     }
 
 
-    @Nonnull
+    @NonNull
     public Tracer getTracer() {
         return Preconditions.checkNotNull(tracer.getDelegate());
     }
 
-    @Nonnull
+    @NonNull
     public Meter getMeter() {
         return Preconditions.checkNotNull(meter);
     }
 
-    @Nonnull
+    @NonNull
     public Resource getResource() {
         return Preconditions.checkNotNull(resource);
     }
 
-    @Nonnull
+    @NonNull
     public ConfigProperties getConfig() {
         return Preconditions.checkNotNull(config);
     }
@@ -92,18 +92,18 @@ public class OpenTelemetrySdkProvider {
         return otelLogsExporter != null && otelLogsExporter.equals("true");
     }
 
-    @Nonnull
+    @NonNull
     public LoggerProvider getLoggerProvider() {
         return Preconditions.checkNotNull(this.loggerProvider);
     }
 
-    @Nonnull
+    @NonNull
     public EventEmitter getEventEmitter() {
         return Preconditions.checkNotNull(this.eventEmitter);
     }
 
     @VisibleForTesting
-    @Nonnull
+    @NonNull
     protected OpenTelemetrySdk getOpenTelemetrySdk() {
         return Preconditions.checkNotNull(openTelemetrySdk);
     }
@@ -125,7 +125,7 @@ public class OpenTelemetrySdkProvider {
         GlobalEventEmitterProvider.resetForTest();
     }
 
-    public void initialize(@Nonnull OpenTelemetryConfiguration configuration) {
+    public void initialize(@NonNull OpenTelemetryConfiguration configuration) {
         shutdown(); // shutdown existing SDK
         if (configuration.getEndpoint().isPresent()) {
             initializeOtlp(configuration);
@@ -139,7 +139,7 @@ public class OpenTelemetrySdkProvider {
         });
     }
 
-    public void initializeOtlp(@Nonnull OpenTelemetryConfiguration configuration) {
+    public void initializeOtlp(@NonNull OpenTelemetryConfiguration configuration) {
 
         AutoConfiguredOpenTelemetrySdkBuilder sdkBuilder = AutoConfiguredOpenTelemetrySdk.builder();
         // PROPERTIES

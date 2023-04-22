@@ -9,7 +9,7 @@ import hudson.Extension;
 import hudson.model.Cause;
 import jenkins.YesNoMaybe;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class RemoteCauseHandler implements CauseHandler {
@@ -20,12 +20,12 @@ public class RemoteCauseHandler implements CauseHandler {
     }
 
     @Override
-    public boolean isSupported(@Nonnull Cause cause) {
+    public boolean isSupported(@NonNull Cause cause) {
         return (cause instanceof Cause.RemoteCause);
     }
 
     @Override
-    public String getStructuredDescription(@Nonnull Cause cause) {
+    public String getStructuredDescription(@NonNull Cause cause) {
         Cause.RemoteCause remoteCause = (Cause.RemoteCause) cause;
         return cause.getClass().getSimpleName() + ":" + remoteCause.getAddr();
     }

@@ -11,7 +11,7 @@ import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,10 +24,10 @@ import java.util.logging.Logger;
 public class InputStreamByteBuffer extends ByteBuffer {
     final static Logger logger = Logger.getLogger(InputStreamByteBuffer.class.getName());
 
-    @Nonnull
+    @NonNull
     private final Tracer tracer;
 
-    @Nonnull
+    @NonNull
     final InputStream in;
 
     public InputStreamByteBuffer(InputStream in, Tracer tracer) {
@@ -98,7 +98,7 @@ public class InputStreamByteBuffer extends ByteBuffer {
      * @throws UnsupportedOperationException
      */
     @Override
-    public void write(@Nonnull byte[] b) throws IOException {
+    public void write(@NonNull byte[] b) throws IOException {
         throw new UnsupportedOperationException();
     }
 

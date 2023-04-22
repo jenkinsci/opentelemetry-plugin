@@ -15,7 +15,7 @@ import io.opentelemetry.sdk.resources.ResourceBuilder;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.apache.commons.lang.StringUtils;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -93,7 +93,7 @@ public class OpenTelemetryConfiguration {
     /**
      * @see io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder#addPropertiesSupplier(java.util.function.Supplier)
      */
-    @Nonnull
+    @NonNull
     public Map<String, String> toOpenTelemetryProperties() {
         Map<String, String> properties = new HashMap<>();
         properties.putAll(this.configurationProperties);
@@ -135,7 +135,7 @@ public class OpenTelemetryConfiguration {
     /**
      * @see io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder#addResourceCustomizer(BiFunction)
      */
-    @Nonnull
+    @NonNull
     public Resource toOpenTelemetryResource() {
         ResourceBuilder resourceBuilder = Resource.builder();
         this.getServiceName().ifPresent(serviceName ->

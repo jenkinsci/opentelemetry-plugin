@@ -28,7 +28,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,7 +74,7 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
     }
 
     @Override
-    protected void authenticated2(@Nonnull UserDetails details) {
+    protected void authenticated2(@NonNull UserDetails details) {
         super.authenticated2(details);
     }
 

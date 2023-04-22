@@ -9,7 +9,7 @@ import io.jenkins.plugins.opentelemetry.job.RunFlowNodeIdentifier;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.Iterator;

@@ -7,11 +7,11 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.Charset;
 
 public class LogsQueryResult {
-    public LogsQueryResult(@Nonnull ByteBuffer byteBuffer, @Nonnull LogsViewHeader logsViewHeader, @Nonnull Charset charset, boolean completed) {
+    public LogsQueryResult(@NonNull ByteBuffer byteBuffer, @NonNull LogsViewHeader logsViewHeader, @NonNull Charset charset, boolean completed) {
         this.byteBuffer = byteBuffer;
         this.logsViewHeader = logsViewHeader;
         this.charset = charset;
@@ -23,22 +23,22 @@ public class LogsQueryResult {
     final Charset charset;
     final boolean complete;
 
-    @Nonnull
+    @NonNull
     public ByteBuffer getByteBuffer() {
         return byteBuffer;
     }
 
-    @Nonnull
+    @NonNull
     public Charset getCharset() {
         return charset;
     }
 
-    @Nonnull
+    @NonNull
     public boolean isComplete() {
         return complete;
     }
 
-    @Nonnull
+    @NonNull
     public LogsViewHeader getLogsViewHeader() {
         return logsViewHeader;
     }

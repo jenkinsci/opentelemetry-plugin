@@ -2,7 +2,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import hudson.model.BuildListener;
 import hudson.model.TaskListener;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -17,7 +17,7 @@ public class MergedBuildListener implements BuildListener {
         this.secondary = secondary;
     }
 
-    @NotNull
+    @NonNull
     @Override
     public PrintStream getLogger() {
         try {
@@ -27,4 +27,3 @@ public class MergedBuildListener implements BuildListener {
         }
     }
 }
-

@@ -18,7 +18,7 @@ import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -59,7 +59,7 @@ public class DiskUsageMonitoringInitializer implements OtelComponent {
         return calculateDiskUsageInBytes(quickDiskUsagePlugin);
     }
 
-    private long calculateDiskUsageInBytes(@Nonnull QuickDiskUsagePlugin diskUsagePlugin) {
+    private long calculateDiskUsageInBytes(@NonNull QuickDiskUsagePlugin diskUsagePlugin) {
         LOGGER.log(Level.FINE, "calculateDiskUsageInBytes");
         try {
             DiskItem disk = diskUsagePlugin.getDirectoriesUsages()

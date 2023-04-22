@@ -17,15 +17,15 @@ import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URISyntaxException;
 import java.util.logging.Logger;
 
 public abstract class AbstractGitStepHandler implements StepHandler {
     private final static Logger LOGGER = Logger.getLogger(AbstractGitStepHandler.class.getName());
 
-    public String searchGitUserName(@Nullable String credentialsId, @Nonnull WorkflowRun run) {
+    public String searchGitUserName(@Nullable String credentialsId, @NonNull WorkflowRun run) {
         if (credentialsId == null) {
             return null;
         }
@@ -47,8 +47,8 @@ public abstract class AbstractGitStepHandler implements StepHandler {
      * https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols
      */
     @VisibleForTesting
-    @Nonnull
-    public SpanBuilder createSpanBuilder(@Nonnull String gitUrl, @Nullable String gitBranch, @Nullable String credentialsId, @Nonnull String stepFunctionName, @Nonnull Tracer tracer, @Nonnull WorkflowRun run) {
+    @NonNull
+    public SpanBuilder createSpanBuilder(@NonNull String gitUrl, @Nullable String gitBranch, @Nullable String credentialsId, @NonNull String stepFunctionName, @NonNull Tracer tracer, @NonNull WorkflowRun run) {
         String gitUserName = searchGitUserName(credentialsId, run);
         return createSpanBuilderFromGitDetails(gitUrl, gitBranch, gitUserName, stepFunctionName, tracer);
     }
@@ -57,7 +57,7 @@ public abstract class AbstractGitStepHandler implements StepHandler {
      * Visible for testing. User {@link #createSpanBuilder(String, String, String, String, Tracer, WorkflowRun)} instead of this method
      */
     @VisibleForTesting
-    protected SpanBuilder createSpanBuilderFromGitDetails(@Nullable String gitUrl, @Nullable String gitBranch, @Nullable String gitUserName, @Nonnull String stepFunctionName, @Nonnull Tracer tracer) {
+    protected SpanBuilder createSpanBuilderFromGitDetails(@Nullable String gitUrl, @Nullable String gitBranch, @Nullable String gitUserName, @NonNull String stepFunctionName, @NonNull Tracer tracer) {
         URIish gitUri;
         try {
             gitUri = new URIish(gitUrl);
@@ -144,8 +144,8 @@ public abstract class AbstractGitStepHandler implements StepHandler {
      * @param gitUri to sanitize
      * @return sanitized url
      */
-    @Nonnull
-    protected String sanitizeUrl(@Nonnull URIish gitUri) {
+    @NonNull
+    protected String sanitizeUrl(@NonNull URIish gitUri) {
         String normalizedUrl = gitUri.getScheme() + "://";
         if (gitUri.getHost() != null) {
             normalizedUrl += gitUri.getHost();
