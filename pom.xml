@@ -27,7 +27,7 @@
         -->
         <opentelemetry-alpha.version>1.25.0-alpha</opentelemetry-alpha.version>
         <opentelemetry-instrumentation-alpha.version>1.24.0-alpha</opentelemetry-instrumentation-alpha.version>
-        <opentelemetry-contrib.version>1.24.0-alpha</opentelemetry-contrib.version>
+        <opentelemetry-contrib.version>1.25.1-alpha</opentelemetry-contrib.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.6.2</elasticstack.version>
         <error-prone.version>2.18.0</error-prone.version>
