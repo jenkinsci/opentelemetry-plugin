@@ -299,7 +299,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ant</artifactId>
-            <version>1.11</version>
+            <version>487.vd79d090d4ea_e</version>
             <scope>test</scope>
         </dependency>
         <dependency>
