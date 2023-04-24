@@ -22,8 +22,8 @@ import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorageFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,7 +55,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OtelCompo
 
     @Nullable
     @Override
-    public LogStorage forBuild(@Nonnull final FlowExecutionOwner owner) {
+    public LogStorage forBuild(@NonNull final FlowExecutionOwner owner) {
         if (!getOpenTelemetrySdkProvider().isOtelLogsEnabled()) {
             logger.log(Level.FINE, () -> "OTel Logs disabled");
             return null;

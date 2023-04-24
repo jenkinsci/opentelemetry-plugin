@@ -16,7 +16,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Objects;
 
@@ -26,13 +26,13 @@ import java.util.Objects;
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class  DurableTaskHandler implements StepHandler {
     @Override
-    public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
+    public boolean canCreateSpanBuilder(@NonNull FlowNode flowNode, @NonNull WorkflowRun run) {
         return flowNode instanceof StepAtomNode && ((StepAtomNode) flowNode).getDescriptor() instanceof DurableTaskStep.DurableTaskStepDescriptor;
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer) {
+    public SpanBuilder createSpanBuilder(@NonNull FlowNode node, @NonNull WorkflowRun run, @NonNull Tracer tracer) {
         final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
         final String displayFunctionName = node.getDisplayFunctionName();
         final String label = Objects.toString(arguments.get("label"), null);

@@ -28,7 +28,7 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -101,24 +101,24 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Ot
      * @return {@code null} if no {@link Span} has been created for the {@link AbstractBuild} of the given {@link BuildStep}
      */
     @MustBeClosed
-    @Nonnull
-    protected Scope setupContext(AbstractBuild build, @Nonnull BuildStep buildStep) {
+    @NonNull
+    protected Scope setupContext(AbstractBuild build, @NonNull BuildStep buildStep) {
         build = verifyNotNull(build, "%s No build found for step %s", build, buildStep);
         Span span = this.otelTraceService.getSpan(build, buildStep);
         return span.makeCurrent();
     }
 
     @Inject
-    public final void setOpenTelemetryTracerService(@Nonnull OtelTraceService otelTraceService) {
+    public final void setOpenTelemetryTracerService(@NonNull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
     }
 
-    @Nonnull
+    @NonNull
     public OtelTraceService getTracerService() {
         return otelTraceService;
     }
 
-    @Nonnull
+    @NonNull
     public Tracer getTracer() {
         return tracer;
     }

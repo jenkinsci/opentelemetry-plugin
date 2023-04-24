@@ -1,6 +1,6 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -9,7 +9,7 @@ public class MergedPrintStream extends PrintStream {
     final PrintStream primary;
     final PrintStream secondary;
 
-    public MergedPrintStream(@NotNull PrintStream primary, @NotNull PrintStream secondary) throws IOException {
+    public MergedPrintStream(@NonNull PrintStream primary, @NonNull PrintStream secondary) throws IOException {
         super(primary, false, "UTF-8");
         this.primary = primary;
         this.secondary = secondary;
@@ -40,7 +40,7 @@ public class MergedPrintStream extends PrintStream {
     }
 
     @Override
-    public void write(@NotNull byte[] buf, int off, int len) {
+    public void write(@NonNull byte[] buf, int off, int len) {
         super.write(buf, off, len);
         secondary.write(buf, off, len);
     }

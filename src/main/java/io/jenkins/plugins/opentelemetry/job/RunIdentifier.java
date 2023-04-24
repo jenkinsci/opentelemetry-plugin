@@ -9,8 +9,8 @@ import com.google.common.collect.ComparisonChain;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
 
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.Immutable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import net.jcip.annotations.Immutable;
 import java.util.Objects;
 
 @Immutable
@@ -18,15 +18,15 @@ public class RunIdentifier implements Comparable<RunIdentifier> {
     final String jobName;
     final int runNumber;
 
-    static RunIdentifier fromRun(@Nonnull Run run) {
+    static RunIdentifier fromRun(@NonNull Run run) {
         return new RunIdentifier(run.getParent().getFullName(), run.getNumber());
     }
 
-    static RunIdentifier fromBuild(@Nonnull AbstractBuild build) {
+    static RunIdentifier fromBuild(@NonNull AbstractBuild build) {
         return new RunIdentifier(build.getParent().getFullName(), build.getNumber());
     }
 
-    public RunIdentifier(@Nonnull String jobName, @Nonnull int runNumber) {
+    public RunIdentifier(@NonNull String jobName, @NonNull int runNumber) {
         this.jobName = jobName;
         this.runNumber = runNumber;
     }
@@ -34,7 +34,7 @@ public class RunIdentifier implements Comparable<RunIdentifier> {
     /**
      * String identifier for this run
      */
-    @Nonnull
+    @NonNull
     public String getId() {
         return jobName + "#" + runNumber;
     }

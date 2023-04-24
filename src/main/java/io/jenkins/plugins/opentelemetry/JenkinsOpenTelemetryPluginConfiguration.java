@@ -48,11 +48,11 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.annotation.PreDestroy;
-import javax.annotation.concurrent.Immutable;
+import net.jcip.annotations.Immutable;
 import javax.inject.Inject;
 import java.io.Closeable;
 import java.io.IOException;
@@ -177,7 +177,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
 
-    @Nonnull
+    @NonNull
     public OpenTelemetryConfiguration toOpenTelemetryConfiguration() {
         Properties properties = new Properties();
         try {
@@ -263,7 +263,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         LOGGER.log(Level.FINE, () -> "setEndpoint(" + endpoint + ")");
     }
 
-    @Nonnull
+    @NonNull
     public OtlpAuthentication getAuthentication() {
         return this.authentication == null ? new NoAuthentication() : this.authentication;
     }
@@ -288,7 +288,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.observabilityBackends = observabilityBackends == null ? Collections.emptyList() : observabilityBackends;
     }
 
-    @Nonnull
+    @NonNull
     public List<ObservabilityBackend> getObservabilityBackends() {
         if (observabilityBackends == null) {
             observabilityBackends = new ArrayList<>();
@@ -363,7 +363,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     }
 
-    @Nonnull
+    @NonNull
     public Map<String, String> getOtelConfigurationAsEnvironmentVariables() {
         if (this.endpoint == null) {
             return Collections.emptyMap();
@@ -390,19 +390,19 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private JenkinsLocationConfiguration jenkinsLocationConfiguration;
 
     @Inject
-    public void setJenkinsLocationConfiguration(@Nonnull JenkinsLocationConfiguration jenkinsLocationConfiguration) {
+    public void setJenkinsLocationConfiguration(@NonNull JenkinsLocationConfiguration jenkinsLocationConfiguration) {
         this.jenkinsLocationConfiguration = jenkinsLocationConfiguration;
     }
 
     /**
      * For visualisation in config.jelly
      */
-    @Nonnull
+    @NonNull
     public String getVisualisationObservabilityBackendsString() {
         return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(d -> d.getDisplayName()).collect(Collectors.joining(", "));
     }
 
-    @Nonnull
+    @NonNull
     public ConcurrentMap<String, StepPlugin> getLoadedStepsPlugins() {
         return loadedStepsPlugins;
     }
@@ -412,7 +412,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nullable
-    private Descriptor<? extends Describable> getStepDescriptor(@Nonnull FlowNode node, @Nullable Descriptor<? extends Describable> descriptor) {
+    private Descriptor<? extends Describable> getStepDescriptor(@NonNull FlowNode node, @Nullable Descriptor<? extends Describable> descriptor) {
         // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
         if (descriptor instanceof CoreStep.DescriptorImpl) {
             Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
@@ -427,27 +427,27 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nullable
-    private Descriptor<? extends Describable> getBuildStepDescriptor(@Nonnull BuildStep buildStep) {
+    private Descriptor<? extends Describable> getBuildStepDescriptor(@NonNull BuildStep buildStep) {
         return Jenkins.get().getDescriptor((Class<? extends Describable>) buildStep.getClass());
     }
 
-    @Nonnull
-    public StepPlugin findStepPluginOrDefault(@Nonnull String buildStepName, @Nonnull BuildStep buildStep) {
+    @NonNull
+    public StepPlugin findStepPluginOrDefault(@NonNull String buildStepName, @NonNull BuildStep buildStep) {
         return findStepPluginOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
     }
 
-    @Nonnull
-    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepAtomNode node) {
+    @NonNull
+    public StepPlugin findStepPluginOrDefault(@NonNull String stepName, @NonNull StepAtomNode node) {
         return findStepPluginOrDefault(stepName, getStepDescriptor(node, node.getDescriptor()));
     }
 
-    @Nonnull
-    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nonnull StepStartNode node) {
+    @NonNull
+    public StepPlugin findStepPluginOrDefault(@NonNull String stepName, @NonNull StepStartNode node) {
         return findStepPluginOrDefault(stepName, getStepDescriptor(node, node.getDescriptor()));
     }
 
-    @Nonnull
-    public StepPlugin findStepPluginOrDefault(@Nonnull String stepName, @Nullable Descriptor<? extends Describable> descriptor) {
+    @NonNull
+    public StepPlugin findStepPluginOrDefault(@NonNull String stepName, @Nullable Descriptor<? extends Describable> descriptor) {
         StepPlugin data = loadedStepsPlugins.get(stepName);
         if (data != null) {
             LOGGER.log(Level.FINEST, " found the plugin for the step '" + stepName + "' - " + data);
@@ -466,13 +466,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return data;
     }
 
-    @Nonnull
-    public String findSymbolOrDefault(@Nonnull String buildStepName, @Nonnull BuildStep buildStep) {
+    @NonNull
+    public String findSymbolOrDefault(@NonNull String buildStepName, @NonNull BuildStep buildStep) {
         return findSymbolOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
     }
 
-    @Nonnull
-    public String findSymbolOrDefault(@Nonnull String buildStepName, @Nullable Descriptor<? extends Describable> descriptor) {
+    @NonNull
+    public String findSymbolOrDefault(@NonNull String buildStepName, @Nullable Descriptor<? extends Describable> descriptor) {
         String value = buildStepName;
         if (descriptor != null) {
             Set<String> values = SymbolLookup.getSymbolValue(descriptor);
@@ -507,7 +507,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     }
 
-    @Nonnull
+    @NonNull
     public Resource getResource() {
         if (this.openTelemetrySdkProvider == null) {
             return Resource.empty();
@@ -520,14 +520,14 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * Used in io/jenkins/plugins/opentelemetry/JenkinsOpenTelemetryPluginConfiguration/config.jelly because
      * cyrille doesn't know how to format the content with linebreaks in a html teaxtarea
      */
-    @Nonnull
+    @NonNull
     public String getResourceAsText() {
         return this.getResource().getAttributes().asMap().entrySet().stream().
             map(e -> e.getKey() + "=" + e.getValue()).
             collect(Collectors.joining("\r\n"));
     }
 
-    @Nonnull
+    @NonNull
     public ConfigProperties getConfigProperties() {
         if (this.openTelemetrySdkProvider == null) {
             return ConfigPropertiesUtils.emptyConfig();
@@ -540,14 +540,14 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * Used in io/jenkins/plugins/opentelemetry/JenkinsOpenTelemetryPluginConfiguration/config.jelly because
      * cyrille doesn't know how to format the content with linebreaks in a html teaxtarea
      */
-    @Nonnull
+    @NonNull
     public String getNoteworthyConfigPropertiesAsText() {
         return OtelUtils.noteworthyConfigProperties(getConfigProperties()).entrySet().stream().
             map(e -> e.getKey() + "=" + e.getValue()).
             collect(Collectors.joining("\r\n"));
     }
 
-    @Nonnull
+    @NonNull
     public LogStorageRetriever getLogStorageRetriever() {
         if (logStorageRetriever == null) {
             throw new IllegalStateException("logStorageRetriever NOT loaded");
@@ -555,7 +555,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return logStorageRetriever;
     }
 
-    @Nonnull
+    @NonNull
     @MustBeClosed
     @SuppressWarnings("MustBeClosedChecker") // false positive invoking backend.getLogStorageRetriever(templateBindingsProvider)
     private LogStorageRetriever resolveLogStorageRetriever() {

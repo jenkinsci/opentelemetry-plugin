@@ -11,7 +11,7 @@ import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.logging.Logger;
 

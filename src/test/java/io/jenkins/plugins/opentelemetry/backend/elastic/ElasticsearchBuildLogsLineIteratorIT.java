@@ -21,8 +21,8 @@ import org.elasticsearch.client.RestClient;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -68,7 +68,7 @@ public class ElasticsearchBuildLogsLineIteratorIT {
         System.out.println("Queries count: " + elasticsearchBuildLogsLineIterator.queryCounter);
     }
 
-    @Nonnull
+    @NonNull
     private ElasticsearchBuildLogsLineIterator getElasticsearchLogsSearchIterator() throws IOException {
         InputStream envAsStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
         Assert.assertNotNull(".env file not found in classpath", envAsStream);

@@ -9,7 +9,7 @@ import hudson.model.InvisibleAction;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.opentelemetry.api.common.AttributeKey;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -24,7 +24,7 @@ public class OpenTelemetryAttributesAction extends InvisibleAction {
 
     private transient Map<AttributeKey<?>, Object> attributes;
 
-    @Nonnull
+    @NonNull
     public Map<AttributeKey<?>, Object> getAttributes() {
         if (attributes == null) {
             attributes = new HashMap<>();

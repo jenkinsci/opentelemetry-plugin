@@ -14,7 +14,7 @@ import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporterBuilder;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
 import jenkins.model.Jenkins;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 
 public abstract class OtlpAuthentication implements Describable<OtlpAuthentication>, ExtensionPoint {
@@ -25,7 +25,7 @@ public abstract class OtlpAuthentication implements Describable<OtlpAuthenticati
      * typically appending credentials to the {@code OTEL_EXPORTER_OTLP_HEADERS} variable
      * @param environmentVariables the builder to configure
      */
-    public abstract void enrichOtelEnvironmentVariables(@Nonnull Map<String, String> environmentVariables);
+    public abstract void enrichOtelEnvironmentVariables(@NonNull Map<String, String> environmentVariables);
 
     @Override
     public Descriptor<OtlpAuthentication> getDescriptor() {

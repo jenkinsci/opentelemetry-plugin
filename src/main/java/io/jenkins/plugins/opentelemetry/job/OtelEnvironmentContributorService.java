@@ -11,7 +11,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapSetter;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.util.Map;
 import java.util.logging.Level;
@@ -30,7 +30,7 @@ public class OtelEnvironmentContributorService {
 
     private JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration;
 
-    public void addEnvironmentVariables(@Nonnull Run run, @Nonnull EnvVars envs, @Nonnull Span span) {
+    public void addEnvironmentVariables(@NonNull Run run, @NonNull EnvVars envs, @NonNull Span span) {
         String spanId = span.getSpanContext().getSpanId();
         String traceId = span.getSpanContext().getTraceId();
         try (Scope ignored = span.makeCurrent()) {

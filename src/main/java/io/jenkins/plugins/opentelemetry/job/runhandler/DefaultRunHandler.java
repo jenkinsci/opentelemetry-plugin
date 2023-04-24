@@ -15,7 +15,7 @@ import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -33,13 +33,13 @@ public class DefaultRunHandler implements RunHandler {
         "-" + ChangeRequestCheckoutStrategy.MERGE.name().toLowerCase(Locale.ENGLISH)));
 
     @Override
-    public boolean canCreateSpanBuilder(@Nonnull Run run) {
+    public boolean canCreateSpanBuilder(@NonNull Run run) {
         return true;
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull Run run, @Nonnull Tracer tracer) {
+    public SpanBuilder createSpanBuilder(@NonNull Run run, @NonNull Tracer tracer) {
         SCMHead head = SCMHead.HeadByItem.findHead(run.getParent());
         String spanName;
         if (head instanceof ChangeRequestSCMHead) {
@@ -53,8 +53,8 @@ public class DefaultRunHandler implements RunHandler {
     }
 
     @VisibleForTesting
-    @Nonnull
-    protected String getChangeRequestRootSpanName(@Nonnull String jobFullName) {
+    @NonNull
+    protected String getChangeRequestRootSpanName(@NonNull String jobFullName) {
         // org.jenkinsci.plugins.github_branch_source.PullRequestGHEventSubscriber
         // com.cloudbees.jenkins.plugins.bitbucket.BitbucketSCMSource
         // jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy

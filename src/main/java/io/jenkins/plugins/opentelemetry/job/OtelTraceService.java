@@ -29,8 +29,8 @@ import org.jenkinsci.plugins.workflow.graph.AtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.Immutable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import net.jcip.annotations.Immutable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -70,8 +70,8 @@ public class OtelTraceService implements OtelComponent {
         freestyleSpansByRun = new ConcurrentHashMap();
     }
 
-    @Nonnull
-    public Span getSpan(@Nonnull Run run) {
+    @NonNull
+    public Span getSpan(@NonNull Run run) {
         return getSpan(run, true);
     }
 
@@ -86,8 +86,8 @@ public class OtelTraceService implements OtelComponent {
      *      * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
      * @throws VerifyException if there are ongoing step spans and {@code verifyIfRemainingSteps} is set to {@code true}
      */
-    @Nonnull
-    public Span getSpan(@Nonnull Run run, boolean verifyIfRemainingSteps) throws VerifyException {
+    @NonNull
+    public Span getSpan(@NonNull Run run, boolean verifyIfRemainingSteps) throws VerifyException {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
 
@@ -103,15 +103,15 @@ public class OtelTraceService implements OtelComponent {
         return span;
     }
 
-    @Nonnull
-    public Span getPipelineRootSpan(@Nonnull Run run) {
+    @NonNull
+    public Span getPipelineRootSpan(@NonNull Run run) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
         return runSpans.runPhasesSpans.stream().findFirst().orElse(Span.getInvalid()); // absent when Jenkins restarts during build
     }
 
-    @Nonnull
-    public Span getSpan(@Nonnull Run run, FlowNode flowNode) {
+    @NonNull
+    public Span getSpan(@NonNull Run run, FlowNode flowNode) {
 
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
@@ -136,8 +136,8 @@ public class OtelTraceService implements OtelComponent {
         return span;
     }
 
-    @Nonnull
-    public Span getSpan(@Nonnull AbstractBuild build, @Nonnull BuildStep buildStep) {
+    @NonNull
+    public Span getSpan(@NonNull AbstractBuild build, @NonNull BuildStep buildStep) {
 
         RunIdentifier runIdentifier = RunIdentifier.fromBuild(build);
         FreestyleRunSpans freestyleRunSpans = freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans()); // absent when Jenkins restarts during build
@@ -196,8 +196,8 @@ public class OtelTraceService implements OtelComponent {
      * @param flowNode
      * @return list of enclosing flow nodes starting with the passed flow nodes
      */
-    @Nonnull
-    private Iterable<FlowNode> getAncestors(@Nonnull final FlowNode flowNode) {
+    @NonNull
+    private Iterable<FlowNode> getAncestors(@NonNull final FlowNode flowNode) {
         // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
         LOGGER.log(Level.FINEST, () -> "> getAncestorsV2([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "'])");
         List<FlowNode> ancestors = new ArrayList<>();
@@ -214,7 +214,7 @@ public class OtelTraceService implements OtelComponent {
         return ancestors;
     }
 
-    public void removePipelineStepSpan(@Nonnull Run run, @Nonnull FlowNode flowNode, @Nonnull Span span) {
+    public void removePipelineStepSpan(@NonNull Run run, @NonNull FlowNode flowNode, @NonNull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = this.spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
 
@@ -242,7 +242,7 @@ public class OtelTraceService implements OtelComponent {
 
     }
 
-    public void removeJobPhaseSpan(@Nonnull Run run, @Nonnull Span span) {
+    public void removeJobPhaseSpan(@NonNull Run run, @NonNull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = this.spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
 
@@ -263,7 +263,7 @@ public class OtelTraceService implements OtelComponent {
         throw new VerifyException(run.getFullDisplayName() + " - Failure to remove span " + span + " - " + runSpans);
     }
 
-    public void removeBuildStepSpan(@Nonnull AbstractBuild build, @Nonnull BuildStep buildStep, @Nonnull Span span) {
+    public void removeBuildStepSpan(@NonNull AbstractBuild build, @NonNull BuildStep buildStep, @NonNull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromBuild(build);
         FreestyleRunSpans freestyleRunSpans = this.freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans()); // absent when Jenkins restarts during build
 
@@ -282,7 +282,7 @@ public class OtelTraceService implements OtelComponent {
         throw new VerifyException(build.getFullDisplayName() + " - Failure to remove span " + span + " - " + freestyleRunSpans);
     }
 
-    public void purgeRun(@Nonnull Run run) {
+    public void purgeRun(@NonNull Run run) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = this.spansByRun.remove(runIdentifier);
         if (runSpans == null) {
@@ -294,7 +294,7 @@ public class OtelTraceService implements OtelComponent {
         }
     }
 
-    public void putSpan(@Nonnull AbstractBuild build, @Nonnull Span span) {
+    public void putSpan(@NonNull AbstractBuild build, @NonNull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromBuild(build);
         FreestyleRunSpans runSpans = freestyleSpansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new FreestyleRunSpans());
         runSpans.runPhasesSpans.add(span);
@@ -302,7 +302,7 @@ public class OtelTraceService implements OtelComponent {
         LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + "," + span + ") - new stack: " + runSpans);
     }
 
-    public void putSpan(@Nonnull Run run, @Nonnull Span span) {
+    public void putSpan(@NonNull Run run, @NonNull Span span) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans());
         runSpans.runPhasesSpans.add(span);
@@ -310,7 +310,7 @@ public class OtelTraceService implements OtelComponent {
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") - new stack: " + runSpans);
     }
 
-    public void putSpan(@Nonnull Run run, @Nonnull Span span, @Nonnull FlowNode flowNode) {
+    public void putSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans());
         runSpans.pipelineStepSpansByFlowNodeId.put(flowNode.getId(), new PipelineSpanContext(span, flowNode));
@@ -322,18 +322,18 @@ public class OtelTraceService implements OtelComponent {
      * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
      * @see #setupContext(Run, boolean) 
      */
-    @Nonnull
+    @NonNull
     @MustBeClosed
-    public Scope setupContext(@Nonnull Run run) {
+    public Scope setupContext(@NonNull Run run) {
         return setupContext(run, true);
     }
 
     /**
      * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
      */
-    @Nonnull
+    @NonNull
     @MustBeClosed
-    public Scope setupContext(@Nonnull Run run, boolean verifyIfRemainingSteps) {
+    public Scope setupContext(@NonNull Run run, boolean verifyIfRemainingSteps) {
         Span span = getSpan(run, verifyIfRemainingSteps);
         return span.makeCurrent();
     }
@@ -392,7 +392,7 @@ public class OtelTraceService implements OtelComponent {
         final transient Span span;
         final String flowNodeId;
 
-        public FreestyleSpanContext(@Nonnull Span span, @Nonnull BuildStep buildStep) {
+        public FreestyleSpanContext(@NonNull Span span, @NonNull BuildStep buildStep) {
             this.span = span;
             this.flowNodeId = buildStep.getClass().getSimpleName();
         }
@@ -400,7 +400,7 @@ public class OtelTraceService implements OtelComponent {
         /**
          * FIXME handle cases where the data structure has been deserialized and {@link Span} is null.
          */
-        @Nonnull
+        @NonNull
         public Span getSpan() {
             return span;
         }
@@ -432,7 +432,7 @@ public class OtelTraceService implements OtelComponent {
         final String flowNodeId;
         final List<String> parentFlowNodeIds;
 
-        public PipelineSpanContext(@Nonnull Span span, @Nonnull FlowNode flowNode) {
+        public PipelineSpanContext(@NonNull Span span, @NonNull FlowNode flowNode) {
             this.span = span;
             this.flowNodeId = flowNode.getId();
             List<FlowNode> parents = flowNode.getParents();
@@ -447,7 +447,7 @@ public class OtelTraceService implements OtelComponent {
          *
          * @see FlowNode#getParents()
          */
-        @Nonnull
+        @NonNull
         public List<String> getParentFlowNodeIds() {
             return parentFlowNodeIds;
         }
@@ -455,7 +455,7 @@ public class OtelTraceService implements OtelComponent {
         /**
          * FIXME handle cases where the data structure has been deserialized and {@link Span} is null.
          */
-        @Nonnull
+        @NonNull
         public Span getSpan() {
             return span;
         }

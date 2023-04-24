@@ -46,8 +46,8 @@ import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -320,8 +320,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @MustBeClosed
-    @Nonnull
-    protected Scope endPipelinePhaseSpan(@Nonnull Run run) {
+    @NonNull
+    protected Scope endPipelinePhaseSpan(@NonNull Run run) {
         Span pipelinePhaseSpan = verifyNotNull(Span.current(), "No pipelinePhaseSpan found in context");
         pipelinePhaseSpan.end();
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - end " + OtelUtils.toDebugString(pipelinePhaseSpan));
@@ -398,7 +398,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         }
     }
 
-    @Nonnull
+    @NonNull
     protected List<RunHandler> getRunHandlers() {
         return Preconditions.checkNotNull(this.runHandlers);
     }

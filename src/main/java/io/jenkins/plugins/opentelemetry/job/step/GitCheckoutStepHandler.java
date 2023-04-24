@@ -26,7 +26,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.BranchJobProperty;
 import org.jenkinsci.plugins.workflow.steps.scm.GenericSCMStep;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -40,7 +40,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
     private final static Logger LOGGER = Logger.getLogger(GitCheckoutStepHandler.class.getName());
 
     @Override
-    public boolean canCreateSpanBuilder(@Nonnull FlowNode flowNode, @Nonnull WorkflowRun run) {
+    public boolean canCreateSpanBuilder(@NonNull FlowNode flowNode, @NonNull WorkflowRun run) {
         if (!(flowNode instanceof StepAtomNode)) {
             return false;
         }
@@ -82,9 +82,9 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
         return false;
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@Nonnull FlowNode node, @Nonnull WorkflowRun run, @Nonnull Tracer tracer) {
+    public SpanBuilder createSpanBuilder(@NonNull FlowNode node, @NonNull WorkflowRun run, @NonNull Tracer tracer) {
         final Map<String, ?> rootArguments = ArgumentsAction.getFilteredArguments(node);
         final String stepFunctionName = node.getDisplayFunctionName();
         LOGGER.log(Level.FINE, () -> stepFunctionName + " - begin " + rootArguments);
@@ -162,7 +162,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
         }
     }
 
-    private SpanBuilder addCloneAttributes(@Nonnull SpanBuilder spanBuilder, @Nonnull boolean shallow, @Nonnull int depth) {
+    private SpanBuilder addCloneAttributes(@NonNull SpanBuilder spanBuilder, @NonNull boolean shallow, @NonNull int depth) {
         return spanBuilder
             .setAttribute(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH, (long) depth)
             .setAttribute(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW, shallow);

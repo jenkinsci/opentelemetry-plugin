@@ -9,7 +9,7 @@ import hudson.Extension;
 import hudson.model.Cause;
 import jenkins.YesNoMaybe;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class UpstreamCauseHandler implements CauseHandler {
@@ -20,12 +20,12 @@ public class UpstreamCauseHandler implements CauseHandler {
     }
 
     @Override
-    public boolean isSupported(@Nonnull Cause cause) {
+    public boolean isSupported(@NonNull Cause cause) {
         return (cause instanceof Cause.UpstreamCause);
     }
 
     @Override
-    public String getStructuredDescription(@Nonnull Cause cause) {
+    public String getStructuredDescription(@NonNull Cause cause) {
         Cause.UpstreamCause upstreamCause = (Cause.UpstreamCause) cause;
         return upstreamCause.getClass().getSimpleName() + ":" + upstreamCause.getUpstreamProject() + "#" + upstreamCause.getUpstreamBuild();
     }

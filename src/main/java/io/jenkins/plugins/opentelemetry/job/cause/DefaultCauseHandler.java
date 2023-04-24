@@ -9,13 +9,13 @@ import hudson.Extension;
 import hudson.model.Cause;
 import jenkins.YesNoMaybe;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class DefaultCauseHandler implements CauseHandler {
 
     @Override
-    public boolean isSupported(@Nonnull Cause cause) {
+    public boolean isSupported(@NonNull Cause cause) {
         return true;
     }
 

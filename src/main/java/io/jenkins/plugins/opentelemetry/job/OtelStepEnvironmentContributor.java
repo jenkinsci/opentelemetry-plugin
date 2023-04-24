@@ -14,7 +14,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -33,7 +33,7 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
     private OtelTraceService otelTraceService;
 
     @Override
-    public void buildEnvironmentFor(@Nonnull StepContext stepContext, @Nonnull EnvVars envs, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+    public void buildEnvironmentFor(@NonNull StepContext stepContext, @NonNull EnvVars envs, @NonNull TaskListener listener) throws IOException, InterruptedException {
         super.buildEnvironmentFor(stepContext, envs, listener);
         Run run = stepContext.get(Run.class);
         FlowNode flowNode = stepContext.get(FlowNode.class);

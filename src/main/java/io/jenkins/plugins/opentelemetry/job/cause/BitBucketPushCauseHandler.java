@@ -10,7 +10,7 @@ import hudson.Extension;
 import hudson.model.Cause;
 import jenkins.YesNoMaybe;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class BitBucketPushCauseHandler implements CauseHandler {
@@ -21,7 +21,7 @@ public class BitBucketPushCauseHandler implements CauseHandler {
     }
 
     @Override
-    public boolean isSupported(@Nonnull Cause cause) {
+    public boolean isSupported(@NonNull Cause cause) {
         return isBitBucketPushCause(cause);
     }
 
@@ -30,7 +30,7 @@ public class BitBucketPushCauseHandler implements CauseHandler {
     }
 
     @Override
-    public String getStructuredDescription(@Nonnull Cause cause) {
+    public String getStructuredDescription(@NonNull Cause cause) {
         // https://github.com/jenkinsci/bitbucket-plugin/blob/master/src/main/java/com/cloudbees/jenkins/plugins/BitBucketPushCause.java#L33
         String id = cause.getShortDescription().replaceAll(".* by ", "");
         return cause.getClass().getSimpleName() + ":" + id;

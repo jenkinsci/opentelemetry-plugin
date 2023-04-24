@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.60</version>
+        <version>4.61</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -44,13 +44,9 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.361.x</artifactId>
-                <version>1887.vda_d0ddb_c15c4</version>
+                <version>2025.v816d28f1e04f</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <dependency>
-                <groupId>org.jenkins-ci.plugins</groupId>
-                <artifactId>apache-httpcomponents-client-4-api</artifactId>
             </dependency>
             <dependency>
                 <groupId>io.opentelemetry</groupId>
@@ -72,17 +68,6 @@
                 <version>0.16.0</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <!-- fix RequireUpperBoundDeps caused when using the maven plugin which it's a test dependency -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.12.0</version>
-            </dependency>
-            <dependency>
-                <!-- Jenkins core ships this till 2.330, can probably remove this after the baseline is above that  -->
-                <groupId>com.sun.activation</groupId>
-                <artifactId>jakarta.activation</artifactId>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -186,21 +171,11 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>okhttp-api</artifactId>
-            <version>4.9.3-105.vb96869f8ac3a</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.errorprone</groupId>
             <artifactId>error_prone_annotations</artifactId>
             <version>${error-prone.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>3.0.2</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -239,7 +214,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>github-branch-source</artifactId>
-            <version>2.10.2</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>
@@ -276,7 +250,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>job-dsl</artifactId>
-            <version>1.78.3</version>
+            <version>1.82</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -287,26 +261,12 @@
         <dependency>
             <groupId>com.coravy.hudson.plugins.github</groupId>
             <artifactId>github</artifactId>
-            <version>1.34.3</version>
             <optional>true</optional>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jenkins-ci.plugins</groupId>
-                    <artifactId>github-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>gitlab-plugin</artifactId>
-            <version>1.5.29</version>
             <optional>true</optional>
-            <exclusions>
-                <exclusion>
-                    <groupId>jakarta.xml.bind</groupId>
-                    <artifactId>jakarta.xml.bind-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -323,6 +283,11 @@
                     <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-4-api -->
                     <groupId>org.apache.httpcomponents</groupId>
                     <artifactId>httpasyncclient</artifactId>
+                </exclusion>
+                <!-- Jenkins does not use JSR 305 annotations -->
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -442,7 +407,6 @@
                 <groupId>org.jenkins-ci.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
                 <configuration>
-                    <minimumJavaVersion>11</minimumJavaVersion>
                     <loggers>
                         <io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>INFO</io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>
                         <io.jenkins.plugins.opentelemetry.job.log>INFO</io.jenkins.plugins.opentelemetry.job.log>
@@ -463,7 +427,7 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
+        <connection>scm:git:https://github.com/${gitHubRepo}.git</connection>
         <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
         <url>https://github.com/${gitHubRepo}</url>
         <tag>opentelemetry-2.12.0-rc1</tag>

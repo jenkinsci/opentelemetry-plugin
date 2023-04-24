@@ -13,7 +13,7 @@ import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -21,7 +21,7 @@ import java.util.Map;
 
 public class CustomLogStorageRetriever implements LogStorageRetriever {
 
-    @Nonnull
+    @NonNull
     private final Template buildLogsVisualizationUrlTemplate;
 
     private final TemplateBindingsProvider templateBindingsProvider;
@@ -31,20 +31,20 @@ public class CustomLogStorageRetriever implements LogStorageRetriever {
         this.templateBindingsProvider = templateBindingsProvider;
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public LogsQueryResult overallLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete) throws IOException {
+    public LogsQueryResult overallLog(@NonNull String jobFullName, @NonNull int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete) throws IOException {
         return getLogsQueryResult(traceId, spanId);
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public LogsQueryResult stepLog(@Nonnull String jobFullName, @Nonnull int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete) throws IOException {
+    public LogsQueryResult stepLog(@NonNull String jobFullName, @NonNull int runNumber, @NonNull String flowNodeId, @NonNull String traceId, @NonNull String spanId, boolean complete) throws IOException {
         return getLogsQueryResult(traceId, spanId);
     }
 
-    @Nonnull
-    private LogsQueryResult getLogsQueryResult(@Nonnull String traceId, @Nonnull String spanId) throws IOException {
+    @NonNull
+    private LogsQueryResult getLogsQueryResult(@NonNull String traceId, @NonNull String spanId) throws IOException {
 
         Map<String, String> localBindings = new HashMap<>();
         localBindings.put("traceId", traceId);
