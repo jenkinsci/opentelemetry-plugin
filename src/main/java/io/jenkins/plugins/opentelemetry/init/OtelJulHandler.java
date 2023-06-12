@@ -84,7 +84,7 @@ public class OtelJulHandler extends Handler implements OtelComponent {
 
             // time
             Instant timestamp = logRecord.getInstant();
-            logBuilder = logBuilder.setEpoch(timestamp);
+            logBuilder = logBuilder.setTimestamp(timestamp);
 
             // level
             Level level = logRecord.getLevel();
@@ -174,11 +174,6 @@ public class OtelJulHandler extends Handler implements OtelComponent {
             logger.log(Level.FINE, "Otel Logging initialized");
             initialized = true;
         }
-    }
-
-    @Override
-    public void beforeSdkShutdown() {
-
     }
 
     /**

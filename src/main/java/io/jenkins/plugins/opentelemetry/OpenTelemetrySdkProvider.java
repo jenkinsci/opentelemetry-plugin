@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.ExtensionList;
 import io.jenkins.plugins.opentelemetry.opentelemetry.ClosingOpenTelemetry;
@@ -17,7 +18,6 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.events.EventEmitterProvider;
 import io.opentelemetry.api.events.GlobalEventEmitterProvider;
-import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -27,11 +27,11 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import javax.annotation.PreDestroy;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,12 +49,14 @@ public class OpenTelemetrySdkProvider {
     public static final String DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS = ProcessResourceProvider.class.getName();
 
     protected transient ClosingOpenTelemetry openTelemetry;
+
+    protected transient Resource resource;
+    protected transient ConfigProperties config;
+    @Nullable
     protected transient OpenTelemetrySdk openTelemetrySdk;
     @NonNull
     protected final transient TracerDelegate tracer = new TracerDelegate();
     protected transient Meter meter;
-    protected transient Resource resource;
-    protected transient ConfigProperties config;
     protected transient LoggerProvider loggerProvider;
     protected transient EventEmitter eventEmitter;
 
@@ -121,7 +123,6 @@ public class OpenTelemetrySdkProvider {
             this.openTelemetrySdk.getSdkLoggerProvider().shutdown();
         }
         GlobalOpenTelemetry.resetForTest();
-        GlobalLoggerProvider.resetForTest();
         GlobalEventEmitterProvider.resetForTest();
     }
 
@@ -158,9 +159,9 @@ public class OpenTelemetrySdkProvider {
             .registerShutdownHook(false) // SDK closed by io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider.preDestroy()
             .setResultAsGlobal(true); // ensure GlobalOpenTelemetry.set() is invoked
         AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = sdkBuilder.build();
-        this.openTelemetrySdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
         this.resource = autoConfiguredOpenTelemetrySdk.getResource();
         this.config = autoConfiguredOpenTelemetrySdk.getConfig();
+        this.openTelemetrySdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
         this.openTelemetry = new ClosingOpenTelemetry(this.openTelemetrySdk);
         String opentelemetryPluginVersion = OtelUtils.getOpentelemetryPluginVersion();
         this.tracer.setDelegate(openTelemetry.getTracerProvider()
@@ -190,12 +191,11 @@ public class OpenTelemetrySdkProvider {
         this.config = ConfigPropertiesUtils.emptyConfig();
         this.openTelemetry = ClosingOpenTelemetry.noop();
         GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
-        GlobalLoggerProvider.resetForTest();
         GlobalEventEmitterProvider.resetForTest();
         GlobalOpenTelemetry.set(OpenTelemetry.noop());
         this.tracer.setDelegate(OpenTelemetry.noop().getTracer(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME));
         this.meter = OpenTelemetry.noop().getMeter(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
-        this.loggerProvider = SdkLoggerProvider.builder().build();
+        this.loggerProvider = OpenTelemetry.noop().getLogsBridge();
         this.eventEmitter = EventEmitterProvider.noop().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
         LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
     }

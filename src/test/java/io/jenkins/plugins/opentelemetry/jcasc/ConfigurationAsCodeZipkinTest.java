@@ -15,7 +15,6 @@ import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ZipkinBackend;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import jenkins.model.GlobalConfiguration;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -69,12 +68,10 @@ public class ConfigurationAsCodeZipkinTest {
     @BeforeClass
     public static void beforeClass() {
         GlobalOpenTelemetry.resetForTest();
-        GlobalLoggerProvider.resetForTest();
     }
 
     @AfterClass
     public static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
-        GlobalLoggerProvider.resetForTest();
     }
 }

@@ -49,7 +49,7 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
         this.otelLogger = otelLogger;
         this.clock = clock;
         this.w3cTraceContext = w3cTraceContext;
-        this.context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.w3cTraceContext, new TextMapGetter<Map<String, String>>() {
+        this.context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.w3cTraceContext, new TextMapGetter<>() {
             @Override
             public Iterable<String> keys(Map<String, String> carrier) {
                 return carrier.keySet();
@@ -85,7 +85,7 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
                 .setBody(plainLogLine)
                 .setAllAttributes(attributesBuilder.build())
                 .setContext(context)
-                .setEpoch(clock.now(), TimeUnit.NANOSECONDS)
+                .setTimestamp(clock.now(), TimeUnit.NANOSECONDS)
                 .emit();
             LOGGER.log(Level.FINEST, () -> buildInfo.jobFullName + "#" + buildInfo.runNumber + " - emit body: '" + StringUtils.abbreviate(plainLogLine, 30) + "'");
         }

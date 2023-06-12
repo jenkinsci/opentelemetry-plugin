@@ -12,7 +12,6 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.events.GlobalEventEmitterProvider;
-import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.MeterProvider;
@@ -281,7 +280,6 @@ public final class GlobalOpenTelemetrySdk {
                 autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkMeterProvider().shutdown(),
                 autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().shutdown()));
             GlobalOpenTelemetry.resetForTest();
-            GlobalLoggerProvider.resetForTest();
             GlobalEventEmitterProvider.resetForTest();
 
             return result;
