@@ -189,16 +189,16 @@ All the system properties and environment variables of the [OpenTelemetry SDK Au
 
 TCP Keepalive is enabled by default in the Elasticsearch connections, a keepalive is sent every 30 seconds.
 It is possible to change this behaviout by using system properties.
-To disable keepalive, set `io.jenkins.plugins.opentelemetry.backend.elastic.keepAlive.enabled` to `false`, to change the keepalive interval, set `io.jenkins.plugins.opentelemetry.backend.elastic.keepAlive.interval` to the desired value in miliseconds.
+To disable keepalive, set `io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever.keepAlive.enabled` to `false`, to change the keepalive interval, set `io.jenkins.plugins.opentelemetry.backend.ElasticsearchLogStorageRetriever.elastic.keepAlive.interval` to the desired value in miliseconds.
 
 The following command disables the keepalive
 
 ```shell
-java -Dio.jenkins.plugins.opentelemetry.backend.elastic.keepAlive.enabled=false -jar jenkins.war
+java -Dio.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever.keepAlive.enabled=false -jar jenkins.war
 ```
 
 The following command changes the keepalive interval to 10 seconds
 
 ```shell
-java -Dio.jenkins.plugins.opentelemetry.backend.elastic.keepAlive.interval=10000 -jar jenkins.war
+java -Dio.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever.keepAlive.interval=10000 -jar jenkins.war
 ```
