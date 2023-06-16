@@ -36,14 +36,20 @@ import io.opentelemetry.context.Scope;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.ssl.SSLContextBuilder;
+import org.elasticsearch.client.Node;
+import org.elasticsearch.client.NodeSelector;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -53,8 +59,10 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -62,6 +70,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 
 /**
@@ -70,6 +79,15 @@ import java.util.logging.Logger;
 public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Closeable {
 
     private final static Logger logger = Logger.getLogger(ElasticsearchLogStorageRetriever.class.getName());
+
+    // the duration in ms for which it is safe to keep the connection idle.
+    public static final String KEEPALIVE_INTERVAL_DEFAULT = "30000"; /* 30 seconds */
+    // keepalive enabled by default.
+    public static final String KEEPALIVE_DEFAULT = "true";
+    public static final String KEEPALIVE_INTERVAL_PROPERTY = ElasticsearchLogStorageRetriever.class.getName() + ".keepAlive.interval";
+    public static final String KEEPALIVE_PROPERTY = ElasticsearchLogStorageRetriever.class.getName() + ".keepAlive.enabled";
+    public static final int KEEPALIVE_INTERVAL = Integer.parseInt(System.getProperty(KEEPALIVE_INTERVAL_PROPERTY, KEEPALIVE_INTERVAL_DEFAULT));
+    public static final boolean KEEPALIVE = Boolean.parseBoolean(System.getProperty(KEEPALIVE_PROPERTY, KEEPALIVE_DEFAULT));
 
     @NonNull
     private final Template buildLogsVisualizationUrlTemplate;
@@ -110,6 +128,11 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         this.restClient = RestClient.builder(HttpHost.create(elasticsearchUrl))
             .setHttpClientConfigCallback(httpClientBuilder -> {
                 httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                httpClientBuilder.setDefaultIOReactorConfig(IOReactorConfig.custom()
+                    /* optionally perform some other configuration of IOReactorConfig here if needed */
+                    .setSoKeepAlive(KEEPALIVE)
+                    .build());
+                httpClientBuilder.setKeepAliveStrategy((response, context) -> KEEPALIVE_INTERVAL);
                 if (disableSslVerifications) {
                     try {
                         SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustAllStrategy()).build();
