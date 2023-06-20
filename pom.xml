@@ -26,8 +26,8 @@
         Don't forget to bump opentelemetry-resources
         -->
         <opentelemetry-alpha.version>1.27.0-alpha</opentelemetry-alpha.version>
-        <opentelemetry-instrumentation-alpha.version>1.26.0-alpha</opentelemetry-instrumentation-alpha.version>
-        <opentelemetry-contrib.version>1.26.0-alpha</opentelemetry-contrib.version>
+        <opentelemetry-instrumentation-alpha.version>1.27.0-alpha</opentelemetry-instrumentation-alpha.version>
+        <opentelemetry-contrib.version>1.27.0-alpha</opentelemetry-contrib.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.6.2</elasticstack.version>
         <error-prone.version>2.18.0</error-prone.version>
@@ -111,9 +111,17 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-runtime-metrics</artifactId>
+            <artifactId>opentelemetry-runtime-telemetry-java8</artifactId>
             <version>${opentelemetry-instrumentation-alpha.version}</version>
         </dependency>
+        <!--
+        Requires JDK17, compiled for JDK17
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-runtime-telemetry-java17</artifactId>
+            <version>${opentelemetry-instrumentation-alpha.version}</version>
+        </dependency>
+        -->
         <dependency>
             <groupId>io.opentelemetry.contrib</groupId>
             <artifactId>opentelemetry-aws-resources</artifactId>

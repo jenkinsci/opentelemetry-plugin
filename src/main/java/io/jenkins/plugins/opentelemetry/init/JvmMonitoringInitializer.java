@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.init;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.instrumentation.runtimemetrics.*;
+import io.opentelemetry.instrumentation.runtimemetrics.java8.*;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
