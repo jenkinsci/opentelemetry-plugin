@@ -184,3 +184,21 @@ When specifying configuration parameters mixing environment variables, system pr
 Note that the key-value pairs of the `OTEL_RESOURCE_ATTRIBUTES` attributes are merged across all the layers of settings.
 
 All the system properties and environment variables of the [OpenTelemetry SDK Auto Configuration Extension](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md) (`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_METRICS_EXPORTER`, `OTEL_LOGS_EXPORTER`, `OTEL_RESOURCE_ATTRIBUTES`...) are supported at the exception to the settings of Zipkin exporter which is not included.
+
+## TCP Keepalive
+
+TCP Keepalive is enabled by default in the Elasticsearch connections, a keepalive is sent every 30 seconds.
+It is possible to change this behaviout by using system properties.
+To disable keepalive, set `io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever.keepAlive.enabled` to `false`, to change the keepalive interval, set `io.jenkins.plugins.opentelemetry.backend.ElasticsearchLogStorageRetriever.elastic.keepAlive.interval` to the desired value in miliseconds.
+
+The following command disables the keepalive
+
+```shell
+java -Dio.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever.keepAlive.enabled=false -jar jenkins.war
+```
+
+The following command changes the keepalive interval to 10 seconds
+
+```shell
+java -Dio.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever.keepAlive.interval=10000 -jar jenkins.war
+```
