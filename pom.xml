@@ -109,6 +109,10 @@
             <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-extension-trace-propagators</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-resources</artifactId>
             <version>${opentelemetry-instrumentation-alpha.version}</version>
