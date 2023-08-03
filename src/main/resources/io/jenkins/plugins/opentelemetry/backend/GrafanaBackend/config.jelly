@@ -16,6 +16,10 @@
                  description="Identifier of the Tempo datasource in which the Jenkins pipeline build traces are stored.">
             <f:textbox default="${descriptor.defaultTempoDataSourceIdentifier}"/>
         </f:entry>
+        <f:entry title="Tempo Query Type" field="tempoQueryType"
+                 description="Query type passed to Tempo, used when searching for the specific trace. 'traceql' for newer Tempo versions. 'traceid' for older">
+            <f:textbox default="${descriptor.defaultTempoQueryType}"/>
+        </f:entry>
         <f:entry title="Grafana Org Id" field="grafanaOrgId">
             <f:textbox default="${descriptor.defaultGrafanaOrgId}"/>
         </f:entry>

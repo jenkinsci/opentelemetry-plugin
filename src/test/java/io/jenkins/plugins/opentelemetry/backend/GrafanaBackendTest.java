@@ -20,6 +20,7 @@ public class GrafanaBackendTest {
         grafanaBackend.setGrafanaBaseUrl("https://cleclerc.grafana.net");
         grafanaBackend.setGrafanaOrgId("1");
         grafanaBackend.setTempoDataSourceIdentifier("grafanacloud-traces");
+        grafanaBackend.setTempoQueryType("traceql");
 
         LocalDateTime buildTime = LocalDateTime.parse("2023-02-05 23:31:52.610", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
 

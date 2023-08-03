@@ -33,6 +33,8 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
     private static final String DEFAULT_TEMPO_DATA_SOURCE_IDENTIFIER = "grafanacloud-traces";
     private static final String DEFAULT_GRAFANA_ORG_ID = "1";
 
+    private static final String DEFAULT_TEMPO_QUERY_TYPE = "traceql";
+
     static {
         IconSet.icons.addIcon(
             new Icon(
@@ -63,6 +65,8 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
 
     private String grafanaOrgId = DEFAULT_GRAFANA_ORG_ID;
 
+    private String tempoQueryType = DEFAULT_TEMPO_QUERY_TYPE;
+
     @DataBoundConstructor
     public GrafanaBackend() {
 
@@ -79,7 +83,7 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
                 "${" + TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER + "}" +
                 "%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22datasource%22:%7B%22type%22:%22tempo%22,%22uid%22:%22" +
                 "${" + TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER + "}" +
-                "%22%7D,%22queryType%22:%22traceId%22,%22query%22:%22" +
+                "%22%7D,%22queryType%22:%22${" + TemplateBindings.GRAFANA_TEMPO_QUERY_TYPE + "}%22,%22query%22:%22" +
                 "${traceId}" +
                 "%22%7D%5D,%22range%22:%7B%22from%22:%22" +
                 "${startTime.minusSeconds(600).atZone(java.util.TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()}" +
@@ -120,12 +124,12 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GrafanaBackend that = (GrafanaBackend) o;
-        return grafanaOrgId == that.grafanaOrgId && Objects.equals(grafanaBaseUrl, that.grafanaBaseUrl) && Objects.equals(tempoDataSourceIdentifier, that.tempoDataSourceIdentifier);
+        return grafanaOrgId == that.grafanaOrgId && Objects.equals(grafanaBaseUrl, that.grafanaBaseUrl) && Objects.equals(tempoDataSourceIdentifier, that.tempoDataSourceIdentifier) && Objects.equals(tempoQueryType, that.tempoQueryType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(grafanaBaseUrl, tempoDataSourceIdentifier, grafanaOrgId);
+        return Objects.hash(grafanaBaseUrl, tempoDataSourceIdentifier, grafanaOrgId, tempoQueryType);
     }
 
     @Override
@@ -144,6 +148,7 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
         bindings.put(TemplateBindings.GRAFANA_BASE_URL, this.getGrafanaBaseUrl());
         bindings.put(TemplateBindings.GRAFANA_ORG_ID, String.valueOf(this.getGrafanaOrgId()));
         bindings.put(TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER, this.getTempoDataSourceIdentifier());
+        bindings.put(TemplateBindings.GRAFANA_TEMPO_QUERY_TYPE, this.getTempoQueryType());
 
         return bindings;
     }
@@ -180,6 +185,16 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
         this.grafanaOrgId = grafanaOrgId;
     }
 
+    @DataBoundSetter
+    public String getTempoQueryType() {
+        return tempoQueryType;
+    }
+    
+    @DataBoundSetter
+    public void setTempoQueryType(String tempoQueryType) {
+        this.tempoQueryType = tempoQueryType;
+    }
+
     @Extension
     @Symbol("grafana")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
@@ -195,6 +210,10 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
 
         public String getDefaultTempoDataSourceIdentifier() {
             return DEFAULT_TEMPO_DATA_SOURCE_IDENTIFIER;
+        }
+
+        public String getDefaultTempoQueryType() {
+            return DEFAULT_TEMPO_QUERY_TYPE;
         }
 
         public FormValidation doCheckGrafanaBaseUrl(@QueryParameter("grafanaBaseUrl") String grafanaBaseUrl) {
@@ -217,5 +236,6 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
         String GRAFANA_BASE_URL = "grafanaBaseUrl";
         String GRAFANA_TEMPO_DATASOURCE_IDENTIFIER = "grafanaTempoDatasourceIdentifier";
         String GRAFANA_ORG_ID = "grafanaOrgId";
+        String GRAFANA_TEMPO_QUERY_TYPE = "grafanaTempoQueryType";
     }
 }
