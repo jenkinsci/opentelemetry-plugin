@@ -8,13 +8,18 @@ package io.jenkins.plugins.opentelemetry.queue;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
+import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
@@ -35,6 +40,7 @@ public class MonitoringQueueListener extends QueueListener implements OtelCompon
     private final AtomicInteger blockedItemGauge = new AtomicInteger();
     private LongCounter leftItemCounter;
     private LongCounter timeInQueueInMillisCounter;
+    private ConfigProperties configProperties;
 
     @Override
     public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
@@ -70,6 +76,7 @@ public class MonitoringQueueListener extends QueueListener implements OtelCompon
             .setUnit("ms")
             .build();
 
+        this.configProperties = configProperties;
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins queue...");
     }
 
@@ -88,5 +95,21 @@ public class MonitoringQueueListener extends QueueListener implements OtelCompon
         this.leftItemCounter.add(1);
         this.timeInQueueInMillisCounter.add(System.currentTimeMillis() - li.getInQueueSince());
         LOGGER.log(Level.FINE, () -> "onLeft(): " + li);
+    }
+
+    @Override
+    public void onEnterWaiting(Queue.WaitingItem wi) {
+        if (isRemoteSpanEnabled()) {
+            Span span = Span.fromContextOrNull(Context.current());
+            if (span != null && wi.getActions(RemoteSpanAction.class) != null) {
+                SpanContext spanContext = span.getSpanContext();
+                wi.addAction(new RemoteSpanAction(spanContext.getTraceId(), spanContext.getSpanId(), spanContext.getTraceFlags().asByte(), spanContext.getTraceState().asMap()));
+                LOGGER.log(Level.FINE, () -> "attach RemoteSpanAction to " + wi);
+            }
+        }
+    }
+
+    private boolean isRemoteSpanEnabled() {
+        return OpenTelemetrySdkProvider.get().getConfig().getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED,false);
     }
 }

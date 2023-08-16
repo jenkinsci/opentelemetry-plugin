@@ -1,0 +1,10 @@
+unclassified:
+  openTelemetry:
+    authentication: "noAuthentication"
+    endpoint: "http://otel-collector-contrib:4317"
+    exporterTimeoutMillis: 3000
+    exportOtelConfigurationAsEnvironmentVariables: true
+    configurationProperties: |-
+        otel.instrumentation.jenkins.remote.span.enabled=false
+
+## Credentials for the git username lookup Integration Tests

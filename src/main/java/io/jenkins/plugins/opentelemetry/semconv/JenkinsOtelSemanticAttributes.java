@@ -139,6 +139,8 @@ public final class JenkinsOtelSemanticAttributes {
     public static final String JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD = "note";
 
     public static final String OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED = "otel.instrumentation.jenkins.web.enabled";
+    public static final String OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED = "otel.instrumentation.jenkins.remote.span.enabled";
+
 
     /**
      * Values in {@link EventCategoryValues}
