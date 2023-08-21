@@ -28,7 +28,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;

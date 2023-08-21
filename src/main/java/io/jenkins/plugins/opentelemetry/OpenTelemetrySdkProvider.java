@@ -6,13 +6,15 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.ExtensionList;
 import io.jenkins.plugins.opentelemetry.opentelemetry.ClosingOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.events.EventEmitter;
@@ -28,11 +30,9 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.sdk.resources.ResourceBuilder;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 import javax.annotation.PreDestroy;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -55,7 +55,7 @@ public class OpenTelemetrySdkProvider {
     @Nullable
     protected transient OpenTelemetrySdk openTelemetrySdk;
     @NonNull
-    protected final transient TracerDelegate tracer = new TracerDelegate();
+    private final transient TracerDelegate tracer = new TracerDelegate();
     protected transient Meter meter;
     protected transient LoggerProvider loggerProvider;
     protected transient EventEmitter eventEmitter;
@@ -145,36 +145,38 @@ public class OpenTelemetrySdkProvider {
         AutoConfiguredOpenTelemetrySdkBuilder sdkBuilder = AutoConfiguredOpenTelemetrySdk.builder();
         // PROPERTIES
         sdkBuilder.addPropertiesSupplier(configuration::toOpenTelemetryProperties);
+        sdkBuilder.addPropertiesCustomizer((Function<ConfigProperties, Map<String, String>>) configProperties -> {
+            OpenTelemetrySdkProvider.this.config = configProperties;
+            return null;
+        });
 
         // RESOURCE
         sdkBuilder.addResourceCustomizer((resource, configProperties) -> {
-                ResourceBuilder resourceBuilder = Resource.builder()
-                    .putAll(resource)
-                    .putAll(configuration.toOpenTelemetryResource());
-                return resourceBuilder.build();
+            this.resource = Resource.builder()
+                .putAll(resource)
+                .putAll(configuration.toOpenTelemetryResource()).build();
+            return this.resource;
             }
         );
 
         sdkBuilder
-            .registerShutdownHook(false) // SDK closed by io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider.preDestroy()
-            .setResultAsGlobal(true); // ensure GlobalOpenTelemetry.set() is invoked
+            .disableShutdownHook() // SDK closed by io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider.preDestroy()
+            .setResultAsGlobal(); // ensure GlobalOpenTelemetry.set() is invoked
         AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = sdkBuilder.build();
-        this.resource = autoConfiguredOpenTelemetrySdk.getResource();
-        this.config = autoConfiguredOpenTelemetrySdk.getConfig();
         this.openTelemetrySdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
         this.openTelemetry = new ClosingOpenTelemetry(this.openTelemetrySdk);
         String opentelemetryPluginVersion = OtelUtils.getOpentelemetryPluginVersion();
         this.tracer.setDelegate(openTelemetry.getTracerProvider()
-            .tracerBuilder(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME)
+            .tracerBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
             .build());
         this.meter = openTelemetry.getMeterProvider()
-            .meterBuilder(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME)
+            .meterBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
             .build();
         this.loggerProvider = openTelemetrySdk.getSdkLoggerProvider();
         this.eventEmitter = GlobalEventEmitterProvider.get()
-            .eventEmitterBuilder(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME)
+            .eventEmitterBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
             .setEventDomain("jenkins")
             .build();
@@ -193,10 +195,10 @@ public class OpenTelemetrySdkProvider {
         GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
         GlobalEventEmitterProvider.resetForTest();
         GlobalOpenTelemetry.set(OpenTelemetry.noop());
-        this.tracer.setDelegate(OpenTelemetry.noop().getTracer(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME));
-        this.meter = OpenTelemetry.noop().getMeter(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
+        this.tracer.setDelegate(OpenTelemetry.noop().getTracer(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME));
+        this.meter = OpenTelemetry.noop().getMeter(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
         this.loggerProvider = OpenTelemetry.noop().getLogsBridge();
-        this.eventEmitter = EventEmitterProvider.noop().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
+        this.eventEmitter = EventEmitterProvider.noop().get(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
         LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
     }
 

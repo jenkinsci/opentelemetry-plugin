@@ -17,6 +17,7 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -41,7 +42,6 @@ import java.util.logging.Logger;
  * TODO handle reconfiguration
  */
 public final class GlobalOpenTelemetrySdk {
-    public final static String INSTRUMENTATION_NAME = "io.jenkins.opentelemetry";
 
     private final static Logger logger = Logger.getLogger(GlobalOpenTelemetrySdk.class.getName());
 
@@ -192,17 +192,17 @@ public final class GlobalOpenTelemetrySdk {
     private static class NoopOpenTelemetrySdkState implements OpenTelemetrySdkState {
         @Override
         public io.opentelemetry.api.logs.Logger getOtelLogger() {
-            return LoggerProvider.noop().get(INSTRUMENTATION_NAME);
+            return LoggerProvider.noop().get(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
         }
 
         @Override
         public Meter getMeter() {
-            return MeterProvider.noop().get(INSTRUMENTATION_NAME);
+            return MeterProvider.noop().get(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
         }
 
         @Override
         public Tracer getTracer() {
-            return TracerProvider.noop().get(INSTRUMENTATION_NAME);
+            return TracerProvider.noop().get(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
         }
 
         @Override
@@ -237,9 +237,9 @@ public final class GlobalOpenTelemetrySdk {
             this.autoConfiguredOpenTelemetrySdk = autoConfiguredOpenTelemetrySdk;
             this.sdkConfigurationParameters = sdkConfigurationParameters;
             String jenkinsPluginVersion = Objects.toString(autoConfiguredOpenTelemetrySdk.getResource().getAttribute(JenkinsOtelSemanticAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION), "#unknown#");
-            this.otelLogger = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().get(INSTRUMENTATION_NAME);
-            this.tracer = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getTracerProvider().get(INSTRUMENTATION_NAME, jenkinsPluginVersion);
-            this.meter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getMeter(INSTRUMENTATION_NAME);
+            this.otelLogger = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().get(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
+            this.tracer = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getTracerProvider().get(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME, jenkinsPluginVersion);
+            this.meter = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getMeter(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
         }
 
         @Override
