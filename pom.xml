@@ -303,7 +303,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ant</artifactId>
-            <version>487.vd79d090d4ea_e</version>
+            <version>497.v94e7d9fffa_b_9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
