@@ -31,7 +31,9 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
 
+import javax.annotation.Nonnull;
 import javax.annotation.PreDestroy;
+import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -118,9 +120,7 @@ public class OpenTelemetrySdkProvider {
 
             ExtensionList.lookup(OtelComponent.class).stream().sorted().forEachOrdered(OtelComponent::beforeSdkShutdown);
             this.openTelemetry.close();
-            this.openTelemetrySdk.getSdkTracerProvider().shutdown();
-            this.openTelemetrySdk.getSdkMeterProvider().shutdown();
-            this.openTelemetrySdk.getSdkLoggerProvider().shutdown();
+            this.openTelemetrySdk.shutdown();
         }
         GlobalOpenTelemetry.resetForTest();
         GlobalEventEmitterProvider.resetForTest();
@@ -146,12 +146,14 @@ public class OpenTelemetrySdkProvider {
         // PROPERTIES
         sdkBuilder.addPropertiesSupplier(configuration::toOpenTelemetryProperties);
         sdkBuilder.addPropertiesCustomizer((Function<ConfigProperties, Map<String, String>>) configProperties -> {
+            // keep a reference to the computed config properties for future use in the plugin
             OpenTelemetrySdkProvider.this.config = configProperties;
-            return null;
+            return Collections.emptyMap();
         });
 
         // RESOURCE
         sdkBuilder.addResourceCustomizer((resource, configProperties) -> {
+            // keep a reference to the computed Resource for future use in the plugin
             this.resource = Resource.builder()
                 .putAll(resource)
                 .putAll(configuration.toOpenTelemetryResource()).build();
@@ -162,8 +164,7 @@ public class OpenTelemetrySdkProvider {
         sdkBuilder
             .disableShutdownHook() // SDK closed by io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider.preDestroy()
             .setResultAsGlobal(); // ensure GlobalOpenTelemetry.set() is invoked
-        AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = sdkBuilder.build();
-        this.openTelemetrySdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
+        this.openTelemetrySdk = sdkBuilder.build().getOpenTelemetrySdk();
         this.openTelemetry = new ClosingOpenTelemetry(this.openTelemetrySdk);
         String opentelemetryPluginVersion = OtelUtils.getOpentelemetryPluginVersion();
         this.tracer.setDelegate(openTelemetry.getTracerProvider()
@@ -181,7 +182,7 @@ public class OpenTelemetrySdkProvider {
             .setEventDomain("jenkins")
             .build();
 
-        LOGGER.log(Level.INFO, () -> "OpenTelemetry SDK initialized: " + OtelUtils.prettyPrintOtelSdkConfig(autoConfiguredOpenTelemetrySdk));
+        LOGGER.log(Level.INFO, () -> "OpenTelemetry SDK initialized: " + OtelUtils.prettyPrintOtelSdkConfig(this.config, this.resource));
     }
 
     @VisibleForTesting
@@ -210,7 +211,7 @@ public class OpenTelemetrySdkProvider {
         private Tracer delegate;
 
         @Override
-        public synchronized SpanBuilder spanBuilder(String spanName) {
+        public synchronized SpanBuilder spanBuilder(@Nonnull String spanName) {
             return delegate.spanBuilder(spanName);
         }
 

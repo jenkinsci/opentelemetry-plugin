@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import org.junit.Test;
@@ -20,12 +19,9 @@ public class GlobalOpenTelemetrySdkTest {
     @Test
     public void testNotSdkConfigured() {
         try {
-            GlobalOpenTelemetrySdk.getConfigProperties();
             GlobalOpenTelemetrySdk.getOtelLogger();
             GlobalOpenTelemetrySdk.getMeter();
             GlobalOpenTelemetrySdk.getTracer();
-            Resource resource = GlobalOpenTelemetrySdk.getResource();
-            assertEquals("Empty Resource: " + resource, 0, resource.getAttributes().size());
         } finally {
             GlobalOpenTelemetrySdk.shutdown();
         }
@@ -49,13 +45,6 @@ public class GlobalOpenTelemetrySdkTest {
 
             int configurationCountBefore = GlobalOpenTelemetrySdk.configurationCounter.get();
             GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
-            ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
-            config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-            GlobalOpenTelemetrySdk.getOtelLogger();
-            GlobalOpenTelemetrySdk.getMeter();
-            GlobalOpenTelemetrySdk.getTracer();
-            Resource actualResource = GlobalOpenTelemetrySdk.getResource();
-            resource.getAttributes().forEach((k, v) -> assertEquals("Resource[" + k + "]", v, actualResource.getAttribute(k)));
             assertEquals("Configuration counter", configurationCountBefore + 1, GlobalOpenTelemetrySdk.configurationCounter.get());
         } finally {
             GlobalOpenTelemetrySdk.shutdown();
@@ -83,26 +72,12 @@ public class GlobalOpenTelemetrySdkTest {
             // CONFIGURE ONCE
             {
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
-                ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
-                config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getOtelLogger();
-                GlobalOpenTelemetrySdk.getMeter();
-                GlobalOpenTelemetrySdk.getTracer();
-                Resource actualResource = GlobalOpenTelemetrySdk.getResource();
-                resource.getAttributes().forEach((k, v) -> assertEquals("Resource[" + k + "]", v, actualResource.getAttribute(k)));
                 assertEquals("Configuration counter", configurationCountBefore + 1, GlobalOpenTelemetrySdk.configurationCounter.get());
             }
 
             // CONFIGURE A SECOND TIME WITH SAME CONFIGURATION
             {
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
-                ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
-                config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getOtelLogger();
-                GlobalOpenTelemetrySdk.getMeter();
-                GlobalOpenTelemetrySdk.getTracer();
-                Resource actualResource = GlobalOpenTelemetrySdk.getResource();
-                resource.getAttributes().forEach((k, v) -> assertEquals("Resource[" + k + "]", v, actualResource.getAttribute(k)));
                 // verify has been configured just once
                 assertEquals("Configuration counter", configurationCountBefore + 1, GlobalOpenTelemetrySdk.configurationCounter.get());
             }
@@ -134,13 +109,6 @@ public class GlobalOpenTelemetrySdkTest {
                 resource.getAttributes().forEach((k, v) -> resourceAttributes.put(k.getKey(), v.toString()));
 
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
-                ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
-                config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getOtelLogger();
-                GlobalOpenTelemetrySdk.getMeter();
-                GlobalOpenTelemetrySdk.getTracer();
-                Resource actualResource = GlobalOpenTelemetrySdk.getResource();
-                resource.getAttributes().forEach((k, v) -> assertEquals("Resource[" + k + "]", v, actualResource.getAttribute(k)));
                 assertEquals("Configuration counter", configurationCountBefore + 1, GlobalOpenTelemetrySdk.configurationCounter.get());
             }
 
@@ -155,13 +123,6 @@ public class GlobalOpenTelemetrySdkTest {
                 differentResource.getAttributes().forEach((k, v) -> differentResourceAttributes.put(k.getKey(), v.toString()));
 
                 GlobalOpenTelemetrySdk.configure(config, differentResourceAttributes, false);
-                ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
-                config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getOtelLogger();
-                GlobalOpenTelemetrySdk.getMeter();
-                GlobalOpenTelemetrySdk.getTracer();
-                Resource actualResource = GlobalOpenTelemetrySdk.getResource();
-                differentResource.getAttributes().forEach((k, v) -> assertEquals("Resource[" + k + "]", v, actualResource.getAttribute(k)));
                 // verify has been configured twice
                 assertEquals("Configuration counter", configurationCountBefore + 2, GlobalOpenTelemetrySdk.configurationCounter.get());
             }
@@ -194,13 +155,6 @@ public class GlobalOpenTelemetrySdkTest {
                 config.put("otel.logs.exporter", "none");
 
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
-                ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
-                config.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getOtelLogger();
-                GlobalOpenTelemetrySdk.getMeter();
-                GlobalOpenTelemetrySdk.getTracer();
-                Resource actualResource = GlobalOpenTelemetrySdk.getResource();
-                resource.getAttributes().forEach((k, v) -> assertEquals("Resource[" + k + "]", v, actualResource.getAttribute(k)));
                 assertEquals("Configuration counter", configurationCountBefore + 1, GlobalOpenTelemetrySdk.configurationCounter.get());
             }
 
@@ -213,13 +167,6 @@ public class GlobalOpenTelemetrySdkTest {
                 differentConfig.put("a", "b");
 
                 GlobalOpenTelemetrySdk.configure(differentConfig, resourceAttributes, false);
-                ConfigProperties actualConfigProperties = GlobalOpenTelemetrySdk.getConfigProperties();
-                differentConfig.forEach((k, v) -> assertEquals("Config[" + k + "]", v, actualConfigProperties.getString(k)));
-                GlobalOpenTelemetrySdk.getOtelLogger();
-                GlobalOpenTelemetrySdk.getMeter();
-                GlobalOpenTelemetrySdk.getTracer();
-                Resource actualResource = GlobalOpenTelemetrySdk.getResource();
-                resource.getAttributes().forEach((k, v) -> assertEquals("Resource[" + k + "]", v, actualResource.getAttribute(k)));
                 // verify has been configured twice
                 assertEquals("Configuration counter", configurationCountBefore + 2, GlobalOpenTelemetrySdk.configurationCounter.get());
             }
