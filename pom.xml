@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.61</version>
+        <version>4.66</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -17,7 +17,7 @@
     <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
     <properties>
-        <revision>2.13.1</revision>
+        <revision>2.14.1</revision>
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.361.4</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
@@ -29,8 +29,8 @@
         <opentelemetry-instrumentation-alpha.version>1.29.0-alpha</opentelemetry-instrumentation-alpha.version>
         <opentelemetry-contrib.version>1.28.0-alpha</opentelemetry-contrib.version>
         <useBeta>true</useBeta>
-        <elasticstack.version>8.6.2</elasticstack.version>
-        <error-prone.version>2.18.0</error-prone.version>
+        <elasticstack.version>8.7.1</elasticstack.version>
+        <error-prone.version>2.19.1</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
@@ -44,7 +44,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.361.x</artifactId>
-                <version>2025.v816d28f1e04f</version>
+                <version>2062.v154408a_24d20</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -103,6 +103,10 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-extension-trace-propagators</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
@@ -299,7 +303,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ant</artifactId>
-            <version>1.11</version>
+            <version>487.vd79d090d4ea_e</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -317,7 +321,7 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
-            <version>3.21</version>
+            <version>3.22</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -387,7 +391,7 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>1.17.6</version>
+            <version>1.18.3</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
