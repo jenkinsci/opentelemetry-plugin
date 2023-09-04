@@ -208,7 +208,6 @@ public class OpenTelemetryServletFilter implements Filter {
         Thread currentThread = Thread.currentThread();
         spanBuilder
             .setAttribute(SemanticAttributes.HTTP_CLIENT_IP, servletRequest.getRemoteAddr())
-            .setAttribute(SemanticAttributes.HTTP_FLAVOR, StringUtils.substringAfter(servletRequest.getProtocol(), "/"))
             .setAttribute(SemanticAttributes.HTTP_SCHEME, servletRequest.getScheme())
             .setAttribute(SemanticAttributes.NET_HOST_NAME, servletRequest.getServerName())
             .setAttribute(SemanticAttributes.NET_HOST_NAME, servletRequest.getServerName() + ":" + servletRequest.getServerPort())
@@ -323,7 +322,7 @@ public class OpenTelemetryServletFilter implements Filter {
             }
         } else if (pathInfo.size() > 10 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "runs", ":runNumber", "steps", ":step", "*")) {
             // /blue/rest/organizations/jenkins/pipelines/my-war-pipeline/runs/1/steps/5/log/
-            job = Arrays.asList(pathInfo.get(5));
+            job = Collections.singletonList(pathInfo.get(5));
             runNumber = Long.parseLong(pathInfo.get(7));
             nodeId = null;
             stepId = Integer.parseInt(pathInfo.get(9));
@@ -359,7 +358,7 @@ public class OpenTelemetryServletFilter implements Filter {
         } else if (pathInfo.size() > 8 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "runs", ":runNumber")) {
             // /blue/rest/organizations/jenkins/pipelines/my-war-pipeline/runs/1/steps/ TODO
             // /blue/rest/organizations/jenkins/pipelines/my-war-pipeline/runs/1/blueTestSummary/
-            job = Arrays.asList(pathInfo.get(5));
+            job = Collections.singletonList(pathInfo.get(5));
             runNumber = Long.parseLong(pathInfo.get(7));
             nodeId = null;
             stepId = null;
@@ -388,7 +387,7 @@ public class OpenTelemetryServletFilter implements Filter {
             jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "branches", ":branch", "runs", ":runNumber"));
         } else if (pathInfo.size() > 7 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "runs", ":runNumber")) {
             // /blue/rest/organizations/jenkins/pipelines/my-war-pipeline/runs/1/
-            job = Arrays.asList(pathInfo.get(5));
+            job = Collections.singletonList(pathInfo.get(5));
             runNumber = Long.parseLong(pathInfo.get(7));
             nodeId = null;
             stepId = null;
@@ -396,14 +395,14 @@ public class OpenTelemetryServletFilter implements Filter {
 
         } else if (pathInfo.size() > 6 && isUrlPathInfoMatch(pathInfo, "blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "*")) {
             // /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/scm/content
-            job = Arrays.asList(pathInfo.get(5));
+            job = Collections.singletonList(pathInfo.get(5));
             runNumber = null;
             nodeId = null;
             stepId = null;
             jobUrlPattern = new ArrayList<>(Arrays.asList("blue", "rest", "organizations", ":organization", "pipelines", ":pipelineName", "*"));
         } else if (pathInfo.size() > 4 && isUrlPathInfoMatch(pathInfo, "blue", "organizations", ":organization", ":pipelineName", "activity")) {
             // /blue/organizations/jenkins/my-war-pipeline/activity
-            job = Arrays.asList(pathInfo.get(3));
+            job = Collections.singletonList(pathInfo.get(3));
             runNumber = null;
             nodeId = null;
             stepId = null;
@@ -621,8 +620,7 @@ public class OpenTelemetryServletFilter implements Filter {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        return true;
+        return o != null && getClass() == o.getClass();
     }
 
     @Override
