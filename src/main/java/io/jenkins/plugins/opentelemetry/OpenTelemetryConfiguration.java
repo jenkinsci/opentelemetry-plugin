@@ -103,7 +103,16 @@ public class OpenTelemetryConfiguration {
             properties.put("otel.imr.export.interval", "10ms");
         } else if (this.getEndpoint().isPresent()) {
             this.getEndpoint().ifPresent(endpoint -> { // prepare of Optional.ifPResentOrElse()
-                properties.compute("otel.traces.exporter", (key, oldValue) -> oldValue == null ? "otlp" : "none".equals(oldValue) ? "none" : oldValue.contains("otlp") ? oldValue : oldValue.concat(",otlp"));
+                properties.compute("otel.traces.exporter", (key, oldValue) -> {
+                  if (oldValue == null) {
+                    return "otlp"
+                   } else if ("none".equals(oldValue)) {
+                     return "none"
+                   } else if (oldValue.contains("otlp")) {
+                     return oldValue
+                   } else {
+                     return oldValue.concat(",otlp");
+                   });
                 properties.compute("otel.metrics.exporter", (key, oldValue) -> oldValue == null ? "otlp" : "none".equals(oldValue) ? "none" : oldValue.contains("otlp") ? oldValue : oldValue.concat(",otlp"));
                 properties.put("otel.exporter.otlp.endpoint", endpoint);
             });
