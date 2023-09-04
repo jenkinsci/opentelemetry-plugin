@@ -10,10 +10,13 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.errorprone.annotations.MustBeClosed;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.tasks.BuildStep;
+import io.jenkins.plugins.opentelemetry.FlowNodeMonitoringAction;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.logs.LoggerProvider;
@@ -23,19 +26,17 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.trace.ReadWriteSpan;
+import net.jcip.annotations.Immutable;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.AtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import net.jcip.annotations.Immutable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -46,7 +47,7 @@ import static com.google.common.base.Verify.verify;
 
 @Extension
 public class OtelTraceService implements OtelComponent {
-    private static Logger LOGGER = Logger.getLogger(OtelTraceService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(OtelTraceService.class.getName());
 
     private transient ConcurrentMap<RunIdentifier, RunSpans> spansByRun;
 
@@ -81,9 +82,9 @@ public class OtelTraceService implements OtelComponent {
      * @param run
      * @param verifyIfRemainingSteps
      * @return the span of the current pipeline run phase:
-     *      * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_START_NAME},
-     *      * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_RUN_NAME},
-     *      * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
+     * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_START_NAME},
+     * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_RUN_NAME},
+     * {@link io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
      * @throws VerifyException if there are ongoing step spans and {@code verifyIfRemainingSteps} is set to {@code true}
      */
     @NonNull
@@ -95,19 +96,71 @@ public class OtelTraceService implements OtelComponent {
             verify(runSpans.pipelineStepSpansByFlowNodeId.isEmpty(), run.getFullDisplayName() + " - Can't access run phase span while there are remaining pipeline step spans: " + runSpans);
         }
         LOGGER.log(Level.FINEST, () -> "getSpan(" + run.getFullDisplayName() + ") - " + runSpans);
-        final Span span = Iterables.getLast(runSpans.runPhasesSpans, null);
-        if (span == null) {
+        final Span span = Iterables.getLast(runSpans.runPhasesSpans, Span.getInvalid());
+        if (span == Span.getInvalid()) {
             LOGGER.log(Level.FINE, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
-            return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
         }
+        Span spanV2 = getSpanV2(run, verifyIfRemainingSteps);
+        assertEquals(span, spanV2, run);
         return span;
     }
 
+    /**
+     * Returns the span of the current {@link Run} phase (start, run, finalize...)
+     */
+    public Span getSpanV2(@NonNull Run run, boolean verifyIfRemainingSteps) throws VerifyException {
+        return Iterables.getLast(run.getActions(MonitoringAction.class)).getSpan();
+    }
+
+    /**
+     * Returns top level span of the {@link Run}
+     */
     @NonNull
     public Span getPipelineRootSpan(@NonNull Run run) {
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
-        return runSpans.runPhasesSpans.stream().findFirst().orElse(Span.getInvalid()); // absent when Jenkins restarts during build
+        Span result = runSpans.runPhasesSpans.stream().findFirst().orElse(Span.getInvalid());
+
+        Span resultV2 = getPipelineRootSpanV2(run);
+        assertEquals(result, resultV2, run);
+
+        return result; // absent/invalid when Jenkins restarts during build
+    }
+
+    protected void assertEquals(@Nullable Span expectedSpan, @Nullable Span actualSpan, @NonNull Run run) {
+        Optional<String> actualSpanId = Optional.ofNullable(actualSpan).map(span -> span.getSpanContext().getSpanId());
+        Optional<String> expectedSpanId = Optional.ofNullable(expectedSpan).map(span -> span.getSpanContext().getSpanId());
+        if (!Objects.equals(actualSpanId, expectedSpanId)) {
+            String actualSpanName = actualSpan instanceof ReadWriteSpan ? ((ReadWriteSpan) actualSpan).getName() : null; // when tracer is no-op, span is NOT a ReadWriteSpan
+            String expectedSpanName = expectedSpan instanceof ReadWriteSpan ? ((ReadWriteSpan) expectedSpan).getName() : null; // when tracer is no-op, span is NOT a ReadWriteSpan
+            LOGGER.log(Level.WARNING,"Span id mismatch: expected=" + expectedSpanId + " / '" + expectedSpanName +
+                "', actual=" + actualSpanId + " / '" + actualSpanName +
+                "' for run " + run);
+        }
+    }
+
+    protected void assertEquals(@Nullable Span expectedSpan, @Nullable Span actualSpan, @NonNull FlowNode flowNode, @NonNull Run run) {
+        Optional<String> actualSpanId = Optional.ofNullable(actualSpan).map(span -> span.getSpanContext().getSpanId());
+        Optional<String> expectedSpanId = Optional.ofNullable(expectedSpan).map(span -> span.getSpanContext().getSpanId());
+        if (!Objects.equals(actualSpanId, expectedSpanId)) {
+            String msg = "Span id mismatch: expected=" + expectedSpanId + ", actual=" + actualSpanId + " for " +
+                "FlowNode[name" + flowNode.getDisplayName() + ", function:" + flowNode.getDisplayFunctionName() + ", id=" + flowNode.getId() + "], run " + run.getFullDisplayName();
+            LOGGER.log(Level.WARNING, msg);
+            throw new IllegalStateException(msg);
+        }
+    }
+
+    /**
+     * Returns top level span of the {@link Run}
+     */
+    public Span getPipelineRootSpanV2(@NonNull Run run) {
+        List<MonitoringAction> monitoringActions = run.getActions(MonitoringAction.class);
+        if (monitoringActions.isEmpty()) {
+            LOGGER.log(Level.WARNING, "No MonitoringAction found for " + run);
+        } else if (monitoringActions.size() > 1) {
+            LOGGER.log(Level.WARNING, "More or less than 1 (" + monitoringActions.size() + ") monitoring action found for " + run.getFullDisplayName() + ": " + monitoringActions);
+        }
+        return monitoringActions.stream().findFirst().map(MonitoringAction::getSpan).orElse(Span.getInvalid());
     }
 
     @NonNull
@@ -127,13 +180,30 @@ public class OtelTraceService implements OtelComponent {
                 return pipelineSpanContext.getSpan();
             }
         }
-        final Span span = Iterables.getLast(runSpans.runPhasesSpans, null);
-        if (span == null) {
+        final Span span = Iterables.getLast(runSpans.runPhasesSpans, Span.getInvalid());
+        Span resultV2 = getSpanV2(flowNode, run);
+        assertEquals(span, resultV2, flowNode, run);
+
+        if (span == Span.getInvalid()) {
             LOGGER.log(Level.FINE, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
-            return noOpTracer.spanBuilder("noop-recovery-run-span-for-" + run.getFullDisplayName()).startSpan();
+        } else {
+            LOGGER.log(Level.FINEST, () -> "getSpan(): " + span.getSpanContext().getSpanId());
         }
-        LOGGER.log(Level.FINEST, () -> "getSpan(): " + span.getSpanContext().getSpanId());
         return span;
+    }
+
+    @NonNull
+    public Span getSpanV2(@NonNull FlowNode flowNode, @NonNull Run run) {
+        Iterable<FlowNode> ancestors = getAncestors(flowNode);
+        for (FlowNode currentFlowNode : ancestors) {
+            List<FlowNodeMonitoringAction> flowNodeMonitoringActions = new ArrayList<>(currentFlowNode.getActions(FlowNodeMonitoringAction.class));
+
+            Optional<Span> span = Optional.ofNullable(Iterables.getLast(flowNodeMonitoringActions, null)).map(FlowNodeMonitoringAction::getSpan);
+            if (span.isPresent()) {
+                return span.get();
+            }
+        }
+        return getSpanV2(run, false);
     }
 
     @NonNull
@@ -155,7 +225,7 @@ public class OtelTraceService implements OtelComponent {
     /**
      * Return the chain of enclosing flowNodes including the given flow node. If the given flow node is a step end node,
      * the associated step start node is also added.
-     *
+     * <p>
      * Example
      * <pre>
      * test-pipeline-with-parallel-step8
@@ -184,15 +254,16 @@ public class OtelTraceService implements OtelComponent {
      *    |
      *    |- Phase: Finalise
      * </pre>
-     *
+     * <p>
      * {@code getAncestors("shell-3/node.id: 18")} will return {@code [
-     *    "shell-3/node.id: 18",
-     *    "Parallel branch: parallelBranch3/node.id: 12",
-     *    "Stage: ze-parallel-stage, node.id: 6",
-     *    "node / node.id: 3",
-     *    "Start of Pipeline / node.id: 2" // not visualized above
-     *    ]}
+     * "shell-3/node.id: 18",
+     * "Parallel branch: parallelBranch3/node.id: 12",
+     * "Stage: ze-parallel-stage, node.id: 6",
+     * "node / node.id: 3",
+     * "Start of Pipeline / node.id: 2" // not visualized above
+     * ]}
      * TODO optimize lazing loading the enclosing blocks using {@link org.jenkinsci.plugins.workflow.graph.GraphLookupView#findEnclosingBlockStart(org.jenkinsci.plugins.workflow.graph.FlowNode)}
+     *
      * @param flowNode
      * @return list of enclosing flow nodes starting with the passed flow nodes
      */
@@ -210,7 +281,7 @@ public class OtelTraceService implements OtelComponent {
         ancestors.add(startNode);
         ancestors.addAll(startNode.getEnclosingBlocks());
         // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
-        LOGGER.log(Level.FINEST, () -> "< getAncestorsV2([" +  flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "']): " + ancestors.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
+        LOGGER.log(Level.FINEST, () -> "< getAncestorsV2([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "']): " + ancestors.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
         return ancestors;
     }
 
@@ -225,7 +296,7 @@ public class OtelTraceService implements OtelComponent {
             StepEndNode stepEndNode = (StepEndNode) flowNode;
             startSpanNode = stepEndNode.getStartNode();
         } else if (flowNode instanceof StepStartNode &&
-                ((StepStartNode) flowNode).getDescriptor() instanceof ExecutorStep.DescriptorImpl) {
+            ((StepStartNode) flowNode).getDescriptor() instanceof ExecutorStep.DescriptorImpl) {
             // remove the "node.allocate" span, it's located on the parent node which is also a StepStartNode of a ExecutorStep.DescriptorImpl
             startSpanNode = Iterables.getFirst(flowNode.getParents(), null);
         } else {
@@ -238,7 +309,7 @@ public class OtelTraceService implements OtelComponent {
             return;
         }
         final boolean removed = pipelineSpanContexts.remove(pipelineSpanContext);
-        verify(removed == true, "%s - Failure to remove span %s for node %s: %s", run, pipelineSpanContext, startSpanNode, span, runSpans);
+        verify(removed, "%s - Failure to remove span %s for node %s: %s", run, pipelineSpanContext, startSpanNode, span, runSpans);
 
     }
 
@@ -283,6 +354,7 @@ public class OtelTraceService implements OtelComponent {
     }
 
     public void purgeRun(@NonNull Run run) {
+        purgeRunV2(run);
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = this.spansByRun.remove(runIdentifier);
         if (runSpans == null) {
@@ -291,6 +363,18 @@ public class OtelTraceService implements OtelComponent {
 
         if (!runSpans.runPhasesSpans.isEmpty() || !runSpans.pipelineStepSpansByFlowNodeId.isEmpty()) {
             throw new VerifyException(run.getFullDisplayName() + " - Some spans have not been ended and removed: " + runSpans);
+        }
+    }
+
+    public void purgeRunV2(@NonNull Run run) {
+        run.getActions(MonitoringAction.class).forEach(MonitoringAction::purgeSpan);
+        if (run instanceof WorkflowRun) {
+            WorkflowRun workflowRun = (WorkflowRun) run;
+            List<FlowNode> flowNodesHeads = Optional.ofNullable(workflowRun.getExecution()).map(FlowExecution::getCurrentHeads).orElse(Collections.emptyList());
+            for (FlowNode flowNodeHead : flowNodesHeads) {
+                flowNodeHead.getActions(FlowNodeMonitoringAction.class).forEach(FlowNodeMonitoringAction::purgeSpan);
+                flowNodeHead.getParents().forEach(flowNode -> flowNode.getActions(FlowNodeMonitoringAction.class).forEach(FlowNodeMonitoringAction::purgeSpan));
+            }
         }
     }
 
@@ -307,6 +391,8 @@ public class OtelTraceService implements OtelComponent {
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans());
         runSpans.runPhasesSpans.add(span);
 
+        run.addAction(new MonitoringAction(span));
+
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ") - new stack: " + runSpans);
     }
 
@@ -315,12 +401,20 @@ public class OtelTraceService implements OtelComponent {
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans());
         runSpans.pipelineStepSpansByFlowNodeId.put(flowNode.getId(), new PipelineSpanContext(span, flowNode));
 
+        if (!flowNode.getActions(MonitoringAction.class).isEmpty()) {
+            // should only happen for build agent allocation so we can track allocation duration
+            LOGGER.log(Level.FINER, () ->
+                "FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "] " +
+                    "is already associated with: " + flowNode.getActions(MonitoringAction.class).stream().map(ma -> "'" + ma.getSpanName() + "'").collect(Collectors.joining(",")));
+        }
+        flowNode.addAction(new FlowNodeMonitoringAction(span));
+
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + " FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], Span[id: " + span.getSpanContext().getSpanId() + "]" + ") -  " + runSpans);
     }
 
     /**
      * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
-     * @see #setupContext(Run, boolean) 
+     * @see #setupContext(Run, boolean)
      */
     @NonNull
     @MustBeClosed
@@ -366,9 +460,9 @@ public class OtelTraceService implements OtelComponent {
             // clone the Multimap to prevent a ConcurrentModificationException
             // see https://github.com/jenkinsci/opentelemetry-plugin/issues/129
             return "RunSpans{" +
-                    "runPhasesSpans=" + Collections.unmodifiableList(runPhasesSpans) +
-                    ", pipelineStepSpansByFlowNodeId=" + ArrayListMultimap.create(pipelineStepSpansByFlowNodeId) +
-                    '}';
+                "runPhasesSpans=" + Collections.unmodifiableList(runPhasesSpans) +
+                ", pipelineStepSpansByFlowNodeId=" + ArrayListMultimap.create(pipelineStepSpansByFlowNodeId) +
+                '}';
         }
     }
 
@@ -463,10 +557,10 @@ public class OtelTraceService implements OtelComponent {
         @Override
         public String toString() {
             return "PipelineSpanContext{" +
-                    "span=" + span +
-                    "flowNodeId=" + flowNodeId +
-                    ", parentIds=" + parentFlowNodeIds +
-                    '}';
+                "span=" + span +
+                "flowNodeId=" + flowNodeId +
+                ", parentIds=" + parentFlowNodeIds +
+                '}';
         }
 
         @Override

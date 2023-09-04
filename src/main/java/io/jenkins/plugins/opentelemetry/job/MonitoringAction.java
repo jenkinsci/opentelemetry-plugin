@@ -10,6 +10,11 @@ import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.trace.ReadWriteSpan;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
@@ -17,6 +22,8 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.lang.ref.SoftReference;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,24 +31,32 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.LastBuildAction {
     private final static Logger LOGGER = Logger.getLogger(MonitoringAction.class.getName());
 
-    final String traceId;
-    final String spanId;
-    final String rootSpanName;
-    Map<String, Map<String, String>> contextPerNodeId = new HashMap<>();
-    Map<String, String> rootContext = new HashMap<>();
+    private transient Span span;
+    final private String traceId;
+    final private String spanId;
+    final private String rootSpanName;
+    private Map<String, Map<String, String>> contextPerNodeId = new HashMap<>();
+    final private Map<String, String> rootContext;
 
-    transient Run run;
+    private transient Run run;
 
-    public MonitoringAction(String traceId, String spanId, String rootSpanName) {
-        this.traceId = traceId;
-        this.spanId = spanId;
-        this.rootSpanName = rootSpanName;
+    public MonitoringAction(Span span) {
+        this.traceId = span.getSpanContext().getTraceId();
+        this.spanId = span.getSpanContext().getSpanId();
+        this.rootSpanName = span instanceof ReadWriteSpan ? ((ReadWriteSpan) span).getName() : null; // when tracer is no-op, span is NOT a ReadWriteSpan
+        this.span = span;
+        try (Scope scope = span.makeCurrent()) {
+            Map<String, String> context = new HashMap<>();
+            W3CTraceContextPropagator.getInstance().inject(Context.current(), context, (carrier, key, value) -> carrier.put(key, value));
+            this.rootContext = context;
+        }
     }
 
     @Override
@@ -82,6 +97,20 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         return spanId;
     }
 
+    public String getSpanName() {
+        return rootSpanName;
+    }
+
+    @CheckForNull
+    public Span getSpan() {
+        return span;
+    }
+
+    public void purgeSpan(){
+        LOGGER.log(Level.INFO, () -> "Purge span='" + rootSpanName + "', spanId=" + spanId + ", traceId=" + traceId + ": " + (span == null ? "#null#" : "purged"));
+        this.span = null;
+    }
+
     /**
      * Add per {@link FlowNode} contextual information.
      */
@@ -92,16 +121,9 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         contextPerNodeId.put(node.getId(), context);
     }
 
-    @CheckForNull
+    @NonNull
     public Map<String, String> getRootContext() {
         return rootContext;
-    }
-
-    /**
-     * See `io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator#inject(io.opentelemetry.context.Context, java.lang.Object, io.opentelemetry.context.propagation.TextMapSetter)`
-     */
-    public void addRootContext(@NonNull Map<String, String> context) {
-        this.rootContext = context;
     }
 
     @CheckForNull
@@ -144,6 +166,7 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         return "MonitoringAction{" +
             "traceId='" + traceId + '\'' +
             ", spanId='" + spanId + '\'' +
+            ", span.name='" + rootSpanName + '\'' +
             ", run='" + run + '\'' +
             '}';
     }

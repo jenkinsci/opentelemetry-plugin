@@ -123,7 +123,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private boolean exportOtelConfigurationAsEnvironmentVariables;
 
-    private transient ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
+    private final transient ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
 
     private String configurationProperties;
 
@@ -139,7 +139,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * @see CauseOfInterruption
      * @see org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
      */
-    private List<String> statusUnsetCausesOfInterruption = Arrays.asList(
+    private final List<String> statusUnsetCausesOfInterruption = Arrays.asList(
         "org.jenkinsci.plugins.workflow.cps.steps.ParallelStep$FailFastCause",
         StageStepExecution.CanceledCause.class.getName(),
         CauseOfInterruption.UserInterruption.class.getName()
@@ -585,8 +585,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return logStorageRetriever;
     }
 
+    @NonNull
     public static JenkinsOpenTelemetryPluginConfiguration get() {
-        return GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+        return Objects.requireNonNull(GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class));
     }
 
     /**

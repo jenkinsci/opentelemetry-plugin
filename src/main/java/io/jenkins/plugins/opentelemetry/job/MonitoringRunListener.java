@@ -264,20 +264,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
         // START ROOT SPAN
         Span rootSpan = rootSpanBuilder.startSpan();
-        String traceId = rootSpan.getSpanContext().getTraceId();
-        String spanId = rootSpan.getSpanContext().getSpanId();
-        // TODO better pattern to retrieve the name of the created root span
-        String rootSpanName = rootSpan instanceof ReadWriteSpan? ((ReadWriteSpan) rootSpan).getName() : null; // when tracer is no-op, span is NOT a ReadWriteSpan
-        MonitoringAction monitoringAction = new MonitoringAction(traceId, spanId, rootSpanName);
-        run.addAction(monitoringAction);
 
         this.getTraceService().putSpan(run, rootSpan);
         try (final Scope rootSpanScope = rootSpan.makeCurrent()) {
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin root " + OtelUtils.toDebugString(rootSpan));
-
-            Map<String, String> context = new HashMap<>();
-            W3CTraceContextPropagator.getInstance().inject(Context.current(), context, (carrier, key, value) -> carrier.put(key, value));
-            monitoringAction.addRootContext(context);
 
             // START initialize span
             Span startSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_START_NAME)
