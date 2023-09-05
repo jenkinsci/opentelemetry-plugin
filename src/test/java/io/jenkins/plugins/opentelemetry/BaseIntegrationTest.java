@@ -199,10 +199,6 @@ public class BaseIntegrationTest {
         Attributes attributes = root.get(0).spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(jobType));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
-
-        // Environment variables are populated
-        // EnvVars environment = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
-        // assertEnvironmentVariables(environment);
     }
 
     protected void assertFreestyleJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
