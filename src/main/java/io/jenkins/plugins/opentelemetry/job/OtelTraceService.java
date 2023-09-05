@@ -113,7 +113,7 @@ public class OtelTraceService implements OtelComponent {
         return span;
     }
 
-    public Span getSpan(@NonNull Run run) throws VerifyException{
+    public Span getSpan(@NonNull Run run) throws VerifyException {
         return getSpan(run, false);
     }
 
@@ -153,8 +153,8 @@ public class OtelTraceService implements OtelComponent {
             String actualSpanName = actualSpan instanceof ReadWriteSpan ? ((ReadWriteSpan) actualSpan).getName() : null; // when tracer is no-op, span is NOT a ReadWriteSpan
             String expectedSpanName = expectedSpan instanceof ReadWriteSpan ? ((ReadWriteSpan) expectedSpan).getName() : null; // when tracer is no-op, span is NOT a ReadWriteSpan
             String msg = "Span id mismatch: expected=" + expectedSpanId + " / '" + expectedSpanName +
-                    "', actual=" + actualSpanId + " / '" + actualSpanName +
-                    "' for run " + run;
+                "', actual=" + actualSpanId + " / '" + actualSpanName +
+                "' for run " + run;
             LOGGER.log(Level.WARNING, msg);
             throw new IllegalStateException(msg);
         }
@@ -172,9 +172,9 @@ public class OtelTraceService implements OtelComponent {
     }
 
 
-
     @NonNull
     public Span getSpan(@NonNull Run run, FlowNode flowNode) {
+        Span resultV2 = getSpanV2(flowNode, run);
 
         RunIdentifier runIdentifier = RunIdentifier.fromRun(run);
         RunSpans runSpans = spansByRun.computeIfAbsent(runIdentifier, runIdentifier1 -> new RunSpans()); // absent when Jenkins restarts during build
@@ -182,23 +182,24 @@ public class OtelTraceService implements OtelComponent {
         LOGGER.log(Level.FINEST, () -> "parentFlowNodes: " + flowNode.getParents().stream().map(node -> node.getDisplayName() + ", id: " + node.getId()).collect(Collectors.toList()));
 
         Iterable<FlowNode> ancestors = getAncestors(flowNode);
-
+        Span span = null;
         for (FlowNode ancestor : ancestors) {
             final Collection<PipelineSpanContext> pipelineSpanContexts = runSpans.pipelineStepSpansByFlowNodeId.get(ancestor.getId());
             PipelineSpanContext pipelineSpanContext = Iterables.getLast(pipelineSpanContexts, null);
             if (pipelineSpanContext != null) {
-                return pipelineSpanContext.getSpan();
+                span = pipelineSpanContext.getSpan();
+                break;
             }
         }
-        final Span span = Iterables.getLast(runSpans.runPhasesSpans, Span.getInvalid());
-        Span resultV2 = getSpanV2(flowNode, run);
+        if (span != null) {
+            assertEquals(span, resultV2, flowNode, run);
+            return span;
+        }
+
+        span = Iterables.getLast(runSpans.runPhasesSpans, Span.getInvalid());
+
         assertEquals(span, resultV2, flowNode, run);
 
-        if (span == Span.getInvalid()) {
-            LOGGER.log(Level.FINE, () -> "No span found for run " + run.getFullDisplayName() + ", Jenkins server may have restarted");
-        } else {
-            LOGGER.log(Level.FINEST, () -> "getSpan(): " + span.getSpanContext().getSpanId());
-        }
         return span;
     }
 
@@ -206,13 +207,16 @@ public class OtelTraceService implements OtelComponent {
     public Span getSpanV2(@NonNull FlowNode flowNode, @NonNull Run run) {
         Iterable<FlowNode> ancestors = getAncestors(flowNode);
         for (FlowNode currentFlowNode : ancestors) {
-            List<FlowNodeMonitoringAction> flowNodeMonitoringActions = new ArrayList<>(currentFlowNode.getActions(FlowNodeMonitoringAction.class));
+            Optional<Span> span = ImmutableList.copyOf(currentFlowNode.getActions(FlowNodeMonitoringAction.class)).reverse() // from last to first
+                .stream()
+                .filter(Predicate.not(FlowNodeMonitoringAction::hasEnded)) // only the non ended spans
+                .findFirst().map(FlowNodeMonitoringAction::getSpan);
 
-            Optional<Span> span = Optional.ofNullable(Iterables.getLast(flowNodeMonitoringActions, null)).map(FlowNodeMonitoringAction::getSpan);
             if (span.isPresent()) {
                 return span.get();
             }
         }
+
         return getSpanV2(run);
     }
 
@@ -449,7 +453,7 @@ public class OtelTraceService implements OtelComponent {
         }
         flowNode.addAction(new FlowNodeMonitoringAction(span));
 
-        LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + " FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], Span[id: " + span.getSpanContext().getSpanId() + "]" + ") -  " + runSpans);
+        LOGGER.log(Level.INFO, () -> "putSpan(" + run.getFullDisplayName() + "," + " FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], Span[id: " + span.getSpanContext().getSpanId() + "]" + ") -  " + runSpans);
     }
 
     /**
