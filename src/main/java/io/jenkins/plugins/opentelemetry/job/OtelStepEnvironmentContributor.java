@@ -17,6 +17,7 @@ import org.jenkinsci.plugins.workflow.steps.StepEnvironmentContributor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,7 +36,7 @@ public class OtelStepEnvironmentContributor extends StepEnvironmentContributor {
     @Override
     public void buildEnvironmentFor(@NonNull StepContext stepContext, @NonNull EnvVars envs, @NonNull TaskListener listener) throws IOException, InterruptedException {
         super.buildEnvironmentFor(stepContext, envs, listener);
-        Run run = stepContext.get(Run.class);
+        Run run = Objects.requireNonNull(stepContext.get(Run.class));
         FlowNode flowNode = stepContext.get(FlowNode.class);
 
         Span span;

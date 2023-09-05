@@ -3,32 +3,34 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry;
+package io.jenkins.plugins.opentelemetry.job.action;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
-import hudson.model.InvisibleAction;
+import hudson.model.Action;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.trace.ReadWriteSpan;
+import io.opentelemetry.sdk.trace.ReadableSpan;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class FlowNodeMonitoringAction extends InvisibleAction {
-    private final static Logger LOGGER = Logger.getLogger(FlowNodeMonitoringAction.class.getName());
+public abstract class AbstractMonitoringAction implements Action, OtelMonitoringAction {
+    private final static Logger LOGGER = Logger.getLogger(AbstractMonitoringAction.class.getName());
 
     private transient Span span;
     final String traceId;
     final String spanId;
-    final String spanName;
+    protected String spanName;
+    protected Map<String, String> w3cTraceContext;
 
-    final Map<String, String> w3cTraceContext;
-
-    public FlowNodeMonitoringAction(Span span) {
+    public AbstractMonitoringAction(Span span) {
         this.span = span;
         this.traceId = span.getSpanContext().getTraceId();
         this.spanId = span.getSpanContext().getSpanId();
@@ -44,22 +46,46 @@ public class FlowNodeMonitoringAction extends InvisibleAction {
         return spanName;
     }
 
+    @Override
+    public Map<String, String> getW3cTraceContext() {
+        return Collections.unmodifiableMap(w3cTraceContext);
+    }
+
+    @Override
     @CheckForNull
     public Span getSpan() {
         return span;
     }
 
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public String getSpanId() {
+        return spanId;
+    }
+
+    @Override
     public void purgeSpan() {
-        LOGGER.log(Level.INFO, () -> "Purge span='" + spanName + "', spanId=" + spanId + ", traceId=" + traceId + ": " + (span == null ? "#null#" : "purged"));
+        LOGGER.log(Level.FINE, () -> "Purge span='" + spanName + "', spanId=" + spanId + ", traceId=" + traceId + ": " + (span == null ? "#null#" : "purged"));
         this.span = null;
     }
 
     @Override
     public String toString() {
-        return "FlowNodeMonitoringAction{" +
+        return getClass().getSimpleName() + "{" +
             "traceId='" + traceId + '\'' +
             ", spanId='" + spanId + '\'' +
             ", span.name='" + spanName + '\'' +
             '}';
+    }
+
+    @Override
+    public boolean hasEnded() {
+        return
+            Optional
+                .ofNullable(span).map(s -> s instanceof ReadableSpan ? (ReadableSpan) s : null) // cast to ReadableSpan
+                .map(ReadableSpan::hasEnded)
+                .orElse(true);
     }
 }

@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry.job;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
@@ -39,19 +40,15 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.trace.ReadWriteSpan;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -275,7 +272,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(startSpan));
 
-            this.getTraceService().putSpan(run, startSpan);
+            this.getTraceService().putRunPhaseSpan(run, startSpan);
             try (final Scope startSpanScope = startSpan.makeCurrent()) {
                 this.runLaunchedCounter.add(1);
             }
@@ -288,10 +285,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             Span runSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
             try (Scope scope = runSpan.makeCurrent()) {
-                this.getTraceService().putSpan(run, runSpan);
+                this.getTraceService().putRunPhaseSpan(run, runSpan);
                 // Support non-pipeline jobs
                 if (run instanceof AbstractBuild) {
-                    this.getTraceService().putSpan((AbstractBuild) run, runSpan);
+                    this.getTraceService().putSpan((AbstractBuild) run, runSpan); // FIXME
                 }
                 this.runStartedCounter.add(1);
             }
@@ -304,7 +301,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             Span finalizeSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(finalizeSpan));
             try (Scope scope = finalizeSpan.makeCurrent()) {
-                this.getTraceService().putSpan(run, finalizeSpan);
+                this.getTraceService().putRunPhaseSpan(run, finalizeSpan);
             }
         }
     }
@@ -317,7 +314,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - end " + OtelUtils.toDebugString(pipelinePhaseSpan));
 
         this.getTraceService().removeJobPhaseSpan(run, pipelinePhaseSpan);
-        Span newCurrentSpan = this.getTraceService().getSpan(run);
+        Span newCurrentSpan = this.getTraceService().getPipelineRootSpan(run);
         return newCurrentSpan.makeCurrent();
     }
 

@@ -7,6 +7,10 @@ package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import groovy.text.GStringTemplateEngine;
 import hudson.Extension;
 import hudson.PluginWrapper;
@@ -31,6 +35,7 @@ import jenkins.model.CauseOfInterruption;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
+import net.jcip.annotations.Immutable;
 import net.sf.json.JSONObject;
 import org.jenkins.ui.icon.Icon;
 import org.jenkins.ui.icon.IconSet;
@@ -48,11 +53,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.annotation.PreDestroy;
-import net.jcip.annotations.Immutable;
 import javax.inject.Inject;
 import java.io.Closeable;
 import java.io.IOException;
@@ -585,6 +586,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return logStorageRetriever;
     }
 
+    /**
+     * https://github.com/spotbugs/spotbugs/issues/1175
+     */
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     @NonNull
     public static JenkinsOpenTelemetryPluginConfiguration get() {
         return Objects.requireNonNull(GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class));
