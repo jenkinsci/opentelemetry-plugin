@@ -29,12 +29,14 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.resources.Resource;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PreDestroy;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -120,7 +122,10 @@ public class OpenTelemetrySdkProvider {
 
             ExtensionList.lookup(OtelComponent.class).stream().sorted().forEachOrdered(OtelComponent::beforeSdkShutdown);
             this.openTelemetry.close();
-            this.openTelemetrySdk.shutdown();
+            CompletableResultCode shutdown = this.openTelemetrySdk.shutdown();
+            if(!shutdown.join(1, TimeUnit.SECONDS).isSuccess()) {
+                LOGGER.log(Level.WARNING, "Failure to shutdown OTel SDK");
+            }
         }
         GlobalOpenTelemetry.resetForTest();
         GlobalEventEmitterProvider.resetForTest();

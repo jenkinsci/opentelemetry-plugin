@@ -4,6 +4,7 @@ import hudson.ExtensionList;
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
 import org.apache.commons.lang3.SystemUtils;
@@ -54,6 +55,11 @@ public class OtelLocaLogMirroringTest {
 
         openTelemetrySdkProvider = openTelemetrySdkProviders.get(0);
         openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap()));
+    }
+    @AfterClass
+    public static void afterClass() {
+        openTelemetrySdkProvider.shutdown();
+        GlobalOpenTelemetry.resetForTest();
     }
 
     @Before
