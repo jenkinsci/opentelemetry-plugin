@@ -14,12 +14,10 @@ import hudson.model.Run;
 import hudson.plugins.git.GitSCM;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
-import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
@@ -272,7 +270,6 @@ public class BaseIntegrationTest {
     @AfterClass
     public static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
-        GlobalLoggerProvider.resetForTest();
     }
 
     public static class SpanDataWrapper {

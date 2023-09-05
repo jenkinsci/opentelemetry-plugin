@@ -30,6 +30,7 @@ import jenkins.YesNoMaybe;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -120,7 +121,7 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Ot
 
     @NonNull
     public Tracer getTracer() {
-        return tracer;
+        return Objects.requireNonNull(tracer, "Null Tracer, #afterSdkInitialized has not bee invoked on listener.");
     }
 
     @Override
@@ -130,7 +131,7 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Ot
 
     @Override
     public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-        this.tracer = tracer;
+        this.tracer = Objects.requireNonNull(tracer, "Provided tracer is null");
     }
 
     @Override

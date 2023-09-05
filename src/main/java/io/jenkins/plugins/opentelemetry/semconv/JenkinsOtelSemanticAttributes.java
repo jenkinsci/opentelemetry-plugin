@@ -144,6 +144,7 @@ public final class JenkinsOtelSemanticAttributes {
      * Values in {@link EventCategoryValues}
      */
     public static final AttributeKey<String> EVENT_CATEGORY = AttributeKey.stringKey("event.category");
+    public final static String INSTRUMENTATION_NAME = "io.jenkins.opentelemetry";
 
     /**
      * See https://www.elastic.co/guide/en/ecs/current/ecs-allowed-values-event-category.html

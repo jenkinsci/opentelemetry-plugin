@@ -5,20 +5,21 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.model.BuildListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.common.OffsetClock;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.sdk.common.Clock;
 import jenkins.util.JenkinsJVM;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -71,11 +72,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
     @Override
     public synchronized final PrintStream getLogger() {
         if (logger == null) {
-            try {
-                logger = new PrintStream(new OtelLogOutputStream(buildInfo, flowNodeId, w3cTraceContext, getOtelLogger(), clock), false, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                throw new AssertionError(e);
-            }
+            logger = new PrintStream(new OtelLogOutputStream(buildInfo, flowNodeId, w3cTraceContext, getOtelLogger(), clock), false, StandardCharsets.UTF_8);
         }
         return logger;
     }
@@ -104,7 +101,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         @Override
         public io.opentelemetry.api.logs.Logger getOtelLogger() {
             JenkinsJVM.checkJenkinsJVM();
-            return OpenTelemetrySdkProvider.get().getLoggerProvider().get(GlobalOpenTelemetrySdk.INSTRUMENTATION_NAME);
+            return OpenTelemetrySdkProvider.get().getLoggerProvider().get(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
         }
 
         /**

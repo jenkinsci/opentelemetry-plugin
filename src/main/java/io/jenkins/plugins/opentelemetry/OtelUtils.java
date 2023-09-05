@@ -5,6 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Plugin;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
@@ -12,7 +15,6 @@ import hudson.util.VersionNumber;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.ReadableSpan;
@@ -26,9 +28,6 @@ import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -210,10 +209,10 @@ public class OtelUtils {
         return opentelemetryPlugin == null ? UNKNOWN_VALUE : opentelemetryPlugin.getWrapper().getVersion();
     }
 
-    public static String prettyPrintOtelSdkConfig(AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk) {
+    public static String prettyPrintOtelSdkConfig(ConfigProperties configProperties, Resource resource) {
         return "SDK [" +
-            "config: " + prettyPrintConfiguration(autoConfiguredOpenTelemetrySdk.getConfig()) + ", "+
-            "resource: " + prettyPrintResource(autoConfiguredOpenTelemetrySdk.getResource()) +
+            "config: " + prettyPrintConfiguration(configProperties) + ", "+
+            "resource: " + prettyPrintResource(resource) +
             "]";
     }
     private final static List<String> noteworthyConfigurationPropertyNames = Arrays.asList(
@@ -248,7 +247,10 @@ public class OtelUtils {
         return noteworthyConfigProperties;
     }
 
-    public static String prettyPrintResource(Resource resource) {
+    public static String prettyPrintResource(@Nullable Resource resource) {
+        if (resource == null) {
+            return "#null#";
+        }
         Map<String, String> message = new LinkedHashMap<>();
         for (AttributeKey attributeKey : noteworthyResourceAttributeKeys) {
             Object attributeValue = resource.getAttribute(attributeKey);
