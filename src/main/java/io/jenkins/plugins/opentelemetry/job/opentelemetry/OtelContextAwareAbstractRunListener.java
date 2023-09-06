@@ -99,8 +99,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     @Override
     public final void onDeleted(@NonNull Run run) {
-        // on delete event of a build that is running, there are remaining steps, skip verification
-        try (Scope ignored = getTraceService().setupContext(run, false)) {
+        try (Scope ignored = getTraceService().setupContext(run)) {
             this._onDeleted(run);
         }
     }

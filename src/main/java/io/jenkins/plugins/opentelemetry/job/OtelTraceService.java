@@ -65,22 +65,6 @@ public class OtelTraceService implements OtelComponent {
      * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_RUN_NAME},
      * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
      * @throws VerifyException if there are ongoing step spans and {@code verifyIfRemainingSteps} is set to {@code true}
-     * @deprecated use {@link #getSpan(Run)}
-     */
-    @NonNull
-    @Deprecated
-    public Span getSpan(@NonNull Run run, boolean verifyIfRemainingSteps) throws VerifyException {
-        return getSpan(run);
-    }
-
-    /**
-     * Returns the span of the current run phase.
-     *
-     * @return the span of the current pipeline run phase:
-     * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_START_NAME},
-     * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_RUN_NAME},
-     * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
-     * @throws VerifyException if there are ongoing step spans and {@code verifyIfRemainingSteps} is set to {@code true}
      */
     public Span getSpan(@NonNull Run run) throws VerifyException {
         return Streams.findLast(run.getActions(RunPhaseMonitoringAction.class).stream()).map(RunPhaseMonitoringAction::getSpan).orElse(Span.getInvalid());
@@ -113,11 +97,6 @@ public class OtelTraceService implements OtelComponent {
 
     @NonNull
     public Span getSpan(@NonNull AbstractBuild build, @NonNull BuildStep buildStep) {
-        return getSpanV2(build, buildStep);
-    }
-
-    @NonNull
-    public Span getSpanV2(@NonNull AbstractBuild build, @NonNull BuildStep buildStep) {
         return ImmutableList.copyOf(build.getActions(BuildStepMonitoringAction.class)).reverse() // from last to first
             .stream()
             .filter(Predicate.not(BuildStepMonitoringAction::hasEnded)) // only the non ended spans
@@ -279,21 +258,11 @@ public class OtelTraceService implements OtelComponent {
 
     /**
      * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
-     * @see #setupContext(Run, boolean)
      */
     @NonNull
     @MustBeClosed
     public Scope setupContext(@NonNull Run run) {
-        return setupContext(run, true);
-    }
-
-    /**
-     * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
-     */
-    @NonNull
-    @MustBeClosed
-    public Scope setupContext(@NonNull Run run, boolean verifyIfRemainingSteps) {
-        Span span = getSpan(run, verifyIfRemainingSteps);
+        Span span = getSpan(run);
         return span.makeCurrent();
     }
 
