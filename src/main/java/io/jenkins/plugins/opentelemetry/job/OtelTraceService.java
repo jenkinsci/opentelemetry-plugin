@@ -7,26 +7,20 @@ package io.jenkins.plugins.opentelemetry.job;
 
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.tasks.BuildStep;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.job.action.BuildStepMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.OtelMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.RunPhaseMonitoringAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.events.EventEmitter;
-import io.opentelemetry.api.logs.LoggerProvider;
-import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
@@ -43,16 +37,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Extension
-public class OtelTraceService implements OtelComponent {
+public class OtelTraceService {
     private static final Logger LOGGER = Logger.getLogger(OtelTraceService.class.getName());
 
-    private Tracer tracer;
+    @SuppressFBWarnings("MS_SHOULD_BE_FINAL")
+    public static boolean STRICT_MODE = false;
 
     public OtelTraceService() {
     }
@@ -67,7 +63,12 @@ public class OtelTraceService implements OtelComponent {
      * @throws VerifyException if there are ongoing step spans and {@code verifyIfRemainingSteps} is set to {@code true}
      */
     public Span getSpan(@NonNull Run run) throws VerifyException {
-        return Streams.findLast(run.getActions(RunPhaseMonitoringAction.class).stream()).map(RunPhaseMonitoringAction::getSpan).orElse(Span.getInvalid());
+        return ImmutableList.copyOf(run.getActions(RunPhaseMonitoringAction.class))
+            .reverse()
+            .stream().filter(Predicate.not(RunPhaseMonitoringAction::hasEnded))
+            .findFirst()
+            .map(RunPhaseMonitoringAction::getSpan)
+            .orElse(Span.getInvalid());
     }
 
     /**
@@ -86,7 +87,6 @@ public class OtelTraceService implements OtelComponent {
                 .stream()
                 .filter(Predicate.not(FlowNodeMonitoringAction::hasEnded)) // only the non ended spans
                 .findFirst().map(FlowNodeMonitoringAction::getSpan);
-
             if (span.isPresent()) {
                 return span.get();
             }
@@ -111,29 +111,17 @@ public class OtelTraceService implements OtelComponent {
      * Example
      * <pre>
      * test-pipeline-with-parallel-step8
-     *    |
      *    |- Phase: Start
-     *    |
      *    |- Phase: Run
-     *    |   |
      *    |   |- Agent, function: node, name: agent, node.id: 3
-     *    |       |
      *    |       |- Agent Allocation, function: node, name: agent.allocate, node.id: 3
-     *    |       |
      *    |       |- Stage: ze-parallel-stage, function: stage, name: ze-parallel-stage, node.id: 6
-     *    |           |
      *    |           |- Parallel branch: parallelBranch1, function: parallel, name: parallelBranch1, node.id: 10
-     *    |           |   |
      *    |           |   |- shell-1, function: sh, name: Shell Script, node.id: 14
-     *    |           |
      *    |           |- Parallel branch: parallelBranch2, function: parallel, name: parallelBranch2, node.id: 11
-     *    |           |   |
      *    |           |   |- shell-2, function: sh, name: Shell Script, node.id: 16
-     *    |           |
      *    |           |- Parallel branch: parallelBranch3, function: parallel, name: parallelBranch3, node.id: 12
-     *    |               |
      *    |               |- shell-3, function: sh, name: Shell Script, node.id: 18
-     *    |
      *    |- Phase: Finalise
      * </pre>
      * <p>
@@ -178,7 +166,7 @@ public class OtelTraceService implements OtelComponent {
             // remove the "node.allocate" span, it's located on the parent node which is also a StepStartNode of a ExecutorStep.DescriptorImpl
             startSpanNode = flowNode.getParents().stream().findFirst().orElse(null);
             if (startSpanNode == null) {
-                if (true) { // FIXME remove before merge code
+                if (STRICT_MODE) {
                     throw new IllegalStateException("Parent node NOT found for " + flowNode + " on " + run);
                 } else {
                     LOGGER.log(Level.WARNING, () -> "Parent node NOT found for " + flowNode + " on " + run);
@@ -194,7 +182,12 @@ public class OtelTraceService implements OtelComponent {
             .stream()
             .filter(buildStepMonitoringAction -> Objects.equals(buildStepMonitoringAction.getSpanId(), span.getSpanContext().getSpanId()))
             .findFirst().ifPresentOrElse(BuildStepMonitoringAction::purgeSpan, () -> {
-                throw new IllegalStateException("span not found to be purged: " + span);
+                String msg = "span not found to be purged: " + span + " for " + flowNode + " in " + run;
+                if (STRICT_MODE) {
+                    throw new IllegalStateException(msg);
+                } else {
+                    LOGGER.log(Level.WARNING, msg);
+                }
             });
     }
 
@@ -240,16 +233,17 @@ public class OtelTraceService implements OtelComponent {
 
     public void putRunPhaseSpan(@NonNull Run run, @NonNull Span span) {
         run.addAction(new RunPhaseMonitoringAction(span));
-
         LOGGER.log(Level.FINEST, () -> "putRunPhaseSpan(" + run.getFullDisplayName() + "," + span + ")");
     }
 
     public void putSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
-        if (!flowNode.getActions(MonitoringAction.class).isEmpty()) {
+        if (!flowNode.getActions(MonitoringAction.class).isEmpty() && STRICT_MODE) {
             // should only happen for build agent allocation so we can track allocation duration
-            LOGGER.log(Level.FINER, () ->
+            Supplier<String> msg = () ->
                 "FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "] " +
-                    "is already associated with: " + flowNode.getActions(MonitoringAction.class).stream().map(ma -> "'" + ma.getSpanName() + "'").collect(Collectors.joining(",")));
+                    "is already associated with: " + flowNode.getActions(MonitoringAction.class).stream().map(ma -> "'" + ma.getSpanName() + "'").collect(Collectors.joining(","));
+            LOGGER.log(Level.FINER, msg);
+            throw new IllegalStateException(msg.get());
         }
         flowNode.addAction(new FlowNodeMonitoringAction(span));
 
@@ -264,19 +258,5 @@ public class OtelTraceService implements OtelComponent {
     public Scope setupContext(@NonNull Run run) {
         Span span = getSpan(run);
         return span.makeCurrent();
-    }
-
-    public Tracer getTracer() {
-        return tracer;
-    }
-
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-        this.tracer = tracer;
-    }
-
-    @Override
-    public void beforeSdkShutdown() {
-
     }
 }

@@ -14,6 +14,7 @@ import hudson.model.Run;
 import hudson.plugins.git.GitSCM;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -64,6 +65,7 @@ public class BaseIntegrationTest {
 
     static {
         OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
+        OtelTraceService.STRICT_MODE = true;
         GitSCM.ALLOW_LOCAL_CHECKOUT = true;
     }
 
