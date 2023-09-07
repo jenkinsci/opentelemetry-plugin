@@ -225,19 +225,19 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                         // hudson.model.Cause.UpstreamCause.getUpstreamRun() can return null, probably if upstream job or build has been deleted.
                     } else {
                         MonitoringAction monitoringAction = upstreamRun.getAction(MonitoringAction.class);
-                        Map<String, String> carrier;
+                        Map<String, String> w3cTraceContext;
                         if (monitoringAction == null) {
                             // unclear why this could happen. Maybe during the installation of the plugin if the plugin is
                             // installed while a parent job triggers a downstream job
-                            carrier = Collections.emptyMap();
+                            w3cTraceContext = Collections.emptyMap();
                         } else if (upstreamCause instanceof BuildUpstreamCause) {
                             BuildUpstreamCause buildUpstreamCause = (BuildUpstreamCause) cause;
                             String upstreamNodeId = buildUpstreamCause.getNodeId();
-                            carrier = monitoringAction.getContext(upstreamNodeId);
+                            w3cTraceContext = monitoringAction.getW3cTraceContext(upstreamNodeId);
                         } else {
-                            carrier = monitoringAction.getRootContext();
+                            w3cTraceContext = monitoringAction.getW3cTraceContext();
                         }
-                        Context context = W3CTraceContextPropagator.getInstance().extract(Context.current(), carrier, new TextMapGetter<Map<String, String>>() {
+                        Context context = W3CTraceContextPropagator.getInstance().extract(Context.current(), w3cTraceContext, new TextMapGetter<Map<String, String>>() {
                             @Override
                             public Iterable<String> keys(Map<String, String> carrier) {
                                 return carrier.keySet();

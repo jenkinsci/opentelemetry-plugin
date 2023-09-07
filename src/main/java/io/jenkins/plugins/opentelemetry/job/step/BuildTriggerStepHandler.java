@@ -43,12 +43,4 @@ public class BuildTriggerStepHandler implements StepHandler {
         spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, job);
         return spanBuilder;
     }
-
-    @Override
-    public void afterSpanCreated(StepAtomNode node, WorkflowRun run) {
-        Map<String, String> context = new HashMap<>();
-        MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-        W3CTraceContextPropagator.getInstance().inject(Context.current(), context, (carrier, key, value) -> carrier.put(key, value));
-        monitoringAction.addContext(node, context);
-    }
 }
