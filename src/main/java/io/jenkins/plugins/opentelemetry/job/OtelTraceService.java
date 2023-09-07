@@ -210,6 +210,7 @@ public class OtelTraceService {
 
     public void purgeRun(@NonNull Run run) {
         run.getActions(OtelMonitoringAction.class).forEach(OtelMonitoringAction::purgeSpan);
+        // TODO verify we don't need this cleanup
         if (run instanceof WorkflowRun) {
             WorkflowRun workflowRun = (WorkflowRun) run;
             List<FlowNode> flowNodesHeads = Optional.ofNullable(workflowRun.getExecution()).map(FlowExecution::getCurrentHeads).orElse(Collections.emptyList());

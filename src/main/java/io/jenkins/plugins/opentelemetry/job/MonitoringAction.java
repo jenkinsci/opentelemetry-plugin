@@ -36,13 +36,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class MonitoringAction extends AbstractMonitoringAction implements Action, RunAction2, SimpleBuildStep.LastBuildAction, OtelMonitoringAction {
+/**
+ * Span reference associate with a {@link Run}
+ */
+public class MonitoringAction extends AbstractMonitoringAction implements Action, RunAction2, SimpleBuildStep.LastBuildAction {
 
     private final static Logger LOGGER = Logger.getLogger(MonitoringAction.class.getName());
 
-    @Deprecated
+    // Backward compatibility
+    @Deprecated(since = "2.15.1", forRemoval = true)
     private String rootSpanName;
-    @Deprecated
+    @Deprecated(since = "2.15.1", forRemoval = true)
     private Map<String, String> rootContext;
     private transient Run run;
 
@@ -80,23 +84,6 @@ public class MonitoringAction extends AbstractMonitoringAction implements Action
     @Override
     public String getUrlName() {
         return null;
-    }
-
-    /**
-     * @deprecated use {@link #getW3cTraceContext()}
-     */
-    @Deprecated
-    @NonNull
-    public Map<String, String> getRootContext() {
-        return getW3cTraceContext();
-    }
-
-    /**
-     * @deprecated use {@link #getW3cTraceContext(String)}
-     */
-    @CheckForNull
-    public Map<String, String> getContext(@NonNull String flowNodeId) {
-        return getW3cTraceContext(flowNodeId);
     }
 
     /**

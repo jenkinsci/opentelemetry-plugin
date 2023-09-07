@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.job.action;
 
 import io.opentelemetry.api.trace.Span;
 
-public abstract class AbstractInvisibleMonitoringAction extends AbstractMonitoringAction implements OtelMonitoringAction {
+public abstract class AbstractInvisibleMonitoringAction extends AbstractMonitoringAction {
 
     public AbstractInvisibleMonitoringAction(Span span) {
         super(span);
