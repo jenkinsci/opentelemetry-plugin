@@ -15,7 +15,6 @@ import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.action.AbstractMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
-import io.jenkins.plugins.opentelemetry.job.action.OtelMonitoringAction;
 import io.opentelemetry.api.trace.Span;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;

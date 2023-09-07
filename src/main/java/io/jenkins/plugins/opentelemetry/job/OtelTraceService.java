@@ -14,6 +14,7 @@ import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.tasks.BuildStep;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.action.BuildStepMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.OtelMonitoringAction;
@@ -21,7 +22,6 @@ import io.jenkins.plugins.opentelemetry.job.action.RunPhaseMonitoringAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.sdk.trace.ReadableSpan;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
@@ -32,6 +32,7 @@ import org.jenkinsci.plugins.workflow.graphanalysis.ForkScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -82,7 +83,8 @@ public class OtelTraceService {
     public Span getSpan(@NonNull Run run, FlowNode flowNode) {
         Iterable<FlowNode> ancestors = getAncestors(flowNode);
         for (FlowNode currentFlowNode : ancestors) {
-            Optional<Span> span = ImmutableList.copyOf(currentFlowNode.getActions(FlowNodeMonitoringAction.class)).reverse() // from last to first
+            Optional<Span> span = ImmutableList.copyOf(currentFlowNode.getActions(FlowNodeMonitoringAction.class))
+                .reverse() // from last to first
                 .stream()
                 .filter(Predicate.not(FlowNodeMonitoringAction::hasEnded)) // only the non ended spans
                 .findFirst().map(FlowNodeMonitoringAction::getSpan);
@@ -137,8 +139,6 @@ public class OtelTraceService {
      */
     @NonNull
     private Iterable<FlowNode> getAncestors(@NonNull final FlowNode flowNode) {
-        // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
-        LOGGER.log(Level.FINEST, () -> "> getAncestors([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "'])");
         List<FlowNode> ancestors = new ArrayList<>();
         FlowNode startNode;
         if (flowNode instanceof StepEndNode) {
@@ -148,8 +148,7 @@ public class OtelTraceService {
         }
         ancestors.add(startNode);
         ancestors.addAll(startNode.getEnclosingBlocks());
-        // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
-        LOGGER.log(Level.FINEST, () -> "< getAncestors([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "']): " + ancestors.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
+        LOGGER.log(Level.FINEST, () -> "getAncestors(" + OtelUtils.toDebugString(flowNode) + "): " + ancestors.stream().map(OtelUtils.flowNodeToDebugString()).collect(Collectors.joining(", ")));
         return ancestors;
     }
 
@@ -165,9 +164,9 @@ public class OtelTraceService {
             startSpanNode = flowNode.getParents().stream().findFirst().orElse(null);
             if (startSpanNode == null) {
                 if (STRICT_MODE) {
-                    throw new IllegalStateException("Parent node NOT found for " + flowNode + " on " + run);
+                    throw new IllegalStateException("Parent node NOT found for " + OtelUtils.toDebugString(flowNode) + " on " + run);
                 } else {
-                    LOGGER.log(Level.WARNING, () -> "Parent node NOT found for " + flowNode + " on " + run);
+                    LOGGER.log(Level.WARNING, () -> "Parent node NOT found for " + OtelUtils.toDebugString(flowNode) + " on " + run);
                     return;
                 }
             }
@@ -183,10 +182,8 @@ public class OtelTraceService {
             .ifPresentOrElse(
                 FlowNodeMonitoringAction::purgeSpan,
                 () -> {
-                    String msg = "span not found to be purged: " + "Span[id: " + span.getSpanContext().getSpanId() + ", " + (span instanceof ReadableSpan ? ((ReadableSpan) span).getName() : "#unknown") +
-                        " ending " +
-                        "FlowNode[name: " + startSpanNode.getDisplayName() + ", function: " + startSpanNode.getDisplayFunctionName() + ", id: " + startSpanNode.getId() + "]" +
-                        " in " + run;
+                    String msg = "span not found to be purged: " + OtelUtils.toDebugString(span) +
+                        " ending " + OtelUtils.toDebugString(startSpanNode) + " in " + run;
                     if (STRICT_MODE) {
                         throw new IllegalStateException(msg);
                     } else {
@@ -194,6 +191,7 @@ public class OtelTraceService {
                     }
                 });
     }
+
 
     public void removeJobPhaseSpan(@NonNull Run run, @NonNull Span span) {
     }
@@ -222,32 +220,30 @@ public class OtelTraceService {
 
     public void putSpan(@NonNull AbstractBuild build, @NonNull Span span) {
         build.addAction(new MonitoringAction(span));
-        LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + "," + span + ")");
+        LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putSpan(AbstractBuild build, BuildStep buildStep, Span span) {
         build.addAction(new BuildStepMonitoringAction(span));
-        LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + ", " + buildStep + "," + span + ")");
+        LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + ", " + buildStep + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putSpan(@NonNull Run run, @NonNull Span span) {
         run.addAction(new MonitoringAction(span));
-        LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ")");
+        LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putRunPhaseSpan(@NonNull Run run, @NonNull Span span) {
         run.addAction(new RunPhaseMonitoringAction(span));
-        LOGGER.log(Level.FINEST, () -> "putRunPhaseSpan(" + run.getFullDisplayName() + "," + span + ")");
+        LOGGER.log(Level.FINEST, () -> "putRunPhaseSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
         flowNode.addAction(new FlowNodeMonitoringAction(span));
 
-        LOGGER.log(Level.FINE, () -> "putSpan(" +
-            run.getFullDisplayName() + " " +
-            "FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], " +
-            "Span[id: " + span.getSpanContext().getSpanId() + ", " + (span instanceof ReadableSpan ? ((ReadableSpan) span).getName() : "#unknown") + "]" + ")");
+        LOGGER.log(Level.FINE, () -> "putSpan(" + run.getFullDisplayName() + ", " +
+            OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
     }
 
     @NonNull
