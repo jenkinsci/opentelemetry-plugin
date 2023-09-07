@@ -21,6 +21,7 @@ import io.jenkins.plugins.opentelemetry.job.action.RunPhaseMonitoringAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.trace.ReadableSpan;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
@@ -37,7 +38,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -60,9 +60,8 @@ public class OtelTraceService {
      * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_START_NAME},
      * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_RUN_NAME},
      * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
-     * @throws VerifyException if there are ongoing step spans and {@code verifyIfRemainingSteps} is set to {@code true}
      */
-    public Span getSpan(@NonNull Run run) throws VerifyException {
+    public Span getSpan(@NonNull Run run) {
         return ImmutableList.copyOf(run.getActions(RunPhaseMonitoringAction.class))
             .reverse()
             .stream().filter(Predicate.not(RunPhaseMonitoringAction::hasEnded))
@@ -139,7 +138,7 @@ public class OtelTraceService {
     @NonNull
     private Iterable<FlowNode> getAncestors(@NonNull final FlowNode flowNode) {
         // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
-        LOGGER.log(Level.FINEST, () -> "> getAncestorsV2([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "'])");
+        LOGGER.log(Level.FINEST, () -> "> getAncestors([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "'])");
         List<FlowNode> ancestors = new ArrayList<>();
         FlowNode startNode;
         if (flowNode instanceof StepEndNode) {
@@ -150,19 +149,18 @@ public class OtelTraceService {
         ancestors.add(startNode);
         ancestors.addAll(startNode.getEnclosingBlocks());
         // troubleshoot https://github.com/jenkinsci/opentelemetry-plugin/issues/197
-        LOGGER.log(Level.FINEST, () -> "< getAncestorsV2([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "']): " + ancestors.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
+        LOGGER.log(Level.FINEST, () -> "< getAncestors([" + flowNode.getClass().getSimpleName() + ", " + flowNode.getId() + ", '" + flowNode.getDisplayFunctionName() + "']): " + ancestors.stream().map(fn -> "[" + fn.getId() + ", " + fn.getDisplayFunctionName() + "]").collect(Collectors.joining(", ")));
         return ancestors;
     }
 
-    public void removePipelineStepSpan(@NonNull Run run, @NonNull FlowNode flowNode, @NonNull Span span) {
+    public void removePipelineStepSpan(@NonNull WorkflowRun run, @NonNull FlowNode flowNode, @NonNull Span span) {
         FlowNode startSpanNode;
         if (flowNode instanceof AtomNode) {
             startSpanNode = flowNode;
         } else if (flowNode instanceof StepEndNode) {
             StepEndNode stepEndNode = (StepEndNode) flowNode;
             startSpanNode = stepEndNode.getStartNode();
-        } else if (flowNode instanceof StepStartNode &&
-            ((StepStartNode) flowNode).getDescriptor() instanceof ExecutorStep.DescriptorImpl) {
+        } else if (flowNode instanceof StepStartNode && ((StepStartNode) flowNode).getDescriptor() instanceof ExecutorStep.DescriptorImpl) {
             // remove the "node.allocate" span, it's located on the parent node which is also a StepStartNode of a ExecutorStep.DescriptorImpl
             startSpanNode = flowNode.getParents().stream().findFirst().orElse(null);
             if (startSpanNode == null) {
@@ -177,18 +175,24 @@ public class OtelTraceService {
             throw new VerifyException("Can't remove span from node of type" + flowNode.getClass() + " - " + flowNode);
         }
 
-        ImmutableList.copyOf(startSpanNode.getActions(BuildStepMonitoringAction.class))
+        ImmutableList.copyOf(startSpanNode.getActions(FlowNodeMonitoringAction.class))
             .reverse()
             .stream()
-            .filter(buildStepMonitoringAction -> Objects.equals(buildStepMonitoringAction.getSpanId(), span.getSpanContext().getSpanId()))
-            .findFirst().ifPresentOrElse(BuildStepMonitoringAction::purgeSpan, () -> {
-                String msg = "span not found to be purged: " + span + " for " + flowNode + " in " + run;
-                if (STRICT_MODE) {
-                    throw new IllegalStateException(msg);
-                } else {
-                    LOGGER.log(Level.WARNING, msg);
-                }
-            });
+            .filter(flowNodeMonitoringAction -> Objects.equals(flowNodeMonitoringAction.getSpanId(), span.getSpanContext().getSpanId()))
+            .findFirst()
+            .ifPresentOrElse(
+                FlowNodeMonitoringAction::purgeSpan,
+                () -> {
+                    String msg = "span not found to be purged: " + "Span[id: " + span.getSpanContext().getSpanId() + ", " + (span instanceof ReadableSpan ? ((ReadableSpan) span).getName() : "#unknown") +
+                        " ending " +
+                        "FlowNode[name: " + startSpanNode.getDisplayName() + ", function: " + startSpanNode.getDisplayFunctionName() + ", id: " + startSpanNode.getId() + "]" +
+                        " in " + run;
+                    if (STRICT_MODE) {
+                        throw new IllegalStateException(msg);
+                    } else {
+                        LOGGER.log(Level.WARNING, msg);
+                    }
+                });
     }
 
     public void removeJobPhaseSpan(@NonNull Run run, @NonNull Span span) {
@@ -225,7 +229,6 @@ public class OtelTraceService {
         LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + ", " + buildStep + "," + span + ")");
     }
 
-
     public void putSpan(@NonNull Run run, @NonNull Span span) {
         run.addAction(new MonitoringAction(span));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + span + ")");
@@ -237,22 +240,15 @@ public class OtelTraceService {
     }
 
     public void putSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
-        if (!flowNode.getActions(MonitoringAction.class).isEmpty() && STRICT_MODE) {
-            // should only happen for build agent allocation so we can track allocation duration
-            Supplier<String> msg = () ->
-                "FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "] " +
-                    "is already associated with: " + flowNode.getActions(MonitoringAction.class).stream().map(ma -> "'" + ma.getSpanName() + "'").collect(Collectors.joining(","));
-            LOGGER.log(Level.FINER, msg);
-            throw new IllegalStateException(msg.get());
-        }
+        // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
         flowNode.addAction(new FlowNodeMonitoringAction(span));
 
-        LOGGER.log(Level.INFO, () -> "putSpan(" + run.getFullDisplayName() + "," + " FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], Span[id: " + span.getSpanContext().getSpanId() + "]" + ")");
+        LOGGER.log(Level.FINE, () -> "putSpan(" +
+            run.getFullDisplayName() + " " +
+            "FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "], " +
+            "Span[id: " + span.getSpanContext().getSpanId() + ", " + (span instanceof ReadableSpan ? ((ReadableSpan) span).getName() : "#unknown") + "]" + ")");
     }
 
-    /**
-     * @return If no span has been found (ie Jenkins restart), then the scope of a NoOp span is returned
-     */
     @NonNull
     @MustBeClosed
     public Scope setupContext(@NonNull Run run) {
