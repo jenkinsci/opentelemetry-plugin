@@ -12,10 +12,8 @@ import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.authentication.BearerTokenAuthentication;
-import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import jenkins.model.GlobalConfiguration;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -24,7 +22,6 @@ import org.junit.*;
 import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
 import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
 import static io.jenkins.plugins.casc.misc.Util.toYamlString;
-import static org.hamcrest.CoreMatchers.instanceOf;
 
 public class ConfigurationAsCodeElasticTest {
 
@@ -69,12 +66,10 @@ public class ConfigurationAsCodeElasticTest {
     @BeforeClass
     public static void beforeClass() {
         GlobalOpenTelemetry.resetForTest();
-        GlobalLoggerProvider.resetForTest();
     }
 
     @AfterClass
     public static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
-        GlobalLoggerProvider.resetForTest();
     }
 }

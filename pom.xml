@@ -17,17 +17,17 @@
     <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
     <properties>
-        <revision>2.14.1</revision>
+        <revision>2.15.1</revision>
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.361.4</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.25.0</opentelemetry.version>
+        <opentelemetry.version>1.29.0</opentelemetry.version>
         <!--
         Don't forget to bump opentelemetry-resources
         -->
-        <opentelemetry-alpha.version>1.25.0-alpha</opentelemetry-alpha.version>
-        <opentelemetry-instrumentation-alpha.version>1.24.0-alpha</opentelemetry-instrumentation-alpha.version>
-        <opentelemetry-contrib.version>1.24.0-alpha</opentelemetry-contrib.version>
+        <opentelemetry-alpha.version>1.29.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry-instrumentation-alpha.version>1.29.0-alpha</opentelemetry-instrumentation-alpha.version>
+        <opentelemetry-contrib.version>1.28.0-alpha</opentelemetry-contrib.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.7.1</elasticstack.version>
         <error-prone.version>2.19.1</error-prone.version>
@@ -78,10 +78,6 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-api-logs</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api-events</artifactId>
         </dependency>
         <dependency>
@@ -119,9 +115,17 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-runtime-metrics</artifactId>
+            <artifactId>opentelemetry-runtime-telemetry-java8</artifactId>
             <version>${opentelemetry-instrumentation-alpha.version}</version>
         </dependency>
+        <!--
+        Requires JDK17, compiled for JDK17
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-runtime-telemetry-java17</artifactId>
+            <version>${opentelemetry-instrumentation-alpha.version}</version>
+        </dependency>
+        -->
         <dependency>
             <groupId>io.opentelemetry.contrib</groupId>
             <artifactId>opentelemetry-aws-resources</artifactId>
@@ -154,10 +158,6 @@
                     <artifactId>okio</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-otlp-logs</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>

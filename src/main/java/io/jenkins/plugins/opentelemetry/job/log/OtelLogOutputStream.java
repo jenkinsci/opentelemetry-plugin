@@ -4,6 +4,7 @@ import hudson.console.LineTransformationOutputStream;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
@@ -13,6 +14,8 @@ import org.apache.commons.lang.StringUtils;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -49,15 +52,15 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
         this.otelLogger = otelLogger;
         this.clock = clock;
         this.w3cTraceContext = w3cTraceContext;
-        this.context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.w3cTraceContext, new TextMapGetter<Map<String, String>>() {
+        this.context = W3CTraceContextPropagator.getInstance().extract(Context.current(), this.w3cTraceContext, new TextMapGetter<>() {
             @Override
-            public Iterable<String> keys(Map<String, String> carrier) {
+            public Iterable<String> keys(@Nonnull Map<String, String> carrier) {
                 return carrier.keySet();
             }
 
             @Nullable
             @Override
-            public String get(@Nullable Map<String, String> carrier, String key) {
+            public String get(@Nullable Map<String, String> carrier, @Nonnull String key) {
                 return carrier == null ? null : carrier.get(key);
             }
         });
@@ -82,10 +85,11 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
                 attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId);
             }
             otelLogger.logRecordBuilder()
+                .setSeverity(Severity.INFO)
                 .setBody(plainLogLine)
                 .setAllAttributes(attributesBuilder.build())
                 .setContext(context)
-                .setEpoch(clock.now(), TimeUnit.NANOSECONDS)
+                .setTimestamp(clock.now(), TimeUnit.NANOSECONDS)
                 .emit();
             LOGGER.log(Level.FINEST, () -> buildInfo.jobFullName + "#" + buildInfo.runNumber + " - emit body: '" + StringUtils.abbreviate(plainLogLine, 30) + "'");
         }
@@ -97,7 +101,7 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         // TODO anything to do? cyrille: probably not
     }
 }

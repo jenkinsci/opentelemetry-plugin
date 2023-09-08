@@ -4,7 +4,10 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
+import io.opentelemetry.api.baggage.Baggage;
+import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
@@ -33,11 +36,19 @@ public class OtelEnvironmentContributorService {
     public void addEnvironmentVariables(@NonNull Run run, @NonNull EnvVars envs, @NonNull Span span) {
         String spanId = span.getSpanContext().getSpanId();
         String traceId = span.getSpanContext().getTraceId();
+        envs.putIfAbsent(OTelEnvironmentVariablesConventions.TRACE_ID, traceId);
+        envs.put(OTelEnvironmentVariablesConventions.SPAN_ID, spanId);
         try (Scope ignored = span.makeCurrent()) {
-            envs.putIfAbsent(OTelEnvironmentVariablesConventions.TRACE_ID, traceId);
-            envs.put(OTelEnvironmentVariablesConventions.SPAN_ID, spanId);
             TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
             W3CTraceContextPropagator.getInstance().inject(Context.current(), envs, setter);
+        }
+        Baggage baggage = Baggage.builder()
+            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID.getKey(), run.getParent().getFullName())
+            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER.getKey(), String.valueOf(run.getNumber()))
+            .build();
+        try (Scope ignored = baggage.makeCurrent()) {
+            TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
+            W3CBaggagePropagator.getInstance().inject(Context.current(), envs, setter);
         }
         MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
         if (monitoringAction == null) {
