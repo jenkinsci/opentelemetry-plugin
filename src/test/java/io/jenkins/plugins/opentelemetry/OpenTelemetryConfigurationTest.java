@@ -52,6 +52,42 @@ public class OpenTelemetryConfigurationTest {
         testOpenTelemetryExportersConfiguration(expectedTracesExporter, expectedMetricsExporter, expectedLogsExporter, otlpEndpoint, configurationProperties);
     }
 
+    @Test
+    public void testMultipleOpenTelemetryExporters_3() {
+        String expectedTracesExporter = "otlp";
+        String expectedMetricsExporter = "none";
+        String expectedLogsExporter = null;
+        // OTLP endpoint configured through the GUI
+        String otlpEndpoint = "http://localhost:4317";
+
+        Map<String, String> configurationProperties = Collections.singletonMap("otel.metrics.exporter", "none");
+        testOpenTelemetryExportersConfiguration(expectedTracesExporter, expectedMetricsExporter, expectedLogsExporter, otlpEndpoint, configurationProperties);
+    }
+
+    @Test
+    public void testMultipleOpenTelemetryExporters_4() {
+        String expectedTracesExporter = "none";
+        String expectedMetricsExporter = "otlp";
+        String expectedLogsExporter = null;
+        // OTLP endpoint configured through the GUI
+        String otlpEndpoint = "http://localhost:4317";
+
+        Map<String, String> configurationProperties = Collections.singletonMap("otel.traces.exporter", "none");
+        testOpenTelemetryExportersConfiguration(expectedTracesExporter, expectedMetricsExporter, expectedLogsExporter, otlpEndpoint, configurationProperties);
+    }
+
+    @Test
+    public void testMultipleOpenTelemetryExporters_5() {
+        String expectedTracesExporter = "otlp";
+        String expectedMetricsExporter = "otlp";
+        String expectedLogsExporter = "none";
+        // OTLP endpoint configured through the GUI
+        String otlpEndpoint = "http://localhost:4317";
+
+        Map<String, String> configurationProperties = Collections.singletonMap("otel.logs.exporter", "none");
+        testOpenTelemetryExportersConfiguration(expectedTracesExporter, expectedMetricsExporter, expectedLogsExporter, otlpEndpoint, configurationProperties);
+    }
+
     private static void testOpenTelemetryExportersConfiguration(String expectedTracesExporter, String expectedMetricsExporter, String expectedLogsExporter, String otlpEndpoint, Map<String, String> configurationProperties) {
         OpenTelemetryConfiguration configuration = new OpenTelemetryConfiguration(
             Optional.ofNullable(otlpEndpoint),
