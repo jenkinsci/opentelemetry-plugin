@@ -19,7 +19,6 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -47,7 +46,8 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     @Override
     public final void onCompleted(@NonNull Run run, @NonNull TaskListener listener) {
-        try (Scope scope = getTraceService().setupContext(run)) {
+        Span span = getTraceService().getSpan(run);
+        try (Scope scope = span.makeCurrent()) {
             this._onCompleted(run, listener);
         }
     }
@@ -57,7 +57,8 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     @Override
     public final void onFinalized(@NonNull Run run) {
-        try (Scope scope = getTraceService().setupContext(run)) {
+        Span span = getTraceService().getSpan(run);
+        try (Scope scope = span.makeCurrent()) {
             this._onFinalized(run);
         }
     }
@@ -76,7 +77,8 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     @Override
     public final void onStarted(@NonNull Run run, @NonNull TaskListener listener) {
-        try (Scope scope = getTraceService().setupContext(run)) {
+        Span span = getTraceService().getSpan(run);
+        try (Scope scope = span.makeCurrent()) {
             this._onStarted(run, listener);
         }
     }
@@ -86,7 +88,8 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     @Override
     public final Environment setUpEnvironment(@NonNull AbstractBuild build, @NonNull Launcher launcher, @NonNull BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
-        try (Scope ignored = getTraceService().setupContext(build)) {
+        Span span = getTraceService().getSpan(build);
+        try (Scope ignored = span.makeCurrent()) {
             return this._setUpEnvironment(build, launcher, listener);
         }
     }
@@ -99,7 +102,8 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     @Override
     public final void onDeleted(@NonNull Run run) {
-        try (Scope ignored = getTraceService().setupContext(run)) {
+        Span span = getTraceService().getSpan(run);
+        try (Scope ignored = span.makeCurrent()) {
             this._onDeleted(run);
         }
     }

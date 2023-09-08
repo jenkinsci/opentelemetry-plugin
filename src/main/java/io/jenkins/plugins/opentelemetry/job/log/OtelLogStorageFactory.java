@@ -70,7 +70,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OtelCompo
                     throw new IllegalStateException("No MonitoringAction found for " + run);
                 }
                 // root context contains traceparent
-                Map<String, String> w3cTraceContext = new HashMap<>(monitoringAction.getRootContext());
+                Map<String, String> w3cTraceContext = new HashMap<>(monitoringAction.getW3cTraceContext());
                 BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getTraceId(), monitoringAction.getSpanId(), w3cTraceContext);
                 logger.log(Level.FINEST, () -> "forBuild(" + buildInfo + ")");
 

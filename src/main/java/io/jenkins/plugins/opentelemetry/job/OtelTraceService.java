@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry.job;
 
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
-import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
@@ -21,7 +20,6 @@ import io.jenkins.plugins.opentelemetry.job.action.OtelMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.RunPhaseMonitoringAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Scope;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
@@ -32,7 +30,6 @@ import org.jenkinsci.plugins.workflow.graphanalysis.ForkScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -246,10 +243,4 @@ public class OtelTraceService {
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
     }
 
-    @NonNull
-    @MustBeClosed
-    public Scope setupContext(@NonNull Run run) {
-        Span span = getSpan(run);
-        return span.makeCurrent();
-    }
 }
