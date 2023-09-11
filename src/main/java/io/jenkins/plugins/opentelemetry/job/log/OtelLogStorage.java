@@ -8,6 +8,8 @@ import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.job.log.util.TeeBuildListener;
+import io.jenkins.plugins.opentelemetry.job.log.util.TeeTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -61,7 +63,7 @@ class OtelLogStorage implements LogStorage {
         if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
             try {
               File logFile = new File(buildFolderPath, "log");
-              return new MergedBuildListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).overallListener());
+              return new TeeBuildListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).overallListener());
               } catch (IOException|InterruptedException e) {
                 throw new IOException("Was not possible to create the mirror logs.", e);
               }
@@ -81,7 +83,7 @@ class OtelLogStorage implements LogStorage {
         if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
             try {
               File logFile = new File(buildFolderPath, "log");
-              return new MergedTaskListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).nodeListener(flowNode));
+              return new TeeTaskListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).nodeListener(flowNode));
              } catch (IOException|InterruptedException e) {
                 throw new IOException("Was not possible to create the mirror logs.", e);
               }
