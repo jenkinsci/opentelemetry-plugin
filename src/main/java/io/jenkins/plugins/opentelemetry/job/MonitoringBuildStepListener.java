@@ -66,7 +66,7 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Ot
             Span atomicStepSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> build.getFullDisplayName() + " - > " + stepName + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
-            getTracerService().putSpan(build, atomicStepSpan);
+            getTracerService().putSpan(build, buildStep, atomicStepSpan);
         }
     }
 
@@ -88,7 +88,7 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Ot
                     final String jenkinsVersion = OtelUtils.getJenkinsVersion();
                     stepPlugin = new JenkinsOpenTelemetryPluginConfiguration.StepPlugin(JENKINS_CORE, jenkinsVersion);
                 }
-                span.recordException(new AbortException("StepName: " + stepName + ", " + stepPlugin.toString()));
+                span.recordException(new AbortException("StepName: " + stepName + ", " + stepPlugin));
                 span.setStatus(StatusCode.ERROR, "Build step failed");
             }
 

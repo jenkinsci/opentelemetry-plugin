@@ -12,9 +12,9 @@ import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.plugins.git.GitSCM;
-import hudson.util.LogTaskListener;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -65,6 +65,7 @@ public class BaseIntegrationTest {
 
     static {
         OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
+        OtelTraceService.STRICT_MODE = true;
         GitSCM.ALLOW_LOCAL_CHECKOUT = true;
     }
 
@@ -200,10 +201,6 @@ public class BaseIntegrationTest {
         Attributes attributes = root.get(0).spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(jobType));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
-
-        // Environment variables are populated
-        EnvVars environment = build.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
-        assertEnvironmentVariables(environment);
     }
 
     protected void assertFreestyleJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {

@@ -5,18 +5,24 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.collect.ImmutableList;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Action;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.jenkins.plugins.opentelemetry.job.action.AbstractMonitoringAction;
+import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
+import io.opentelemetry.api.trace.Span;
 import jenkins.model.Jenkins;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,24 +30,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.LastBuildAction {
+/**
+ * Span reference associate with a {@link Run}
+ */
+public class MonitoringAction extends AbstractMonitoringAction implements Action, RunAction2, SimpleBuildStep.LastBuildAction {
+
     private final static Logger LOGGER = Logger.getLogger(MonitoringAction.class.getName());
 
-    final String traceId;
-    final String spanId;
-    final String rootSpanName;
-    Map<String, Map<String, String>> contextPerNodeId = new HashMap<>();
-    Map<String, String> rootContext = new HashMap<>();
+    // Backward compatibility
+    @Deprecated(since = "2.15.1", forRemoval = true)
+    private String rootSpanName;
+    @Deprecated(since = "2.15.1", forRemoval = true)
+    private Map<String, String> rootContext;
+    private transient Run run;
 
-    transient Run run;
-
-    public MonitoringAction(String traceId, String spanId, String rootSpanName) {
-        this.traceId = traceId;
-        this.spanId = spanId;
-        this.rootSpanName = rootSpanName;
+    public MonitoringAction(Span span) {
+        super(span);
+        this.rootSpanName = super.getSpanName();
+        this.rootContext = super.getW3cTraceContext();
     }
 
     @Override
@@ -74,39 +85,46 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         return null;
     }
 
-    public String getTraceId() {
-        return traceId;
-    }
-
-    public String getSpanId() {
-        return spanId;
-    }
-
     /**
-     * Add per {@link FlowNode} contextual information.
+     * Backward compatibility
      */
-    public void addContext(@NonNull FlowNode node, @NonNull Map<String, String> context) {
-        if (contextPerNodeId == null) {
-            contextPerNodeId = new HashMap<>();
+    protected Object readResolve() {
+        if (this.rootContext != null && this.w3cTraceContext == null) {
+            LOGGER.log(Level.FINEST, () -> "Migrate rootContext='" + this.rootContext + "' on " + System.identityHashCode(this));
+            this.w3cTraceContext = this.rootContext;
+            this.rootContext = null;
         }
-        contextPerNodeId.put(node.getId(), context);
+        if (this.rootSpanName != null && this.spanName == null) {
+            LOGGER.log(Level.FINEST, () -> "Migrate rootSpanName='" + this.rootSpanName + "' on " + System.identityHashCode(this));
+            this.spanName = this.rootSpanName;
+            this.rootSpanName = null;
+        }
+        return this;
     }
 
     @CheckForNull
-    public Map<String, String> getRootContext() {
-        return rootContext;
-    }
+    public Map<String, String> getW3cTraceContext(@NonNull String flowNodeId) {
+        Optional<FlowNode> flowNode = Optional.ofNullable(((WorkflowRun) run).getExecution()).map(flowExecution -> {
+            try {
+                return flowExecution.getNode(flowNodeId);
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Failure to retrieve flow node " + flowNodeId, e);
+                return null;
+            }
+        });
 
-    /**
-     * See `io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator#inject(io.opentelemetry.context.Context, java.lang.Object, io.opentelemetry.context.propagation.TextMapSetter)`
-     */
-    public void addRootContext(@NonNull Map<String, String> context) {
-        this.rootContext = context;
-    }
-
-    @CheckForNull
-    public Map<String, String> getContext(@NonNull String flowNodeId) {
-        return contextPerNodeId.get(flowNodeId);
+        return flowNode.flatMap(node -> ImmutableList
+                .copyOf(node.getActions(FlowNodeMonitoringAction.class))
+                .reverse()
+                .stream()
+                .findFirst()
+                .map(FlowNodeMonitoringAction::getW3cTraceContext))
+            .orElseGet(() ->
+                run.getActions(MonitoringAction.class)
+                    .stream()
+                    .findFirst()
+                    .map(MonitoringAction::getW3cTraceContext)
+                    .orElse(Collections.emptyMap()));
     }
 
     @NonNull
@@ -126,8 +144,8 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
         Map<String, Object> binding = new HashMap<>();
         binding.put("serviceName", Objects.requireNonNull(JenkinsOpenTelemetryPluginConfiguration.get().getServiceName()));
         binding.put("rootSpanName", this.rootSpanName == null ? null : OtelUtils.urlEncode(this.rootSpanName));
-        binding.put("traceId", this.traceId);
-        binding.put("spanId", this.spanId);
+        binding.put("traceId", this.getTraceId());
+        binding.put("spanId", this.getSpanId());
         binding.put("startTime", Instant.ofEpochMilli(run.getStartTimeInMillis()));
 
         return tracingCapableBackends.stream().map(backend ->
@@ -137,15 +155,6 @@ public class MonitoringAction implements Action, RunAction2, SimpleBuildStep.Las
                 backend.getIconPath(),
                 backend.getEnvVariableName())
         ).collect(Collectors.toList());
-    }
-
-    @Override
-    public String toString() {
-        return "MonitoringAction{" +
-            "traceId='" + traceId + '\'' +
-            ", spanId='" + spanId + '\'' +
-            ", run='" + run + '\'' +
-            '}';
     }
 
     public static class ObservabilityBackendLink {

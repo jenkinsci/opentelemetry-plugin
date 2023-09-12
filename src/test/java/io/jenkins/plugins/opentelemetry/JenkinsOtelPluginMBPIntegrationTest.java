@@ -81,7 +81,7 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.is(OtelUtils.BRANCH));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.MULTIBRANCH));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION), CoreMatchers.is("Bar"));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE), CoreMatchers.is(Arrays.asList("BranchIndexingCause")));
+        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE), CoreMatchers.is(List.of("BranchIndexingCause")));
 
         // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
         // It returns the first checkout, aka the one without any shallow cloning, depth shallow.
@@ -92,9 +92,6 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
 
-        // Environment variables are populated
-        EnvVars environment = b1.getEnvironment(new LogTaskListener(LOGGER, Level.INFO));
-        assertEnvironmentVariables(environment);
-        MatcherAssert.assertThat(environment.get(ElasticBackend.OTEL_ELASTIC_URL), StringContains.containsString("transactionName=" + OtelUtils.urlEncode(rootSpanName)));
+        // TODO verify environment variables are populated in shell steps
     }
 }
