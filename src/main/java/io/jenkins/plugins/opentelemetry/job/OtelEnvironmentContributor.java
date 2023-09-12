@@ -28,7 +28,7 @@ public class OtelEnvironmentContributor extends EnvironmentContributor {
 
     @Override
     public void buildEnvironmentFor(@NonNull Run run, @NonNull EnvVars envs, @NonNull TaskListener listener) {
-        otelEnvironmentContributorService.addEnvironmentVariables(run, envs, otelTraceService.getSpan(run, false));
+        otelEnvironmentContributorService.addEnvironmentVariables(run, envs, otelTraceService.getSpan(run));
     }
 
     @Inject

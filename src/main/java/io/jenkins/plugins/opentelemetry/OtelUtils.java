@@ -25,9 +25,11 @@ import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 import jenkins.scm.api.mixin.TagSCMHead;
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
+import javax.annotation.Nonnull;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -186,6 +188,16 @@ public class OtelUtils {
     @NonNull
     public static String toDebugString(@Nullable Span span) {
         return spanToDebugString().apply(span);
+    }
+
+    @Nonnull
+    public static String toDebugString(FlowNode flowNode) {
+        return flowNodeToDebugString().apply(flowNode);
+    }
+
+    @NonNull
+    public static Function<FlowNode, String> flowNodeToDebugString() {
+        return  flowNode -> flowNode == null ? "#null#" : "FlowNode[name: " + flowNode.getDisplayName() + ", function: " + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + "]";
     }
 
     @NonNull
