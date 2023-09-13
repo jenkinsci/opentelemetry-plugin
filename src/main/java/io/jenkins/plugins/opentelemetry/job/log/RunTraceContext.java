@@ -99,7 +99,10 @@ public class RunTraceContext implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RunTraceContext runTraceContext = (RunTraceContext) o;
-        return runNumber == runTraceContext.runNumber && Objects.equal(jobFullName, runTraceContext.jobFullName) && Objects.equal(w3cTraceContext, runTraceContext.w3cTraceContext);
+        return runNumber == runTraceContext.runNumber &&
+            Objects.equal(jobFullName, runTraceContext.jobFullName) &&
+            Objects.equal(traceId, runTraceContext.traceId) &&
+            Objects.equal(spanId, runTraceContext.spanId);
     }
 
     @Override
