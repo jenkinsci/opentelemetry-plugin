@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import com.google.common.base.Objects;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
@@ -48,6 +49,17 @@ public class FlowNodeTraceContext extends RunTraceContext {
             '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FlowNodeTraceContext traceContext = (FlowNodeTraceContext) o;
+        return runNumber == traceContext.runNumber &&
+            Objects.equal(jobFullName, traceContext.jobFullName) &&
+            Objects.equal(flowNodeId, traceContext.flowNodeId) &&
+            Objects.equal(traceId, traceContext.traceId) &&
+            Objects.equal(spanId, traceContext.spanId);
+    }
     @Nonnull
     @Override
     public Attributes toAttributes() {
