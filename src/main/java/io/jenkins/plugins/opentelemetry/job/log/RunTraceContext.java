@@ -6,18 +6,23 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
 import com.google.common.base.Objects;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class BuildInfo implements Serializable {
+public class RunTraceContext implements Serializable {
 
     static final long serialVersionUID = 1L;
 
@@ -27,31 +32,22 @@ public final class BuildInfo implements Serializable {
     final String traceId;
     /**
      * W3C Trace Context of the root span of the build
+     *
      * @see Context
      */
-    @Deprecated
     final Map<String, String> w3cTraceContext;
 
     /**
-     *
-     * @param jobFullName see {@link WorkflowJob#getFullName()}
-     * @param runNumber see {@link hudson.model.Run#getNumber()}
+     * @param jobFullName     see {@link WorkflowJob#getFullName()}
+     * @param runNumber       see {@link hudson.model.Run#getNumber()}
      * @param w3cTraceContext W3C Trace Context of the root span of the build
      */
-    public BuildInfo(String jobFullName, int runNumber,String traceId, String spanId, Map<String, String> w3cTraceContext) {
+    public RunTraceContext(String jobFullName, int runNumber, String traceId, String spanId, Map<String, String> w3cTraceContext) {
         this.jobFullName = jobFullName;
         this.runNumber = runNumber;
         this.traceId = traceId;
         this.spanId = spanId;
         this.w3cTraceContext = w3cTraceContext;
-    }
-
-    public BuildInfo(BuildInfo buildInfo) {
-        this.jobFullName = buildInfo.jobFullName;
-        this.runNumber = buildInfo.runNumber;
-        this.traceId = buildInfo.traceId;
-        this.spanId = buildInfo.spanId;
-        this.w3cTraceContext = new HashMap<>(buildInfo.w3cTraceContext);
     }
 
     @NonNull
@@ -70,17 +66,29 @@ public final class BuildInfo implements Serializable {
         return runNumber;
     }
 
-    /**
-     * Can we remove this?
-     */
-    @Deprecated
     public Map<String, String> getW3cTraceContext() {
         return Collections.unmodifiableMap(w3cTraceContext);
     }
 
+    public Context getContext() {
+        return W3CTraceContextPropagator.getInstance().extract(Context.current(), getW3cTraceContext(), new TextMapGetter<>() {
+            @Override
+            public Iterable<String> keys(@Nonnull Map<String, String> carrier) {
+                return carrier.keySet();
+            }
+
+            @Nullable
+            @Override
+            public String get(@Nullable Map<String, String> carrier, @Nonnull String key) {
+                assert carrier != null;
+                return carrier.get(key);
+            }
+        });
+    }
+
     @Override
     public String toString() {
-        return "BuildInfo{" +
+        return "RunTraceContext{" +
             "jobFullName='" + jobFullName + '\'' +
             ", runNumber='" + runNumber + '\'' +
             '}';
@@ -90,8 +98,8 @@ public final class BuildInfo implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        BuildInfo buildInfo = (BuildInfo) o;
-        return runNumber == buildInfo.runNumber && Objects.equal(jobFullName, buildInfo.jobFullName) && Objects.equal(w3cTraceContext, buildInfo.w3cTraceContext);
+        RunTraceContext runTraceContext = (RunTraceContext) o;
+        return runNumber == runTraceContext.runNumber && Objects.equal(jobFullName, runTraceContext.jobFullName) && Objects.equal(w3cTraceContext, runTraceContext.w3cTraceContext);
     }
 
     @Override
@@ -107,9 +115,4 @@ public final class BuildInfo implements Serializable {
         return spanId;
     }
 
-    public void setFlowNode(String flowNodeId) {
-        if(w3cTraceContext != null){
-            w3cTraceContext.put("flowNode", flowNodeId);
-        }
-    }
 }

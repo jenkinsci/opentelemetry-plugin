@@ -17,6 +17,9 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.ReadableSpan;
@@ -35,7 +38,18 @@ import javax.annotation.Nonnull;
 import javax.servlet.http.HttpServletRequest;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -262,6 +276,16 @@ public class OtelUtils {
         return noteworthyConfigProperties;
     }
 
+    public static Map<String, String> getW3cTraceContext(Span span) {
+        Map<String, String> w3cTraceContext = new HashMap<>(2);
+        try (Scope scope = span.makeCurrent()) {
+            W3CTraceContextPropagator.getInstance().inject(Context.current(), w3cTraceContext, (carrier, key, value) -> {
+                assert carrier != null;
+                carrier.put(key, value);
+            });
+        }
+        return w3cTraceContext;
+    }
     public static String prettyPrintResource(@Nullable Resource resource) {
         if (resource == null) {
             return "#null#";
