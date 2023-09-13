@@ -75,17 +75,17 @@ class OtelLogStorage implements LogStorage {
         Map<String, String> otelResourceAttributes = new HashMap<>();
         otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
 
-        OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(runTraceContext, otelConfigurationProperties, otelResourceAttributes);
+        BuildListener result = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(runTraceContext, otelConfigurationProperties, otelResourceAttributes);
 
         if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
             try {
               File logFile = new File(runFolderPath, "log");
-              return new TeeBuildListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).overallListener());
+                result = new TeeBuildListener(result, FileLogStorage.forFile(logFile).overallListener());
               } catch (IOException|InterruptedException e) {
-                throw new IOException("Was not possible to create the mirror logs.", e);
+                throw new IOException("Failure creating the mirror logs.", e);
               }
         }
-        return otelLogSenderBuildListenerOnController;
+        return result;
     }
 
     @NonNull
@@ -98,17 +98,17 @@ class OtelLogStorage implements LogStorage {
 
         Span span = otelTraceService.getSpan(run, flowNode);
         FlowNodeTraceContext flowNodeTraceContext = FlowNodeTraceContext.newFlowNodeTraceContext(run, flowNode, span);
-        OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(flowNodeTraceContext, otelConfigurationProperties, otelResourceAttributes);
+        TaskListener result = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(flowNodeTraceContext, otelConfigurationProperties, otelResourceAttributes);
 
         if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
             try {
               File logFile = new File(runFolderPath, "log");
-              return new TeeTaskListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).nodeListener(flowNode));
+              result = new TeeTaskListener(result, FileLogStorage.forFile(logFile).nodeListener(flowNode));
              } catch (IOException|InterruptedException e) {
-                throw new IOException("Was not possible to create the mirror logs.", e);
+                throw new IOException("Failure creating the mirror logs.", e);
               }
         }
-        return otelLogSenderBuildListenerOnController;
+        return result;
     }
 
     /**
@@ -217,7 +217,7 @@ class OtelLogStorage implements LogStorage {
     @Override
     public String toString() {
         return "OtelLogStorage{" +
-            "buildInfo=" + runTraceContext +
+            "context=" + runTraceContext +
             '}';
     }
 
