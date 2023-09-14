@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry.servlet;
 
 import hudson.model.User;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
@@ -31,7 +30,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
@@ -39,14 +37,16 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
+ * Instrumentation of the Stapler MVC framework.
+ *
  * TODO find a smarter way to instrument each HTTP request path. It should rely on instrumenting the Stapler framework
- * TODO adopt https://javadoc.jenkins.io/component/stapler/org/kohsuke/stapler/StaplerRequest.html#getAncestors()
+ * TODO adopt <a href="https://javadoc.jenkins.io/component/stapler/org/kohsuke/stapler/StaplerRequest.html#getAncestors()">StaplerRequest.html#getAncestors()</a>
  */
-public class OpenTelemetryServletFilter implements Filter {
-    private final static Logger logger = Logger.getLogger(OpenTelemetryServletFilter.class.getName());
+public class StaplerInstrumentationServletFilter implements Filter {
+    private final static Logger logger = Logger.getLogger(StaplerInstrumentationServletFilter.class.getName());
     private final Tracer tracer;
 
-    public OpenTelemetryServletFilter(Tracer tracer) {
+    public StaplerInstrumentationServletFilter(Tracer tracer) {
         this.tracer = tracer;
     }
 
@@ -67,7 +67,6 @@ public class OpenTelemetryServletFilter implements Filter {
             .map(token -> (String) token)
             .filter(t -> !t.isEmpty())
             .collect(Collectors.toList());
-
 
         if (pathInfoTokens.isEmpty()) {
             pathInfoTokens = Collections.singletonList("");
@@ -625,6 +624,6 @@ public class OpenTelemetryServletFilter implements Filter {
 
     @Override
     public int hashCode() {
-        return OpenTelemetryServletFilter.class.hashCode();
+        return StaplerInstrumentationServletFilter.class.hashCode();
     }
 }
