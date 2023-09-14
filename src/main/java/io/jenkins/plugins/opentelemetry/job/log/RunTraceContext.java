@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
 import com.google.common.base.Objects;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
@@ -14,12 +15,9 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 public class RunTraceContext implements Serializable {
@@ -47,7 +45,7 @@ public class RunTraceContext implements Serializable {
         this.runNumber = runNumber;
         this.traceId = traceId;
         this.spanId = spanId;
-        this.w3cTraceContext = w3cTraceContext;
+        this.w3cTraceContext = Collections.unmodifiableMap(w3cTraceContext);
     }
 
     @NonNull
@@ -66,8 +64,11 @@ public class RunTraceContext implements Serializable {
         return runNumber;
     }
 
+    /**
+     * @return unmodifiable W3C Trace Context
+     */
     public Map<String, String> getW3cTraceContext() {
-        return Collections.unmodifiableMap(w3cTraceContext);
+        return w3cTraceContext;
     }
 
     public Context getContext() {
@@ -90,7 +91,9 @@ public class RunTraceContext implements Serializable {
     public String toString() {
         return "RunTraceContext{" +
             "jobFullName='" + jobFullName + '\'' +
-            ", runNumber='" + runNumber + '\'' +
+            ", runNumber=" + runNumber +
+            ", spanId='" + spanId + '\'' +
+            ", traceId='" + traceId + '\'' +
             '}';
     }
 
@@ -107,7 +110,7 @@ public class RunTraceContext implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(jobFullName, runNumber, w3cTraceContext);
+        return Objects.hashCode(jobFullName, runNumber, traceId, spanId);
     }
 
     public String getTraceId() {
