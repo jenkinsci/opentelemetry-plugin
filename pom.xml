@@ -28,6 +28,7 @@
         <opentelemetry-alpha.version>1.29.0-alpha</opentelemetry-alpha.version>
         <opentelemetry-instrumentation-alpha.version>1.29.0-alpha</opentelemetry-instrumentation-alpha.version>
         <opentelemetry-contrib.version>1.29.0-alpha</opentelemetry-contrib.version>
+        <opentelemetry-semconv>1.21.0-alpha</opentelemetry-semconv>
         <useBeta>true</useBeta>
         <elasticstack.version>8.7.1</elasticstack.version>
         <error-prone.version>2.21.1</error-prone.version>
@@ -85,8 +86,9 @@
             <artifactId>opentelemetry-sdk</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.opentelemetry</groupId>
+            <groupId>io.opentelemetry.semconv</groupId>
             <artifactId>opentelemetry-semconv</artifactId>
+            <version>${opentelemetry-semconv}</version>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>

@@ -9,8 +9,8 @@ import hudson.Extension;
 import hudson.util.PluginServletFilter;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.servlet.OpenTelemetryServletFilter;
-import io.jenkins.plugins.opentelemetry.servlet.RemoteSpanServletFilter;
+import io.jenkins.plugins.opentelemetry.servlet.StaplerInstrumentationServletFilter;
+import io.jenkins.plugins.opentelemetry.servlet.TraceContextServletFilter;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
@@ -25,7 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * TODO Register the {@link OpenTelemetryServletFilter} earlier in the chain of {@link Filter} of the Jenkins webapp,
+ * TODO Register the {@link StaplerInstrumentationServletFilter} earlier in the chain of {@link Filter} of the Jenkins webapp,
  * register it before the {@link hudson.security.HudsonFilter} so that the {@link io.jenkins.plugins.opentelemetry.security.AuditingSecurityListener}
  * events can be associated to an HTTP trace.
  */
@@ -33,9 +33,9 @@ import java.util.logging.Logger;
 public class ServletFilterInitializer implements OtelComponent {
     private static final Logger logger = Logger.getLogger(ServletFilterInitializer.class.getName());
 
-    OpenTelemetryServletFilter openTelemetryServletFilter;
+    StaplerInstrumentationServletFilter staplerInstrumentationServletFilter;
 
-    RemoteSpanServletFilter remoteSpanServletFilter;
+    TraceContextServletFilter traceContextServletFilter;
 
     @Override
     public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
@@ -43,8 +43,8 @@ public class ServletFilterInitializer implements OtelComponent {
         boolean jenkinsRemoteSpanEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED)).orElse(false);
 
         if (jenkinsRemoteSpanEnabled) {
-            remoteSpanServletFilter = new RemoteSpanServletFilter();
-            addToPluginServletFilter(remoteSpanServletFilter);
+            traceContextServletFilter = new TraceContextServletFilter();
+            addToPluginServletFilter(traceContextServletFilter);
         } else {
             logger.log(Level.INFO, () -> "Jenkins Remote Span disabled");
         }
@@ -52,8 +52,8 @@ public class ServletFilterInitializer implements OtelComponent {
         boolean jenkinsWebInstrumentationEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED)).orElse(true);
 
         if (jenkinsWebInstrumentationEnabled) {
-            openTelemetryServletFilter = new OpenTelemetryServletFilter(tracer);
-            addToPluginServletFilter(openTelemetryServletFilter);
+            staplerInstrumentationServletFilter = new StaplerInstrumentationServletFilter(tracer);
+            addToPluginServletFilter(staplerInstrumentationServletFilter);
         } else {
             logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled");
         }
@@ -77,8 +77,8 @@ public class ServletFilterInitializer implements OtelComponent {
     @Override
     public void beforeSdkShutdown() {
         try {
-            PluginServletFilter.removeFilter(openTelemetryServletFilter);
-            PluginServletFilter.removeFilter(remoteSpanServletFilter);
+            PluginServletFilter.removeFilter(staplerInstrumentationServletFilter);
+            PluginServletFilter.removeFilter(traceContextServletFilter);
         } catch (ServletException e) {
             logger.log(Level.INFO, "Exception removing OpenTelemetryServletFilter", e);
         }

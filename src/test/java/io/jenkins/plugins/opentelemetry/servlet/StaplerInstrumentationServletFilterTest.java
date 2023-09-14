@@ -14,11 +14,11 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 
-public class OpenTelemetryServletFilterTest {
+public class StaplerInstrumentationServletFilterTest {
 
     @Test
     public void testParseJobUrlLatestBuildConsole() {
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "my-war/master", null, "/job/:jobFullName/lastBuild/console");
         String pathInfo = "/job/my-war/job/master/lastBuild/console";
         verifyJobUrlParsing(expected, pathInfo);
@@ -29,7 +29,7 @@ public class OpenTelemetryServletFilterTest {
      */
     @Test
     public void testParseJobUrlLastBuild() {
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "my-war/master", null, "/job/:jobFullName/lastBuild");
         String pathInfo = "/job/my-war/job/master/lastBuild/";
         verifyJobUrlParsing(expected, pathInfo);
@@ -38,7 +38,7 @@ public class OpenTelemetryServletFilterTest {
 
     @Test
     public void testParseJobUrlLastBuildNoTrailingSlash() {
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "my-war/master", null, "/job/:jobFullName/lastBuild");
         String pathInfo = "/job/my-war/job/master/lastBuild";
         verifyJobUrlParsing(expected, pathInfo);
@@ -46,7 +46,7 @@ public class OpenTelemetryServletFilterTest {
 
     @Test
     public void testParseJobUrlBuildNoTrailingSlash() {
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "my-war/master", 3L, "/job/:jobFullName/:runNumber");
         String pathInfo = "/job/my-war/job/master/3";
         verifyJobUrlParsing(expected, pathInfo);
@@ -54,7 +54,7 @@ public class OpenTelemetryServletFilterTest {
 
     @Test
     public void testParseJobUrlBuildConsole() {
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "my-war/master", 3L, "/job/:jobFullName/:runNumber/console");
         String pathInfo = "/job/my-war/job/master/3/console";
         verifyJobUrlParsing(expected, pathInfo);
@@ -62,7 +62,7 @@ public class OpenTelemetryServletFilterTest {
 
     @Test
     public void testParseJobUrl() {
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "my-war/master", null, "/job/:jobFullName");
         String pathInfo = "/job/my-war/job/master/";
         verifyJobUrlParsing(expected, pathInfo);
@@ -70,19 +70,19 @@ public class OpenTelemetryServletFilterTest {
 
     @Test
     public void job_run_execution_node() {
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "ecommerce-antifraud/main", 110L, "/job/:jobFullName/:runNumber/execution/:execution/*");
         String pathInfo = "/job/ecommerce-antifraud/job/main/110/execution/node/13/wfapi/describe";
         verifyJobUrlParsing(expected, pathInfo);
     }
 
-    private void verifyJobUrlParsing(OpenTelemetryServletFilter.ParsedJobUrl expected, String pathInfo) {
+    private void verifyJobUrlParsing(StaplerInstrumentationServletFilter.ParsedJobUrl expected, String pathInfo) {
         List<String> pathInfoTokens = Collections.list(new StringTokenizer(pathInfo, "/")).stream()
             .map(token -> (String) token)
             .filter(t -> !t.isEmpty())
             .collect(Collectors.toList());
 
-        OpenTelemetryServletFilter.ParsedJobUrl actual = new OpenTelemetryServletFilter(OpenTelemetry.noop().getTracer("test")).parseJobUrl(pathInfoTokens);
+        StaplerInstrumentationServletFilter.ParsedJobUrl actual = new StaplerInstrumentationServletFilter(OpenTelemetry.noop().getTracer("test")).parseJobUrl(pathInfoTokens);
         System.out.println(actual);
         Assert.assertEquals(expected, actual);
     }
@@ -92,7 +92,7 @@ public class OpenTelemetryServletFilterTest {
     public void url_bo_multibranch_pipeline_run_home() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/";
 
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "ecommerce-antifraud/main", 110L, null, null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/branches/:branch/runs/:runNumber");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -101,7 +101,7 @@ public class OpenTelemetryServletFilterTest {
     public void url_bo_multibranch_pipeline_run_testSummary() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/blueTestSummary/";
 
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "ecommerce-antifraud/main", 110L, null, null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/branches/:branch/runs/:runNumber/blueTestSummary");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -110,7 +110,7 @@ public class OpenTelemetryServletFilterTest {
     public void url_bo_multibranch_pipeline_run_node_steps() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/";
 
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "ecommerce-antifraud/main", 110L, "13", null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/branches/:branch/runs/:runNumber/nodes/:node/steps");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -119,7 +119,7 @@ public class OpenTelemetryServletFilterTest {
     public void url_bo_pipeline_run() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/";
 
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "my-war", 1L, null, null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/runs/:runNumber");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -127,7 +127,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void url_bo_pipeline_run_blueTestSummary() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/blueTestSummary/";
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "my-war", 1L, null, null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/runs/:runNumber/blueTestSummary");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -135,7 +135,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void url_bo_pipeline_run_changeSet() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/changeSet/";
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "my-war", 1L, null, null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/runs/:runNumber/changeSet");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -144,7 +144,7 @@ public class OpenTelemetryServletFilterTest {
     public void url_bo_pipeline_activity() {
         String pathInfo = "/blue/organizations/jenkins/my-war/activity";
 
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "my-war", null, null, null, "/blue/organizations/:organization/:pipelineName/activity");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -153,7 +153,7 @@ public class OpenTelemetryServletFilterTest {
     public void url_bo_pipeline_run_steps() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/steps/";
 
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "my-war", 1L, null, null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/runs/:runNumber/steps");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -162,7 +162,7 @@ public class OpenTelemetryServletFilterTest {
     public void url_bo_pipeline_run_nodes() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/nodes/";
 
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "my-war", 1L, null, null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/runs/:runNumber/nodes");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -170,7 +170,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void url_bo_rest_pipeline_scm() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/scm/content";
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "ecommerce-antifraud", null, null, null, "/blue/rest/organizations/:organization/pipelines/:pipelineName/*");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -179,7 +179,7 @@ public class OpenTelemetryServletFilterTest {
     public void url_bo_pipeline_run_node_steps_log() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/steps/5/log/";
 
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "my-war", 1L, null, 5, "/blue/rest/organizations/:organization/pipelines/:pipelineName/runs/:runNumber/steps/:step/log");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -188,7 +188,7 @@ public class OpenTelemetryServletFilterTest {
     public void url_bo_multibranch_pipeline_run_node_step_unexpected() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/19/unexpected/path";
 
-        OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected = new OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl(
+        StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected = new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
             "ecommerce-antifraud/main", 110L, "13", 19, "/blue/rest/organizations/:organization/pipelines/:pipelineName/branches/:branch/runs/:runNumber/nodes/:node/steps/:step/*");
         verifyBlueOceanRestPipelineUrlParsing(expected, pathInfo);
     }
@@ -196,7 +196,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobBuildArtifactUrl() {
         // /job/:jobFullName/:runNumber/artifact/target/anti-fraud-0.0.1-SNAPSHOT.jar
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "ecommerce-antifraud/main", 110L, "/job/:jobFullName/:runNumber/artifact/:artifact");
         String pathInfo = "/job/ecommerce-antifraud/job/main/110/artifact/target/anti-fraud-0.0.1-SNAPSHOT.jar";
         verifyJobUrlParsing(expected, pathInfo);
@@ -205,7 +205,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobLastBuildArtifactUrl() {
         // /job/:jobFullName/:runNumber/artifact/target/anti-fraud-0.0.1-SNAPSHOT.jar
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "ecommerce-antifraud/main", null, "/job/:jobFullName/lastBuild/artifact/:artifact");
         String pathInfo = "/job/ecommerce-antifraud/job/main/lastBuild/artifact/target/anti-fraud-0.0.1-SNAPSHOT.jar";
         verifyJobUrlParsing(expected, pathInfo);
@@ -214,7 +214,7 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobBuildDescriptorMethodUrl() {
         // /job/ecommerce-antifraud/job/main/128/descriptorByName/com.cloudbees.jenkins.support.impl.RunDirectoryComponent/checkMaxDepth
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "ecommerce-antifraud/main", 110L, "/job/:jobFullName/:runNumber/descriptorByName/:descriptor/:method");
         String pathInfo = "/job/ecommerce-antifraud/job/main/110/descriptorByName/com.cloudbees.jenkins.support.impl.RunDirectoryComponent/checkMaxDepth";
         verifyJobUrlParsing(expected, pathInfo);
@@ -223,21 +223,21 @@ public class OpenTelemetryServletFilterTest {
     @Test
     public void testParseJobLastBuildDescriptorMethodUrl() {
         // /job/ecommerce-antifraud/job/main/128/descriptorByName/com.cloudbees.jenkins.support.impl.RunDirectoryComponent/checkMaxDepth
-        OpenTelemetryServletFilter.ParsedJobUrl expected = new OpenTelemetryServletFilter.ParsedJobUrl(
+        StaplerInstrumentationServletFilter.ParsedJobUrl expected = new StaplerInstrumentationServletFilter.ParsedJobUrl(
             "ecommerce-antifraud/main", null, "/job/:jobFullName/lastBuild/descriptorByName/:descriptor/:method");
         String pathInfo = "/job/ecommerce-antifraud/job/main/lastBuild/descriptorByName/com.cloudbees.jenkins.support.impl.RunDirectoryComponent/checkMaxDepth";
         verifyJobUrlParsing(expected, pathInfo);
     }
 
 
-    private void verifyBlueOceanRestPipelineUrlParsing(OpenTelemetryServletFilter.ParsedBlueOceanPipelineJobUrl expected, String pathInfo) {
+    private void verifyBlueOceanRestPipelineUrlParsing(StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected, String pathInfo) {
         List<String> pathInfoTokens = Collections.list(new StringTokenizer(pathInfo, "/")).stream()
             .map(token -> (String) token)
             .filter(t -> !t.isEmpty())
             .collect(Collectors.toList());
 
         try {
-            OpenTelemetryServletFilter.ParsedJobUrl actual = new OpenTelemetryServletFilter(OpenTelemetry.noop().getTracer("test")).parseBlueOceanRestPipelineUrl(pathInfoTokens);
+            StaplerInstrumentationServletFilter.ParsedJobUrl actual = new StaplerInstrumentationServletFilter(OpenTelemetry.noop().getTracer("test")).parseBlueOceanRestPipelineUrl(pathInfoTokens);
 
             System.out.println(actual);
             Assert.assertEquals(expected, actual);
