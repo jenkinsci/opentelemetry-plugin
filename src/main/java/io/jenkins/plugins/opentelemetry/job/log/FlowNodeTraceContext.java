@@ -19,6 +19,8 @@ import java.util.Map;
 
 public class FlowNodeTraceContext extends RunTraceContext {
 
+    static final long serialVersionUID = 1L;
+
     public static FlowNodeTraceContext newFlowNodeTraceContext(@NonNull Run run, @NonNull FlowNode flowNode, @NonNull Span span) {
         String spanId = span.getSpanContext().getSpanId();
         String traceId = span.getSpanContext().getTraceId();
@@ -40,12 +42,11 @@ public class FlowNodeTraceContext extends RunTraceContext {
     @Override
     public String toString() {
         return "FlowNodeTraceContext{" +
-            "flowNodeId='" + flowNodeId + '\'' +
-            ", jobFullName='" + jobFullName + '\'' +
+            "jobFullName='" + jobFullName + '\'' +
             ", runNumber=" + runNumber +
+            ", flowNodeId='" + flowNodeId + '\'' +
             ", spanId='" + spanId + '\'' +
             ", traceId='" + traceId + '\'' +
-            ", w3cTraceContext=" + w3cTraceContext +
             '}';
     }
 
@@ -60,6 +61,12 @@ public class FlowNodeTraceContext extends RunTraceContext {
             Objects.equal(traceId, traceContext.traceId) &&
             Objects.equal(spanId, traceContext.spanId);
     }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(super.hashCode(), flowNodeId);
+    }
+
     @Nonnull
     @Override
     public Attributes toAttributes() {
