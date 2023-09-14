@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import com.google.common.collect.Iterators;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -15,6 +16,7 @@ import hudson.util.VersionNumber;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.ReadableSpan;
@@ -30,6 +32,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
 import javax.annotation.Nonnull;
+import javax.servlet.http.HttpServletRequest;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -271,5 +274,22 @@ public class OtelUtils {
             }
         }
         return message.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).collect(Collectors.joining(", "));
+    }
+
+    public static class HttpServletRequestTextMapGetter implements TextMapGetter<HttpServletRequest> {
+        @Override
+        public Iterable<String> keys(@Nonnull HttpServletRequest request) {
+            return () -> Optional.of(request)
+                .map(HttpServletRequest::getHeaderNames)
+                .map((Function<Enumeration<String>, Iterator<String>>) Iterators::forEnumeration)
+                .orElseGet(Collections::emptyIterator);
+        }
+
+        @Override
+        public String get(@javax.annotation.Nullable HttpServletRequest request, @Nonnull String key) {
+            return Optional.ofNullable(request)
+                .map(c -> c.getHeader(key))
+                .orElse(null);
+        }
     }
 }
