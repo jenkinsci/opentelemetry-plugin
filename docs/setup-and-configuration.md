@@ -107,11 +107,12 @@ _Jenkins monitoring with Jaeger and Prometheus_
 
 Advanced configuration settings
 
-| System property<br/>Environment Variable | Value | Description |
-|------------------------------------------|-------|------------|
+| System property<br/>Environment Variable | Value                    | Description                                                                                                                                                                                                                                            |
+|------------------------------------------|--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | otel.instrumentation.jenkins.job.dsl.collapse.job.name | Boolean, default `false` | When using Job DSL generated jobs, make the pipeline run root span name a low cardinality name using the name "Job from seed '${job.jobDslSeedJob.fullName}'" rather than using "${job.fullName}". Useful when the Job DSL plugin creates a lot of jobs |
-| otel.instrumentation.jenkins.job.matrix.expand.job.name | Boolean, default `false` | When using Matrix Projects, the name of the combination jobs is by default collapsed to "${matrix-job-name}/execution" rather than using the full name that is generated joining the axis values of the combination |
-| otel.instrumentation.jenkins.web.enabled | Boolean, default `true` | Since version 2.0.0. Disable the instrumentation of Jenkins web requests (ie the instrumentation of Jenkins Stapler) |
+| otel.instrumentation.jenkins.job.matrix.expand.job.name | Boolean, default `false` | When using Matrix Projects, the name of the combination jobs is by default collapsed to "${matrix-job-name}/execution" rather than using the full name that is generated joining the axis values of the combination                                    |
+| otel.instrumentation.jenkins.web.enabled | Boolean, default `true`  | Since version 2.0.0. Disable the instrumentation of Jenkins web requests (ie the instrumentation of Jenkins Stapler)                                                                                                                                   |
+| otel.instrumentation.jenkins.remote.span.enabled | Boolean, default `false` | Since version 2.17.0. When enabled, trace context is propagated when build is trigged by Jenkins HTTP API calls                                                                                                                                        |                                                                                                 
 
 ## Configuration as Code (JCasC) - Jenkins OpenTelemetry Plugin
 

@@ -24,6 +24,7 @@ import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
 import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
+import io.jenkins.plugins.opentelemetry.queue.RemoteSpanAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.events.EventEmitter;
@@ -32,8 +33,12 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
+import io.opentelemetry.api.trace.TraceStateBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
@@ -211,6 +216,23 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE, parameterIsSensitive);
             rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_PARAMETER_VALUE, nonNullParameterValues);
         }
+
+        // We will use remote context first but may be overridden by local parent context
+        Optional.ofNullable(run.getAction(RemoteSpanAction.class))
+            .filter(r -> r.getTraceId() != null && r.getSpanId() != null)
+            .ifPresent(action -> {
+                TraceStateBuilder traceStateBuilder = TraceState.builder();
+                Map<String, String> traceStateMap = action.getTraceStateMap();
+                traceStateMap.entrySet()
+                    .forEach(entry -> traceStateBuilder.put(entry.getKey(), entry.getValue()));
+                SpanContext spanContext = SpanContext.createFromRemoteParent(
+                    action.getTraceId(),
+                    action.getSpanId(),
+                    TraceFlags.fromByte(action.getTraceFlagsAsByte()),
+                    traceStateBuilder.build());
+                Context context = Context.current().with(Span.wrap(spanContext));
+                rootSpanBuilder.setParent(context);
+            });
 
         // CAUSES
         List<String> causesDescriptions = ((List<Cause>) run.getCauses()).stream().map(c -> getCauseHandler(c).getStructuredDescription(c)).collect(Collectors.toList());
