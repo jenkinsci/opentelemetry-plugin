@@ -98,7 +98,6 @@ public class OpenTelemetrySdkProvider {
         return otelLogsExporter != null && otelLogsExporter.equals("true");
     }
 
-
     @NonNull
     public ContextPropagators getPropagators() {
         return openTelemetry.getPropagators();
