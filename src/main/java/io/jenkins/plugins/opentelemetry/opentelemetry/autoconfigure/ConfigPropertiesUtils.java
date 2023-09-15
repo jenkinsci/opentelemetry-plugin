@@ -16,6 +16,6 @@ public class ConfigPropertiesUtils {
      * Helper because there is no public implementation of the "i.o.s.a.s.ConfigProperties" interface.
      */
     public static ConfigProperties emptyConfig(){
-        return DefaultConfigProperties.createForTest(Collections.emptyMap());
+        return DefaultConfigProperties.createFromMap(Collections.emptyMap());
     }
 }

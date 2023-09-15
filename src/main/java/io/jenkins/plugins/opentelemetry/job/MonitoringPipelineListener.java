@@ -32,7 +32,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ResourceAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.model.CauseOfInterruption;
 import org.apache.commons.compress.utils.Sets;

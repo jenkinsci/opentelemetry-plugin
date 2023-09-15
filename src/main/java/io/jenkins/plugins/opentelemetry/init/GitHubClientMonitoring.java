@@ -15,7 +15,7 @@ import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.semconv.SemanticAttributes;
 import jenkins.YesNoMaybe;
 import org.jenkinsci.plugins.github_branch_source.Connector;
 import org.jenkinsci.plugins.github_branch_source.GitHubAppCredentials;
@@ -48,7 +48,7 @@ public class GitHubClientMonitoring implements OtelComponent {
     private final Class<?> credentialsTokenProviderClass;
     private final Field credentialsTokenProvider_credentialsField;
 
-    private Field dependentAuthorizationProvider_gitHubField;
+    private final Field dependentAuthorizationProvider_gitHubField;
 
     private final Class<?> authorizationRefreshGitHubWrapperClass;
 
