@@ -6,7 +6,7 @@
 /**
  * Semantic conventions: OpenTelemetry {@link io.opentelemetry.api.common.Attributes} and metrics names.
  *
- * @see io.opentelemetry.semconv.trace.attributes.SemanticAttributes
+ * @see io.opentelemetry.semconv.SemanticAttributes
  */
 @ParametersAreNonnullByDefault
 package io.jenkins.plugins.opentelemetry.semconv;

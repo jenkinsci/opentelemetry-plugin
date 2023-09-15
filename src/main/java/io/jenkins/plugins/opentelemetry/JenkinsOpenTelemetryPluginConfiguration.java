@@ -483,7 +483,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
-     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAME
+     * @see ResourceAttributes#SERVICE_NAME
      */
     public String getServiceName() {
         return (Strings.isNullOrEmpty(this.serviceName)) ? JenkinsOtelSemanticAttributes.JENKINS : this.serviceName;
@@ -496,7 +496,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
-     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAMESPACE
+     * @see ResourceAttributes#SERVICE_NAMESPACE
      */
     public String getServiceNamespace() {
         return (Strings.isNullOrEmpty(this.serviceNamespace)) ? JenkinsOtelSemanticAttributes.JENKINS : this.serviceNamespace;
