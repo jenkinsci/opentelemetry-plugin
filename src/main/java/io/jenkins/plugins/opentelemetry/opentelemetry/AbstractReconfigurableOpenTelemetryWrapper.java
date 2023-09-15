@@ -5,43 +5,120 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.ExtensionList;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.events.EventEmitterProvider;
+import io.opentelemetry.api.events.GlobalEventEmitterProvider;
 import io.opentelemetry.api.metrics.*;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerBuilder;
-import io.opentelemetry.api.trace.TracerProvider;
-import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
+import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.logs.internal.SdkEventEmitterProvider;
+import io.opentelemetry.sdk.resources.Resource;
 
 import java.io.Closeable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * Holds a reference on all the instantiated {@link AutoCloseable} instrument in order to properly close them before
  * reconfigurations (eg {@link ObservableLongUpDownCounter}, {@link ObservableLongCounter}...).
  */
-public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
+public abstract class AbstractReconfigurableOpenTelemetryWrapper extends AbstractOpenTelemetryWrapper implements OpenTelemetry, Closeable {
 
-    private final static Logger LOGGER = Logger.getLogger(ClosingOpenTelemetry.class.getName());
-
-    public static ClosingOpenTelemetry noop() {
-        return new ClosingOpenTelemetry(OpenTelemetry.noop());
-    }
-
-    final OpenTelemetry delegate;
+    private final static Logger LOGGER = Logger.getLogger(AbstractReconfigurableOpenTelemetryWrapper.class.getName());
+    protected transient Resource resource;
+    protected transient ConfigProperties config;
+    protected transient OpenTelemetry openTelemetry;
+    protected transient EventEmitterProvider eventEmitterProvider;
 
     final List<AutoCloseable> closeables = new ArrayList<>();
 
+    public void initialize(@NonNull Map<String, String> openTelemetryProperties, Resource openTelemetryResource) {
+        close(); // shutdown existing SDK
+        if (openTelemetryProperties.containsKey("otel.exporter.otlp.endpoint") ||
+            openTelemetryProperties.containsKey("otel.traces.exporter") ||
+            openTelemetryProperties.containsKey("otel.metrics.exporter") ||
+            openTelemetryProperties.containsKey("otel.logs.exporter")) {
+
+            LOGGER.log(Level.FINE, "initializeOtlp");
+            configure(openTelemetryProperties, openTelemetryResource);
+
+            this.eventEmitterProvider = SdkEventEmitterProvider.create(((OpenTelemetrySdk) this.openTelemetry).getSdkLoggerProvider());
+
+            GlobalOpenTelemetry.resetForTest();
+            GlobalOpenTelemetry.set(this);
+            GlobalEventEmitterProvider.resetForTest();
+            GlobalEventEmitterProvider.set(getEventEmitterProvider());
+            LOGGER.log(Level.FINE, "OpenTelemetry initialized as OTLP");
+        } else { // NO-OP
+            LOGGER.log(Level.FINE, "initializeNoOp");
+
+            this.resource = Resource.getDefault();
+            this.config = ConfigPropertiesUtils.emptyConfig();
+            this.openTelemetry = OpenTelemetry.noop();
+
+            GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
+            GlobalOpenTelemetry.set(OpenTelemetry.noop());
+            GlobalEventEmitterProvider.resetForTest();
+            GlobalEventEmitterProvider.set(EventEmitterProvider.noop());
+            LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
+        }
+
+        postOpenTelemetrySdkConfiguration();
+    }
+
+    private void configure(Map<String, String> openTelemetryProperties, Resource openTelemetryResource) {
+        AutoConfiguredOpenTelemetrySdkBuilder sdkBuilder = AutoConfiguredOpenTelemetrySdk.builder();
+        // PROPERTIES
+        sdkBuilder.addPropertiesSupplier(() -> openTelemetryProperties);
+        sdkBuilder.addPropertiesCustomizer((Function<ConfigProperties, Map<String, String>>) configProperties -> {
+            // keep a reference to the computed config properties for future use in the plugin
+            AbstractReconfigurableOpenTelemetryWrapper.this.config = configProperties;
+            return Collections.emptyMap();
+        });
+
+        // RESOURCE
+        sdkBuilder.addResourceCustomizer((resource, configProperties) -> {
+                // keep a reference to the computed Resource for future use in the plugin
+                this.resource = Resource.builder()
+                    .putAll(resource)
+                    .putAll(openTelemetryResource).build();
+                return this.resource;
+            }
+        );
+        sdkBuilder.disableShutdownHook(); // SDK closed by #close()
+        this.openTelemetry = sdkBuilder.build().getOpenTelemetrySdk();
+
+        LOGGER.log(Level.INFO, () -> "OpenTelemetry SDK initialized: " + OtelUtils.prettyPrintOtelSdkConfig(this.config, this.resource));
+    }
+
     @Override
     public void close() {
+        LOGGER.log(Level.FINE, "Shutdown...");
+
+        LOGGER.log(Level.FINE, () -> "Close " + closeables.size() + " instruments");
+        LOGGER.log(Level.FINEST, () -> "Close " + closeables);
         List<AutoCloseable> instruments = new ArrayList<>(this.closeables);
         this.closeables.clear(); // reset the list of instruments for reuse
-        LOGGER.log(Level.FINE, () -> "Close " + instruments.size() + " instruments");
-        LOGGER.log(Level.FINEST, () -> "Close " + instruments);
+
         for (AutoCloseable instrument : instruments) {
             try {
                 instrument.close();
@@ -50,50 +127,61 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
                 LOGGER.log(Level.WARNING, "Exception closing " + instrument, e);
             }
         }
-    }
 
-    public ClosingOpenTelemetry(OpenTelemetry delegate) {
-        this.delegate = delegate;
-    }
+        LOGGER.log(Level.FINE, () -> "Shutdown Otel SDK on components: " + ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream().sorted().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
+        ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream().sorted().forEachOrdered(OpenTelemetryLifecycleListener::beforeSdkShutdown);
 
-    @Override
-    public TracerProvider getTracerProvider() {
-        return delegate.getTracerProvider();
-    }
-
-    @Override
-    public Tracer getTracer(String instrumentationScopeName) {
-        return delegate.getTracer(instrumentationScopeName);
-    }
-
-    @Override
-    public Tracer getTracer(String instrumentationScopeName, String instrumentationScopeVersion) {
-        return delegate.getTracer(instrumentationScopeName, instrumentationScopeVersion);
-    }
-
-    @Override
-    public TracerBuilder tracerBuilder(String instrumentationScopeName) {
-        return delegate.tracerBuilder(instrumentationScopeName);
+        if (getOpenTelemetryDelegate() instanceof OpenTelemetrySdk) {
+            OpenTelemetrySdk openTelemetrySdk = (OpenTelemetrySdk) getOpenTelemetryDelegate();
+            LOGGER.log(Level.FINE, () -> "Shutdown OTel SDK");
+            CompletableResultCode shutdown = openTelemetrySdk.shutdown();
+            if (!shutdown.join(1, TimeUnit.SECONDS).isSuccess()) {
+                LOGGER.log(Level.WARNING, "Failure to shutdown OTel SDK");
+            }
+        }
+        GlobalOpenTelemetry.resetForTest();
+        GlobalEventEmitterProvider.resetForTest();
     }
 
     @Override
     public MeterProvider getMeterProvider() {
-        return new ClosingMeterProvider(delegate.getMeterProvider());
+        return new ClosingMeterProvider(getOpenTelemetryDelegate().getMeterProvider());
     }
 
     @Override
     public Meter getMeter(String instrumentationScopeName) {
-        return new ClosingMeter(delegate.getMeter(instrumentationScopeName));
+        return new ClosingMeter(getOpenTelemetryDelegate().getMeter(instrumentationScopeName));
     }
 
     @Override
     public MeterBuilder meterBuilder(String instrumentationScopeName) {
-        return new ClosingMeterBuilder(delegate.meterBuilder(instrumentationScopeName));
+        return new ClosingMeterBuilder(getOpenTelemetryDelegate().meterBuilder(instrumentationScopeName));
     }
 
     @Override
-    public ContextPropagators getPropagators() {
-        return delegate.getPropagators();
+    protected OpenTelemetry getOpenTelemetryDelegate() {
+        return openTelemetry;
+    }
+
+    @Override
+    protected EventEmitterProvider getEventEmitterProvider() {
+        return this.eventEmitterProvider;
+    }
+
+    @NonNull
+    public Resource getResource() {
+        return Preconditions.checkNotNull(resource);
+    }
+
+    @NonNull
+    public ConfigProperties getConfig() {
+        return Preconditions.checkNotNull(config);
+    }
+
+    /**
+     * For extension purpose
+     */
+    protected void postOpenTelemetrySdkConfiguration() {
     }
 
     class ClosingMeterProvider implements MeterProvider {

@@ -14,7 +14,7 @@ import hudson.model.Descriptor;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
@@ -63,7 +63,7 @@ import static com.google.common.base.Verify.verifyNotNull;
 
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener, StepListener, OtelComponent {
+public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener, StepListener, OpenTelemetryLifecycleListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringPipelineListener.class.getName());
 
     private OtelTraceService otelTraceService;

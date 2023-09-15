@@ -7,7 +7,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeBuildListener;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -60,7 +60,7 @@ class OtelLogStorage implements LogStorage {
 
         OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, otelConfigurationProperties, otelResourceAttributes);
 
-        if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
+        if (JenkinsOpenTelemetry.get().isOtelLogsMirrorToDisk()) {
             try {
               File logFile = new File(buildFolderPath, "log");
               return new TeeBuildListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).overallListener());
@@ -80,7 +80,7 @@ class OtelLogStorage implements LogStorage {
         otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
         OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, flowNode.getId(), otelConfigurationProperties, otelResourceAttributes);
 
-        if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
+        if (JenkinsOpenTelemetry.get().isOtelLogsMirrorToDisk()) {
             try {
               File logFile = new File(buildFolderPath, "log");
               return new TeeTaskListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).nodeListener(flowNode));

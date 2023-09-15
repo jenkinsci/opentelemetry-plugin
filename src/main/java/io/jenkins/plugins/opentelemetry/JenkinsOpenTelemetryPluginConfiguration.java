@@ -116,9 +116,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
-    private String disabledResourceProviders = OpenTelemetrySdkProvider.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+    private String disabledResourceProviders = JenkinsOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
 
-    private transient OpenTelemetrySdkProvider openTelemetrySdkProvider;
+    private transient JenkinsOpenTelemetry jenkinsOpenTelemetry;
 
     private transient LogStorageRetriever logStorageRetriever;
 
@@ -172,7 +172,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     protected Object readResolve() {
         LOGGER.log(Level.FINE, "readResolve()");
         if (this.disabledResourceProviders == null) {
-            this.disabledResourceProviders = OpenTelemetrySdkProvider.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+            this.disabledResourceProviders = JenkinsOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
         }
         return this;
     }
@@ -220,7 +220,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
         } else {
-            openTelemetrySdkProvider.initialize(newOpenTelemetryConfiguration);
+            jenkinsOpenTelemetry.initialize(newOpenTelemetryConfiguration);
             this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
         }
 
@@ -298,8 +298,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Inject
-    public void setOpenTelemetrySdkProvider(OpenTelemetrySdkProvider openTelemetrySdkProvider) {
-        this.openTelemetrySdkProvider = openTelemetrySdkProvider;
+    public void setOpenTelemetrySdkProvider(JenkinsOpenTelemetry jenkinsOpenTelemetry) {
+        this.jenkinsOpenTelemetry = jenkinsOpenTelemetry;
     }
 
     public Integer getExporterTimeoutMillis() {
@@ -510,10 +510,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @NonNull
     public Resource getResource() {
-        if (this.openTelemetrySdkProvider == null) {
+        if (this.jenkinsOpenTelemetry == null) {
             return Resource.empty();
         } else {
-            return this.openTelemetrySdkProvider.getResource();
+            return this.jenkinsOpenTelemetry.getResource();
         }
     }
 
@@ -530,10 +530,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @NonNull
     public ConfigProperties getConfigProperties() {
-        if (this.openTelemetrySdkProvider == null) {
+        if (this.jenkinsOpenTelemetry == null) {
             return ConfigPropertiesUtils.emptyConfig();
         } else {
-            return this.openTelemetrySdkProvider.getConfig();
+            return this.jenkinsOpenTelemetry.getConfig();
         }
     }
 

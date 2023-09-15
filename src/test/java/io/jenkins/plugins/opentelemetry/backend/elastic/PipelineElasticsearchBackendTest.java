@@ -4,23 +4,13 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
-import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
-import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
-import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
-import io.opentelemetry.api.OpenTelemetry;
-import org.apache.http.auth.Credentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -29,8 +19,6 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.DockerComposeContainer;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assume.assumeTrue;
 
@@ -49,7 +37,7 @@ public class PipelineElasticsearchBackendTest {
         .withExposedService("fleet-server_1", OTEL_PORT)
         .withExposedService("kibana_1", KIBANA_PORT)
         .withExposedService("elasticsearch_1", ELASTICSEARCH_PORT);
-    static OpenTelemetrySdkProvider openTelemetrySdkProvider;
+    static JenkinsOpenTelemetry jenkinsOpenTelemetry;
     private ElasticsearchLogStorageRetriever elasticsearchRetriever;
 
     @BeforeClass

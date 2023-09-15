@@ -13,7 +13,7 @@ import hudson.security.SecurityRealm;
 import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import jenkins.model.GlobalConfiguration;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -37,9 +37,9 @@ public class RemoteSpanTest extends BaseIntegrationTest {
 
     @Before
     public void enableRemoteSpan() {
-        ExtensionList<OpenTelemetrySdkProvider> openTelemetrySdkProviders = jenkinsRule.getInstance().getExtensionList(OpenTelemetrySdkProvider.class);
-        verify(openTelemetrySdkProviders.size() == 1, "Number of openTelemetrySdkProviders: %s", openTelemetrySdkProviders.size());
-        OpenTelemetrySdkProvider openTelemetrySdkProvider = openTelemetrySdkProviders.get(0);
+        ExtensionList<JenkinsOpenTelemetry> jenkinsOpenTelemetries = jenkinsRule.getInstance().getExtensionList(JenkinsOpenTelemetry.class);
+        verify(jenkinsOpenTelemetries.size() == 1, "Number of openTelemetrySdkProviders: %s", jenkinsOpenTelemetries.size());
+        JenkinsOpenTelemetry jenkinsOpenTelemetry = jenkinsOpenTelemetries.get(0);
 
         // verify(openTelemetrySdkProvider.openTelemetry == null, "OpenTelemetrySdkProvider has already been configured");
         OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
@@ -50,7 +50,7 @@ public class RemoteSpanTest extends BaseIntegrationTest {
         configuration.setConfigurationProperties(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED + "=true");
         OpenTelemetryConfiguration config = configuration.toOpenTelemetryConfiguration();
 
-        openTelemetrySdkProvider.initialize(config);
+        jenkinsOpenTelemetry.initialize(config);
     }
     @Test
     public void testRemoteTriggerParentChildTrace() throws Exception {

@@ -1,7 +1,7 @@
 package io.jenkins.plugins.opentelemetry.servlet;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.context.Context;
@@ -24,7 +24,7 @@ public class TraceContextServletFilter implements Filter {
 
     protected static final Pattern JENKINS_TRIGGER_BUILD_URL_PATTERN = Pattern.compile("^(/[^/]+)?/job/([\\w/-]+)/build(WithParameters)?$");
 
-    private OpenTelemetrySdkProvider openTelemetrySdkProvider;
+    private JenkinsOpenTelemetry jenkinsOpenTelemetry;
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain) throws IOException, ServletException {
@@ -72,10 +72,10 @@ public class TraceContextServletFilter implements Filter {
         return TraceContextServletFilter.class.hashCode();
     }
 
-    protected OpenTelemetrySdkProvider getOpenTelemetrySdkProvider() {
-        if (this.openTelemetrySdkProvider == null) {
-            this.openTelemetrySdkProvider = OpenTelemetrySdkProvider.get();
+    protected JenkinsOpenTelemetry getOpenTelemetrySdkProvider() {
+        if (this.jenkinsOpenTelemetry == null) {
+            this.jenkinsOpenTelemetry = JenkinsOpenTelemetry.get();
         }
-        return this.openTelemetrySdkProvider;
+        return this.jenkinsOpenTelemetry;
     }
 }

@@ -9,8 +9,8 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Queue;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.logs.LoggerProvider;
@@ -36,7 +36,7 @@ import java.util.logging.Logger;
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/PipelineBridge.java
  */
 @Extension
-public final class OtelLogStorageFactory implements LogStorageFactory, OtelComponent {
+public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelemetryLifecycleListener {
 
     private final static Logger logger = Logger.getLogger(OtelLogStorageFactory.class.getName());
 
@@ -45,7 +45,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OtelCompo
         System.setProperty("org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep.USE_WATCHING", "true");
     }
 
-    OpenTelemetrySdkProvider openTelemetrySdkProvider;
+    JenkinsOpenTelemetry jenkinsOpenTelemetry;
 
     private Tracer tracer;
 
@@ -56,7 +56,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OtelCompo
     @Nullable
     @Override
     public LogStorage forBuild(@NonNull final FlowExecutionOwner owner) {
-        if (!getOpenTelemetrySdkProvider().isOtelLogsEnabled()) {
+        if (!getOpenTelemetrySdkProvider().isLogsEnabled()) {
             logger.log(Level.FINE, () -> "OTel Logs disabled");
             return null;
         }
@@ -86,11 +86,11 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OtelCompo
     /**
      * Workaround dependency injection problem. @Inject doesn't work here
      */
-    private OpenTelemetrySdkProvider getOpenTelemetrySdkProvider() {
-        if (openTelemetrySdkProvider == null) {
-            openTelemetrySdkProvider = OpenTelemetrySdkProvider.get();
+    private JenkinsOpenTelemetry getOpenTelemetrySdkProvider() {
+        if (jenkinsOpenTelemetry == null) {
+            jenkinsOpenTelemetry = JenkinsOpenTelemetry.get();
         }
-        return openTelemetrySdkProvider;
+        return jenkinsOpenTelemetry;
     }
 
     @Override

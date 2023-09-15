@@ -18,7 +18,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.google.errorprone.annotations.MustBeClosed;
 import groovy.text.Template;
 import hudson.util.FormValidation;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.jenkins.CredentialsNotFoundException;
@@ -36,20 +36,15 @@ import io.opentelemetry.context.Scope;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.ssl.SSLContextBuilder;
-import org.elasticsearch.client.Node;
-import org.elasticsearch.client.NodeSelector;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -59,10 +54,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,7 +63,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 
 /**
@@ -375,7 +367,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
     private Tracer getTracer() {
         if (_tracer == null) {
-            _tracer = OpenTelemetrySdkProvider.get().getTracer();
+            _tracer = JenkinsOpenTelemetry.get().getDefaultTracer();
         }
         return _tracer;
     }
