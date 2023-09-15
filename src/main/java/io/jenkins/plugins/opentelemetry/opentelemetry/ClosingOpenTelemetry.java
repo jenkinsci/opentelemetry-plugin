@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.*;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerBuilder;
@@ -84,6 +85,11 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
     @Override
     public Meter getMeter(String instrumentationScopeName) {
         return new ClosingMeter(delegate.getMeter(instrumentationScopeName));
+    }
+
+    @Override
+    public LoggerProvider getLogsBridge() {
+        return delegate.getLogsBridge();
     }
 
     @Override
