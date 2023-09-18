@@ -8,6 +8,8 @@ import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
+import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeBuildListener;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -21,13 +23,14 @@ import org.jenkinsci.plugins.workflow.log.FileLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,14 +43,28 @@ import java.util.logging.Logger;
 class OtelLogStorage implements LogStorage {
 
     private final static Logger logger = Logger.getLogger(OtelLogStorage.class.getName());
-    final BuildInfo buildInfo;
-    final String buildFolderPath;
+    final Run run;
+    final RunTraceContext runTraceContext;
+    final String runFolderPath;
     final Tracer tracer;
 
-    public OtelLogStorage(@NonNull BuildInfo buildInfo, @NonNull Tracer tracer, @Nullable String buildFolderPath) {
-        this.buildInfo = buildInfo;
+    final OtelTraceService otelTraceService;
+
+    public OtelLogStorage(@NonNull Run run, @NonNull OtelTraceService otelTraceService, @NonNull Tracer tracer) {
+        this.run = run;
+        MonitoringAction monitoringAction = Optional
+            .ofNullable(run.getAction(MonitoringAction.class))
+            .orElseThrow(() ->  new IllegalStateException("No MonitoringAction found for " + run));
+
+        this.runTraceContext = new RunTraceContext(
+            run.getParent().getFullName(),
+            run.getNumber(),
+            monitoringAction.getTraceId(),
+            monitoringAction.getSpanId(),
+            monitoringAction.getW3cTraceContext());
+        this.otelTraceService = otelTraceService;
         this.tracer = tracer;
-        this.buildFolderPath = buildFolderPath;
+        this.runFolderPath =  run.getRootDir().getPath();
     }
 
     @NonNull
@@ -58,17 +75,17 @@ class OtelLogStorage implements LogStorage {
         Map<String, String> otelResourceAttributes = new HashMap<>();
         otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
 
-        OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, otelConfigurationProperties, otelResourceAttributes);
+        BuildListener result = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(runTraceContext, otelConfigurationProperties, otelResourceAttributes);
 
         if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
             try {
-              File logFile = new File(buildFolderPath, "log");
-              return new TeeBuildListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).overallListener());
+              File logFile = new File(runFolderPath, "log");
+                result = new TeeBuildListener(result, FileLogStorage.forFile(logFile).overallListener());
               } catch (IOException|InterruptedException e) {
-                throw new IOException("Was not possible to create the mirror logs.", e);
+                throw new IOException("Failure creating the mirror logs.", e);
               }
         }
-        return otelLogSenderBuildListenerOnController;
+        return result;
     }
 
     @NonNull
@@ -78,17 +95,20 @@ class OtelLogStorage implements LogStorage {
         Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelResourceAttributes = new HashMap<>();
         otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
-        OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController otelLogSenderBuildListenerOnController = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(buildInfo, flowNode.getId(), otelConfigurationProperties, otelResourceAttributes);
+
+        Span span = otelTraceService.getSpan(run, flowNode);
+        FlowNodeTraceContext flowNodeTraceContext = FlowNodeTraceContext.newFlowNodeTraceContext(run, flowNode, span);
+        TaskListener result = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(flowNodeTraceContext, otelConfigurationProperties, otelResourceAttributes);
 
         if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
             try {
-              File logFile = new File(buildFolderPath, "log");
-              return new TeeTaskListener(otelLogSenderBuildListenerOnController, FileLogStorage.forFile(logFile).nodeListener(flowNode));
+              File logFile = new File(runFolderPath, "log");
+              result = new TeeTaskListener(result, FileLogStorage.forFile(logFile).nodeListener(flowNode));
              } catch (IOException|InterruptedException e) {
-                throw new IOException("Was not possible to create the mirror logs.", e);
+                throw new IOException("Failure creating the mirror logs.", e);
               }
         }
-        return otelLogSenderBuildListenerOnController;
+        return result;
     }
 
     /**
@@ -105,19 +125,19 @@ class OtelLogStorage implements LogStorage {
     @NonNull
     @Override
     public AnnotatedLargeText<FlowExecutionOwner.Executable> overallLog(@NonNull FlowExecutionOwner.Executable build, boolean complete) {
-        File logFile = new File(buildFolderPath, "log");
+        File logFile = new File(runFolderPath, "log");
         if (logFile.exists()) {
             return FileLogStorage.forFile(logFile).overallLog(build, complete);
         }
 
         Span span = tracer.spanBuilder("OtelLogStorage.overallLog")
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getFullDisplayName())
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()){
             LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
-            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(buildInfo.getJobFullName(), buildInfo.runNumber, buildInfo.getTraceId(), buildInfo.getSpanId(), complete);
+            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(run.getFullDisplayName(), run.getNumber(), runTraceContext.getTraceId(), runTraceContext.getSpanId(), complete);
             span.setAttribute("completed", logsQueryResult.isComplete());
             return new OverallLog(logsQueryResult.getByteBuffer(), logsQueryResult.getLogsViewHeader(), logsQueryResult.getCharset(), logsQueryResult.isComplete(), build, tracer);
         } catch (Exception x) {
@@ -131,24 +151,24 @@ class OtelLogStorage implements LogStorage {
     @NonNull
     @Override
     public AnnotatedLargeText<FlowNode> stepLog(@NonNull FlowNode flowNode, boolean complete) {
-        File logFile = new File(buildFolderPath, "log");
+        File logFile = new File(runFolderPath, "log");
         if (logFile.exists()) {
             return FileLogStorage.forFile(logFile).stepLog(flowNode, complete);
         }
 
         Span span = tracer.spanBuilder("OtelLogStorage.stepLog")
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getFullDisplayName())
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()){
-            String traceId = buildInfo.getTraceId();
-            String spanId = buildInfo.getSpanId();
+            String traceId = runTraceContext.getTraceId();
+            String spanId = runTraceContext.getSpanId();
             if (traceId == null || spanId == null) {
-                throw new IllegalStateException("traceId or spanId is null for " + buildInfo);
+                throw new IllegalStateException("traceId or spanId is null for " + run);
             }
             LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
-            LogsQueryResult logsQueryResult = logStorageRetriever.stepLog(buildInfo.getJobFullName(), buildInfo.runNumber, flowNode.getId(), traceId, spanId, complete);
+            LogsQueryResult logsQueryResult = logStorageRetriever.stepLog(run.getFullDisplayName(), run.getNumber(), flowNode.getId(), traceId, spanId, complete);
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());
             return new AnnotatedLargeText<>(logsQueryResult.getByteBuffer(), logsQueryResult.getCharset(), logsQueryResult.isComplete(), flowNode);
@@ -165,8 +185,8 @@ class OtelLogStorage implements LogStorage {
     public File getLogFile(FlowExecutionOwner.Executable build, boolean complete) {
         logger.log(Level.FINE, "getLogFile(complete: " + complete + ")");
         Span span = tracer.spanBuilder("OtelLogStorage.getLogFile")
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, buildInfo.getJobFullName())
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) buildInfo.runNumber)
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getFullDisplayName())
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
@@ -197,7 +217,7 @@ class OtelLogStorage implements LogStorage {
     @Override
     public String toString() {
         return "OtelLogStorage{" +
-            "buildInfo=" + buildInfo +
+            "context=" + runTraceContext +
             '}';
     }
 

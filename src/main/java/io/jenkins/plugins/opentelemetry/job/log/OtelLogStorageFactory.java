@@ -5,13 +5,15 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Queue;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
-import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
+import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
@@ -22,11 +24,7 @@ import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorageFactory;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,7 +43,11 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OtelCompo
         System.setProperty("org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep.USE_WATCHING", "true");
     }
 
-    OpenTelemetrySdkProvider openTelemetrySdkProvider;
+    @Nullable
+    private OpenTelemetrySdkProvider openTelemetrySdkProvider;
+
+    @Nullable
+    private OtelTraceService otelTraceService;
 
     private Tracer tracer;
 
@@ -65,16 +67,10 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OtelCompo
             Queue.Executable exec = owner.getExecutable();
             if (exec instanceof Run) {
                 Run<?, ?> run = (Run<?, ?>) exec;
-                MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-                if (monitoringAction == null) {
-                    throw new IllegalStateException("No MonitoringAction found for " + run);
-                }
-                // root context contains traceparent
-                Map<String, String> w3cTraceContext = new HashMap<>(monitoringAction.getW3cTraceContext());
-                BuildInfo buildInfo = new BuildInfo(run.getParent().getFullName(), run.getNumber(), monitoringAction.getTraceId(), monitoringAction.getSpanId(), w3cTraceContext);
-                logger.log(Level.FINEST, () -> "forBuild(" + buildInfo + ")");
 
-                return new OtelLogStorage(buildInfo, tracer, run.getRootDir().getPath());
+                logger.log(Level.FINEST, () -> "forBuild(" + run + ")");
+
+                return new OtelLogStorage(run, getOtelTraceService(), tracer);
             } else {
                 return null;
             }
@@ -86,11 +82,23 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OtelCompo
     /**
      * Workaround dependency injection problem. @Inject doesn't work here
      */
+    @NonNull
     private OpenTelemetrySdkProvider getOpenTelemetrySdkProvider() {
         if (openTelemetrySdkProvider == null) {
             openTelemetrySdkProvider = OpenTelemetrySdkProvider.get();
         }
         return openTelemetrySdkProvider;
+    }
+
+    /**
+     * Workaround dependency injection problem. @Inject doesn't work here
+     */
+    @NonNull
+    private OtelTraceService getOtelTraceService() {
+        if (otelTraceService == null) {
+            otelTraceService = OtelTraceService.get();
+        }
+        return otelTraceService;
     }
 
     @Override

@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.tasks.BuildStep;
@@ -243,4 +244,7 @@ public class OtelTraceService {
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
     }
 
+    static public OtelTraceService get() {
+        return ExtensionList.lookupSingleton(OtelTraceService.class);
+    }
 }
