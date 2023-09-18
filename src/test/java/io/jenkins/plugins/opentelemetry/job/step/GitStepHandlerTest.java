@@ -9,7 +9,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.testing.trace.SpanBuilderMock;
 import io.opentelemetry.sdk.testing.trace.TracerMock;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.semconv.SemanticAttributes;
 import org.eclipse.jgit.transport.URIish;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;

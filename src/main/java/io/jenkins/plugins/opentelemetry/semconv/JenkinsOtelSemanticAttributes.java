@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * @see io.opentelemetry.api.common.Attributes
- * @see io.opentelemetry.semconv.trace.attributes.SemanticAttributes
+ * @see io.opentelemetry.semconv.SemanticAttributes
  */
 public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<String> CI_PIPELINE_TYPE = AttributeKey.stringKey("ci.pipeline.type");
