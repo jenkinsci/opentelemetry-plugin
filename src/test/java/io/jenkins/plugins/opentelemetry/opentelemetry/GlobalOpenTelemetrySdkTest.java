@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ResourceAttributes;
 import org.junit.Test;
 
 import java.util.HashMap;

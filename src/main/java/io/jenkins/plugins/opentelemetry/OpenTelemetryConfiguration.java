@@ -12,7 +12,7 @@ import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ResourceAttributes;
 import org.apache.commons.lang.StringUtils;
 
 import edu.umd.cs.findbugs.annotations.NonNull;

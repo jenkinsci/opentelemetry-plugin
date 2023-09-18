@@ -45,7 +45,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.semconv.SemanticAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;

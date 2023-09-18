@@ -30,7 +30,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ResourceAttributes;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
@@ -483,7 +483,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
-     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAME
+     * @see ResourceAttributes#SERVICE_NAME
      */
     public String getServiceName() {
         return (Strings.isNullOrEmpty(this.serviceName)) ? JenkinsOtelSemanticAttributes.JENKINS : this.serviceName;
@@ -496,7 +496,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
-     * @see io.opentelemetry.semconv.resource.attributes.ResourceAttributes#SERVICE_NAMESPACE
+     * @see ResourceAttributes#SERVICE_NAMESPACE
      */
     public String getServiceNamespace() {
         return (Strings.isNullOrEmpty(this.serviceNamespace)) ? JenkinsOtelSemanticAttributes.JENKINS : this.serviceNamespace;

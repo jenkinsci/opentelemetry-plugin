@@ -41,6 +41,8 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
+import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
@@ -49,6 +51,7 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.logs.internal.SdkEventEmitterProvider;
 import io.opentelemetry.sdk.resources.Resource;
 
+import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -205,6 +208,24 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
      * For extension purpose
      */
     protected void postOpenTelemetrySdkConfiguration() {
+    }
+
+    protected static class ReconfigurableTracer implements Tracer {
+        private Tracer delegate;
+
+        @Override
+        public synchronized SpanBuilder spanBuilder(@Nonnull String spanName) {
+            return delegate.spanBuilder(spanName);
+        }
+
+        public synchronized void setDelegate(Tracer delegate) {
+            this.delegate = delegate;
+        }
+
+        public synchronized Tracer getDelegate() {
+            return delegate;
+        }
+
     }
 
     class ClosingMeterProvider implements MeterProvider {

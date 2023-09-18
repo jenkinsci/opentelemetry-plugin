@@ -16,12 +16,10 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.events.EventEmitter;
 import io.opentelemetry.api.events.GlobalEventEmitterProvider;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 
-import javax.annotation.Nonnull;
 import javax.annotation.PreDestroy;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -113,23 +111,5 @@ public class JenkinsOpenTelemetry extends AbstractReconfigurableOpenTelemetryWra
 
     static public JenkinsOpenTelemetry get() {
         return ExtensionList.lookupSingleton(JenkinsOpenTelemetry.class);
-    }
-
-    static class ReconfigurableTracer implements Tracer {
-        private Tracer delegate;
-
-        @Override
-        public synchronized SpanBuilder spanBuilder(@Nonnull String spanName) {
-            return delegate.spanBuilder(spanName);
-        }
-
-        public synchronized void setDelegate(Tracer delegate) {
-            this.delegate = delegate;
-        }
-
-        public synchronized Tracer getDelegate() {
-            return delegate;
-        }
-
     }
 }

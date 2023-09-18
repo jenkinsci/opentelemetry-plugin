@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.backend;
 
 import groovy.text.GStringTemplateEngine;
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ResourceAttributes;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
