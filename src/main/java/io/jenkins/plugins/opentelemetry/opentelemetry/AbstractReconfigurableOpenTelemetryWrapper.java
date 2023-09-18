@@ -210,7 +210,7 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
     protected void postOpenTelemetrySdkConfiguration() {
     }
 
-    protected static class ReconfigurableTracer implements Tracer {
+    public static class ReconfigurableTracer implements Tracer {
         private Tracer delegate;
 
         @Override
