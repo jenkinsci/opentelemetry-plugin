@@ -156,7 +156,7 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
 
         if (getOpenTelemetryDelegate() instanceof OpenTelemetrySdk) {
             OpenTelemetrySdk openTelemetrySdk = (OpenTelemetrySdk) getOpenTelemetryDelegate();
-            LOGGER.log(Level.FINE, () -> "Shutdown OTel SDK");
+            LOGGER.log(Level.FINE, () -> "Shutdown OTel SDK...");
             CompletableResultCode shutdown = openTelemetrySdk.shutdown();
             if (!shutdown.join(1, TimeUnit.SECONDS).isSuccess()) {
                 LOGGER.log(Level.WARNING, "Failure to shutdown OTel SDK");
