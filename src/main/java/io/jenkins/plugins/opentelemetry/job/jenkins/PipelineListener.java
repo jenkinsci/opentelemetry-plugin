@@ -41,7 +41,7 @@ public interface PipelineListener {
     /**
      * Just after the `node` step ends
      */
-    void onEndNodeStep(@NonNull StepEndNode nodeStepEndNode, @NonNull String nodeName, @NonNull WorkflowRun run);
+    void onEndNodeStep(@NonNull StepEndNode nodeStepEndNode, @NonNull String nodeName, FlowNode nextNode, @NonNull WorkflowRun run);
 
     /**
      * Just before the `stage`step starts
@@ -51,7 +51,7 @@ public interface PipelineListener {
     /**
      * Just after the `stage` step ends
      */
-    void onEndStageStep(@NonNull StepEndNode stageStepEndNode, @NonNull String stageName, @NonNull WorkflowRun run);
+    void onEndStageStep(@NonNull StepEndNode stageStepEndNode, @NonNull String stageName, FlowNode nextNode, @NonNull WorkflowRun run);
 
     /**
      * Just before the `parallel` branch starts
@@ -61,7 +61,7 @@ public interface PipelineListener {
     /**
      * Just before the `parallel` branch ends
      */
-    void onEndParallelStepBranch(@NonNull StepEndNode stepStepNode, @NonNull String branchName, @NonNull WorkflowRun run);
+    void onEndParallelStepBranch(@NonNull StepEndNode stepStepNode, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run);
 
     /**
      * Just before the atomic step starts
@@ -71,7 +71,7 @@ public interface PipelineListener {
     /**
      * Just after the atomic step
      */
-    void onAfterAtomicStep(@NonNull StepAtomNode stepAtomNode, @NonNull WorkflowRun run);
+    void onAfterAtomicStep(@NonNull StepAtomNode stepAtomNode, FlowNode nextNode, @NonNull WorkflowRun run);
 
     /**
      * Just after the pipeline ends

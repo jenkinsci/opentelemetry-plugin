@@ -36,12 +36,12 @@ public class AbstractPipelineListener implements PipelineListener {
     }
 
     @Override
-    public void onEndNodeStep(@NonNull StepEndNode nodeStepEndNode, @NonNull String nodeName, @NonNull WorkflowRun run) {
+    public void onEndNodeStep(@NonNull StepEndNode nodeStepEndNode, @NonNull String nodeName, FlowNode nextNode, @NonNull WorkflowRun run) {
 
     }
 
     @Override
-    public void onEndStageStep(@NonNull StepEndNode stageStepEndNode, @NonNull String stageName, @NonNull WorkflowRun run) {
+    public void onEndStageStep(@NonNull StepEndNode stageStepEndNode, @NonNull String stageName, FlowNode nextNode, @NonNull WorkflowRun run) {
 
     }
 
@@ -51,7 +51,7 @@ public class AbstractPipelineListener implements PipelineListener {
     }
 
     @Override
-    public void onAfterAtomicStep(@NonNull StepAtomNode stepAtomNode, @NonNull WorkflowRun run) {
+    public void onAfterAtomicStep(@NonNull StepAtomNode stepAtomNode, FlowNode nextNode, @NonNull WorkflowRun run) {
 
     }
 
@@ -61,7 +61,7 @@ public class AbstractPipelineListener implements PipelineListener {
     }
 
     @Override
-    public void onEndParallelStepBranch(@NonNull StepEndNode stepStepNode, @NonNull String branchName, @NonNull WorkflowRun run) {
+    public void onEndParallelStepBranch(@NonNull StepEndNode stepStepNode, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run) {
 
     }
 
