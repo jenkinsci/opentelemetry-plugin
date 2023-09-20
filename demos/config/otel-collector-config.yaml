@@ -29,7 +29,15 @@ exporters:
 
 processors:
   batch:
-
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18194#issuecomment-1471828386
+# Workaround to remove the error message:
+# 2023-09-20T12:02:42.924Z        error   prometheusexporter@v0.85.0/log.go:23    error gathering metrics: collected metric promexample_queueSize_ratio label:{name:"container_id"  value:"1269f6d60182b8b6b4ac4fa67fc80f4b08c56ac60d79d568be06d7b25060f92a"}  label:{name:"host_arch"  value:"amd64"}  label:{name:"host_name"  value:"1269f6d60182"}  label:{name:"instance"  value:"1654bc23ca5636b2209d23631a955b07"}  label:{name:"jenkins_opentelemetry_plugin_version"  value:"2.16.0"}  label:{name:"jenkins_version"  value:"2.414.1"}  label:{name:"job"  value:"jenkins/jenkins"}  label:{name:"label1"  value:"value1"}  label:{name:"logRecordProcessorType"  value:"BatchLogRecordProcessor"}  label:{name:"os_description"  value:"Linux 5.15.49-linuxkit-pr"}  label:{name:"os_type"  value:"linux"}  label:{name:"process_runtime_description"  value:"Eclipse Adoptium OpenJDK 64-Bit Server VM 11.0.20+8"}  label:{name:"process_runtime_name"  value:"OpenJDK Runtime Environment"}  label:{name:"process_runtime_version"  value:"11.0.20+8"}  label:{name:"service_instance_id"  value:"1654bc23ca5636b2209d23631a955b07"}  label:{name:"service_name"  value:"jenkins"}  label:{name:"service_namespace"  value:"jenkins"}  label:{name:"service_version"  value:"2.414.1"}  label:{name:"telemetry_sdk_language"  value:"java"}  label:{name:"telemetry_sdk_name"  value:"opentelemetry"}  label:{name:"telemetry_sdk_version"  value:"1.29.0"}  gauge:{value:0} has help "The number of logs queued" but should have "The number of spans queued" {"kind": "exporter", "data_type": "metrics", "name": "prometheus"}
+  filter:
+    metrics:
+      exclude:
+        match_type: strict
+        metric_names:
+          - queueSize
 extensions:
   health_check:
   pprof:
@@ -46,7 +54,7 @@ service:
       exporters: [logging, zipkin, otlp/jaeger, otlp/elastic]
     metrics:
       receivers: [otlp]
-      processors: [batch]
+      processors: [filter, batch]
       exporters: [logging, prometheus, otlp/elastic]
     logs:
       receivers: [otlp]
