@@ -17,7 +17,7 @@
     <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
     <properties>
-        <revision>2.16.1</revision>
+        <revision>2.17.0</revision>
         <changelist>-SNAPSHOT</changelist>
         <jenkins.version>2.361.4</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
@@ -30,7 +30,7 @@
         <opentelemetry-contrib.version>1.29.0-alpha</opentelemetry-contrib.version>
         <opentelemetry-semconv>1.21.0-alpha</opentelemetry-semconv>
         <useBeta>true</useBeta>
-        <elasticstack.version>8.7.1</elasticstack.version>
+        <elasticstack.version>8.10.1</elasticstack.version>
         <error-prone.version>2.21.1</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
@@ -399,7 +399,7 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>1.18.3</version>
+            <version>1.19.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
