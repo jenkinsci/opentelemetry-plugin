@@ -31,7 +31,7 @@
         <opentelemetry-semconv>1.21.0-alpha</opentelemetry-semconv>
         <useBeta>true</useBeta>
         <elasticstack.version>8.10.1</elasticstack.version>
-        <error-prone.version>2.21.1</error-prone.version>
+        <error-prone.version>2.22.0</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
