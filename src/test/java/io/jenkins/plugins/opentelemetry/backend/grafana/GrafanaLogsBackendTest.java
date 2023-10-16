@@ -30,6 +30,8 @@ public class GrafanaLogsBackendTest {
         Writable logsUrl = buildLogsVisualizationUrlTemplate.make(Map.of(
             GrafanaBackend.TemplateBindings.GRAFANA_BASE_URL, "https://cleclerc.grafana.net/",
             GrafanaBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, "jenkins/jenkins",
+            GrafanaBackend.TemplateBindings.GRAFANA_LOKI_DATASOURCE_IDENTIFIER, "grafanacloud-logs",
+            GrafanaBackend.TemplateBindings.GRAFANA_ORG_ID, "1",
             GrafanaBackend.TemplateBindings.TRACE_ID, "1234567890",
             GrafanaBackend.TemplateBindings.START_TIME, startTime,
             GrafanaBackend.TemplateBindings.END_TIME, endTime
