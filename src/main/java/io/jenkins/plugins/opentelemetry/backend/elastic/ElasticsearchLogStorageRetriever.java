@@ -17,6 +17,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import groovy.text.Template;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
@@ -49,6 +50,7 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.elasticsearch.client.RestClient;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
+import javax.annotation.Nonnull;
 import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
@@ -57,6 +59,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -148,7 +151,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     @NonNull
     @Override
     public LogsQueryResult overallLog(
-        @NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete) {
+        @NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete, @Nonnull Instant startTime, Instant endTime) {
         Charset charset = StandardCharsets.UTF_8;
 
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.overallLog")
@@ -184,7 +187,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
     @NonNull
     @Override
-    public LogsQueryResult stepLog(@NonNull String jobFullName, int runNumber, @NonNull String flowNodeId, @NonNull String traceId, @NonNull String spanId, boolean complete) {
+    public LogsQueryResult stepLog(@NonNull String jobFullName, int runNumber, @NonNull String flowNodeId, @NonNull String traceId, @NonNull String spanId, boolean complete, @NonNull Instant startTime, @Nullable Instant endTime) {
         final Charset charset = StandardCharsets.UTF_8;
 
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.stepLog")

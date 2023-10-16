@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.backend.custom;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import groovy.text.Template;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
@@ -14,45 +15,47 @@ import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
-import java.io.IOException;
+import javax.annotation.Nonnull;
 import java.nio.charset.StandardCharsets;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public class CustomLogStorageRetriever implements LogStorageRetriever {
 
     @NonNull
     private final Template buildLogsVisualizationUrlTemplate;
 
+    @NonNull
     private final TemplateBindingsProvider templateBindingsProvider;
 
-    public CustomLogStorageRetriever(Template buildLogsVisualizationUrlTemplate, TemplateBindingsProvider templateBindingsProvider) {
+    public CustomLogStorageRetriever(@Nonnull Template buildLogsVisualizationUrlTemplate, @NonNull TemplateBindingsProvider templateBindingsProvider) {
         this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
         this.templateBindingsProvider = templateBindingsProvider;
     }
 
     @NonNull
     @Override
-    public LogsQueryResult overallLog(@NonNull String jobFullName, @NonNull int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete) throws IOException {
-        return getLogsQueryResult(traceId, spanId);
+    public LogsQueryResult overallLog(@NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete, @Nonnull Instant startTime, Instant endTime) {
+        return getLogsQueryResult(traceId, spanId, startTime, endTime);
     }
 
     @NonNull
     @Override
-    public LogsQueryResult stepLog(@NonNull String jobFullName, @NonNull int runNumber, @NonNull String flowNodeId, @NonNull String traceId, @NonNull String spanId, boolean complete) throws IOException {
-        return getLogsQueryResult(traceId, spanId);
+    public LogsQueryResult stepLog(@NonNull String jobFullName, int runNumber, @NonNull String flowNodeId, @NonNull String traceId, @NonNull String spanId, boolean complete, @NonNull Instant startTime, @Nullable Instant endTime) {
+        return getLogsQueryResult(traceId, spanId, startTime, endTime);
     }
 
     @NonNull
-    private LogsQueryResult getLogsQueryResult(@NonNull String traceId, @NonNull String spanId) {
+    private LogsQueryResult getLogsQueryResult(@NonNull String traceId, @NonNull String spanId, @NonNull Instant startTime, @Nullable Instant endTime) {
 
         Map<String, Object> localBindings = new HashMap<>();
         localBindings.put(ObservabilityBackend.TemplateBindings.TRACE_ID, traceId);
         localBindings.put(ObservabilityBackend.TemplateBindings.SPAN_ID, spanId);
-        localBindings.put(ObservabilityBackend.TemplateBindings.START_TIME, ZonedDateTime.now().minusMonths(1).toInstant()); // FIXME implement
-        localBindings.put(ObservabilityBackend.TemplateBindings.END_TIME, ZonedDateTime.now().toInstant()); // FIXME implement
+        localBindings.put(ObservabilityBackend.TemplateBindings.START_TIME, startTime);
+        localBindings.put(ObservabilityBackend.TemplateBindings.END_TIME, Optional.ofNullable(endTime).orElseGet(Instant::now));
 
         Map<String, Object> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, localBindings).getBindings();
         String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();

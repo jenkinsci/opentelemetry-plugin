@@ -57,9 +57,10 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
             final String START = "__START__";
             final String END = "__END__";
 
+            String grafanaDatasourceIdentifier = "B42gSuSVz"; // FIXME
             JsonObject panesAsJson = Json.createObjectBuilder()
                 .add("NZj", Json.createObjectBuilder()
-                    .add("datasource", "B42gSuSVz")
+                    .add("datasource", grafanaDatasourceIdentifier)
                     .add("queries", Json.createArrayBuilder().add(Json.createObjectBuilder()
                         .add("refId", "A")
                         .add("expr",
@@ -70,7 +71,7 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
                         .add("queryType", "range")
                         .add("datasource", Json.createObjectBuilder()
                             .add("type", "loki")
-                            .add("uid", "B42gSuSVz")
+                            .add("uid", grafanaDatasourceIdentifier)
                         )
                         .add("editorMode", "code")))
                     .add("range", Json.createObjectBuilder()
