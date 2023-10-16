@@ -16,7 +16,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -159,12 +158,10 @@ public class DynatraceBackend extends ObservabilityBackend {
     }
 
     @Override
-    public Map<String, String> getBindings() {
-        Map<String, String> bindings = new LinkedHashMap<>();
-        bindings.put(ElasticBackend.TemplateBindings.BACKEND_NAME, getName());
-        bindings.put(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/svgs/dynatrace.svg");
-
-        return bindings;
+    public Map<String, Object> getBindings() {
+        return Map.of(
+            ObservabilityBackend.TemplateBindings.BACKEND_NAME, getName(),
+            ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/svgs/dynatrace.svg");
     }
 
     @Extension

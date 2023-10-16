@@ -24,6 +24,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -144,7 +145,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     }
 
     @Override
-    public abstract Map<String, String> getBindings();
+    public abstract Map<String, Object> getBindings();
 
     @Override
     public Descriptor<ObservabilityBackend> getDescriptor() {
@@ -172,6 +173,23 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     public interface TemplateBindings {
         String BACKEND_NAME = "backendName";
         String BACKEND_24_24_ICON_URL = "backend24x24IconUrl";
+
+        String SERVICE_NAME = "serviceName";
+        String SERVICE_NAMESPACE = "serviceNamespace";
+        String SERVICE_NAMESPACE_AND_NAME="serviceNamespaceAndName";
+
+        String ROOT_SPAN_NAME = "rootSpanName";
+        String TRACE_ID = "traceId";
+        String SPAN_ID = "spanId";
+        /**
+         * As {@link Instant}
+         */
+        String START_TIME = "startTime";
+
+        /**
+         * As {@link Instant}
+         */
+        String END_TIME = "endTime";
     }
 
     public static abstract class ObservabilityBackendDescriptor extends Descriptor<ObservabilityBackend> implements Comparable<ObservabilityBackendDescriptor> {

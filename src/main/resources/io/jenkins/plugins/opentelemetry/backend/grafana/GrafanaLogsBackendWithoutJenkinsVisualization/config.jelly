@@ -1,0 +1,18 @@
+<?jelly escape-by-default='true'?>
+<!--
+  ~ Copyright The Original Author or Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form"
+>
+    <i>
+    Pipeline logs are no longer stored in the Jenkins home, they are sent through OpenTelemetry to Loki and visible in Grafana. <br/>
+    In jenkins pipeline logs screens, an hyperlink to the logs visualization in Grafana is displayed as a replacement to the logs.
+    </i>
+
+    <f:entry title="Loki Datasource Identifier" field="grafanaLokiDatasourceIdentifier"
+             description="Identifier of the Grafana Loki datasource in which the Jenkins pipeline build logs are stored.">
+        <f:textbox default="${descriptor.defaultLokiDataSourceIdentifier}"/>
+    </f:entry>
+</j:jelly>
