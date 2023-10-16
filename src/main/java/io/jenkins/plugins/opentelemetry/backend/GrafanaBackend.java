@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.backend;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.util.FormValidation;
@@ -20,7 +21,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.annotation.Nonnull;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 public class GrafanaBackend extends ObservabilityBackend implements TemplateBindingsProvider {
 
@@ -38,8 +37,6 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
 
     private static final String DEFAULT_TEMPO_DATA_SOURCE_IDENTIFIER = "grafanacloud-traces";
     public static final String DEFAULT_LOKI_DATA_SOURCE_IDENTIFIER = "grafanacloud-logs";
-
-    public static final String DEFAULT_GRAFANA_EXPLORE_ORG_ID = "1";
 
     private static final String DEFAULT_GRAFANA_ORG_ID = "1";
 
@@ -232,7 +229,7 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
         this.grafanaLogsBackend = grafanaLogsBackend;
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public Map<String, String> getOtelConfigurationProperties() {
         if (grafanaLogsBackend == null) {
@@ -246,7 +243,7 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
     @Symbol("grafana")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
 
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return DEFAULT_BACKEND_NAME;
