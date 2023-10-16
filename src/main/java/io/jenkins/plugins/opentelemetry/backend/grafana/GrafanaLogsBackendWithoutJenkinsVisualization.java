@@ -15,10 +15,12 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
+import java.util.Map;
+import java.util.Objects;
 
-public class GrafanaLogsBackendWithoutJenkinsVisualization extends GrafanaLogsBackend {
+public class GrafanaLogsBackendWithoutJenkinsVisualization extends GrafanaLogsBackend implements TemplateBindingsProvider {
 
-    private String grafanaLokiDatasourceIdentifier;
+    private String grafanaLokiDatasourceIdentifier = GrafanaBackend.DEFAULT_LOKI_DATA_SOURCE_IDENTIFIER;
 
     @DataBoundConstructor
     public GrafanaLogsBackendWithoutJenkinsVisualization() {
@@ -43,26 +45,36 @@ public class GrafanaLogsBackendWithoutJenkinsVisualization extends GrafanaLogsBa
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        return o != null && getClass() == o.getClass();
+        if (o == null || getClass() != o.getClass()) return false;
+        GrafanaLogsBackendWithoutJenkinsVisualization that = (GrafanaLogsBackendWithoutJenkinsVisualization) o;
+        return Objects.equals(grafanaLokiDatasourceIdentifier, that.grafanaLokiDatasourceIdentifier);
     }
 
     @Override
     public int hashCode() {
-        return GrafanaLogsBackendWithoutJenkinsVisualization.class.hashCode();
+        return Objects.hash(grafanaLokiDatasourceIdentifier);
     }
-
 
     @Override
     public String toString() {
         return "GrafanaLogsBackendWithoutJenkinsVisualization{" +
+            "grafanaLokiDatasourceIdentifier='" + grafanaLokiDatasourceIdentifier + '\'' +
             '}';
+    }
+
+    @Override
+    public Map<String, Object> getBindings() {
+        return Map.of(
+            GrafanaBackend.TemplateBindings.GRAFANA_LOKI_DATASOURCE_IDENTIFIER, getGrafanaLokiDatasourceIdentifier());
     }
 
     @Extension(ordinal = 50)
     public static class DescriptorImpl extends GrafanaLogsBackend.DescriptorImpl {
+        @Nonnull
         public String getDefaultLokiDataSourceIdentifier(){
             return GrafanaBackend.DEFAULT_LOKI_DATA_SOURCE_IDENTIFIER;
         }
+
         @Nonnull
         @Override
         public String getDisplayName() {

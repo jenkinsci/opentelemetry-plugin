@@ -57,10 +57,9 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
             final String START = "__START__";
             final String END = "__END__";
 
-            String grafanaDatasourceIdentifier = "B42gSuSVz"; // FIXME
             JsonObject panesAsJson = Json.createObjectBuilder()
                 .add("NZj", Json.createObjectBuilder()
-                    .add("datasource", grafanaDatasourceIdentifier)
+                    .add("datasource", START + GrafanaBackend.TemplateBindings.GRAFANA_LOKI_DATASOURCE_IDENTIFIER + END)
                     .add("queries", Json.createArrayBuilder().add(Json.createObjectBuilder()
                         .add("refId", "A")
                         .add("expr",
@@ -71,7 +70,7 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
                         .add("queryType", "range")
                         .add("datasource", Json.createObjectBuilder()
                             .add("type", "loki")
-                            .add("uid", grafanaDatasourceIdentifier)
+                            .add("uid", START + GrafanaBackend.TemplateBindings.GRAFANA_LOKI_DATASOURCE_IDENTIFIER + END)
                         )
                         .add("editorMode", "code")))
                     .add("range", Json.createObjectBuilder()
@@ -93,7 +92,7 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
                 "explore?" +
                 "panes=" + panes +
                 "&schemaVersion=1" +
-                "&orgId=1";
+                "&orgId=${" + GrafanaBackend.TemplateBindings.GRAFANA_ORG_ID + "}";
 
             GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
             try {

@@ -15,4 +15,5 @@
              description="Identifier of the Grafana Loki datasource in which the Jenkins pipeline build logs are stored.">
         <f:textbox default="${descriptor.defaultLokiDataSourceIdentifier}"/>
     </f:entry>
+
 </j:jelly>

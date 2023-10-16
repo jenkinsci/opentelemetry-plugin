@@ -20,7 +20,8 @@
                  description="Query type passed to Tempo, used when searching for the specific trace. 'traceql' for newer Tempo versions. 'traceid' for older">
             <f:textbox default="${descriptor.defaultTempoQueryType}"/>
         </f:entry>
-        <f:entry title="Grafana Org Id" field="grafanaOrgId">
+        <f:entry title="Grafana Org Id" field="grafanaOrgId"
+                description="Grafana Organization Id to use in URLs (param 'orgId')">
             <f:textbox default="${descriptor.defaultGrafanaOrgId}"/>
         </f:entry>
         <f:entry title="Display Name" field="name" description="Name used in Jenkins GUI">
@@ -32,6 +33,7 @@
         <f:hetero-radio
             field="grafanaLogsBackend"
             descriptors="${grafanaLogsBackendDescriptors}"
+
         />
     </f:advanced>
 </j:jelly>

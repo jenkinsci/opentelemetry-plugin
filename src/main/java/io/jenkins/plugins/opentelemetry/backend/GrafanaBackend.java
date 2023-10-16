@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class GrafanaBackend extends ObservabilityBackend implements TemplateBindingsProvider {
 
@@ -37,6 +38,9 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
 
     private static final String DEFAULT_TEMPO_DATA_SOURCE_IDENTIFIER = "grafanacloud-traces";
     public static final String DEFAULT_LOKI_DATA_SOURCE_IDENTIFIER = "grafanacloud-logs";
+
+    public static final String DEFAULT_GRAFANA_EXPLORE_ORG_ID = "1";
+
     private static final String DEFAULT_GRAFANA_ORG_ID = "1";
 
     private static final String DEFAULT_TEMPO_QUERY_TYPE = "traceql";
@@ -149,14 +153,24 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
 
     @Override
     public Map<String, Object> getBindings() {
-        return Map.of(
+        Map<String, Object> bindings = Map.of(
             TemplateBindings.BACKEND_NAME, getName(),
             TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/grafana.png",
 
             TemplateBindings.GRAFANA_BASE_URL, this.getGrafanaBaseUrl(),
             TemplateBindings.GRAFANA_ORG_ID, String.valueOf(this.getGrafanaOrgId()),
             TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER, this.getTempoDataSourceIdentifier(),
-            TemplateBindings.GRAFANA_TEMPO_QUERY_TYPE, this.getTempoQueryType());
+            TemplateBindings.GRAFANA_TEMPO_QUERY_TYPE, this.getTempoQueryType()
+        );
+
+        if (grafanaLogsBackend instanceof TemplateBindingsProvider) {
+            Map<String, Object> logsBackendBindings = ((TemplateBindingsProvider) grafanaLogsBackend).getBindings();
+            Map<String, Object> result = new HashMap<>(bindings);
+            result.putAll(logsBackendBindings);
+            return result;
+        } else {
+            return bindings;
+        }
     }
 
     @CheckForNull
@@ -208,6 +222,7 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
         this.tempoQueryType = tempoQueryType;
     }
 
+    @CheckForNull
     public GrafanaLogsBackend getGrafanaLogsBackend() {
         return grafanaLogsBackend;
     }
