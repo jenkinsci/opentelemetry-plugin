@@ -12,7 +12,6 @@ import java.util.Map;
 
 /**
  * Provide bindings for Groovy {@link groovy.text.Template}.
- * <p/>
  * Bindings are intended to be used in {@link groovy.text.Template#make(Map)}.
  */
 public interface TemplateBindingsProvider {
