@@ -64,6 +64,16 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
+                <groupId>jakarta.json</groupId>
+                <artifactId>jakarta.json-api</artifactId>
+                <version>2.1.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.parsson</groupId>
+                <artifactId>parsson</artifactId>
+                <version>1.1.4</version>
+            </dependency>
+            <dependency>
                 <groupId>io.prometheus</groupId>
                 <artifactId>simpleclient_bom</artifactId>
                 <version>0.16.0</version>
@@ -168,6 +178,15 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-logging</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.json</groupId>
+            <artifactId>jakarta.json-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.parsson</groupId>
+            <artifactId>parsson</artifactId>
         </dependency>
 
         <dependency>
