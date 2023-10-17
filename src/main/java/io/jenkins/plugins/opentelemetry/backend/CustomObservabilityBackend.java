@@ -6,12 +6,12 @@
 package io.jenkins.plugins.opentelemetry.backend;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Objects;
 
@@ -107,7 +107,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     @Extension
     @Symbol("customObservabilityBackend")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return DEFAULT_NAME;

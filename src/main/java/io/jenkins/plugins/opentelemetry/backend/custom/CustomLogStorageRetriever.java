@@ -15,7 +15,6 @@ import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
-import javax.annotation.Nonnull;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
@@ -31,14 +30,14 @@ public class CustomLogStorageRetriever implements LogStorageRetriever {
     @NonNull
     private final TemplateBindingsProvider templateBindingsProvider;
 
-    public CustomLogStorageRetriever(@Nonnull Template buildLogsVisualizationUrlTemplate, @NonNull TemplateBindingsProvider templateBindingsProvider) {
+    public CustomLogStorageRetriever(@NonNull Template buildLogsVisualizationUrlTemplate, @NonNull TemplateBindingsProvider templateBindingsProvider) {
         this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
         this.templateBindingsProvider = templateBindingsProvider;
     }
 
     @NonNull
     @Override
-    public LogsQueryResult overallLog(@NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete, @Nonnull Instant startTime, Instant endTime) {
+    public LogsQueryResult overallLog(@NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete, @NonNull Instant startTime, Instant endTime) {
         return getLogsQueryResult(traceId, spanId, startTime, endTime);
     }
 

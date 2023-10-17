@@ -5,12 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Map;
 
@@ -41,7 +41,7 @@ public class NoElasticLogsBackend extends ElasticLogsBackend {
 
     @Extension(ordinal = 100)
     public static class DescriptorImpl extends ElasticLogsBackend.DescriptorImpl {
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Don't store pipeline logs in Elastic";

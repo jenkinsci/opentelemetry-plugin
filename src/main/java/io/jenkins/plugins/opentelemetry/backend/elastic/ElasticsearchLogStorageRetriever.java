@@ -50,7 +50,6 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.elasticsearch.client.RestClient;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
-import javax.annotation.Nonnull;
 import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
@@ -151,7 +150,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     @NonNull
     @Override
     public LogsQueryResult overallLog(
-        @NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete, @Nonnull Instant startTime, Instant endTime) {
+        @NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete, @NonNull Instant startTime, Instant endTime) {
         Charset charset = StandardCharsets.UTF_8;
 
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.overallLog")

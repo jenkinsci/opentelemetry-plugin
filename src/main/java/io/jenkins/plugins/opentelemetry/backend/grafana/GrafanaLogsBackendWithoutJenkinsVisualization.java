@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
 import com.google.errorprone.annotations.MustBeClosed;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.GrafanaBackend;
@@ -14,7 +15,6 @@ import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Objects;
 
@@ -70,12 +70,12 @@ public class GrafanaLogsBackendWithoutJenkinsVisualization extends GrafanaLogsBa
 
     @Extension(ordinal = 50)
     public static class DescriptorImpl extends GrafanaLogsBackend.DescriptorImpl {
-        @Nonnull
+        @NonNull
         public String getDefaultLokiDataSourceIdentifier(){
             return GrafanaBackend.DEFAULT_LOKI_DATA_SOURCE_IDENTIFIER;
         }
 
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Store pipeline logs In Loki and visualize logs exclusively in Grafana (logs no longer visible through Jenkins screens)";

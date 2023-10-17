@@ -34,7 +34,6 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
-import javax.annotation.Nonnull;
 import javax.servlet.http.HttpServletRequest;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -207,7 +206,7 @@ public class OtelUtils {
         return spanToDebugString().apply(span);
     }
 
-    @Nonnull
+    @NonNull
     public static String toDebugString(FlowNode flowNode) {
         return flowNodeToDebugString().apply(flowNode);
     }
@@ -302,7 +301,7 @@ public class OtelUtils {
 
     public static class HttpServletRequestTextMapGetter implements TextMapGetter<HttpServletRequest> {
         @Override
-        public Iterable<String> keys(@Nonnull HttpServletRequest request) {
+        public Iterable<String> keys(@NonNull HttpServletRequest request) {
             return () -> Optional.of(request)
                 .map(HttpServletRequest::getHeaderNames)
                 .map((Function<Enumeration<String>, Iterator<String>>) Iterators::forEnumeration)
@@ -310,7 +309,7 @@ public class OtelUtils {
         }
 
         @Override
-        public String get(@javax.annotation.Nullable HttpServletRequest request, @Nonnull String key) {
+        public String get(@javax.annotation.Nullable HttpServletRequest request, @NonNull String key) {
             return Optional.ofNullable(request)
                 .map(c -> c.getHeader(key))
                 .orElse(null);

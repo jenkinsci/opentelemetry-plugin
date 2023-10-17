@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.backend;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.util.FormValidation;
 import org.jenkins.ui.icon.Icon;
@@ -15,7 +16,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.annotation.Nonnull;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -122,7 +122,7 @@ public class JaegerBackend extends ObservabilityBackend {
     @Extension
     @Symbol("jaeger")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return DEFAULT_NAME;

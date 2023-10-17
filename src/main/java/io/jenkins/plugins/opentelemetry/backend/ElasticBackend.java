@@ -22,7 +22,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.annotation.Nonnull;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -189,7 +188,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
         }
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public Map<String, String> getOtelConfigurationProperties() {
         if (elasticLogsBackend == null) {
@@ -259,7 +258,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
     @Symbol("elastic")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
 
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return DEFAULT_BACKEND_NAME;
