@@ -33,7 +33,6 @@ import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.resources.Resource;
 
-import javax.annotation.Nonnull;
 import javax.annotation.PreDestroy;
 import java.util.Collections;
 import java.util.Map;
@@ -214,7 +213,7 @@ public class OpenTelemetrySdkProvider {
         private Tracer delegate;
 
         @Override
-        public synchronized SpanBuilder spanBuilder(@Nonnull String spanName) {
+        public synchronized SpanBuilder spanBuilder(@NonNull String spanName) {
             return delegate.spanBuilder(spanName);
         }
 

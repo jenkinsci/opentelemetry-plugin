@@ -16,11 +16,14 @@ import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.google.errorprone.annotations.MustBeClosed;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import groovy.text.Template;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
+import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.jenkins.CredentialsNotFoundException;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
@@ -36,33 +39,26 @@ import io.opentelemetry.context.Scope;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.ssl.SSLContextBuilder;
-import org.elasticsearch.client.Node;
-import org.elasticsearch.client.NodeSelector;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
-import java.security.PrivilegedAction;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,7 +66,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 
 /**
@@ -155,7 +150,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     @NonNull
     @Override
     public LogsQueryResult overallLog(
-        @NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete) {
+        @NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete, @NonNull Instant startTime, Instant endTime) {
         Charset charset = StandardCharsets.UTF_8;
 
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.overallLog")
@@ -172,16 +167,16 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, getTracer());
             ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
 
-            Map<String, String> localBindings = new HashMap<>();
-            localBindings.put("traceId", traceId);
-            localBindings.put("spanId", spanId);
+            Map<String, Object> localBindings = Map.of(
+                ObservabilityBackend.TemplateBindings.TRACE_ID, traceId,
+                ObservabilityBackend.TemplateBindings.SPAN_ID, spanId);
 
-            Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, localBindings).getBindings();
+            Map<String, Object> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, localBindings).getBindings();
             String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();
 
             return new LogsQueryResult(
                 byteBuffer,
-                new LogsViewHeader(bindings.get(ElasticBackend.TemplateBindings.BACKEND_NAME), logsVisualizationUrl, bindings.get(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL)),
+                new LogsViewHeader(bindings.get(ElasticBackend.TemplateBindings.BACKEND_NAME).toString(), logsVisualizationUrl, bindings.get(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL).toString()),
                 charset, complete
             );
         } finally {
@@ -191,7 +186,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
     @NonNull
     @Override
-    public LogsQueryResult stepLog(@NonNull String jobFullName, int runNumber, @NonNull String flowNodeId, @NonNull String traceId, @NonNull String spanId, boolean complete) {
+    public LogsQueryResult stepLog(@NonNull String jobFullName, int runNumber, @NonNull String flowNodeId, @NonNull String traceId, @NonNull String spanId, boolean complete, @NonNull Instant startTime, @Nullable Instant endTime) {
         final Charset charset = StandardCharsets.UTF_8;
 
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.stepLog")
@@ -212,16 +207,19 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, getTracer());
             ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
 
-            Map<String, String> localBindings = new HashMap<>();
-            localBindings.put("traceId", traceId);
-            localBindings.put("spanId", spanId);
+            Map<String, Object> localBindings = new HashMap<>();
+            localBindings.put(ObservabilityBackend.TemplateBindings.TRACE_ID, traceId);
+            localBindings.put(ObservabilityBackend.TemplateBindings.SPAN_ID, spanId);
 
-            Map<String, String> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, localBindings).getBindings();
+            Map<String, Object> bindings = TemplateBindingsProvider.compose(this.templateBindingsProvider, localBindings).getBindings();
             String logsVisualizationUrl = this.buildLogsVisualizationUrlTemplate.make(bindings).toString();
 
             return new LogsQueryResult(
                 byteBuffer,
-                new LogsViewHeader(bindings.get(ElasticBackend.TemplateBindings.BACKEND_NAME), logsVisualizationUrl, bindings.get(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL)),
+                new LogsViewHeader(
+                    bindings.get(ElasticBackend.TemplateBindings.BACKEND_NAME).toString(),
+                    logsVisualizationUrl,
+                    bindings.get(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL).toString()),
                 charset, complete
             );
         } finally {

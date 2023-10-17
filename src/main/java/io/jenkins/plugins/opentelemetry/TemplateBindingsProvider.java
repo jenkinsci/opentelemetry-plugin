@@ -12,14 +12,13 @@ import java.util.Map;
 
 /**
  * Provide bindings for Groovy {@link groovy.text.Template}.
- *
  * Bindings are intended to be used in {@link groovy.text.Template#make(Map)}.
  */
 public interface TemplateBindingsProvider {
     static TemplateBindingsProvider empty() {
-        return () -> Collections.emptyMap();
+        return Collections::emptyMap;
     }
-    static TemplateBindingsProvider of(Map<String, String> bindings) {
+    static TemplateBindingsProvider of(Map<String, Object> bindings) {
         return () -> bindings;
     }
 
@@ -27,7 +26,7 @@ public interface TemplateBindingsProvider {
         return of(Collections.singletonMap(key, value));
     }
     static TemplateBindingsProvider of(String key1, String value1, String key2, String value2) {
-        Map<String, String> map = new LinkedHashMap<>(2);
+        Map<String, Object> map = new LinkedHashMap<>(2);
         map.put(key1, value1);
         map.put(key2, value2);
         return of(map);
@@ -36,13 +35,13 @@ public interface TemplateBindingsProvider {
     /**
      * Passed {@code bindings} overwrite the values of the passed {@code templateBindingsProvider}
      */
-    static TemplateBindingsProvider compose(TemplateBindingsProvider templateBindingsProvider, Map<String, String> bindings) {
+    static TemplateBindingsProvider compose(TemplateBindingsProvider templateBindingsProvider, Map<String, Object> bindings) {
         return () -> {
-            Map<String, String> newBindings = new HashMap<>(templateBindingsProvider.getBindings());
+            Map<String, Object> newBindings = new HashMap<>(templateBindingsProvider.getBindings());
             newBindings.putAll(bindings);
             return newBindings;
         };
     }
 
-    Map<String, String> getBindings();
+    Map<String, Object> getBindings();
 }
