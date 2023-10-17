@@ -20,8 +20,8 @@ import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.Jenkins;
 
-import javax.json.Json;
-import javax.json.JsonObject;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URLEncoder;
