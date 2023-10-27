@@ -19,9 +19,9 @@ import java.util.concurrent.TimeUnit;
 
 public class SpanBuilderMock implements SpanBuilder {
 
-    private SpanBuilder delegate;
+    private final SpanBuilder delegate;
 
-    private Map<AttributeKey, Object> attributes = new HashMap<>();
+    private final Map<AttributeKey, Object> attributes = new HashMap<>();
 
     public SpanBuilderMock(String spanName) {
         this.delegate = OpenTelemetry.noop().getTracer("noop").spanBuilder(spanName);

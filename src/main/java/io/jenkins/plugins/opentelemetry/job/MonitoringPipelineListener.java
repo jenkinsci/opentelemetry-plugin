@@ -310,7 +310,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     List<String> causeDescriptions = causesOfInterruption.stream().map(cause -> cause.getClass().getSimpleName() + ": " + cause.getShortDescription()).collect(Collectors.toList());
                     span.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_INTERRUPTION_CAUSES, causeDescriptions);
 
-                    String statusDescription = throwable.getClass().getSimpleName() + ": " + causeDescriptions.stream().collect(Collectors.joining(", "));
+                    String statusDescription = throwable.getClass().getSimpleName() + ": " + String.join(", ", causeDescriptions);
 
                     boolean suppressSpanStatusCodeError = false;
                     for (CauseOfInterruption causeOfInterruption: causesOfInterruption) {

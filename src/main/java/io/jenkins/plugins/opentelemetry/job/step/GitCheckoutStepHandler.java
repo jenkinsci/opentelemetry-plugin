@@ -67,19 +67,12 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
             Map<String, ?> scm = (Map<String, ?>) scmAsObject;
 
             Object clazz = scm.get("$class");
-            if (!(Objects.equal(GitSCM.class.getSimpleName(), clazz))) {
-                return false;
-            }
-            return true;
+            return Objects.equal(GitSCM.class.getSimpleName(), clazz);
         } else {
             // MultiBranch Pipeline using Git
             final SCM scm = branchJobProperty.getBranch().getScm();
-            if (scm instanceof GitSCM) {
-                return true;
-            }
+            return scm instanceof GitSCM;
         }
-
-        return false;
     }
 
     @NonNull
