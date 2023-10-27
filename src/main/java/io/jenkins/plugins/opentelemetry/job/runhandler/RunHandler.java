@@ -14,7 +14,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface RunHandler extends Comparable<RunHandler> {
 
-    default void configure(ConfigProperties config){};
+    default void configure(ConfigProperties config){}
 
     boolean canCreateSpanBuilder(@NonNull Run run);
 

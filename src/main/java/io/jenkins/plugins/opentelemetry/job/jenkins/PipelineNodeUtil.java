@@ -54,11 +54,7 @@ public class PipelineNodeUtil {
         if (!(stepStartNode.getDescriptor() instanceof StageStep.DescriptorImpl)) {
             return false;
         }
-        if (node.getAction(LabelAction.class) == null) {
-            return false;
-        }
-
-        return true;
+        return node.getAction(LabelAction.class) != null;
     }
 
     /**
@@ -150,10 +146,7 @@ public class PipelineNodeUtil {
         }
 
         ThreadNameAction threadNameAction = node.getPersistentAction(ThreadNameAction.class);
-        if (threadNameAction == null) {
-            return false;
-        }
-        return true;
+        return threadNameAction != null;
     }
 
     public static boolean isStartExecutorNode(@Nullable FlowNode node) {
@@ -195,10 +188,7 @@ public class PipelineNodeUtil {
         }
 
         ThreadNameAction threadNameAction = node.getPersistentAction(ThreadNameAction.class);
-        if (threadNameAction == null) {
-            return true;
-        }
-        return false;
+        return threadNameAction == null;
     }
 
     public static boolean isEndParallelBlock(@Nullable FlowNode node) {
