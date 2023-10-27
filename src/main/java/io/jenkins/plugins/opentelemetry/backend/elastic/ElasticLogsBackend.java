@@ -53,26 +53,22 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
         // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
 
         if (this.buildLogsVisualizationUrlGTemplate == null) {
-            try {
-                String kibanaSpaceBaseUrl;
-                if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
-                    kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
-                } else {
-                    kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8.name());
-                }
+            String kibanaSpaceBaseUrl;
+            if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
+                kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
+            } else {
+                kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8);
+            }
 
-                String urlTemplate = kibanaSpaceBaseUrl + "/app/logs/stream?" +
-                    "logPosition=(end:now,start:now-40d,streamLive:!f)&" +
-                    "logFilter=(language:kuery,query:%27trace.id:${traceId}%27)&";
-                GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
-                try {
-                    this.buildLogsVisualizationUrlGTemplate = gStringTemplateEngine.createTemplate(urlTemplate);
-                } catch (IOException | ClassNotFoundException e) {
-                    logger.log(Level.WARNING, "Invalid build logs Visualisation URL Template '" + urlTemplate + "'", e);
-                    this.buildLogsVisualizationUrlGTemplate = ObservabilityBackend.ERROR_TEMPLATE;
-                }
-            } catch (UnsupportedEncodingException e) {
-                throw new IllegalStateException(e);
+            String urlTemplate = kibanaSpaceBaseUrl + "/app/logs/stream?" +
+                "logPosition=(end:now,start:now-40d,streamLive:!f)&" +
+                "logFilter=(language:kuery,query:%27trace.id:${traceId}%27)&";
+            GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
+            try {
+                this.buildLogsVisualizationUrlGTemplate = gStringTemplateEngine.createTemplate(urlTemplate);
+            } catch (IOException | ClassNotFoundException e) {
+                logger.log(Level.WARNING, "Invalid build logs Visualisation URL Template '" + urlTemplate + "'", e);
+                this.buildLogsVisualizationUrlGTemplate = ObservabilityBackend.ERROR_TEMPLATE;
             }
         }
         return buildLogsVisualizationUrlGTemplate;

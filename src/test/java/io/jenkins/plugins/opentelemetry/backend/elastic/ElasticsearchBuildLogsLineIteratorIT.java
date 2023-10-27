@@ -49,7 +49,7 @@ public class ElasticsearchBuildLogsLineIteratorIT {
     public void testStreamingInputStream() throws IOException {
         ElasticsearchBuildLogsLineIterator elasticsearchBuildLogsLineIterator = getElasticsearchLogsSearchIterator();
         LineIterator.LineBytesToLineNumberConverter converter = new LineIterator.LineBytesToLineNumberConverter() {
-            Map<Long, Long> context = new HashMap<>();
+            final Map<Long, Long> context = new HashMap<>();
             @Nullable
             @Override
             public Long getLogLineFromLogBytes(long bytes) {
