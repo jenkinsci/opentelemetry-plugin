@@ -561,9 +561,28 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @SuppressWarnings("MustBeClosedChecker") // false positive invoking backend.getLogStorageRetriever(templateBindingsProvider)
     private LogStorageRetriever resolveLogStorageRetriever() {
         LogStorageRetriever logStorageRetriever = null;
+
+        Resource otelSdkResource = jenkinsOpenTelemetry.getResource();
+        String serviceName = Objects.requireNonNull(otelSdkResource.getAttribute(ResourceAttributes.SERVICE_NAME), "service.name can't be null");
+        String serviceNamespace = otelSdkResource.getAttribute(ResourceAttributes.SERVICE_NAMESPACE);
+
+        Map<String, Object> bindings;
+        if (serviceNamespace == null) {
+            bindings = Map.of(
+                ObservabilityBackend.TemplateBindings.SERVICE_NAME, serviceName,
+                ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, serviceName
+            );
+        } else {
+            String serviceNamespaceAndName = serviceNamespace + "/" + serviceName;
+            bindings = Map.of(
+                ObservabilityBackend.TemplateBindings.SERVICE_NAME, serviceName,
+                ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE, serviceNamespace,
+                ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, serviceNamespaceAndName
+            );
+        }
+
         for (ObservabilityBackend backend : getObservabilityBackends()) {
-            ObservabilityBackend templateBindingsProvider = backend; // TODO make JenkinsOpenTelemetryPluginConfiguration a templateBindingsProvider
-            logStorageRetriever = backend.newLogStorageRetriever(templateBindingsProvider);
+            logStorageRetriever = backend.newLogStorageRetriever(TemplateBindingsProvider.compose(backend, bindings));
             if (logStorageRetriever != null) {
                 break;
             }

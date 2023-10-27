@@ -19,6 +19,7 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.DockerComposeContainer;
 
 import java.io.File;
+import java.time.Instant;
 
 import static org.junit.Assume.assumeTrue;
 
@@ -101,7 +102,9 @@ public class PipelineElasticsearchBackendTest {
         boolean complete = true;
         do {
             try {
-                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(run.getParent().getFullName(), run.getNumber(), traceId, spanId, complete);
+                Instant startTime = Instant.ofEpochMilli(run.getStartTimeInMillis());
+                Instant endTime = run.getDuration() == 0 ? null : startTime.plusMillis(run.getDuration());
+                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(run.getParent().getFullName(), run.getNumber(), traceId, spanId, complete, startTime, endTime);
                 logsLength = logsQueryResult.getByteBuffer().length();
             } catch (Throwable e) {
                 //NOOP

@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -137,7 +138,9 @@ class OtelLogStorage implements LogStorage {
             .startSpan();
         try (Scope scope = span.makeCurrent()){
             LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
-            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(run.getFullDisplayName(), run.getNumber(), runTraceContext.getTraceId(), runTraceContext.getSpanId(), complete);
+            Instant startTime = Instant.ofEpochMilli(run.getStartTimeInMillis());
+            Instant endTime = run.getDuration() == 0 ? null : startTime.plusMillis(run.getDuration());
+            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(run.getFullDisplayName(), run.getNumber(), runTraceContext.getTraceId(), runTraceContext.getSpanId(), complete, startTime, endTime);
             span.setAttribute("completed", logsQueryResult.isComplete());
             return new OverallLog(logsQueryResult.getByteBuffer(), logsQueryResult.getLogsViewHeader(), logsQueryResult.getCharset(), logsQueryResult.isComplete(), build, tracer);
         } catch (Exception x) {
@@ -168,7 +171,9 @@ class OtelLogStorage implements LogStorage {
                 throw new IllegalStateException("traceId or spanId is null for " + run);
             }
             LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
-            LogsQueryResult logsQueryResult = logStorageRetriever.stepLog(run.getFullDisplayName(), run.getNumber(), flowNode.getId(), traceId, spanId, complete);
+            Instant startTime = Instant.ofEpochMilli(run.getStartTimeInMillis());
+            Instant endTime = run.getDuration() == 0 ? null : startTime.plusMillis(run.getDuration());
+            LogsQueryResult logsQueryResult = logStorageRetriever.stepLog(run.getFullDisplayName(), run.getNumber(), flowNode.getId(), traceId, spanId, complete, startTime, endTime);
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());
             return new AnnotatedLargeText<>(logsQueryResult.getByteBuffer(), logsQueryResult.getCharset(), logsQueryResult.isComplete(), flowNode);

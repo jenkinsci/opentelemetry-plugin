@@ -142,11 +142,12 @@ public class MonitoringAction extends AbstractMonitoringAction implements Action
                 null));
         }
         Map<String, Object> binding = new HashMap<>();
-        binding.put("serviceName", Objects.requireNonNull(JenkinsOpenTelemetryPluginConfiguration.get().getServiceName()));
-        binding.put("rootSpanName", this.rootSpanName == null ? null : OtelUtils.urlEncode(this.rootSpanName));
-        binding.put("traceId", this.getTraceId());
-        binding.put("spanId", this.getSpanId());
-        binding.put("startTime", Instant.ofEpochMilli(run.getStartTimeInMillis()));
+        binding.put(ObservabilityBackend.TemplateBindings.SERVICE_NAME, Objects.requireNonNull(JenkinsOpenTelemetryPluginConfiguration.get().getServiceName()));
+        binding.put(ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE, JenkinsOpenTelemetryPluginConfiguration.get().getServiceNamespace());
+        binding.put(ObservabilityBackend.TemplateBindings.ROOT_SPAN_NAME, this.rootSpanName == null ? null : OtelUtils.urlEncode(this.rootSpanName));
+        binding.put(ObservabilityBackend.TemplateBindings.TRACE_ID, this.getTraceId());
+        binding.put(ObservabilityBackend.TemplateBindings.SPAN_ID, this.getSpanId());
+        binding.put(ObservabilityBackend.TemplateBindings.START_TIME, Instant.ofEpochMilli(run.getStartTimeInMillis()));
 
         return tracingCapableBackends.stream().map(backend ->
             new ObservabilityBackendLink(
