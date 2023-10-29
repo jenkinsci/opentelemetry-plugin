@@ -39,12 +39,12 @@ public class AbstractReconfigurableOpenTelemetryWrapperTest {
     }
 
     private static void testMeterProvider(MeterProvider meterProvider, AbstractReconfigurableOpenTelemetryWrapper abstractReconfigurableOpenTelemetryWrapper) {
-        assertThat(meterProvider, instanceOf(AbstractReconfigurableOpenTelemetryWrapper.ClosingMeterProvider.class));
+        assertThat(meterProvider, instanceOf(AbstractReconfigurableOpenTelemetryWrapper.CloseableMeterProvider.class));
 
 
         MeterBuilder meterBuilder = meterProvider.meterBuilder("test");
 
-        assertThat(meterBuilder, instanceOf(AbstractReconfigurableOpenTelemetryWrapper.ClosingMeterBuilder.class));
+        assertThat(meterBuilder, instanceOf(AbstractReconfigurableOpenTelemetryWrapper.CloseableMeterBuilder.class));
 
         testMeter(meterBuilder.setInstrumentationVersion("123").setSchemaUrl("https://example.com").build(), abstractReconfigurableOpenTelemetryWrapper);
 
@@ -52,7 +52,7 @@ public class AbstractReconfigurableOpenTelemetryWrapperTest {
     }
 
     private static void testMeter(Meter meter, AbstractReconfigurableOpenTelemetryWrapper abstractReconfigurableOpenTelemetryWrapper) {
-        assertThat(meter, instanceOf(AbstractReconfigurableOpenTelemetryWrapper.ClosingMeter.class));
+        assertThat(meter, instanceOf(AbstractReconfigurableOpenTelemetryWrapper.CloseableMeter.class));
 
         int before = abstractReconfigurableOpenTelemetryWrapper.closeables.size();
         ObservableLongCounter observableLongCounter = meter.counterBuilder("test-counter").setDescription("desc").setUnit("s").buildWithCallback(om -> om.record(1L));

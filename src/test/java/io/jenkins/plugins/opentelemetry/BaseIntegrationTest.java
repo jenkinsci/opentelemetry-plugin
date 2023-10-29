@@ -81,7 +81,7 @@ public class BaseIntegrationTest {
     @Rule
     public ExtendedGitSampleRepoRule sampleRepo = new ExtendedGitSampleRepoRule();
 
-    static JenkinsOpenTelemetry jenkinsOpenTelemetry;
+    static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
     @Before
     public void before() throws Exception {
@@ -101,11 +101,11 @@ public class BaseIntegrationTest {
         jenkinsRule.waitUntilNoActivity();
         LOGGER.log(Level.INFO, "Jenkins started");
 
-        ExtensionList<JenkinsOpenTelemetry> jenkinsOpenTelemetries = jenkinsRule.getInstance().getExtensionList(JenkinsOpenTelemetry.class);
-        verify(jenkinsOpenTelemetries.size() == 1, "Number of openTelemetrySdkProviders: %s", jenkinsOpenTelemetries.size());
-        jenkinsOpenTelemetry = jenkinsOpenTelemetries.get(0);
+        ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries = jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
+        verify(jenkinsOpenTelemetries.size() == 1, "Number of jenkinsControllerOpenTelemetrys: %s", jenkinsOpenTelemetries.size());
+        jenkinsControllerOpenTelemetry = jenkinsOpenTelemetries.get(0);
 
-        // verify(openTelemetrySdkProvider.openTelemetry == null, "OpenTelemetrySdkProvider has already been configured");
+        // verify(jenkinsControllerOpenTelemetry.openTelemetry == null, "JenkinsControllerOpenTelemetry has already been configured");
         OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
         try {
             OpenTelemetryConfiguration configuration = new OpenTelemetryConfiguration(
@@ -116,7 +116,7 @@ public class BaseIntegrationTest {
                 Collections.emptyMap());
 
             LOGGER.log(Level.INFO, "Initialize OTel with configuration " + configuration.toOpenTelemetryProperties());
-            jenkinsOpenTelemetry.initialize(configuration);
+            jenkinsControllerOpenTelemetry.initialize(configuration);
         } catch (RuntimeException e) {
             LOGGER.log(Level.INFO, "Exception initializing OTel plugin", e);
             throw e;
@@ -126,7 +126,7 @@ public class BaseIntegrationTest {
         }
         LOGGER.log(Level.INFO, "OTel plugin initialized");
 
-        // openTelemetrySdkProvider.tracer.setDelegate(openTelemetrySdkProvider.openTelemetry.getTracer("jenkins"));
+        // jenkinsControllerOpenTelemetry.tracer.setDelegate(jenkinsControllerOpenTelemetry.openTelemetry.getTracer("jenkins"));
     }
 
     protected void checkChainOfSpans(Tree<SpanDataWrapper> spanTree, String... expectedSpanNames) {
@@ -180,7 +180,7 @@ public class BaseIntegrationTest {
     }
 
     protected Tree<SpanDataWrapper> getGeneratedSpans(int index) {
-        CompletableResultCode completableResultCode = jenkinsOpenTelemetry.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
+        CompletableResultCode completableResultCode = jenkinsControllerOpenTelemetry.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
         completableResultCode.join(1, TimeUnit.SECONDS);
         List<SpanData> spans = InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.getFinishedSpanItems();
 

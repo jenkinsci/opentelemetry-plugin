@@ -31,7 +31,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +82,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         // FIXME REPAIR METRICS TESTS
         /*
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
-        openTelemetrySdkProvider.getOpenTelemetrySdk().getSdkMeterProvider().forceFlush();
+        jenkinsControllerOpenTelemetry.getOpenTelemetrySdk().getSdkMeterProvider().forceFlush();
         Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
         dumpMetrics(exportedMetrics);
         MetricData runStartedCounterData = exportedMetrics.get(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED);
@@ -105,7 +104,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         Thread.sleep(100); // FIXME
         LOGGER.log(Level.INFO, "slept");
 
-        jenkinsOpenTelemetry.getOpenTelemetrySdk().getSdkMeterProvider().forceFlush();
+        jenkinsControllerOpenTelemetry.getOpenTelemetrySdk().getSdkMeterProvider().forceFlush();
 
         LOGGER.log(Level.INFO, "InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE: " + InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE);
         Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());

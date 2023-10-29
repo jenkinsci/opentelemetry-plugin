@@ -11,7 +11,7 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.Queue;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.events.EventEmitter;
@@ -43,7 +43,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
         System.setProperty("org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep.USE_WATCHING", "true");
     }
 
-    JenkinsOpenTelemetry jenkinsOpenTelemetry;
+    JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
     @Nullable
     private OtelTraceService otelTraceService;
@@ -57,7 +57,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
     @Nullable
     @Override
     public LogStorage forBuild(@NonNull final FlowExecutionOwner owner) {
-        if (!getOpenTelemetrySdkProvider().isLogsEnabled()) {
+        if (!getJenkinsControllerOpenTelemetry().isLogsEnabled()) {
             logger.log(Level.FINE, () -> "OTel Logs disabled");
             return null;
         }
@@ -82,11 +82,11 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
      * Workaround dependency injection problem. @Inject doesn't work here
      */
     @NonNull
-    private JenkinsOpenTelemetry getOpenTelemetrySdkProvider() {
-        if (jenkinsOpenTelemetry == null) {
-            jenkinsOpenTelemetry = JenkinsOpenTelemetry.get();
+    private JenkinsControllerOpenTelemetry getJenkinsControllerOpenTelemetry() {
+        if (jenkinsControllerOpenTelemetry == null) {
+            jenkinsControllerOpenTelemetry = JenkinsControllerOpenTelemetry.get();
         }
-        return jenkinsOpenTelemetry;
+        return jenkinsControllerOpenTelemetry;
     }
 
     /**

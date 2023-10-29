@@ -5,7 +5,7 @@
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
-import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -38,7 +38,7 @@ public class PipelineElasticsearchBackendTest {
         .withExposedService("fleet-server_1", OTEL_PORT)
         .withExposedService("kibana_1", KIBANA_PORT)
         .withExposedService("elasticsearch_1", ELASTICSEARCH_PORT);
-    static JenkinsOpenTelemetry jenkinsOpenTelemetry;
+    static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
     private ElasticsearchLogStorageRetriever elasticsearchRetriever;
 
     @BeforeClass

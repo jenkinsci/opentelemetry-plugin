@@ -7,7 +7,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
-import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeBuildListener;
@@ -78,7 +78,7 @@ class OtelLogStorage implements LogStorage {
 
         BuildListener result = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(runTraceContext, otelConfigurationProperties, otelResourceAttributes);
 
-        if (JenkinsOpenTelemetry.get().isOtelLogsMirrorToDisk()) {
+        if (JenkinsControllerOpenTelemetry.get().isOtelLogsMirrorToDisk()) {
             try {
               File logFile = new File(runFolderPath, "log");
                 result = new TeeBuildListener(result, FileLogStorage.forFile(logFile).overallListener());
@@ -101,7 +101,7 @@ class OtelLogStorage implements LogStorage {
         FlowNodeTraceContext flowNodeTraceContext = FlowNodeTraceContext.newFlowNodeTraceContext(run, flowNode, span);
         TaskListener result = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(flowNodeTraceContext, otelConfigurationProperties, otelResourceAttributes);
 
-        if (JenkinsOpenTelemetry.get().isOtelLogsMirrorToDisk()) {
+        if (JenkinsControllerOpenTelemetry.get().isOtelLogsMirrorToDisk()) {
             try {
               File logFile = new File(runFolderPath, "log");
               result = new TeeTaskListener(result, FileLogStorage.forFile(logFile).nodeListener(flowNode));

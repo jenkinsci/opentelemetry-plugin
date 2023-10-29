@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.BuildListener;
-import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.common.OffsetClock;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -73,7 +73,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
 
     /**
      * {@link OtelLogSenderBuildListener} implementation that runs on the Jenkins Controller and
-     * that retrieves the {@link io.opentelemetry.api.logs.Logger} from the {@link JenkinsOpenTelemetry}
+     * that retrieves the {@link io.opentelemetry.api.logs.Logger} from the {@link JenkinsControllerOpenTelemetry}
      */
     static final class OtelLogSenderBuildListenerOnController extends OtelLogSenderBuildListener {
         private static final long serialVersionUID = 1;
@@ -89,7 +89,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         @Override
         public io.opentelemetry.api.logs.Logger getOtelLogger() {
             JenkinsJVM.checkJenkinsJVM();
-            return JenkinsOpenTelemetry.get().getLogsBridge().get(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
+            return JenkinsControllerOpenTelemetry.get().getLogsBridge().get(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
         }
 
         /**

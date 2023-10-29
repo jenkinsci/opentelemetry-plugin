@@ -27,9 +27,9 @@ import java.util.stream.Collectors;
 
 
 @Extension
-public class JenkinsOpenTelemetry extends AbstractReconfigurableOpenTelemetryWrapper implements OpenTelemetry {
+public class JenkinsControllerOpenTelemetry extends AbstractReconfigurableOpenTelemetryWrapper implements OpenTelemetry {
 
-    private static final Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetry.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(JenkinsControllerOpenTelemetry.class.getName());
 
     /**
      * See {@code OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS}
@@ -41,7 +41,7 @@ public class JenkinsOpenTelemetry extends AbstractReconfigurableOpenTelemetryWra
     protected transient Meter defaultMeter;
     protected transient EventEmitter defaultEventEmitter;
 
-    public JenkinsOpenTelemetry() {
+    public JenkinsControllerOpenTelemetry() {
     }
 
     @NonNull
@@ -109,7 +109,7 @@ public class JenkinsOpenTelemetry extends AbstractReconfigurableOpenTelemetryWra
             });
     }
 
-    static public JenkinsOpenTelemetry get() {
-        return ExtensionList.lookupSingleton(JenkinsOpenTelemetry.class);
+    static public JenkinsControllerOpenTelemetry get() {
+        return ExtensionList.lookupSingleton(JenkinsControllerOpenTelemetry.class);
     }
 }

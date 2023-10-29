@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public class JenkinsOpenTelemetryTest {
+public class JenkinsControllerOpenTelemetryTest {
 
     @Test
     public void testOverwriteDefaultConfig() {
@@ -55,10 +55,10 @@ public class JenkinsOpenTelemetryTest {
             Optional.empty(),
             configurationProperties);
 
-        JenkinsOpenTelemetry jenkinsOpenTelemetry = new JenkinsOpenTelemetry();
-        jenkinsOpenTelemetry.initialize(openTelemetryConfiguration);
+        JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry = new JenkinsControllerOpenTelemetry();
+        jenkinsControllerOpenTelemetry.initialize(openTelemetryConfiguration);
 
-        Resource resource = jenkinsOpenTelemetry.getResource();
+        Resource resource = jenkinsControllerOpenTelemetry.getResource();
         // resource.getAttributes().forEach((key, value)-> System.out.println(key + ": " + value));
 
         MatcherAssert.assertThat(
@@ -84,6 +84,6 @@ public class JenkinsOpenTelemetryTest {
             CoreMatchers.is("1.2.3"));
 
 
-        jenkinsOpenTelemetry.shutdown();
+        jenkinsControllerOpenTelemetry.shutdown();
     }
 }

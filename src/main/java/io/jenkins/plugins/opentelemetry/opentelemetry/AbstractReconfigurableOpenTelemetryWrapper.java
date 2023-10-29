@@ -171,17 +171,17 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
 
     @Override
     public MeterProvider getMeterProvider() {
-        return new ClosingMeterProvider(getOpenTelemetryDelegate().getMeterProvider());
+        return new CloseableMeterProvider(getOpenTelemetryDelegate().getMeterProvider());
     }
 
     @Override
     public Meter getMeter(String instrumentationScopeName) {
-        return new ClosingMeter(getOpenTelemetryDelegate().getMeter(instrumentationScopeName));
+        return new CloseableMeter(getOpenTelemetryDelegate().getMeter(instrumentationScopeName));
     }
 
     @Override
     public MeterBuilder meterBuilder(String instrumentationScopeName) {
-        return new ClosingMeterBuilder(getOpenTelemetryDelegate().meterBuilder(instrumentationScopeName));
+        return new CloseableMeterBuilder(getOpenTelemetryDelegate().meterBuilder(instrumentationScopeName));
     }
 
     @Override
@@ -228,28 +228,28 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
 
     }
 
-    class ClosingMeterProvider implements MeterProvider {
+    class CloseableMeterProvider implements MeterProvider {
         final MeterProvider delegate;
 
-        public ClosingMeterProvider(MeterProvider delegate) {
+        public CloseableMeterProvider(MeterProvider delegate) {
             this.delegate = delegate;
         }
 
         @Override
         public Meter get(String instrumentationScopeName) {
-            return new ClosingMeter(delegate.get(instrumentationScopeName));
+            return new CloseableMeter(delegate.get(instrumentationScopeName));
         }
 
         @Override
         public MeterBuilder meterBuilder(String instrumentationScopeName) {
-            return new ClosingMeterBuilder(delegate.meterBuilder(instrumentationScopeName));
+            return new CloseableMeterBuilder(delegate.meterBuilder(instrumentationScopeName));
         }
     }
 
-    class ClosingMeterBuilder implements MeterBuilder {
+    class CloseableMeterBuilder implements MeterBuilder {
         final MeterBuilder delegate;
 
-        ClosingMeterBuilder(MeterBuilder delegate) {
+        CloseableMeterBuilder(MeterBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -269,25 +269,25 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
 
         @Override
         public Meter build() {
-            return new ClosingMeter(delegate.build());
+            return new CloseableMeter(delegate.build());
         }
     }
 
-    class ClosingMeter implements Meter {
+    class CloseableMeter implements Meter {
         private final Meter delegate;
 
-        ClosingMeter(Meter delegate) {
+        CloseableMeter(Meter delegate) {
             this.delegate = delegate;
         }
 
         @Override
         public LongCounterBuilder counterBuilder(String name) {
-            return new ClosingLongCounterBuilder(delegate.counterBuilder(name));
+            return new CloseableLongCounterBuilder(delegate.counterBuilder(name));
         }
 
         @Override
         public LongUpDownCounterBuilder upDownCounterBuilder(String name) {
-            return new ClosingLongUpDownCounterBuilder(delegate.upDownCounterBuilder(name));
+            return new CloseableLongUpDownCounterBuilder(delegate.upDownCounterBuilder(name));
         }
 
         @Override
@@ -297,7 +297,7 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
 
         @Override
         public DoubleGaugeBuilder gaugeBuilder(String name) {
-            return new ClosingDoubleGaugeBuilder(delegate.gaugeBuilder(name));
+            return new CloseableDoubleGaugeBuilder(delegate.gaugeBuilder(name));
         }
 
         @Override
@@ -308,10 +308,10 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
         }
     }
 
-    class ClosingLongCounterBuilder implements LongCounterBuilder {
+    class CloseableLongCounterBuilder implements LongCounterBuilder {
         final LongCounterBuilder delegate;
 
-        ClosingLongCounterBuilder(LongCounterBuilder delegate) {
+        CloseableLongCounterBuilder(LongCounterBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -331,7 +331,7 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
 
         @Override
         public DoubleCounterBuilder ofDoubles() {
-            return new ClosingDoubleCounterBuilder(delegate.ofDoubles());
+            return new CloseableDoubleCounterBuilder(delegate.ofDoubles());
         }
 
         @Override
@@ -352,7 +352,7 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
         }
     }
 
-    class ClosingLongUpDownCounterBuilder implements LongUpDownCounterBuilder {
+    class CloseableLongUpDownCounterBuilder implements LongUpDownCounterBuilder {
         @Override
         @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
         public LongUpDownCounterBuilder setDescription(String description) {
@@ -369,7 +369,7 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
 
         @Override
         public DoubleUpDownCounterBuilder ofDoubles() {
-            return new ClosingDoubleUpDownCounterBuilder(delegate.ofDoubles());
+            return new CloseableDoubleUpDownCounterBuilder(delegate.ofDoubles());
         }
 
         @Override
@@ -391,16 +391,16 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
 
         final LongUpDownCounterBuilder delegate;
 
-        ClosingLongUpDownCounterBuilder(LongUpDownCounterBuilder delegate) {
+        CloseableLongUpDownCounterBuilder(LongUpDownCounterBuilder delegate) {
             this.delegate = delegate;
         }
     }
 
 
-    class ClosingDoubleUpDownCounterBuilder implements DoubleUpDownCounterBuilder {
+    class CloseableDoubleUpDownCounterBuilder implements DoubleUpDownCounterBuilder {
         final DoubleUpDownCounterBuilder delegate;
 
-        ClosingDoubleUpDownCounterBuilder(DoubleUpDownCounterBuilder delegate) {
+        CloseableDoubleUpDownCounterBuilder(DoubleUpDownCounterBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -436,10 +436,10 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
         }
     }
 
-    class ClosingDoubleGaugeBuilder implements DoubleGaugeBuilder {
+    class CloseableDoubleGaugeBuilder implements DoubleGaugeBuilder {
         final DoubleGaugeBuilder delegate;
 
-        ClosingDoubleGaugeBuilder(DoubleGaugeBuilder delegate) {
+        CloseableDoubleGaugeBuilder(DoubleGaugeBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -459,7 +459,7 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
 
         @Override
         public LongGaugeBuilder ofLongs() {
-            return new ClosingLongGaugeBuilder(delegate.ofLongs());
+            return new CloseableLongGaugeBuilder(delegate.ofLongs());
         }
 
         @Override
@@ -475,10 +475,10 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
         }
     }
 
-    class ClosingLongGaugeBuilder implements LongGaugeBuilder {
+    class CloseableLongGaugeBuilder implements LongGaugeBuilder {
         final LongGaugeBuilder delegate;
 
-        ClosingLongGaugeBuilder(LongGaugeBuilder delegate) {
+        CloseableLongGaugeBuilder(LongGaugeBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -509,10 +509,10 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
         }
     }
 
-    class ClosingDoubleCounterBuilder implements DoubleCounterBuilder {
+    class CloseableDoubleCounterBuilder implements DoubleCounterBuilder {
         final DoubleCounterBuilder delegate;
 
-        ClosingDoubleCounterBuilder(DoubleCounterBuilder delegate) {
+        CloseableDoubleCounterBuilder(DoubleCounterBuilder delegate) {
             this.delegate = delegate;
         }
 

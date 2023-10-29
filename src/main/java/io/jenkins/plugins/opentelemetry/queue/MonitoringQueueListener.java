@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.queue;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
-import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
@@ -110,6 +110,6 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
     }
 
     private boolean isRemoteSpanEnabled() {
-        return JenkinsOpenTelemetry.get().getConfig().getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED,false);
+        return JenkinsControllerOpenTelemetry.get().getConfig().getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED,false);
     }
 }

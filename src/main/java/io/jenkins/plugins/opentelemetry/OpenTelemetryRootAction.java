@@ -14,12 +14,15 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Decorates Jenkins navigation GUI with the OpenTelemetry dashboard link if defined
+ */
 @Extension
 public class OpenTelemetryRootAction implements RootAction {
     private static final Logger logger = Logger.getLogger(OpenTelemetryRootAction.class.getName());
 
     private JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
-    private JenkinsOpenTelemetry jenkinsOpenTelemetry;
+    private JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
     public Optional<ObservabilityBackend> getFirstMetricsCapableObservabilityBackend() {
         final Optional<ObservabilityBackend> observabilityBackend = pluginConfiguration.getObservabilityBackends()
@@ -47,7 +50,7 @@ public class OpenTelemetryRootAction implements RootAction {
     public String getUrlName() {
         // TODO we could keep in cache this URL
         return getFirstMetricsCapableObservabilityBackend()
-            .map(backend -> backend.getMetricsVisualizationUrl(this.jenkinsOpenTelemetry.getResource()))
+            .map(backend -> backend.getMetricsVisualizationUrl(this.jenkinsControllerOpenTelemetry.getResource()))
             .orElse(null);
     }
 
@@ -57,7 +60,7 @@ public class OpenTelemetryRootAction implements RootAction {
     }
 
     @Inject
-    public void setOpenTelemetrySdkProvider(JenkinsOpenTelemetry jenkinsOpenTelemetry) {
-        this.jenkinsOpenTelemetry = jenkinsOpenTelemetry;
+    public void setJenkinsControllerOpenTelemetry(JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
+        this.jenkinsControllerOpenTelemetry = jenkinsControllerOpenTelemetry;
     }
 }
