@@ -64,8 +64,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Holds a reference on all the instantiated {@link AutoCloseable} instrument in order to properly close them before
- * reconfigurations (eg {@link ObservableLongUpDownCounter}, {@link ObservableLongCounter}...).
+ * Reconfigurable {@link OpenTelemetry}
  */
 public abstract class AbstractReconfigurableOpenTelemetryWrapper extends AbstractOpenTelemetryWrapper implements OpenTelemetry, Closeable {
 
@@ -75,6 +74,10 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
     protected transient OpenTelemetry openTelemetry;
     protected transient EventEmitterProvider eventEmitterProvider;
 
+    /**
+     * Reference on all the instantiated {@link AutoCloseable} instrument in order to properly close them before
+     * reconfigurations (eg {@link ObservableLongUpDownCounter}, {@link ObservableLongCounter}...).
+     */
     final List<AutoCloseable> closeables = new ArrayList<>();
 
     public void initialize(@NonNull Map<String, String> openTelemetryProperties, Resource openTelemetryResource) {
