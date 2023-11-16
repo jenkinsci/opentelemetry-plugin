@@ -5,9 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.Extension;
 import hudson.ExtensionList;
+import hudson.model.Action;
 import hudson.model.Computer;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
@@ -50,6 +53,8 @@ import org.jenkinsci.plugins.workflow.steps.*;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.kohsuke.stapler.lang.FieldRef;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
@@ -96,10 +101,12 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, JenkinsOtelSemanticAttributes.AGENT) // FIXME verify it's the right semantic and value
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_CREDENTIALS_ID, stepStartNode.getAllActions().toString());
             if (agentLabel != null) {
                 agentSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL, agentLabel);
             }
+            populateHarnessData(agentSpanBuilder, stepStartNode.getAllActions(), stepStartNode.getDescriptor().getKlass().getFields());
             Span agentSpan = agentSpanBuilder.startSpan();
 
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + JenkinsOtelSemanticAttributes.AGENT + "(" + agentLabel + ") - begin " + OtelUtils.toDebugString(agentSpan));
@@ -117,6 +124,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 if (agentLabel != null) {
                     allocateAgentSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL, agentLabel);
                 }
+                populateHarnessData(allocateAgentSpanBuilder, stepStartNode.getAllActions(), stepStartNode.getDescriptor().getKlass().getFields());
                 Span allocateAgentSpan = allocateAgentSpanBuilder.startSpan();
 
                 LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + JenkinsOtelSemanticAttributes.AGENT_ALLOCATE + "(" + agentLabel + ") - begin " + OtelUtils.toDebugString(allocateAgentSpan));
@@ -141,14 +149,17 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(),"stage");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
-            Span stageSpan = getTracer().spanBuilder(spanStageName)
+            SpanBuilder spanBuilder = getTracer().spanBuilder(spanStageName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stageName)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
-                    .startSpan();
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+
+
+            populateHarnessData(spanBuilder, stepStartNode.getAllActions(), stepStartNode.getDescriptor().getKlass().getFields());
+            Span stageSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
             getTracerService().putSpan(run, stageSpan, stepStartNode);
@@ -201,7 +212,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
-
+            populateHarnessData(spanBuilder, node.getAllActions(), node.getDescriptor().getKlass().getFields());
             Span atomicStepSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
             try (Scope ignored2 = atomicStepSpan.makeCurrent()) {
@@ -273,15 +284,15 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(),"branch");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
-
-            Span atomicStepSpan = getTracer().spanBuilder("Parallel branch: " + branchName)
+            SpanBuilder atomicStepSpanBuilder = getTracer().spanBuilder("Parallel branch: " + branchName)
                     .setParent(Context.current())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, branchName)
                     .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
-                    .startSpan();
+                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+            populateHarnessData(atomicStepSpanBuilder, stepStartNode.getAllActions(), stepStartNode.getDescriptor().getKlass().getFields());
+            Span atomicStepSpan = atomicStepSpanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > parallel branch(" + branchName + ") - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
             getTracerService().putSpan(run, atomicStepSpan, stepStartNode);
@@ -411,5 +422,30 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     @Override
     public void beforeSdkShutdown() {
 
+    }
+
+    private void populateHarnessData(SpanBuilder spanBuilder, List<? extends Action> actions,  List<FieldRef> fields) {
+        StringBuilder sb = new StringBuilder();
+        for (FieldRef fieldRef : fields) {
+            sb.append("-");
+            sb.append(fieldRef.getName());
+            sb.append("-");
+            sb.append(fieldRef.getSignature());
+            sb.append("-");
+            sb.append(fieldRef.getQualifiedName());
+            sb.append("-");
+            sb.append(fieldRef.getReturnType().toString());
+        }
+
+        for (Action action : actions) {
+            if (action instanceof ArgumentsAction) {
+                ArgumentsAction augAction = (ArgumentsAction) action;
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode map = mapper.valueToTree(augAction.getArguments());
+                spanBuilder.setAttribute("harness-attribute", map.toPrettyString());
+            }
+        }
+
+        spanBuilder.setAttribute("harness-others", sb.toString());
     }
 }

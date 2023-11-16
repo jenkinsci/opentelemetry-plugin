@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -12,6 +14,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
+import hudson.model.Action;
 import hudson.model.Cause;
 import hudson.model.Node;
 import hudson.model.ParameterValue;
@@ -48,8 +51,10 @@ import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.SemanticAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause;
+import org.kohsuke.stapler.lang.FieldRef;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
@@ -289,11 +294,12 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin root " + OtelUtils.toDebugString(rootSpan));
 
             // START initialize span
-            Span startSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_START_NAME)
-                    .setParent(Context.current().with(rootSpan))
-                    .startSpan();
+            SpanBuilder spanBuilder = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_START_NAME)
+                    .setParent(Context.current().with(rootSpan));
+            Span startSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(startSpan));
 
+            populateHarnessData(spanBuilder, run.getAllActions());
             this.getTraceService().putRunPhaseSpan(run, startSpan);
             try (final Scope startSpanScope = startSpan.makeCurrent()) {
                 this.runLaunchedCounter.add(1);
@@ -304,7 +310,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     @Override
     public void _onStarted(@NonNull Run run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
-            Span runSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME).setParent(Context.current()).startSpan();
+            SpanBuilder runSpanBuilder = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME).setParent(Context.current());
+            populateHarnessData(runSpanBuilder, run.getAllActions());
+            Span runSpan = runSpanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
             try (Scope scope = runSpan.makeCurrent()) {
                 this.getTraceService().putRunPhaseSpan(run, runSpan);
@@ -316,7 +324,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     @Override
     public void _onCompleted(@NonNull Run run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
-            Span finalizeSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME).setParent(Context.current()).startSpan();
+            SpanBuilder finalizeSpanBuilder = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME).setParent(Context.current());
+            populateHarnessData(finalizeSpanBuilder, run.getAllActions());
+            Span finalizeSpan = finalizeSpanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(finalizeSpan));
             try (Scope scope = finalizeSpan.makeCurrent()) {
                 this.getTraceService().putRunPhaseSpan(run, finalizeSpan);
@@ -406,5 +416,19 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     @NonNull
     protected List<RunHandler> getRunHandlers() {
         return Preconditions.checkNotNull(this.runHandlers);
+    }
+
+    private void populateHarnessData(SpanBuilder spanBuilder, List<? extends Action> actions) {
+
+        for (Action action : actions) {
+            if (action instanceof ArgumentsAction) {
+                ArgumentsAction augAction = (ArgumentsAction) action;
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode map = mapper.valueToTree(augAction.getArguments());
+                spanBuilder.setAttribute("harness-attribute", map.toPrettyString());
+            }
+        }
+
+
     }
 }

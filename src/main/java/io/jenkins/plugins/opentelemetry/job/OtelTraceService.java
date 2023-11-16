@@ -5,6 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -20,7 +24,10 @@ import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.OtelMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.RunPhaseMonitoringAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.sdk.trace.ReadableSpan;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
@@ -31,6 +38,9 @@ import org.jenkinsci.plugins.workflow.graphanalysis.ForkScanner;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -219,21 +229,68 @@ public class OtelTraceService {
     public void putSpan(@NonNull AbstractBuild build, @NonNull Span span) {
         build.addAction(new MonitoringAction(span));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
+        writeToFile(build.getFullDisplayName() + "," + OtelUtils.toDebugString(span), "shouldnt_exist");
     }
 
     public void putSpan(AbstractBuild build, BuildStep buildStep, Span span) {
         build.addAction(new BuildStepMonitoringAction(span));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + ", " + buildStep + "," + OtelUtils.toDebugString(span) + ")");
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("name", build.getFullDisplayName());
+        node.put("parent", build.getParent().getFullName());
+        node.put("type", "Build Phase Span");
+        node.put("all-info", OtelUtils.toDebugString(span));
+        node.put("build step", buildStep.toString());
+
+        ReadableSpan readableSpan = (ReadableSpan) span;
+        SpanData spanData = readableSpan.toSpanData();
+
+        node.put("spanName", spanData.getName());
+        node.put("spanId", spanData.getSpanId());
+        node.put("parentSpanId", spanData.getParentSpanId());
+        node.put("traceId", spanData.getTraceId());
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode map = mapper.valueToTree(spanData.getAttributes().asMap());
+        node.put("attributesMap", map);
+        try {
+            node.put("parameterMap", mapper.readTree(spanData.getAttributes().asMap().get(AttributeKey.stringKey("harness-attribute")).toString()));
+        } catch (Exception e) {
+            node.put("parameterMap", "null");
+        }
+        writeToFile(node.toPrettyString(), spanData.getTraceId() + "-" + spanData.getSpanId());
     }
 
     public void putSpan(@NonNull Run run, @NonNull Span span) {
         run.addAction(new MonitoringAction(span));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
+        ReadableSpan readableSpan = (ReadableSpan) span;
+        SpanData spanData = readableSpan.toSpanData();
+        writeToFile(run.getFullDisplayName() + "," + OtelUtils.toDebugString(span), spanData.getTraceId()+ "-" + spanData.getSpanId());
     }
 
     public void putRunPhaseSpan(@NonNull Run run, @NonNull Span span) {
         run.addAction(new RunPhaseMonitoringAction(span));
         LOGGER.log(Level.FINEST, () -> "putRunPhaseSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("name", run.getFullDisplayName());
+        node.put("parent", run.getParent().getFullName());
+        node.put("type", "Run Phase Span");
+        node.put("all-info", OtelUtils.toDebugString(span));
+        ReadableSpan readableSpan = (ReadableSpan) span;
+        SpanData spanData = readableSpan.toSpanData();
+        node.put("spanName", spanData.getName());
+        node.put("spanId", spanData.getSpanId());
+        node.put("parentSpanId", spanData.getParentSpanId());
+        node.put("traceId", spanData.getTraceId());
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode map = mapper.valueToTree(spanData.getAttributes().asMap());
+        node.put("attributesMap", map);
+        try {
+            node.put("parameterMap", mapper.readTree(spanData.getAttributes().asMap().get(AttributeKey.stringKey("harness-attribute")).toString()));
+        } catch (Exception e) {
+            node.put("parameterMap", "null");
+        }
+        writeToFile(node.toPrettyString(), spanData.getTraceId()+ "-" + spanData.getSpanId());
     }
 
     public void putSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
@@ -242,9 +299,44 @@ public class OtelTraceService {
 
         LOGGER.log(Level.FINE, () -> "putSpan(" + run.getFullDisplayName() + ", " +
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
+
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("name", run.getFullDisplayName());
+        node.put("parent", run.getParent().getFullName());
+        node.put("type", "Run Phase Span");
+        ReadableSpan readableSpan = (ReadableSpan) span;
+        SpanData spanData = readableSpan.toSpanData();
+        node.put("spanName", spanData.getName());
+        node.put("spanId", spanData.getSpanId());
+        node.put("parentSpanId", spanData.getParentSpanId());
+        node.put("traceId", spanData.getTraceId());
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode map = mapper.valueToTree(spanData.getAttributes().asMap());
+        node.put("attributesMap", map);
+        try {
+            node.put("parameterMap", mapper.readTree(spanData.getAttributes().asMap().get(AttributeKey.stringKey("harness-attribute")).toString()));
+        } catch (Exception e) {
+            node.put("parameterMap", "null");
+        }
+        node.put("all-info", OtelUtils.toDebugString(span));
+        writeToFile(node.toPrettyString(), spanData.getTraceId()+ "-" + spanData.getSpanId());
     }
 
     static public OtelTraceService get() {
         return ExtensionList.lookupSingleton(OtelTraceService.class);
+    }
+
+    private void writeToFile(String content, String fileName) {
+        fileName = fileName.replaceAll("[^a-zA-Z0-9.-]", "_");
+        try {
+            File myObj = new File("/Users/jamie/opentelemetry-plugin/result/trace_" + fileName);
+            if (myObj.createNewFile()) {
+                FileWriter myWriter = new FileWriter(myObj);
+                myWriter.write(content);
+                myWriter.close();
+            } else {
+                System.out.println("File already exists.");
+            }
+        } catch (IOException ignore) {}
     }
 }

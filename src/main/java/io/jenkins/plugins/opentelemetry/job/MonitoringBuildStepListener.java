@@ -5,10 +5,13 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.errorprone.annotations.MustBeClosed;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
+import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.BuildStepListener;
 import hudson.tasks.BuildStep;
@@ -29,7 +32,12 @@ import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
+import org.kohsuke.stapler.lang.FieldRef;
+
 import javax.inject.Inject;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -62,7 +70,7 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Ot
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stepName)
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.isUnknown() ? JENKINS_CORE : stepPlugin.getName())
                 .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.isUnknown() ? jenkinsVersion : stepPlugin.getVersion());
-
+            populateHarnessData(spanBuilder, build);
             Span atomicStepSpan = spanBuilder.startSpan();
             LOGGER.log(Level.FINE, () -> build.getFullDisplayName() + " - > " + stepName + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
@@ -137,5 +145,30 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Ot
     @Override
     public void beforeSdkShutdown() {
 
+    }
+
+    private void populateHarnessData(SpanBuilder spanBuilder,AbstractBuild build) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Build Name: ");
+        sb.append(build.getExecutor().getCurrentWorkspace().getName());
+        sb.append("\nBuild Variables: ");
+        sb.append(build.getBuildVariables().toString());
+        sb.append("\nBuild On String: ");
+        sb.append(build.getBuiltOnStr());
+        sb.append("\nBuild environments: ");
+        sb.append(build.getEnvironments().toString());
+        sb.append("\nBuild environments: ");
+
+
+        for (Action action : build.getActions()) {
+            if (action instanceof ArgumentsAction) {
+                ArgumentsAction augAction = (ArgumentsAction) action;
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode map = mapper.valueToTree(augAction.getArguments());
+                spanBuilder.setAttribute("harness-attribute", map.toPrettyString());
+            }
+        }
+
+        spanBuilder.setAttribute("harness-others", sb.toString());
     }
 }

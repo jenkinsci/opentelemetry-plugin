@@ -88,11 +88,18 @@ public class OtelUtils {
             } else if (span instanceof ReadableSpan) {
                 ReadableSpan readableSpan = (ReadableSpan) span;
                 SpanData spanData = readableSpan.toSpanData();
+
+                StringBuilder sb = new StringBuilder();
+                for (Map.Entry<AttributeKey<?>,Object> entry : spanData.getAttributes().asMap().entrySet()) {
+                    sb.append(entry.getKey().toString()).append(":").append(entry.getValue().toString()).append(";");
+                }
+
                 return "span(" +
                     "name: " + readableSpan.getName() + ", " +
                     "spanId: " + spanData.getSpanId() + ", " +
                     "parentSpanId: " + spanData.getParentSpanId() + ", " +
                     "traceId: " + spanData.getTraceId() + ", " +
+                    "attr: " + sb.toString() +
                     ")";
             } else {
                 return span.toString();
