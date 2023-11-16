@@ -35,6 +35,8 @@ import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Instrumentation of the Stapler MVC framework.
@@ -75,12 +77,8 @@ public class StaplerInstrumentationServletFilter implements Filter {
         String rootPath = pathInfoTokens.get(0);
         // The matched route (path template).
         String httpRoute;
-        if (rootPath.equals("static") ||
-            rootPath.equals("adjuncts") ||
-            rootPath.equals("scripts") ||
-            rootPath.equals("plugin") ||
-            rootPath.equals("images") ||
-            rootPath.equals("sse-gateway")) {
+        boolean skipFilterChain = checkForSkipFilter(rootPath);
+        if (skipFilterChain) {
             // skip
             filterChain.doFilter(servletRequest, servletResponse);
             return;
@@ -233,6 +231,11 @@ public class StaplerInstrumentationServletFilter implements Filter {
             span.end();
         }
 
+    }
+
+    private boolean checkForSkipFilter(String rootPath) {
+        Set<String> skipPaths = new HashSet<>(Arrays.asList("static", "adjuncts", "scripts", "plugin", "images", "sse-gateway"));
+        return skipPaths.contains(rootPath);
     }
 
     /**
