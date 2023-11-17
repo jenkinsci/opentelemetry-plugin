@@ -45,6 +45,11 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
     @Override
     public final void onNewHead(FlowNode node) {
         WorkflowRun run = PipelineNodeUtil.getWorkflowRun(node);
+        processPreviousNodes(node, run);
+        processCurrentNode(node, run);
+    }
+
+    private void processPreviousNodes(FlowNode node, WorkflowRun run) {
         log(Level.FINE, () -> run.getFullDisplayName() + " - onNewHead - Process " + PipelineNodeUtil.getDetailedDebugString(node));
         for (FlowNode previousNode : node.getParents()) {
             log(Level.FINE, () -> run.getFullDisplayName() + " - Process previous node " + PipelineNodeUtil.getDetailedDebugString(previousNode) + " of node " + PipelineNodeUtil.getDetailedDebugString(node));
@@ -66,7 +71,9 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
                 log(Level.FINE, () -> "Ignore previous node " + PipelineNodeUtil.getDetailedDebugString(previousNode));
             }
         }
+    }
 
+    private void processCurrentNode(FlowNode node, WorkflowRun run) {
         if (node instanceof FlowStartNode) {
             fireOnStartPipeline((FlowStartNode) node, run);
         } else if (node instanceof FlowEndNode) {
