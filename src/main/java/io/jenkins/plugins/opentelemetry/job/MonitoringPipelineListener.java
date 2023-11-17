@@ -348,10 +348,15 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 return;
             }
             if (computer.getAction(OpenTelemetryAttributesAction.class) == null) {
-                LOGGER.log(Level.WARNING, "Unexpected missing " + OpenTelemetryAttributesAction.class + " on " + computer + " fallback");
+                LOGGER.log(Level.WARNING, "Unexpected missing " + OpenTelemetryAttributesAction.class + " on " + computer + ", adding fallback");
                 String hostName = computer.getHostName();
                 OpenTelemetryAttributesAction openTelemetryAttributesAction = new OpenTelemetryAttributesAction();
-                openTelemetryAttributesAction.getAttributes().put(ResourceAttributes.HOST_NAME, hostName);
+                if (hostName != null) {
+                    // getHostName() returns null if the master cannot find the host name, e.g. due to network settings.
+                    // @see hudson.model.Computer#getHostName()
+                    openTelemetryAttributesAction.getAttributes().put(ResourceAttributes.HOST_NAME, hostName);
+                }
+                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
                 computer.addAction(openTelemetryAttributesAction);
             }
             OpenTelemetryAttributesAction openTelemetryAttributesAction = computer.getAction(OpenTelemetryAttributesAction.class);
