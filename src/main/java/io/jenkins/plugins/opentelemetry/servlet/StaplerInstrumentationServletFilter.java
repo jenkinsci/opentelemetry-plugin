@@ -48,6 +48,8 @@ public class StaplerInstrumentationServletFilter implements Filter {
     private final static Logger logger = Logger.getLogger(StaplerInstrumentationServletFilter.class.getName());
     private final Tracer tracer;
 
+    private static final Set<String> SKIP_PATHS = new HashSet<>(Arrays.asList("static", "adjuncts", "scripts", "plugin", "images", "sse-gateway"));
+
     public StaplerInstrumentationServletFilter(Tracer tracer) {
         this.tracer = tracer;
     }
@@ -77,8 +79,7 @@ public class StaplerInstrumentationServletFilter implements Filter {
         String rootPath = pathInfoTokens.get(0);
         // The matched route (path template).
         String httpRoute;
-        boolean skipFilterChain = checkForSkipFilter(rootPath);
-        if (skipFilterChain) {
+        if (SKIP_PATHS.contains(rootPath)) {
             // skip
             filterChain.doFilter(servletRequest, servletResponse);
             return;
@@ -231,11 +232,6 @@ public class StaplerInstrumentationServletFilter implements Filter {
             span.end();
         }
 
-    }
-
-    private boolean checkForSkipFilter(String rootPath) {
-        Set<String> skipPaths = new HashSet<>(Arrays.asList("static", "adjuncts", "scripts", "plugin", "images", "sse-gateway"));
-        return skipPaths.contains(rootPath);
     }
 
     /**
