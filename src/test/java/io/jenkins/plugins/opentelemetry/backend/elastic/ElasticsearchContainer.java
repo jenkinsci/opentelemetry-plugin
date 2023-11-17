@@ -4,40 +4,47 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-//import co.elastic.clients.elasticsearch.ElasticsearchClient;
-//import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
-//import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-//import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend.TemplateBindings;
+
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.DockerComposeContainer;
 
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+
+import static junit.framework.TestCase.assertFalse;
+
+import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
+import java.util.Map;
 
 /**
  * Elasticsearch container used on the tests.
- * FI£XME
  */
-public class ElasticsearchContainer extends GenericContainer {
+public class ElasticsearchContainer extends DockerComposeContainer<ElasticsearchContainer> {
     public static final String USER_NAME = "admin";
     public static final String PASSWORD = "changeme";
     public static final String INDEX = "logs-001";
     public static final int ES_PORT = 9200;
 
+    public static final int OTEL_PORT = 8200;
+    public static final int KIBANA_PORT = 5601;
+    public static final int ELASTICSEARCH_PORT = 9200;
+
     public ElasticsearchContainer() {
-        super("docker.elastic.co/elasticsearch/elasticsearch:7.16.3");
-        withExposedPorts(ES_PORT);
-        withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
-        withEnv("discovery.type", "single-node");
-        withEnv("bootstrap.memory_lock", "true");
-        withEnv("ELASTIC_PASSWORD", PASSWORD);
-        withEnv("xpack.security.enabled", "true");
-        withStartupTimeout(Duration.ofMinutes(3));
+        super(new File("src/test/resources/docker-compose.yml"));
+        withExposedService("fleet-server_1", OTEL_PORT)
+                .withExposedService("kibana_1", KIBANA_PORT)
+                .withExposedService("elasticsearch_1", ELASTICSEARCH_PORT);
     }
 
     /**
@@ -46,19 +53,34 @@ public class ElasticsearchContainer extends GenericContainer {
     public RestClientBuilder getBuilder() {
         final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         org.apache.http.auth.UsernamePasswordCredentials credentials = new org.apache.http.auth.UsernamePasswordCredentials(
-            USER_NAME, PASSWORD);
+                USER_NAME, PASSWORD);
         credentialsProvider.setCredentials(AuthScope.ANY, credentials);
 
-        RestClientBuilder builder = RestClient.builder(HttpHost.create(getUrl()));
-        builder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+        RestClientBuilder builder = RestClient.builder(HttpHost.create(getEsUrl()));
+        builder.setHttpClientConfigCallback(
+                httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
         return builder;
     }
 
     /**
      * @return The URL to access to the Elasticsearch Docker container.
      */
-    public String getUrl() {
-        return "http://" + this.getContainerIpAddress() + ":" + this.getMappedPort(ES_PORT);
+    public String getEsUrl() {
+        return "http://" + this.getServiceHost("elasticsearch_1", ELASTICSEARCH_PORT);
+    }
+
+    /**
+     * @return The URL to access to the Kibana Docker container.
+     */
+    public String getKibanaUrl() {
+        return "http://" + this.getServiceHost("kibana_1", KIBANA_PORT);
+    }
+
+    /**
+     * @return The URL to access to the OpenTelemetry Docker container.
+     */
+    public String getFleetUrl() {
+        return "http://" + this.getServiceHost("fleet-server_1", OTEL_PORT);
     }
 
     /**
@@ -67,29 +89,24 @@ public class ElasticsearchContainer extends GenericContainer {
      * @throws IOException
      */
     public void createLogIndex() throws IOException {
-        //RestClient restClient = getBuilder().build();
-        //RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
-        //ElasticsearchClient client = new ElasticsearchClient(elasticsearchTransport);
-//
-        //client.indices().create(new CreateIndexRequest.Builder().index(INDEX).build());
+        RestClient restClient = getBuilder().build();
+        RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+        ElasticsearchClient client = new ElasticsearchClient(elasticsearchTransport);
 
-        // BulkOperation bulkOperation =
-        //    BulkRequest bulkRequest = new BulkRequest();
-        //    for (int n = 0; n < 100; n++) {
-        //        bulkRequest.add(newBulk(n, "1"));
-        //        bulkRequest.add(newBulk(n, "2"));
-        //        bulkRequest.add(newBulk(n, "3"));
-        //    }
-        //    List<Operations>
-        //BulkRequest bulkRequest = new BulkRequest.Builder().operations()
-        //    bulkRequest.timeout(TimeValue.timeValueMinutes(2));
-        //    bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL);
-//
-        //    client.bulk(bulkRequest, RequestOptions.DEFAULT);
-        //}
+        client.indices().create(new CreateIndexRequest.Builder().index(INDEX).build());
+
+        BulkRequest.Builder br = new BulkRequest.Builder();
+        for (int n = 0; n < 100; n++) {
+            String index = String.valueOf(n);
+            br.operations(op -> op
+                    .index(idx -> idx
+                            .index(INDEX)
+                            .document(
+                                    Map.of(
+                                            TemplateBindings.TRACE_ID, "foo" + index,
+                                            TemplateBindings.SPAN_ID, "bar" + index))));
+        }
+        BulkResponse result = client.bulk(br.build());
+        assertFalse(result.errors());
     }
-
-    // private IndexRequest newBulk(int lineNumber, String buildID) throws IOException {
-    //    return new IndexRequest(INDEX).source(XContentType.JSON, TRACE_ID, "foo", SPAN_ID, "bar");
-    //
 }

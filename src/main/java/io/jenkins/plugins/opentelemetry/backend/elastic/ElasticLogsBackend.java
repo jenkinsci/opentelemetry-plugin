@@ -21,7 +21,6 @@ import org.apache.commons.lang.StringUtils;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
