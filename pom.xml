@@ -19,7 +19,7 @@
     <properties>
         <revision>2.18.1</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.361.4</jenkins.version>
+        <jenkins.version>2.387.3</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.30.1</opentelemetry.version>
         <!--
@@ -44,7 +44,7 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.361.x</artifactId>
+                <artifactId>bom-2.2.387.x</artifactId>
                 <version>2102.v854b_fec19c92</version>
                 <scope>import</scope>
                 <type>pom</type>
