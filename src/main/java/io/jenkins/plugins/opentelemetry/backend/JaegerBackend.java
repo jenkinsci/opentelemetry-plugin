@@ -109,7 +109,7 @@ public class JaegerBackend extends ObservabilityBackend {
 
     @Override
     public int hashCode() {
-        return JaegerBackend.class.hashCode();
+        return super.generateHashCode(JaegerBackend.class);
     }
 
     @Override

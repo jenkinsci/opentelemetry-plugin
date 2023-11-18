@@ -93,7 +93,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
 
     @Override
     public int hashCode() {
-        return Objects.hash(traceVisualisationUrlTemplate, metricsVisualizationUrlTemplate);
+        return super.generateHashCode(traceVisualisationUrlTemplate, metricsVisualizationUrlTemplate);
     }
 
     @Override

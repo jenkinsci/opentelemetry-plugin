@@ -138,7 +138,7 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
 
     @Override
     public int hashCode() {
-        return Objects.hash(grafanaBaseUrl, tempoDataSourceIdentifier, grafanaOrgId, tempoQueryType);
+        return super.generateHashCode(grafanaBaseUrl, tempoDataSourceIdentifier, grafanaOrgId, tempoQueryType);
     }
 
     @Override

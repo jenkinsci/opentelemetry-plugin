@@ -217,4 +217,9 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
             throw new IllegalStateException("failure to create error template");
         }
     }
+
+    // pulled up common method to super class.
+    public int generateHashCode(Object... objects) {
+        return Objects.hash(objects);
+    }
 }

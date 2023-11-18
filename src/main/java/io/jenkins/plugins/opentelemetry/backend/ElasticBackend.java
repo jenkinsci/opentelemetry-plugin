@@ -251,7 +251,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
 
     @Override
     public int hashCode() {
-        return Objects.hash(displayKibanaDashboardLink, kibanaBaseUrl, kibanaSpaceIdentifier, kibanaDashboardTitle, kibanaDashboardUrlParameters, elasticLogsBackend);
+        return super.generateHashCode(displayKibanaDashboardLink, kibanaBaseUrl, kibanaSpaceIdentifier, kibanaDashboardTitle, kibanaDashboardUrlParameters, elasticLogsBackend);
     }
 
     @Extension

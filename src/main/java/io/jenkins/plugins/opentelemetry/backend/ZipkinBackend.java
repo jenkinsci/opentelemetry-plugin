@@ -108,7 +108,7 @@ public class ZipkinBackend extends ObservabilityBackend {
 
     @Override
     public int hashCode() {
-        return ZipkinBackend.class.hashCode();
+        return super.generateHashCode(ZipkinBackend.class);
     }
 
     @Override

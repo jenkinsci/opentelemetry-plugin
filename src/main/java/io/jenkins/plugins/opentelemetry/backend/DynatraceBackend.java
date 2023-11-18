@@ -154,7 +154,7 @@ public class DynatraceBackend extends ObservabilityBackend {
 
     @Override
     public int hashCode() {
-        return Objects.hash(url);
+        return super.generateHashCode(url);
     }
 
     @Override
