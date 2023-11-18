@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ElasticsearchRetrieverTest {
 
     @ClassRule
-    public static ElasticsearchContainer environment = new ElasticsearchContainer();
+    public static ElasticStack environment = new ElasticStack();
 
     @BeforeClass
     public static void requiresDocker() {

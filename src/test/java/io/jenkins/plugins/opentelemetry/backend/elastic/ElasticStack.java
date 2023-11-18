@@ -8,7 +8,11 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import hudson.ExtensionList;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend.TemplateBindings;
+import jenkins.model.GlobalConfiguration;
 
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -17,6 +21,11 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
+
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
@@ -25,12 +34,13 @@ import static junit.framework.TestCase.assertFalse;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 
 /**
- * Elasticsearch container used on the tests.
+ * Elastic Stack containers used on the tests.
  */
-public class ElasticsearchContainer extends DockerComposeContainer<ElasticsearchContainer> {
+public class ElasticStack extends DockerComposeContainer<ElasticStack> {
     public static final String USER_NAME = "admin";
     public static final String PASSWORD = "changeme";
     public static final String INDEX = "logs-001";
@@ -40,11 +50,20 @@ public class ElasticsearchContainer extends DockerComposeContainer<Elasticsearch
     public static final int KIBANA_PORT = 5601;
     public static final int ELASTICSEARCH_PORT = 9200;
 
-    public ElasticsearchContainer() {
+    public static final String WRONG_CREDS = "wrongCreds";
+    public static final String CRED_ID = "credID";
+    
+    private ElasticLogsBackendWithJenkinsVisualization elasticStackConfiguration;
+    private ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl descriptor;
+    private ElasticBackend elasticBackendConfiguration;
+    private ElasticBackend.DescriptorImpl descriptorBackend;
+
+    public ElasticStack() {
         super(new File("src/test/resources/docker-compose.yml"));
         withExposedService("fleet-server_1", OTEL_PORT)
                 .withExposedService("kibana_1", KIBANA_PORT)
-                .withExposedService("elasticsearch_1", ELASTICSEARCH_PORT);
+                .withExposedService("elasticsearch_1", ELASTICSEARCH_PORT)
+                .withStartupTimeout(Duration.ofMinutes(10));
     }
 
     /**
@@ -108,5 +127,38 @@ public class ElasticsearchContainer extends DockerComposeContainer<Elasticsearch
         }
         BulkResponse result = client.bulk(br.build());
         assertFalse(result.errors());
+    }
+
+    public void configureElasticBackEnd() {
+        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+        //TODO set configuration
+        elasticBackendConfiguration = ExtensionList.lookupSingleton(ElasticBackend.class);
+        descriptorBackend = ((ElasticBackend.DescriptorImpl) elasticBackendConfiguration.getDescriptor());
+        elasticStackConfiguration = ExtensionList.lookupSingleton(ElasticLogsBackendWithJenkinsVisualization.class);
+        descriptor = ((ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) elasticStackConfiguration.getDescriptor());
+        SystemCredentialsProvider.getInstance().getCredentials().add(
+            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, CRED_ID, "", ElasticStack.USER_NAME,
+                ElasticStack.PASSWORD
+            ));
+        SystemCredentialsProvider.getInstance().getCredentials().add(
+            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, WRONG_CREDS, "", "foo", "bar"));
+        elasticStackConfiguration.setElasticsearchCredentialsId(CRED_ID);
+        elasticStackConfiguration.setElasticsearchUrl(getEsUrl());
+    }
+
+        public ElasticLogsBackendWithJenkinsVisualization getElasticStackConfiguration() {
+        return elasticStackConfiguration;
+    }
+
+    public ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl getDescriptor() {
+        return descriptor;
+    }
+
+    public ElasticBackend getElasticBackendConfiguration() {
+        return elasticBackendConfiguration;
+    }
+
+    public ElasticBackend.DescriptorImpl getDescriptorBackend() {
+        return descriptorBackend;
     }
 }
