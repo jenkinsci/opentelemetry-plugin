@@ -231,7 +231,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
      * Example of a successful check:
      * <pre>{@code
      * OK: Verify existence of the Elasticsearch Index Template 'logs-apm.app' used to store Jenkins pipeline logs...
-     * OK: Connected to Elasticsearch https://***.europe-west1.gcp.cloud.es.io:9243 with user 'jenkins'.
+     * OK: Connected to Elasticsearch https://***.es.example.com with user 'jenkins'.
      * OK: Index Template 'logs-apm.app' found.
      * OK: Verify existence of the Index Lifecycle Management (ILM) Policy 'logs-apm.app' associated with the Index Template 'logs-apm.app' to define the time to live of the Jenkins pipeline logs in Elasticsearch...
      * OK: Index Lifecycle Policy 'logs-apm.app_logs-default_policy' found.

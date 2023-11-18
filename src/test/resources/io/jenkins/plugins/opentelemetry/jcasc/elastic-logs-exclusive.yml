@@ -4,5 +4,5 @@ unclassified:
     observabilityBackends:
       - elastic:
           name: "My Elastic"
-          kibanaBaseUrl: "https://kibana.europe-west1.gcp.cloud.es.io:9243"
+          kibanaBaseUrl: "https://kibana.es.example.com"
           elasticLogsBackend: "elasticLogsBackendWithoutJenkinsVisualization"

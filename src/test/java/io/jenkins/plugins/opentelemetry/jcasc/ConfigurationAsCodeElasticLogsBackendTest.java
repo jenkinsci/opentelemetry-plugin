@@ -42,12 +42,12 @@ public class ConfigurationAsCodeElasticLogsBackendTest {
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
 
         ElasticBackend elastic = (ElasticBackend) configuration.getObservabilityBackends().get(0);
-        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://kibana.europe-west1.gcp.cloud.es.io:9243"));
+        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://kibana.es.example.com"));
         MatcherAssert.assertThat(elastic.getName(), CoreMatchers.is("My Elastic"));
 
         ElasticLogsBackendWithJenkinsVisualization elasticLogsBackend = (ElasticLogsBackendWithJenkinsVisualization) elastic.getElasticLogsBackend();
         MatcherAssert.assertThat(elasticLogsBackend.getElasticsearchCredentialsId(), CoreMatchers.is("elasticsearch-logs-creds"));
-        MatcherAssert.assertThat(elasticLogsBackend.getElasticsearchUrl(), CoreMatchers.is("https://es.europe-west1.gcp.cloud.es.io:9243"));
+        MatcherAssert.assertThat(elasticLogsBackend.getElasticsearchUrl(), CoreMatchers.is("https://es.es.example.com"));
 
         OtlpAuthentication authentication = configuration.getAuthentication();
         MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
