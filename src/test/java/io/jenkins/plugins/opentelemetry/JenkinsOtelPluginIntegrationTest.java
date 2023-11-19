@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry;
 
 import com.github.rutledgepaulv.prune.Tree;
 import com.google.common.collect.Iterables;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Functions;
 import hudson.model.Node;
 import hudson.model.Result;
@@ -19,7 +20,6 @@ import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
-import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterUtils;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
@@ -31,13 +31,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.HashMap;
 
 import static org.junit.Assume.assumeFalse;
 
@@ -108,7 +108,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         openTelemetrySdkProvider.getOpenTelemetrySdk().getSdkMeterProvider().forceFlush();
 
         LOGGER.log(Level.INFO, "InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE: " + InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE);
-        Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
+        Map<String, MetricData> exportedMetrics = getLastExportedMetricByMetricName(InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
         dumpMetrics(exportedMetrics);
         MetricData diskUsageData = exportedMetrics.get(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES);
         MatcherAssert.assertThat(diskUsageData, CoreMatchers.notNullValue());
@@ -116,6 +116,14 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(diskUsageData.getType(), CoreMatchers.is(MetricDataType.LONG_GAUGE));
         Collection<LongPointData> metricPoints = diskUsageData.getLongGaugeData().getPoints();
         MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.notNullValue());
+    }
+
+    private Map<String, MetricData> getLastExportedMetricByMetricName(@NonNull List<MetricData> metrics){
+        Map<String, MetricData> result = new HashMap<>();
+        for(MetricData metricData: metrics) {
+            result.put(metricData.getName(), metricData);
+        }
+        return result;
     }
 
     @Test
