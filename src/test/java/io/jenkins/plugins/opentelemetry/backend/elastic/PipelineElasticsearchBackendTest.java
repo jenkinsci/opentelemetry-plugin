@@ -15,6 +15,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.testcontainers.DockerClientFactory;
 
@@ -23,20 +24,35 @@ import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import java.util.concurrent.TimeUnit;
+import org.junit.rules.Timeout;
 
 public class PipelineElasticsearchBackendTest {
 
     public static final String CRED_ID = "credID";
     @ClassRule
-    @ConfiguredWithCode("/io/jenkins/plugins/opentelemetry/jcasc/configuration-as-code-default.yml")
+    @ConfiguredWithCode("/io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml")
     public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
     @ClassRule
     public static ElasticStack elasticStack = new ElasticStack();
     private ElasticsearchLogStorageRetriever elasticsearchRetriever;
 
+    @Rule
+    public Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
+
     @BeforeClass
     public static void requiresDocker() {
         assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+    }
+
+    @BeforeClass
+    public static void beforeClass() {
+        GlobalOpenTelemetry.resetForTest();
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        GlobalOpenTelemetry.resetForTest();
     }
 
     @Before
@@ -44,7 +60,7 @@ public class PipelineElasticsearchBackendTest {
         elasticStack.configureElasticBackEnd();
     }
 
-    @Test(timeout = 1000000)
+    @Test
     public void test() throws Exception {
         jenkinsRule.createSlave("remote", null, null);
         WorkflowJob p = jenkinsRule.jenkins.createProject(WorkflowJob.class, "p");
@@ -75,15 +91,5 @@ public class PipelineElasticsearchBackendTest {
             }
             Thread.sleep(1000);
         } while (logsLength < 10);
-    }
-
-    @BeforeClass
-    public static void beforeClass() {
-        GlobalOpenTelemetry.resetForTest();
-    }
-
-    @AfterClass
-    public static void afterClass() {
-        GlobalOpenTelemetry.resetForTest();
     }
 }
