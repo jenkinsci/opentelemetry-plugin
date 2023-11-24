@@ -204,15 +204,15 @@ public class BaseIntegrationTest {
     }
 
     protected void assertFreestyleJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
-        assertJobMetadata(build, spans, OtelUtils.FREESTYLE);
+        assertJobMetadata(build, spans, OtelConstantUtils.FREESTYLE);
     }
 
     protected void assertMatrixJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
-        assertJobMetadata(build, spans, OtelUtils.MATRIX);
+        assertJobMetadata(build, spans, OtelConstantUtils.MATRIX);
     }
 
     protected void assertMavenJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
-        assertJobMetadata(build, spans, OtelUtils.MAVEN);
+        assertJobMetadata(build, spans, OtelConstantUtils.MAVEN);
     }
 
     protected void assertNodeMetadata(Tree<SpanDataWrapper> spans, String jobName, boolean withNode) throws Exception {

@@ -34,7 +34,7 @@ import org.jvnet.hudson.test.recipes.WithPlugin;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
+import static io.jenkins.plugins.opentelemetry.OtelConstantUtils.JENKINS_CORE;
 import static org.junit.Assume.assumeFalse;
 
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {

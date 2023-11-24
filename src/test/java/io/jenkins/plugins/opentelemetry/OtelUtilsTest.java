@@ -43,8 +43,8 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(true));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.WORKFLOW));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
+        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelConstantUtils.WORKFLOW));
+        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelConstantUtils.UNKNOWN));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
@@ -61,8 +61,8 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.FREESTYLE));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
+        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelConstantUtils.FREESTYLE));
+        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelConstantUtils.UNKNOWN));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
@@ -84,8 +84,8 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.MATRIX));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
+        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelConstantUtils.MATRIX));
+        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelConstantUtils.UNKNOWN));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
@@ -104,8 +104,8 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(true));
         MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.MAVEN));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
+        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelConstantUtils.MAVEN));
+        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelConstantUtils.UNKNOWN));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
@@ -132,8 +132,8 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(true));
         MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.MULTIBRANCH));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.BRANCH));
+        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelConstantUtils.MULTIBRANCH));
+        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelConstantUtils.BRANCH));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(true));
         MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
@@ -146,8 +146,8 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(OtelUtils.isMaven(null), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranch(null), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isWorkflow(null), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(null), CoreMatchers.is(OtelUtils.UNKNOWN));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(null), CoreMatchers.is(OtelUtils.UNKNOWN));
+        MatcherAssert.assertThat(OtelUtils.getProjectType(null), CoreMatchers.is(OtelConstantUtils.UNKNOWN));
+        MatcherAssert.assertThat(OtelUtils.getMultibranchType(null), CoreMatchers.is(OtelConstantUtils.UNKNOWN));
         MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(null), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(null), CoreMatchers.is(false));
         MatcherAssert.assertThat(OtelUtils.isMultibranchTag(null), CoreMatchers.is(false));

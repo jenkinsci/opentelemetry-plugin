@@ -67,7 +67,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
+import static io.jenkins.plugins.opentelemetry.OtelConstantUtils.UNKNOWN;
 import static io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend.ICONS_PREFIX;
 
 @Extension

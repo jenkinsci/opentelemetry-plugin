@@ -35,7 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.google.common.base.Verify.verifyNotNull;
-import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
+import static io.jenkins.plugins.opentelemetry.OtelConstantUtils.JENKINS_CORE;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES)
 public class MonitoringBuildStepListener extends BuildStepListener implements OtelComponent {
