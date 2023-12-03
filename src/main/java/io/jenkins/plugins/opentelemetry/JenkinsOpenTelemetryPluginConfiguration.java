@@ -103,7 +103,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     /**
      * OTLP endpoint prefixed by "http://" or "https://"
      */
-    private String endpoint = "https://";
+    private String endpoint = "https://127.0.0.1:4317";
 
     private String trustedCertificatesPem;
 
@@ -162,8 +162,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         LOGGER.log(Level.FINE, "Configure...");
         req.bindJSON(this, json);
         // stapler oddity, empty lists coming from the HTTP request are not set on bean by  `req.bindJSON(this, json)`
-        this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, "");
-        this.endpoint = "";
+        this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
+        this.endpoint = sanitizeOtlpEndpoint(this.endpoint);
         initializeOpenTelemetry();
         save();
         LOGGER.log(Level.FINE, "Configured");
