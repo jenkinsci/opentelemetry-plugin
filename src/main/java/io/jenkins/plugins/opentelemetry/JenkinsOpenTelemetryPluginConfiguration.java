@@ -103,7 +103,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     /**
      * OTLP endpoint prefixed by "http://" or "https://"
      */
-    private String endpoint = "https://127.0.0.1:4317";
+    private String endpoint = "http://otel.example.com:4317";
 
     private String trustedCertificatesPem;
 
@@ -262,13 +262,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @CheckForNull
     public String getEndpoint() {
         return sanitizeOtlpEndpoint(this.endpoint);
-    }
-
-    @DataBoundSetter
-    public void setEndpoint(String endpoint) {
-        this.endpoint = sanitizeOtlpEndpoint(endpoint);
-        // debug line used to verify the lifecycle (@Initializer) when using JCasC configuration
-        LOGGER.log(Level.FINE, () -> "setEndpoint(" + endpoint + ")");
     }
 
     @DataBoundSetter

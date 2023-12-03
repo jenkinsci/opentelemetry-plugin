@@ -1,86 +1,14 @@
-<!--<?jelly escape-by-default='true'?>-->
-<!--<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">-->
-<!--    <f:section title="Harness Migration">-->
-<!--            -->
-
-<!--            <f:advanced>-->
-<!--                -->
-<!--            </f:advanced>-->
-<!--    </f:section>-->
-<!--</j:jelly>-->
-
-
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
-<f:section title="OpenTelemetry">
-    <f:entry title="OTLP Endpoint" field="endpoint" description="e.g. 'http://otel.example.com:4317', aka OTEL_EXPORTER_OTLP_ENDPOINT">
-        <f:textbox />
-    </f:entry>
-    <f:entry title="Output directory" field="directory" description="Target directory to output Harness Pipeline yaml">
-        <f:textbox />
-    </f:entry>
-    <f:entry title="Authentication" field="authentication">
-        <j:invokeStatic var="authenticationDescriptors" className="io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication" method="allDescriptors"/>
-        <f:hetero-radio
-            descriptors="${authenticationDescriptors}" field="authentication"/>
-    </f:entry>
-    <f:entry
-        title="Export OpenTelemetry configuration as environment variables"
-        field="exportOtelConfigurationAsEnvironmentVariables">
-        <f:checkbox />
-    </f:entry>
+    <f:section title="Harness Migration">
+            <f:entry title="Output directory" field="directory" description="Target directory to output Harness Pipeline yaml">
+                <f:textbox />
+            </f:entry>
 
-    <f:entry title="Visualisation" description="${instance.observabilityBackends.isEmpty() ? instance.getVisualisationObservabilityBackendsString() : null}">
-        <j:invokeStatic var="backendDescriptors" className="io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend" method="allDescriptors"/>
-        <f:hetero-list
-            name="observabilityBackends"
-            hasHeader="true"
-            descriptors="${backendDescriptors}"
-            items="${descriptor.observabilityBackends}"
-            addCaption="${%Add Visualisation Observability Backend}"
-            deleteCaption="${%Remove}"
-        />
-    </f:entry>
-    <f:advanced>
-        <f:entry title="Output API Endpoint" field="endpoint" description="Placeholder for sending result directly to Harness">
-            <f:textbox />
-        </f:entry>
-        <f:entry title="Service name" field="serviceName" description="e.g. 'my-jenkins.example.com', the Logical name of the service. Aka OTEL_SERVICE_NAME">
-            <f:textbox />
-        </f:entry>
-        <f:entry field="disabledResourceProviders" title="Disabled resource providers" description="Coma separated list of class names. Aka 'OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS'">
-            <f:textbox />
-        </f:entry>
-        <f:entry field="ignoredSteps" title="Steps to be ignored (comma-separated)" description="e.g. 'dir,echo,println'">
-            <f:textbox />
-        </f:entry>
-        <f:entry title="Configuration properties" field="configurationProperties" description="Additional OpenTelemetry SDK configuration properties.">
-            <f:textarea />
-        </f:entry>
-        <f:entry title="Service namespace" field="serviceNamespace" description="e.g. 'ci', a namespace for service name">
-            <f:textbox />
-        </f:entry>
-        <f:entry field="exporterTimeoutMillis" title="Exporter Timeout (ms)" description="e.g. '30000'. Aka OTEL_EXPORTER_OTLP_TIMEOUT">
-            <f:number clazz="required positive number" min="1" default="${exporterTimeoutMillis}"/>
-        </f:entry>
-        <f:entry field="exporterIntervalMillis" title="Metrics Exporter Interval (ms)" description="e.g. '60000'. Aka OTEL_IMR_EXPORT_INTERVAL">
-            <f:number clazz="required positive number" min="1" default="${exporterIntervalMillis}"/>
-        </f:entry>
-        <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format)">
-            <f:textarea />
-        </f:entry>
-        <f:entry title="Noteworthy active configuration properties" description="Noteworthy config properties of the active OpenTelemetry SDK.">
-            <textarea rows="10" cols="100" wrap="off" readonly="readonly" style="overflow:scroll;background-color:lightgrey">
-                ${instance.noteworthyConfigPropertiesAsText}
-            </textarea>
-        </f:entry>
-
-        <f:entry title="Active resource attributes" description="Resource attributes of the active OpenTelemetry SDK. See 'OTEL_RESOURCE_ATTRIBUTES'.">
-            <textarea rows="10" cols="100" wrap="off" readonly="readonly" style="overflow:scroll;background-color:lightgrey">
-                ${instance.resourceAsText}
-            </textarea>
-        </f:entry>
-
-    </f:advanced>
-</f:section>
+            <f:advanced>
+                <f:entry title="Output API Endpoint" field="endpoint" description="Placeholder for sending result directly to Harness">
+                    <f:textbox />
+                </f:entry>
+            </f:advanced>
+    </f:section>
 </j:jelly>

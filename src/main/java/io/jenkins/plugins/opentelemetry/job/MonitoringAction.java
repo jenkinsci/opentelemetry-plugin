@@ -136,7 +136,7 @@ public class MonitoringAction extends AbstractMonitoringAction implements Action
 
         if (tracingCapableBackends.isEmpty()) {
             return Collections.singletonList(new ObservabilityBackendLink(
-                "Please define an OpenTelemetry Visualisation URL of pipelines in Jenkins configuration",
+                "   Please define an OpenTelemetry Visualisation URL of pipelines in Jenkins configuration",
                 Jenkins.get().getRootUrl() + "/configure",
                 "icon-gear2",
                 null));

@@ -18,6 +18,7 @@ import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.tasks.BuildStep;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.action.BuildStepMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
@@ -333,7 +334,7 @@ public class OtelTraceService {
     private void writeToFile(String content, String fileName) {
         fileName = fileName.replaceAll("[^a-zA-Z0-9.-]", "_");
         try {
-            File myObj = new File("/Users/jamie/opentelemetry-plugin/result/trace_" + fileName);
+            File myObj = new File(JenkinsOpenTelemetryPluginConfiguration.get().getDirectory() + fileName);
             if (myObj.createNewFile()) {
                 FileWriter myWriter = new FileWriter(myObj);
                 myWriter.write(content);
