@@ -56,7 +56,7 @@ public class OtelLocaLogMirroringTest {
         verify(openTelemetrySdkProviders.size() == 1, "Number of openTelemetrySdkProviders: %s", openTelemetrySdkProviders.size());
 
         openTelemetrySdkProvider = openTelemetrySdkProviders.get(0);
-        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap()));
+        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(of(""),of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap()));
     }
     @AfterClass
     public static void afterClass() {
@@ -96,7 +96,7 @@ public class OtelLocaLogMirroringTest {
     }
 
     private void reInitProvider(Map<String, String> configuration) {
-        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), configuration));
+        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(of(""),of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), configuration));
     }
 
 

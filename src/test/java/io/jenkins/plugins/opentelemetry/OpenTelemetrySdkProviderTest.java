@@ -44,7 +44,7 @@ public class OpenTelemetrySdkProviderTest {
         configurationProperties.put("jenkins.version", "1.2.3");
         configurationProperties.put("jenkins.url", "https://jenkins.example.com/");
 
-        OpenTelemetryConfiguration openTelemetryConfiguration = new OpenTelemetryConfiguration(
+        OpenTelemetryConfiguration openTelemetryConfiguration = new OpenTelemetryConfiguration(of(""),
             Optional.of("http://localhost:4317/"),
             Optional.empty(),
             Optional.empty(),

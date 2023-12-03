@@ -107,7 +107,7 @@ public class BaseIntegrationTest {
 
         // verify(openTelemetrySdkProvider.openTelemetry == null, "OpenTelemetrySdkProvider has already been configured");
         OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
-        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(
+        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(of(""),
             of("http://localhost:4317"), Optional.empty(),
             Optional.empty(),
             Optional.empty(), Optional.empty(),

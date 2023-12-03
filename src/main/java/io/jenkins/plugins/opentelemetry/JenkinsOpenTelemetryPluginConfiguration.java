@@ -99,10 +99,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
 
+    private String directory = "./";
     /**
      * OTLP endpoint prefixed by "http://" or "https://"
      */
-    private String endpoint;
+    private String endpoint = "https://";
 
     private String trustedCertificatesPem;
 
@@ -161,8 +162,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         LOGGER.log(Level.FINE, "Configure...");
         req.bindJSON(this, json);
         // stapler oddity, empty lists coming from the HTTP request are not set on bean by  `req.bindJSON(this, json)`
-        this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
-        this.endpoint = sanitizeOtlpEndpoint(this.endpoint);
+        this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, "");
+        this.endpoint = "";
         initializeOpenTelemetry();
         save();
         LOGGER.log(Level.FINE, "Configured");
@@ -197,6 +198,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         properties.forEach((k, v) -> configurationProperties.put(Objects.toString(k, "#null#"), Objects.toString(v, "#null#")));
 
         return new OpenTelemetryConfiguration(
+            Optional.ofNullable(this.getDirectory()),
             Optional.ofNullable(this.getEndpoint()),
             Optional.ofNullable(this.getTrustedCertificatesPem()),
             Optional.ofNullable(this.getAuthentication()),
@@ -249,6 +251,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         }
     }
 
+
+    @CheckForNull
+    public String getDirectory() {
+        return this.directory;
+    }
     /**
      * Never empty
      */
@@ -262,6 +269,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.endpoint = sanitizeOtlpEndpoint(endpoint);
         // debug line used to verify the lifecycle (@Initializer) when using JCasC configuration
         LOGGER.log(Level.FINE, () -> "setEndpoint(" + endpoint + ")");
+    }
+
+    @DataBoundSetter
+    public void setDirectory(String directory) {
+        this.directory = directory;
+        // debug line used to verify the lifecycle (@Initializer) when using JCasC configuration
+        LOGGER.log(Level.FINE, () -> "setDirectory(" + directory + ")");
     }
 
     @NonNull

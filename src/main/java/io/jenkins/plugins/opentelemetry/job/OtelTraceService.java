@@ -254,8 +254,7 @@ public class OtelTraceService {
         node.put("attributesMap", map);
         try {
             node.put("parameterMap", mapper.readTree(spanData.getAttributes().asMap().get(AttributeKey.stringKey("harness-attribute")).toString()));
-        } catch (Exception e) {
-            node.put("parameterMap", "null");
+        } catch (Exception ignored) {
         }
         writeToFile(node.toPrettyString(), spanData.getTraceId() + "-" + spanData.getSpanId());
     }
@@ -265,7 +264,13 @@ public class OtelTraceService {
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
         ReadableSpan readableSpan = (ReadableSpan) span;
         SpanData spanData = readableSpan.toSpanData();
-        writeToFile(run.getFullDisplayName() + "," + OtelUtils.toDebugString(span), spanData.getTraceId()+ "-" + spanData.getSpanId());
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.put("name", run.getFullDisplayName());
+        node.put("parentSpanId", spanData.getParentSpanId());
+        node.put("traceId", spanData.getTraceId());
+        node.put("spanName", spanData.getName());
+        node.put("spanId", spanData.getSpanId());
+        writeToFile(node.toPrettyString(), spanData.getTraceId()+ "-" + spanData.getSpanId());
     }
 
     public void putRunPhaseSpan(@NonNull Run run, @NonNull Span span) {
@@ -287,8 +292,7 @@ public class OtelTraceService {
         node.put("attributesMap", map);
         try {
             node.put("parameterMap", mapper.readTree(spanData.getAttributes().asMap().get(AttributeKey.stringKey("harness-attribute")).toString()));
-        } catch (Exception e) {
-            node.put("parameterMap", "null");
+        } catch (Exception ignored) {
         }
         writeToFile(node.toPrettyString(), spanData.getTraceId()+ "-" + spanData.getSpanId());
     }
@@ -315,8 +319,8 @@ public class OtelTraceService {
         node.put("attributesMap", map);
         try {
             node.put("parameterMap", mapper.readTree(spanData.getAttributes().asMap().get(AttributeKey.stringKey("harness-attribute")).toString()));
-        } catch (Exception e) {
-            node.put("parameterMap", "null");
+        } catch (Exception ignored) {
+            
         }
         node.put("all-info", OtelUtils.toDebugString(span));
         writeToFile(node.toPrettyString(), spanData.getTraceId()+ "-" + spanData.getSpanId());

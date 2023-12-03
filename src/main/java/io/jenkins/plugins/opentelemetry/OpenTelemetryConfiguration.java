@@ -28,6 +28,7 @@ public class OpenTelemetryConfiguration {
     @VisibleForTesting
     public static boolean TESTING_INMEMORY_MODE = false;
 
+    private final Optional<String> directory;
     private final Optional<String> endpoint;
     private final Optional<String> trustedCertificatesPem;
     private final Optional<OtlpAuthentication> authentication;
@@ -38,9 +39,10 @@ public class OpenTelemetryConfiguration {
     private final Optional<String> disabledResourceProviders;
     private final Map<String, String> configurationProperties;
 
-    public OpenTelemetryConfiguration(Optional<String> endpoint, Optional<String> trustedCertificatesPem, Optional<OtlpAuthentication> authentication,
+    public OpenTelemetryConfiguration(Optional<String> directory, Optional<String> endpoint, Optional<String> trustedCertificatesPem, Optional<OtlpAuthentication> authentication,
                                       Optional<Integer> exporterTimeoutMillis, Optional<Integer> exporterIntervalMillis,
                                       Optional<String> serviceName, Optional<String> serviceNamespace, Optional<String> disabledResourceProviders, Map<String, String> configurationProperties) {
+        this.directory = directory;
         this.endpoint = endpoint.filter(StringUtils::isNotBlank);
         this.trustedCertificatesPem = trustedCertificatesPem.filter(StringUtils::isNotBlank);
         this.authentication = authentication;
@@ -50,14 +52,11 @@ public class OpenTelemetryConfiguration {
         this.serviceNamespace = serviceNamespace.filter(StringUtils::isNotBlank);
         this.disabledResourceProviders = disabledResourceProviders.filter(StringUtils::isNotBlank);
         this.configurationProperties = configurationProperties;
-
-        this.getEndpoint().ifPresent(ep ->
-            Preconditions.checkArgument(
-                ep.startsWith("http://") ||
-                    ep.startsWith("https://"),
-                "endpoint must be prefixed by 'http://' or 'https://': %s", ep));
     }
 
+    public Optional<String> getDirectory() {
+        return directory;
+    }
     public Optional<String> getEndpoint() {
         return endpoint;
     }
