@@ -191,6 +191,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
     @NonNull
     @Override
     public Map<String, String> getOtelConfigurationProperties() {
+        // FIXME related to https://github.com/jenkinsci/opentelemetry-plugin/issues/683
         if (elasticLogsBackend == null) {
             return Collections.emptyMap();
         } else {

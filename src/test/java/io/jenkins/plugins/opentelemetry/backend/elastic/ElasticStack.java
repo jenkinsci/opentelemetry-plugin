@@ -8,7 +8,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import hudson.ExtensionList;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend.TemplateBindings;
@@ -21,7 +20,6 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.testcontainers.containers.DockerComposeContainer;
-import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
@@ -131,11 +129,17 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
 
     public void configureElasticBackEnd() {
         final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
-        //TODO set configuration
-        elasticBackendConfiguration = ExtensionList.lookupSingleton(ElasticBackend.class);
+        elasticBackendConfiguration = new ElasticBackend();
         descriptorBackend = ((ElasticBackend.DescriptorImpl) elasticBackendConfiguration.getDescriptor());
-        elasticStackConfiguration = ExtensionList.lookupSingleton(ElasticLogsBackendWithJenkinsVisualization.class);
+        elasticStackConfiguration = new ElasticLogsBackendWithJenkinsVisualization();
         descriptor = ((ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) elasticStackConfiguration.getDescriptor());
+
+        elasticBackendConfiguration.setElasticLogsBackend(elasticStackConfiguration);
+        elasticBackendConfiguration.setKibanaBaseUrl(getKibanaUrl());
+
+        configuration.getObservabilityBackends().clear();
+        configuration.getObservabilityBackends().add(elasticBackendConfiguration);
+;
         SystemCredentialsProvider.getInstance().getCredentials().add(
             new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, CRED_ID, "", ElasticStack.USER_NAME,
                 ElasticStack.PASSWORD
