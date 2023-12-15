@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.ilm.Phases;
 import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
+import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.google.errorprone.annotations.MustBeClosed;
@@ -340,19 +341,25 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             return phaseName + " [phase not defined]";
         }
         List<String> retentionPolicySpec = new ArrayList<>();
-        JsonValue actionsAsJson = phase.actions().toJson();
-        JsonObject hotPhaseActions = actionsAsJson.asJsonObject();
-        if (hotPhaseActions.containsKey("rollover")) {
-            JsonObject rollOver = hotPhaseActions.getJsonObject("rollover");
-            String maxSize = rollOver.getString("max_size", "not defined");
-            String maxAge = Optional
-                .ofNullable(rollOver.getString("max_age", null))
-                .map(a -> Time.of(b -> b.time(a))).map(Time::time).orElse("Not defined");
-            retentionPolicySpec.add("rollover[maxAge=" + maxAge + ", maxSize=" + maxSize + "]");
-        }
-        if (hotPhaseActions.containsKey("delete")) {
-            String minAge = phase.minAge().time();
-            retentionPolicySpec.add("delete[min_age=" + minAge + "]");
+        JsonData actions = phase.actions();
+        if (actions != null){
+            JsonValue actionsAsJson = actions.toJson();
+            JsonObject hotPhaseActions = actionsAsJson.asJsonObject();
+            if (hotPhaseActions.containsKey("rollover")) {
+                JsonObject rollOver = hotPhaseActions.getJsonObject("rollover");
+                String maxSize = rollOver.getString("max_size", "not defined");
+                String maxAge = Optional
+                    .ofNullable(rollOver.getString("max_age", null))
+                    .map(a -> Time.of(b -> b.time(a))).map(Time::time).orElse("Not defined");
+                retentionPolicySpec.add("rollover[maxAge=" + maxAge + ", maxSize=" + maxSize + "]");
+            }
+            if (hotPhaseActions.containsKey("delete")) {
+                Time minAge2 = phase.minAge();
+                if(minAge2 != null){
+                    String minAge = minAge2.time();
+                    retentionPolicySpec.add("delete[min_age=" + minAge + "]");
+                }
+            }
         }
         return phaseName + "[" + String.join(",", retentionPolicySpec) + "]";
     }

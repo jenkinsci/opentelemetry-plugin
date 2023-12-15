@@ -114,6 +114,8 @@ public class OpenTelemetryLogToElasticsearchIT {
             for (Hit<ObjectNode> hit : hits) {
 
                 ObjectNode source = hit.source();
+                Assert.assertNull(source);
+                
                 ObjectNode labels = (ObjectNode) source.findValue("labels");
                 ObjectNode numericLabels = (ObjectNode) source.findValue("numeric_labels");
 

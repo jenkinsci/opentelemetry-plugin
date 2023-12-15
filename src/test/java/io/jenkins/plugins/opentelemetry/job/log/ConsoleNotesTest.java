@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import hudson.MarkupText;
 import org.junit.Assert;
 import org.junit.Test;
 

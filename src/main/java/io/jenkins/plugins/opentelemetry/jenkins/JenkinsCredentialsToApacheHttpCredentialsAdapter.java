@@ -44,9 +44,9 @@ public class JenkinsCredentialsToApacheHttpCredentialsAdapter implements Credent
                 throw new CredentialsNotFoundException("No Jenkins credentials defined");
             }
             try {
-                jenkinsUsernamePasswordCredentials = (UsernamePasswordCredentials) CredentialsMatchers.firstOrNull(
+                jenkinsUsernamePasswordCredentials = CredentialsMatchers.firstOrNull(
                     CredentialsProvider.lookupCredentials(UsernamePasswordCredentials.class, Jenkins.get(),
-                        ACL.SYSTEM, Collections.EMPTY_LIST),
+                        ACL.SYSTEM, Collections.emptyList()),
                     CredentialsMatchers.withId(jenkinsCredentialsId));
             } catch (NoSuchElementException e) {
                 throw new CredentialsNotFoundException("No Jenkins credentials found for id '" + jenkinsCredentialsId + "' and expected type 'UsernamePasswordCredentials'");

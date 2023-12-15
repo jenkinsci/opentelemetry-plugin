@@ -5,27 +5,26 @@
 
 package io.jenkins.plugins.opentelemetry.authentication;
 
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import hudson.Extension;
-import hudson.security.ACL;
-import hudson.util.ListBoxModel;
-import hudson.util.Secret;
-import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporterBuilder;
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
-import jenkins.model.Jenkins;
-import org.jenkinsci.Symbol;
-import org.jenkinsci.plugins.plaincredentials.StringCredentials;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+
+import hudson.Extension;
+import hudson.security.ACL;
+import hudson.util.ListBoxModel;
+import hudson.util.Secret;
+import jenkins.model.Jenkins;
 
 @Extension
 public class HeaderAuthentication extends OtlpAuthentication {
@@ -39,9 +38,9 @@ public class HeaderAuthentication extends OtlpAuthentication {
     }
 
     private String getAuthenticationHeaderValue() {
-        StringCredentials credentials = (StringCredentials) CredentialsMatchers.firstOrNull(
+        StringCredentials credentials = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(StringCredentials.class, Jenkins.get(),
-                        ACL.SYSTEM, Collections.EMPTY_LIST),
+                        ACL.SYSTEM, Collections.emptyList()),
                 CredentialsMatchers.withId(this.headerValueId));
         String authenticationTokenValue;
         if (credentials == null) {

@@ -7,32 +7,27 @@ package io.jenkins.plugins.opentelemetry;
 
 import static org.junit.Assume.assumeFalse;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Logger;
+
+import org.apache.commons.lang3.SystemUtils;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
+import org.junit.Test;
+
 import com.github.rutledgepaulv.prune.Tree;
-import hudson.EnvVars;
+
 import hudson.model.Run;
-import hudson.util.LogTaskListener;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
-import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import jenkins.branch.BranchProperty;
 import jenkins.branch.BranchSource;
 import jenkins.branch.DefaultBranchPropertyStrategy;
 import jenkins.plugins.git.GitSCMSource;
-import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.core.StringContains;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
-import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
     private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
