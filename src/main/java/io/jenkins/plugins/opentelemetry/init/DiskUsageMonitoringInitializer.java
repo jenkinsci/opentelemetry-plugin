@@ -53,7 +53,7 @@ public class DiskUsageMonitoringInitializer implements OtelComponent {
         if (this.quickDiskUsagePlugin == null) {
             Jenkins jenkins = Jenkins.get();
             QuickDiskUsagePlugin quickDiskUsagePlugin = jenkins.getPlugin(QuickDiskUsagePlugin.class);
-            if (quickDiskUsagePlugin == null) return 0l;
+            if (quickDiskUsagePlugin == null) return 0L;
             this.quickDiskUsagePlugin = quickDiskUsagePlugin;
         }
         return calculateDiskUsageInBytes(quickDiskUsagePlugin);

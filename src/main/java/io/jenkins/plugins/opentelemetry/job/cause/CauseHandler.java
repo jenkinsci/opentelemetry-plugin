@@ -12,7 +12,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface CauseHandler extends Comparable<CauseHandler> {
 
-    default void configure(ConfigProperties config){};
+    default void configure(ConfigProperties config){}
 
     boolean isSupported(@NonNull Cause cause);
 

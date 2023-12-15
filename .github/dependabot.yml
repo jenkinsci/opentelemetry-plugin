@@ -6,3 +6,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      otel-dependencies:
+        patterns:
+            - "io.opentelemetry*"
+            - "opentelemetry*"

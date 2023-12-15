@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.backend.elastic;
+package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
@@ -14,9 +13,9 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import java.util.Collections;
 import java.util.Map;
 
-public class NoElasticLogsBackend extends ElasticLogsBackend {
+public class NoGrafanaLogsBackend extends GrafanaLogsBackend {
     @DataBoundConstructor
-    public NoElasticLogsBackend() {
+    public NoGrafanaLogsBackend() {
     }
 
     @Override
@@ -36,15 +35,14 @@ public class NoElasticLogsBackend extends ElasticLogsBackend {
 
     @Override
     public int hashCode() {
-        return NoElasticLogsBackend.class.hashCode();
+        return NoGrafanaLogsBackend.class.hashCode();
     }
 
     @Extension(ordinal = 100)
-    public static class DescriptorImpl extends ElasticLogsBackend.DescriptorImpl {
-        @NonNull
+    public static class DescriptorImpl extends GrafanaLogsBackend.DescriptorImpl {
         @Override
         public String getDisplayName() {
-            return "Don't store pipeline logs in Elastic";
+            return "Don't store pipeline logs in Loki";
         }
     }
 }

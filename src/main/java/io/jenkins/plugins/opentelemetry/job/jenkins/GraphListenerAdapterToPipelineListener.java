@@ -45,6 +45,11 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
     @Override
     public final void onNewHead(FlowNode node) {
         WorkflowRun run = PipelineNodeUtil.getWorkflowRun(node);
+        processPreviousNodes(node, run);
+        processCurrentNode(node, run);
+    }
+
+    private void processPreviousNodes(FlowNode node, WorkflowRun run) {
         log(Level.FINE, () -> run.getFullDisplayName() + " - onNewHead - Process " + PipelineNodeUtil.getDetailedDebugString(node));
         for (FlowNode previousNode : node.getParents()) {
             log(Level.FINE, () -> run.getFullDisplayName() + " - Process previous node " + PipelineNodeUtil.getDetailedDebugString(previousNode) + " of node " + PipelineNodeUtil.getDetailedDebugString(node));
@@ -66,7 +71,9 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
                 log(Level.FINE, () -> "Ignore previous node " + PipelineNodeUtil.getDetailedDebugString(previousNode));
             }
         }
+    }
 
+    private void processCurrentNode(FlowNode node, WorkflowRun run) {
         if (node instanceof FlowStartNode) {
             fireOnStartPipeline((FlowStartNode) node, run);
         } else if (node instanceof FlowEndNode) {
@@ -185,7 +192,7 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
 
     public void fireOnAfterEndNodeStep(@NonNull StepEndNode node, @NonNull String nodeName, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
-            log(() -> "onAfterEndNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError().toString()) : ""));
+            log(() -> "onAfterEndNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError()) : ""));
             try {
                 pipelineListener.onEndNodeStep(node, nodeName, run);
             } catch (RuntimeException e) {
@@ -196,7 +203,7 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
 
     public void fireOnAfterEndStageStep(@NonNull StepEndNode node, @NonNull String stageName, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
-            log(() -> "onAfterEndStageStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError().toString()) : ""));
+            log(() -> "onAfterEndStageStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError()) : ""));
             try {
                 pipelineListener.onEndStageStep(node, stageName, run);
             } catch (RuntimeException e) {

@@ -112,7 +112,7 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
                         ACL.SYSTEM,
                         Jenkins.get(),
                         StringCredentials.class,
-                        Collections.<DomainRequirement>emptyList(),
+                        Collections.emptyList(),
                         CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StringCredentials.class)))
                 .includeCurrentValue(tokenId);
     }
@@ -135,7 +135,7 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
                             ACL.SYSTEM,
                             Jenkins.get(),
                             StringCredentials.class,
-                            Collections.<DomainRequirement>emptyList(),
+                            Collections.emptyList(),
                             CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StringCredentials.class)));
         }
     }

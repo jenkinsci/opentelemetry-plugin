@@ -32,16 +32,16 @@ public class ConsoleNotes {
 
     public static TextAndAnnotations parse(byte[] bytes, int len) {
         assert len > 0 && len <= bytes.length;
-        int eol = len;
-        while (eol > 0) {
-            byte c = bytes[eol - 1];
-            if (c == '\n' || c == '\r') {
-                eol--;
+        int endOfLine = len;
+        while (endOfLine > 0) {
+            byte character = bytes[endOfLine - 1];
+            if (character == '\n' || character == '\r') {
+                endOfLine--;
             } else {
                 break;
             }
         }
-        String line = new String(bytes, 0, eol, StandardCharsets.UTF_8);
+        String line = new String(bytes, 0, endOfLine, StandardCharsets.UTF_8);
         // Would be more efficient to do searches at the byte[] level, but too much bother for now,
         // especially since there is no standard library method to do offset searches like String has.
         if (!line.contains(ConsoleNote.PREAMBLE_STR)) {

@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.backend;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.util.FormValidation;
 import org.jenkins.ui.icon.Icon;
@@ -14,11 +16,9 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class JaegerBackend extends ObservabilityBackend {
@@ -113,24 +113,23 @@ public class JaegerBackend extends ObservabilityBackend {
     }
 
     @Override
-    public Map<String, String> getBindings() {
-        Map<String, String> bindings = new LinkedHashMap<>();
-        bindings.put(ElasticBackend.TemplateBindings.BACKEND_NAME, getName());
-        bindings.put(ElasticBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/jaeger.png");
-
-        return bindings;
+    public Map<String, Object> getBindings() {
+        return Map.of(
+            ObservabilityBackend.TemplateBindings.BACKEND_NAME, getName(),
+            ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/jaeger.png");
     }
 
     @Extension
     @Symbol("jaeger")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
+        @NonNull
         @Override
         public String getDisplayName() {
             return DEFAULT_NAME;
         }
 
         public FormValidation doCheckJaegerBaseUrl(@QueryParameter String jaegerBaseUrl) {
-            if (jaegerBaseUrl == null | jaegerBaseUrl.isEmpty()) {
+            if (jaegerBaseUrl == null || jaegerBaseUrl.isEmpty()) {
                 return FormValidation.ok();
             }
             try {

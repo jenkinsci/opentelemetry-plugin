@@ -75,7 +75,7 @@ public final class ExtendedGitSampleRepoRule extends AbstractSampleDVCSRepoRule 
         git("commit", "--message=init");
     }
 
-    public final boolean mkdirs(String rel) throws IOException {
+    public boolean mkdirs(String rel) throws IOException {
         return new File(this.sampleRepo, rel).mkdirs();
     }
 

@@ -38,10 +38,7 @@ public class NoAuthentication extends OtlpAuthentication {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof NoAuthentication)) {
-            return false;
-        }
-        return true;
+        return o instanceof NoAuthentication;
     }
 
     @Override

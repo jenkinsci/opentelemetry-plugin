@@ -6,11 +6,13 @@
 package io.jenkins.plugins.opentelemetry.backend;
 
 import com.google.errorprone.annotations.MustBeClosed;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
-import io.jenkins.plugins.opentelemetry.backend.elastic.NoElasticLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import org.apache.commons.lang.StringUtils;
 import org.jenkins.ui.icon.Icon;
@@ -20,9 +22,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -32,7 +31,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ElasticBackend extends ObservabilityBackend implements TemplateBindingsProvider {
@@ -97,8 +95,8 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
     }
 
     @Override
-    public Map<String, String> getBindings() {
-        Map<String, String> bindings = new LinkedHashMap<>();
+    public Map<String, Object> getBindings() {
+        Map<String, Object> bindings = new LinkedHashMap<>();
         bindings.put(TemplateBindings.BACKEND_NAME, getName());
         bindings.put(TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/elastic.png");
 
@@ -121,6 +119,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
             "&transactionId=${spanId}";
     }
 
+    @CheckForNull
     public String getKibanaBaseUrl() {
         if (kibanaBaseUrl != null && kibanaBaseUrl.endsWith("/")) {
             kibanaBaseUrl = kibanaBaseUrl.substring(0, kibanaBaseUrl.length()-1);
@@ -158,22 +157,15 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
             return null;
         }
         // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
-        try {
-            String kibanaSpaceBaseUrl;
-            if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
-                kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
-            } else {
-                kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8.name());
-            }
-            return kibanaSpaceBaseUrl + "/app/kibana#/dashboards?" +
-                "title=" + URLEncoder.encode(getKibanaDashboardTitle(), StandardCharsets.UTF_8.name()) + "&" +
-                "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
-        } catch (UnsupportedEncodingException e) {
-            LOGGER.log(Level.INFO,
-                "Exception formatting Kibana URL with kibanaSpaceIdentifier=" + getKibanaSpaceIdentifier() +
-                    ", kibanaDashboardName=" + getKibanaDashboardTitle() + ": " + e);
-            return null;
+        String kibanaSpaceBaseUrl;
+        if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
+            kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
+        } else {
+            kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8);
         }
+        return kibanaSpaceBaseUrl + "/app/kibana#/dashboards?" +
+            "title=" + URLEncoder.encode(getKibanaDashboardTitle(), StandardCharsets.UTF_8) + "&" +
+            "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
     }
 
     public ElasticLogsBackend getElasticLogsBackend() {
@@ -196,6 +188,8 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
         }
     }
 
+    @NonNull
+    @Override
     public Map<String, String> getOtelConfigurationProperties() {
         if (elasticLogsBackend == null) {
             return Collections.emptyMap();
@@ -204,6 +198,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
         }
     }
 
+    @NonNull
     public String getKibanaSpaceIdentifier() {
         return Objects.toString(kibanaSpaceIdentifier, DEFAULT_KIBANA_SPACE_IDENTIFIER);
     }
@@ -213,6 +208,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
         this.kibanaSpaceIdentifier = kibanaSpaceIdentifier;
     }
 
+    @NonNull
     public String getKibanaDashboardTitle() {
         return Objects.toString(kibanaDashboardTitle, DEFAULT_KIBANA_DASHBOARD_TITLE);
     }
@@ -262,6 +258,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
     @Symbol("elastic")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return DEFAULT_BACKEND_NAME;
