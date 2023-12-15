@@ -1,0 +1,31 @@
+unclassified:
+  openTelemetry:
+    authentication: "noAuthentication"
+    endpoint: "http://fleet-server:8200"
+    exportOtelConfigurationAsEnvironmentVariables: true
+    ignoredSteps: "dir,echo,isUnix,pwd,properties"
+    observabilityBackends:
+    - elastic:
+        elasticLogsBackend:
+          elasticLogsBackendWithJenkinsVisualization:
+            elasticsearchCredentialsId: "credID"
+            elasticsearchUrl: "http://elasticsearch:9200"
+        kibanaBaseUrl: "http://kibana:5601"
+    serviceName: "jenkins"
+    serviceNamespace: "jenkins"
+
+## Credentials for the git username lookup Integration Tests
+credentials:
+  system:
+    domainCredentials:
+    - credentials:
+      - usernamePassword:
+          id: "credID"
+          password: "changeme"
+          scope: GLOBAL
+          username: "admin"
+      - usernamePassword:
+          id: "wrongCreds"
+          password: "bar"
+          scope: GLOBAL
+          username: "foo"

@@ -21,10 +21,6 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.testcontainers.containers.DockerComposeContainer;
 
-import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 
@@ -50,11 +46,9 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
 
     public static final String WRONG_CREDS = "wrongCreds";
     public static final String CRED_ID = "credID";
-    
+
     private ElasticLogsBackendWithJenkinsVisualization elasticStackConfiguration;
-    private ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl descriptor;
     private ElasticBackend elasticBackendConfiguration;
-    private ElasticBackend.DescriptorImpl descriptorBackend;
 
     public ElasticStack() {
         super(new File("src/test/resources/docker-compose.yml"));
@@ -128,41 +122,22 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
     }
 
     public void configureElasticBackEnd() {
-        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
-        elasticBackendConfiguration = new ElasticBackend();
-        descriptorBackend = ((ElasticBackend.DescriptorImpl) elasticBackendConfiguration.getDescriptor());
-        elasticStackConfiguration = new ElasticLogsBackendWithJenkinsVisualization();
-        descriptor = ((ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) elasticStackConfiguration.getDescriptor());
+        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all()
+                .get(JenkinsOpenTelemetryPluginConfiguration.class);
+        elasticBackendConfiguration = (ElasticBackend) configuration.getObservabilityBackends().get(0);
+        elasticStackConfiguration = ((ElasticLogsBackendWithJenkinsVisualization) elasticBackendConfiguration
+                .getElasticLogsBackend());
 
-        elasticBackendConfiguration.setElasticLogsBackend(elasticStackConfiguration);
+        configuration.setEndpoint(getFleetUrl());
         elasticBackendConfiguration.setKibanaBaseUrl(getKibanaUrl());
-
-        configuration.getObservabilityBackends().clear();
-        configuration.getObservabilityBackends().add(elasticBackendConfiguration);
-;
-        SystemCredentialsProvider.getInstance().getCredentials().add(
-            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, CRED_ID, "", ElasticStack.USER_NAME,
-                ElasticStack.PASSWORD
-            ));
-        SystemCredentialsProvider.getInstance().getCredentials().add(
-            new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, WRONG_CREDS, "", "foo", "bar"));
-        elasticStackConfiguration.setElasticsearchCredentialsId(CRED_ID);
         elasticStackConfiguration.setElasticsearchUrl(getEsUrl());
     }
 
-        public ElasticLogsBackendWithJenkinsVisualization getElasticStackConfiguration() {
+    public ElasticLogsBackendWithJenkinsVisualization getElasticStackConfiguration() {
         return elasticStackConfiguration;
-    }
-
-    public ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl getDescriptor() {
-        return descriptor;
     }
 
     public ElasticBackend getElasticBackendConfiguration() {
         return elasticBackendConfiguration;
-    }
-
-    public ElasticBackend.DescriptorImpl getDescriptorBackend() {
-        return descriptorBackend;
     }
 }

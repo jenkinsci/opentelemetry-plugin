@@ -31,7 +31,7 @@ public class PipelineElasticsearchBackendTest {
 
     public static final String CRED_ID = "credID";
     @ClassRule
-    @ConfiguredWithCode("/io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml")
+    @ConfiguredWithCode("jcasc-elastic-backend.yml")
     public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
     @ClassRule
     public static ElasticStack elasticStack = new ElasticStack();

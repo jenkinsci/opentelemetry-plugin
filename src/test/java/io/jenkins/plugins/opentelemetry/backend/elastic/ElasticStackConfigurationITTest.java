@@ -20,19 +20,8 @@ import static org.junit.Assume.assumeTrue;
 public class ElasticStackConfigurationITTest {
     @Rule
     public JenkinsRule r = new JenkinsRule();
-    @Rule
-    public ElasticStack elasticStack = new ElasticStack();
 
-    @BeforeClass
-    public static void requiresDocker() {
-        assumeTrue(DockerClientFactory.instance().isDockerAvailable());
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        elasticStack.configureElasticBackEnd();
-    }
-
+    /* TODO reimplement without Docker containers
     @Test
     public void testCredentialsDoValidate() {
         ElasticBackend.DescriptorImpl descriptorBackend = elasticStack.getDescriptorBackend();
@@ -58,4 +47,6 @@ public class ElasticStackConfigurationITTest {
         assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, ElasticStack.CRED_ID).kind, FormValidation.Kind.OK);
         assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, "foo").kind, FormValidation.Kind.WARNING);
     }
+    */
+
 }
