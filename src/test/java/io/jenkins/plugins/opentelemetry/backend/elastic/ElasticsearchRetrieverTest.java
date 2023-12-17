@@ -15,6 +15,8 @@ import org.testcontainers.containers.DockerComposeContainer;
 
 import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import io.jenkins.plugins.opentelemetry.rules.CheckIsDockerAvailable;
+import io.jenkins.plugins.opentelemetry.rules.CheckIsLinuxOrMac;
 
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.auth.Credentials;
@@ -29,15 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Test the class to retrieve the logs from Elasticsearch.
  */
 
-public class ElasticsearchRetrieverTest {
-
-    @ClassRule
-    public static ElasticStack environment = new ElasticStack();
-
-    @BeforeClass
-    public static void requiresDocker() {
-       assumeTrue(DockerClientFactory.instance().isDockerAvailable());
-    }
+public class ElasticsearchRetrieverTest extends ElasticStackIT{
 
     @Test
     public void testRetrieve() throws IOException {

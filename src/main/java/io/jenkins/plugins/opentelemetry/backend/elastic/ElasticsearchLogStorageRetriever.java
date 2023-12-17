@@ -249,8 +249,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             return validations;
         }
 
-
-        // TODO remove workaround https://github.com/jenkinsci/opentelemetry-plugin/issues/336
         // we just check the existence of the Index Template and assume the Index Lifecycle Policy is "logs-apm.app_logs-default_policy"
 
         validations.add(FormValidation.ok("Verify existence of the Elasticsearch Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' used to store Jenkins pipeline logs..."));

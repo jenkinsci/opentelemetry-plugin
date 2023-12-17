@@ -31,7 +31,6 @@ import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;

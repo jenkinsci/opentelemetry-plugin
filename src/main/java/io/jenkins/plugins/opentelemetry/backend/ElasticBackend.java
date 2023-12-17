@@ -23,6 +23,8 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -282,8 +284,8 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
                 return FormValidation.ok();
             }
             try {
-                new URL(kibanaBaseUrl);
-            } catch (MalformedURLException e) {
+                new URI(kibanaBaseUrl).toURL();
+            } catch (URISyntaxException | MalformedURLException e) {
                 return FormValidation.error("Invalid URL: " + e.getMessage());
             }
             return FormValidation.ok();

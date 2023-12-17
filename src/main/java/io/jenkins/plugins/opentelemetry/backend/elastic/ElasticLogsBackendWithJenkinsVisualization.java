@@ -165,7 +165,6 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             }
 
             Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
-            // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check the proper configuration of the access to Elasticsearch
             try (ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
                     disableSslVerifications,

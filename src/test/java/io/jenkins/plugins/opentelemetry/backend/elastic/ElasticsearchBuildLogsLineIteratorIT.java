@@ -10,6 +10,8 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.google.common.io.ByteStreams;
 import io.jenkins.plugins.opentelemetry.job.log.util.LineIteratorInputStream;
+import io.jenkins.plugins.opentelemetry.rules.CheckIsDockerAvailable;
+import io.jenkins.plugins.opentelemetry.rules.CheckIsLinuxOrMac;
 import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
 import io.opentelemetry.api.trace.TracerProvider;
 import org.apache.http.HttpHost;
@@ -19,6 +21,7 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,7 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-public class ElasticsearchBuildLogsLineIteratorIT {
+public class ElasticsearchBuildLogsLineIteratorIT extends ElasticStackIT{
 
     @Test
     public void testElasticsearchLogsSearchIterator() throws IOException {

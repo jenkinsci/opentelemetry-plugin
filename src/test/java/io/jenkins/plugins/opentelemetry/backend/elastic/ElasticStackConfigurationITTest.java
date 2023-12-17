@@ -4,49 +4,76 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import hudson.util.FormValidation;
-import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.JenkinsRule;
-import org.testcontainers.DockerClientFactory;
-
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeTrue;
+
+import java.util.concurrent.TimeUnit;
+
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import hudson.util.FormValidation;
+import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
+import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend.DescriptorImpl;
+import io.jenkins.plugins.opentelemetry.rules.CheckIsDockerAvailable;
+import io.jenkins.plugins.opentelemetry.rules.CheckIsLinuxOrMac;
+import jenkins.model.GlobalConfiguration;
 
 public class ElasticStackConfigurationITTest {
-    @Rule
-    public JenkinsRule r = new JenkinsRule();
+    @ClassRule
+    @ConfiguredWithCode("jcasc-elastic-backend.yml")
+    public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
+    
+    @ClassRule
+    public static Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
+    
+    @ClassRule
+    public static CheckIsLinuxOrMac isLinuxOrMac = new CheckIsLinuxOrMac();
+    
+    @ClassRule
+    public static CheckIsDockerAvailable isDockerAvailable = new CheckIsDockerAvailable();
+    
+    public ElasticStack elasticsearch;
+    private ElasticBackend.DescriptorImpl descriptorBackend;
+    private ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl descriptorVisualization;
 
-    /* TODO reimplement without Docker containers
+    @Before
+    public void setUp() throws Exception {
+        elasticsearch = new ElasticStack();
+        elasticsearch.start();
+        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all()
+                .get(JenkinsOpenTelemetryPluginConfiguration.class);
+        ElasticBackend elasticBackendConfiguration = (ElasticBackend) configuration.getObservabilityBackends().get(0);
+        ElasticLogsBackendWithJenkinsVisualization elasticStackConfiguration = ((ElasticLogsBackendWithJenkinsVisualization) elasticBackendConfiguration
+                .getElasticLogsBackend());
+        descriptorBackend = (DescriptorImpl) elasticBackendConfiguration.getDescriptor();
+        descriptorVisualization = (io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) elasticStackConfiguration
+                .getDescriptor();
+    }
+
     @Test
     public void testCredentialsDoValidate() {
-        ElasticBackend.DescriptorImpl descriptorBackend = elasticStack.getDescriptorBackend();
-        ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl descriptor = elasticStack.getDescriptor();
+        assertEquals(FormValidation.Kind.OK, descriptorBackend.doCheckKibanaBaseUrl("http://kibana.example.com").kind);
+        assertEquals(FormValidation.Kind.OK, descriptorVisualization.doValidate(elasticsearch.getEsUrl(), true, ElasticStack.CRED_ID).kind);
 
-        assertEquals(descriptorBackend.doCheckKibanaBaseUrl(elasticStack.getKibanaUrl()).kind, FormValidation.Kind.OK);
-        assertEquals(descriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.CRED_ID).kind, FormValidation.Kind.OK);
-
-        assertEquals(descriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.WRONG_CREDS).kind,
-                FormValidation.Kind.ERROR);
-        assertEquals(descriptor.doValidate("nowhere", true, ElasticStack.CRED_ID).kind, FormValidation.Kind.ERROR);
+        assertEquals(FormValidation.Kind.ERROR, descriptorVisualization.doValidate(elasticsearch.getEsUrl(), true, ElasticStack.WRONG_CREDS).kind);
+        assertEquals(FormValidation.Kind.ERROR, descriptorVisualization.doValidate("nowhere", true, ElasticStack.CRED_ID).kind);
     }
 
     @Test
     public void testDoFillCredentialsIdItems() {
-        ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl descriptor = elasticStack.getDescriptor();
-        assertFalse(descriptor.doFillElasticsearchCredentialsIdItems(null, ElasticStack.CRED_ID).isEmpty());
+        assertFalse(descriptorVisualization.doFillElasticsearchCredentialsIdItems(null, ElasticStack.CRED_ID).isEmpty());
     }
 
     @Test
     public void testDoCheckCredentialsId() {
-        ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl descriptor = elasticStack.getDescriptor();
-        assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, ElasticStack.CRED_ID).kind, FormValidation.Kind.OK);
-        assertEquals(descriptor.doCheckElasticsearchCredentialsId(null, "foo").kind, FormValidation.Kind.WARNING);
+        assertEquals(FormValidation.Kind.OK, descriptorVisualization.doCheckElasticsearchCredentialsId(null, ElasticStack.CRED_ID).kind);
+        assertEquals(FormValidation.Kind.ERROR, descriptorVisualization.doCheckElasticsearchCredentialsId(null, "foo").kind);
     }
-    */
-
 }

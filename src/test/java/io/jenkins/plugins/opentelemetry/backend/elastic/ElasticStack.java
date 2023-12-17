@@ -4,14 +4,12 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
-import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
-import io.jenkins.plugins.opentelemetry.backend.ElasticBackend.TemplateBindings;
-import jenkins.model.GlobalConfiguration;
+import static junit.framework.TestCase.assertFalse;
+
+import java.io.File;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Map;
 
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
@@ -21,15 +19,16 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.testcontainers.containers.DockerComposeContainer;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
-
-import static junit.framework.TestCase.assertFalse;
-
-import java.io.File;
-import java.io.IOException;
-import java.time.Duration;
-import java.util.Map;
+import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend.TemplateBindings;
+import jenkins.model.GlobalConfiguration;
 
 /**
  * Elastic Stack containers used on the tests.
@@ -77,21 +76,24 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
      * @return The URL to access to the Elasticsearch Docker container.
      */
     public String getEsUrl() {
-        return "http://" + this.getServiceHost("elasticsearch_1", ELASTICSEARCH_PORT);
+        return "http://" + this.getServiceHost("elasticsearch_1", ELASTICSEARCH_PORT) + ":" + this
+                .getServicePort("elasticsearch_1", ELASTICSEARCH_PORT);
     }
 
     /**
      * @return The URL to access to the Kibana Docker container.
      */
     public String getKibanaUrl() {
-        return "http://" + this.getServiceHost("kibana_1", KIBANA_PORT);
+        return "http://" + this.getServiceHost("kibana_1", KIBANA_PORT) + ":" + this
+                .getServicePort("kibana_1", KIBANA_PORT);
     }
 
     /**
      * @return The URL to access to the OpenTelemetry Docker container.
      */
     public String getFleetUrl() {
-        return "http://" + this.getServiceHost("fleet-server_1", OTEL_PORT);
+        return "http://" + this.getServiceHost("fleet-server_1", OTEL_PORT) + ":" + this
+                .getServicePort("fleet-server_1", OTEL_PORT);
     }
 
     /**

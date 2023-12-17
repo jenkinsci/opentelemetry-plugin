@@ -22,12 +22,16 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
+import io.jenkins.plugins.opentelemetry.rules.CheckIsDockerAvailable;
+import io.jenkins.plugins.opentelemetry.rules.CheckIsLinuxOrMac;
+
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -41,7 +45,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-public class ElasticsearchRetrieverIT {
+public class ElasticsearchRetrieverIT extends ElasticStackIT{
 
     @Test
     public void testIndexExist() throws IOException {
@@ -103,7 +107,7 @@ public class ElasticsearchRetrieverIT {
         }
     }
 
-    @Ignore("Wait for https://github.com/jenkinsci/opentelemetry-plugin/issues/336")
+    //@Ignore("Wait for https://github.com/jenkinsci/opentelemetry-plugin/issues/336")
     @Test
     public void testGetIndexTemplate() throws IOException {
         InputStream envAsStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
