@@ -1,5 +1,6 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.console.AnnotatedLargeText;
 import hudson.model.BuildListener;
@@ -11,6 +12,8 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeBuildListener;
+import io.jenkins.plugins.opentelemetry.job.log.util.TeeOutputStreamBuildListener;
+import io.jenkins.plugins.opentelemetry.job.log.util.TeeOutputStreamTaskListener;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeTaskListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
@@ -21,8 +24,7 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.FileLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
+import org.jenkinsci.plugins.workflow.log.OutputStreamTaskListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -76,15 +78,23 @@ class OtelLogStorage implements LogStorage {
         Map<String, String> otelResourceAttributes = new HashMap<>();
         otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
 
-        BuildListener result = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(runTraceContext, otelConfigurationProperties, otelResourceAttributes);
+        BuildListener otelStorageBuildListener = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(runTraceContext, otelConfigurationProperties, otelResourceAttributes);
 
+        BuildListener result;
         if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
             try {
               File logFile = new File(runFolderPath, "log");
-                result = new TeeBuildListener(result, FileLogStorage.forFile(logFile).overallListener());
+                BuildListener fileStorageBuildListener = FileLogStorage.forFile(logFile).overallListener();
+                if (fileStorageBuildListener instanceof OutputStreamTaskListener) {
+                    result = new TeeOutputStreamBuildListener(otelStorageBuildListener, fileStorageBuildListener);
+                } else {
+                    result = new TeeBuildListener(otelStorageBuildListener, fileStorageBuildListener);
+                }
               } catch (IOException|InterruptedException e) {
                 throw new IOException("Failure creating the mirror logs.", e);
               }
+        } else {
+            result = otelStorageBuildListener;
         }
         return result;
     }
@@ -99,15 +109,23 @@ class OtelLogStorage implements LogStorage {
 
         Span span = otelTraceService.getSpan(run, flowNode);
         FlowNodeTraceContext flowNodeTraceContext = FlowNodeTraceContext.newFlowNodeTraceContext(run, flowNode, span);
-        TaskListener result = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(flowNodeTraceContext, otelConfigurationProperties, otelResourceAttributes);
+        OutputStreamTaskListener otelStorageTaskListener = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(flowNodeTraceContext, otelConfigurationProperties, otelResourceAttributes);
 
+        TaskListener result;
         if (OpenTelemetrySdkProvider.get().isOtelLogsMirrorToDisk()) {
             try {
-              File logFile = new File(runFolderPath, "log");
-              result = new TeeTaskListener(result, FileLogStorage.forFile(logFile).nodeListener(flowNode));
-             } catch (IOException|InterruptedException e) {
+                File logFile = new File(runFolderPath, "log");
+                TaskListener fileStorageTaskListener = FileLogStorage.forFile(logFile).nodeListener(flowNode);
+                if (fileStorageTaskListener instanceof OutputStreamTaskListener) {
+                    result = new TeeOutputStreamTaskListener(otelStorageTaskListener, (OutputStreamTaskListener) fileStorageTaskListener);
+                } else {
+                    result = new TeeTaskListener(otelStorageTaskListener, fileStorageTaskListener);
+                }
+            } catch (IOException | InterruptedException e) {
                 throw new IOException("Failure creating the mirror logs.", e);
-              }
+            }
+        } else {
+            result = otelStorageTaskListener;
         }
         return result;
     }

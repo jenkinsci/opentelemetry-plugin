@@ -14,9 +14,11 @@ import io.jenkins.plugins.opentelemetry.opentelemetry.common.OffsetClock;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.sdk.common.Clock;
 import jenkins.util.JenkinsJVM;
+import org.jenkinsci.plugins.workflow.log.OutputStreamTaskListener;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -33,7 +35,7 @@ import java.util.logging.Logger;
  * <p>
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java
  */
-abstract class OtelLogSenderBuildListener implements BuildListener {
+abstract class OtelLogSenderBuildListener implements BuildListener, OutputStreamTaskListener {
 
     protected final static Logger LOGGER = Logger.getLogger(OtelLogSenderBuildListener.class.getName());
     final RunTraceContext runTraceContext;
@@ -47,8 +49,10 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
     transient Clock clock;
 
     @CheckForNull
-    transient PrintStream logger;
+    transient OutputStream outputStream;
 
+    @CheckForNull
+    transient PrintStream logger;
 
     public OtelLogSenderBuildListener(@NonNull RunTraceContext runTraceContext, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
         this.runTraceContext = runTraceContext;
@@ -58,6 +62,15 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         // Constructor must always be invoked on the Jenkins Controller.
         // Instantiation on the Jenkins Agents is done via deserialization.
         JenkinsJVM.checkJenkinsJVM();
+    }
+
+    @NonNull
+    @Override
+    public synchronized final OutputStream getOutputStream() {
+        if (outputStream == null) {
+            outputStream = new OtelLogOutputStream(runTraceContext, getOtelLogger(), clock);
+        }
+        return outputStream;
     }
 
     @NonNull

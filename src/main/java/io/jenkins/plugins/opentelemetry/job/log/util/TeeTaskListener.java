@@ -5,46 +5,43 @@
 
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
-import hudson.model.TaskListener;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.model.TaskListener;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TeeTaskListener implements TaskListener, Closeable {
+public class TeeTaskListener implements TaskListener, AutoCloseable {
 
     private final static Logger logger = Logger.getLogger(TeeTaskListener.class.getName());
 
     final TaskListener main;
     final TaskListener secondary;
 
+    final PrintStream printStream;
+
     public TeeTaskListener(TaskListener main, TaskListener secondary) {
         this.main = main;
         this.secondary = secondary;
+        this.printStream = new TeePrintStream(main.getLogger(), secondary.getLogger());
     }
 
     @NonNull
     @Override
     public PrintStream getLogger() {
-        try {
-            return new TeePrintStream(main.getLogger(), secondary.getLogger());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return printStream;
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() throws Exception {
         logger.log(Level.FINEST, "close()");
 
-        if (main instanceof Closeable) {
-            ((Closeable) main).close();
+        if (main instanceof AutoCloseable) {
+            ((AutoCloseable) main).close();
         }
-        if (secondary instanceof Closeable) {
-            ((Closeable) secondary).close();
+        if (secondary instanceof AutoCloseable) {
+            ((AutoCloseable) secondary).close();
         }
     }
 
