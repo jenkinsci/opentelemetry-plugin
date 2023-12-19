@@ -1,9 +1,6 @@
 package io.jenkins.plugins.opentelemetry.remotespan;
 
 import com.github.rutledgepaulv.prune.Tree;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
 import hudson.ExtensionList;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
@@ -16,6 +13,10 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import jenkins.model.GlobalConfiguration;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Before;
@@ -77,7 +78,7 @@ public class RemoteSpanTest extends BaseIntegrationTest {
 
         //We trigger the build by Jenkins remote api
         OkHttpClient client = new OkHttpClient();
-        RequestBody reqbody = RequestBody.create(null, new byte[0]);
+        RequestBody reqbody = RequestBody.create(new byte[0]);
         String traceParentHeader = "00-" + PARENT_TRACE_ID + "-" + PARENT_SPAN_ID + "-01";
 
         Request request = new Request.Builder()
