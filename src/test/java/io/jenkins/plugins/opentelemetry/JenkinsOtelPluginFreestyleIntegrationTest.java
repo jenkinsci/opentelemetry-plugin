@@ -31,7 +31,6 @@ import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
@@ -200,8 +199,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
             MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
             assertFreestyleJobMetadata(build, spans);
-            // Jenkins UTs classloader does not load the plugins :/ so let's use the default value.
-            assertBuildStepMetadata(spans, "ant", JENKINS_CORE);
+            assertBuildStepMetadata(spans, "ant", "ant");
             assertNodeMetadata(spans, rootSpanName, true);
         } finally {
           jenkinsRule.jenkins.removeNode(agent);
