@@ -25,6 +25,7 @@ import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
 import com.github.rutledgepaulv.prune.Tree;
+import java.util.List;
 
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
@@ -201,8 +202,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
             MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
             assertFreestyleJobMetadata(build, spans);
-            // Jenkins UTs classloader does not load the plugins :/ so let's use the default value.
-            assertBuildStepMetadata(spans, "ant", JENKINS_CORE);
+            assertBuildStepMetadata(spans, "ant", "ant");
             assertNodeMetadata(spans, rootSpanName, true);
         } finally {
           jenkinsRule.jenkins.removeNode(agent);
