@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.TaskListener;
 
@@ -14,22 +15,27 @@ import java.util.logging.Logger;
 
 public class TeeTaskListener implements TaskListener, AutoCloseable {
 
+    private static final long serialVersionUID = 1L;
+
     private final static Logger logger = Logger.getLogger(TeeTaskListener.class.getName());
 
-    final TaskListener main;
-    final TaskListener secondary;
+    private final TaskListener main;
+    private final TaskListener secondary;
 
-    final PrintStream printStream;
+    @CheckForNull
+    private transient PrintStream printStream;
 
     public TeeTaskListener(TaskListener main, TaskListener secondary) {
         this.main = main;
         this.secondary = secondary;
-        this.printStream = new TeePrintStream(main.getLogger(), secondary.getLogger());
     }
 
     @NonNull
     @Override
-    public PrintStream getLogger() {
+    public synchronized PrintStream getLogger() {
+        if (printStream == null) {
+            printStream = new TeePrintStream(main.getLogger(), secondary.getLogger());
+        }
         return printStream;
     }
 

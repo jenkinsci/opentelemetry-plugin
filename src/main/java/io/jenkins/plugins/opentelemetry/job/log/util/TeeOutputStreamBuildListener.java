@@ -5,22 +5,24 @@
 
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.BuildListener;
 import org.jenkinsci.plugins.workflow.log.OutputStreamTaskListener;
 
-import javax.annotation.Nonnull;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
 public class TeeOutputStreamBuildListener implements BuildListener, OutputStreamTaskListener, AutoCloseable {
 
-    final BuildListener primary;
+    private static final long serialVersionUID = 1L;
 
-    final BuildListener secondary;
+    private final BuildListener primary;
 
-    final OutputStream outputStream;
+    private final BuildListener secondary;
 
-    final PrintStream printStream;
+    private transient OutputStream outputStream;
+
+    private transient PrintStream printStream;
 
     public TeeOutputStreamBuildListener(BuildListener primary, BuildListener secondary) {
         if (!(primary instanceof OutputStreamTaskListener)) {
@@ -31,20 +33,23 @@ public class TeeOutputStreamBuildListener implements BuildListener, OutputStream
         }
         this.primary = primary;
         this.secondary = secondary;
-
-        this.outputStream = new TeeOutputStream(((OutputStreamTaskListener) primary).getOutputStream(), ((OutputStreamTaskListener) secondary).getOutputStream());
-        this.printStream = new TeePrintStream(primary.getLogger(), secondary.getLogger());
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public OutputStream getOutputStream() {
+    public synchronized OutputStream getOutputStream() {
+        if (outputStream == null) {
+            outputStream = new TeeOutputStream(((OutputStreamTaskListener) primary).getOutputStream(), ((OutputStreamTaskListener) secondary).getOutputStream());
+        }
         return outputStream;
     }
 
-    @Nonnull
+    @NonNull
     @Override
-    public PrintStream getLogger() {
+    public synchronized PrintStream getLogger() {
+        if (printStream == null) {
+            printStream = new TeePrintStream(primary.getLogger(), secondary.getLogger());
+        }
         return printStream;
     }
 
