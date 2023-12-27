@@ -27,7 +27,7 @@ public class PipelineElasticsearchBackendTest extends ElasticStackIT {
     private ElasticsearchLogStorageRetriever elasticsearchRetriever;
 
     @Rule
-    public static Timeout globalTimeout = Timeout.builder().withTimeout(10, TimeUnit.MINUTES).withLookingForStuckThread(true).build();
+    public Timeout globalTimeout = Timeout.builder().withTimeout(10, TimeUnit.MINUTES).withLookingForStuckThread(true).build();
     
     @Test
     public void test() throws Exception {

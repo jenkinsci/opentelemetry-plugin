@@ -31,7 +31,7 @@ public class ElasticStackConfigurationITTest {
     public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
     
     @Rule
-    public static Timeout globalTimeout = Timeout.builder().withTimeout(10, TimeUnit.MINUTES).withLookingForStuckThread(true).build();
+    public Timeout globalTimeout = Timeout.builder().withTimeout(10, TimeUnit.MINUTES).withLookingForStuckThread(true).build();
     
     @ClassRule
     public static CheckIsLinuxOrMac isLinuxOrMac = new CheckIsLinuxOrMac();
