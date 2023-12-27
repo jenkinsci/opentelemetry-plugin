@@ -30,9 +30,6 @@ public abstract class ElasticStackIT {
     public ElasticStack elasticStack;
 
     @ClassRule
-    public static Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
-
-    @ClassRule
     public static CheckIsLinuxOrMac isLinuxOrMac = new CheckIsLinuxOrMac();
 
     @ClassRule

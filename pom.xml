@@ -22,7 +22,6 @@
         <jenkins.version>2.387.3</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.33.0</opentelemetry.version>
-        <jenkins.test.timeout>600</jenkins.test.timeout>
         <!--
         Don't forget to bump opentelemetry-resources
         -->
@@ -452,6 +451,15 @@
                         <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
                         <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                     </loggers>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <jenkins.test.timeout>600</jenkins.test.timeout>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
