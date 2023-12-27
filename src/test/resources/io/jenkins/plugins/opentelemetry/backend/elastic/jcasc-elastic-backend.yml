@@ -1,19 +1,22 @@
 unclassified:
   openTelemetry:
     authentication: "noAuthentication"
+    #configurationProperties: "otel.logs.mirror_to_disk=true"
     endpoint: "http://fleet-server:8200"
     exportOtelConfigurationAsEnvironmentVariables: true
     ignoredSteps: "dir,echo,isUnix,pwd,properties"
     observabilityBackends:
     - elastic:
+        displayKibanaDashboardLink: true
         elasticLogsBackend:
           elasticLogsBackendWithJenkinsVisualization:
             elasticsearchCredentialsId: "credID"
             elasticsearchUrl: "http://elasticsearch:9200"
         kibanaBaseUrl: "http://kibana:5601"
+        name: "Elastic Observability"
     serviceName: "jenkins"
     serviceNamespace: "jenkins"
-
+        
 ## Credentials for the git username lookup Integration Tests
 credentials:
   system:
