@@ -29,6 +29,7 @@ import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend.TemplateBindings;
 import jenkins.model.GlobalConfiguration;
+import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 
 /**
  * Elastic Stack containers used on the tests.
@@ -48,6 +49,7 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
 
     private ElasticLogsBackendWithJenkinsVisualization elasticStackConfiguration;
     private ElasticBackend elasticBackendConfiguration;
+    private LogStorageRetriever elasticsearchRetriever;
 
     public ElasticStack() {
         super(new File("src/test/resources/docker-compose.yml"));
@@ -133,6 +135,9 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
         configuration.setEndpoint(getFleetUrl());
         elasticBackendConfiguration.setKibanaBaseUrl(getKibanaUrl());
         elasticStackConfiguration.setElasticsearchUrl(getEsUrl());
+        // FIXME the configuration is not applied if you not save the configuration
+        configuration.initializeOpenTelemetry();
+        elasticsearchRetriever = configuration.getLogStorageRetriever();
     }
 
     public ElasticLogsBackendWithJenkinsVisualization getElasticStackConfiguration() {
@@ -141,5 +146,9 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
 
     public ElasticBackend getElasticBackendConfiguration() {
         return elasticBackendConfiguration;
+    }
+
+    public LogStorageRetriever getElasticsearchRetriever() {
+        return elasticsearchRetriever;
     }
 }
