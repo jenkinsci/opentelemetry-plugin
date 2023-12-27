@@ -22,6 +22,7 @@ import org.kohsuke.stapler.framework.io.ByteBuffer;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import org.apache.commons.io.IOUtils;
 import java.nio.charset.StandardCharsets;
 
