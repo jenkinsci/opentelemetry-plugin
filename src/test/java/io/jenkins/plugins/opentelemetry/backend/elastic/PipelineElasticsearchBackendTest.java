@@ -8,11 +8,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
@@ -22,6 +26,9 @@ public class PipelineElasticsearchBackendTest extends ElasticStackIT {
 
     private ElasticsearchLogStorageRetriever elasticsearchRetriever;
 
+    @Rule
+    public static Timeout globalTimeout = Timeout.builder().withTimeout(10, TimeUnit.MINUTES).withLookingForStuckThread(true).build();
+    
     @Test
     public void test() throws Exception {
         jenkinsRule.createSlave("remote", null, null);

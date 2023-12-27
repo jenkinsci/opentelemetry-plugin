@@ -30,8 +30,8 @@ public class ElasticStackConfigurationITTest {
     @ConfiguredWithCode("jcasc-elastic-backend.yml")
     public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
     
-    @ClassRule
-    public static Timeout globalTimeout = new Timeout(10, TimeUnit.MINUTES);
+    @Rule
+    public static Timeout globalTimeout = Timeout.builder().withTimeout(10, TimeUnit.MINUTES).withLookingForStuckThread(true).build();
     
     @ClassRule
     public static CheckIsLinuxOrMac isLinuxOrMac = new CheckIsLinuxOrMac();
