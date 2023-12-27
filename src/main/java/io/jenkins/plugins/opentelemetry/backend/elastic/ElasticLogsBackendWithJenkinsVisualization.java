@@ -22,6 +22,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.errorprone.annotations.MustBeClosed;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import groovy.text.Template;
 import hudson.Extension;
 import hudson.Util;
@@ -149,6 +150,8 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                     .includeCurrentValue(elasticsearchCredentialsId);
         }
 
+        @SuppressFBWarnings(value="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT", 
+            justification="We don't care about the return value, we just want to check that the credentials are valid")
         public FormValidation doCheckElasticsearchCredentialsId(Item context,
                 @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
