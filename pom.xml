@@ -22,6 +22,7 @@
         <jenkins.version>2.387.3</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.33.0</opentelemetry.version>
+        <jenkins.test.timeout>600</jenkins.test.timeout>
         <!--
         Don't forget to bump opentelemetry-resources
         -->
