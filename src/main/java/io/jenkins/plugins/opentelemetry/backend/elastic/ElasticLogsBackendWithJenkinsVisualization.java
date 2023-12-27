@@ -131,7 +131,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             }
             try {
                 new URI(url).toURL();
-            } catch (URISyntaxException | MalformedURLException e) {
+            } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e) {
                 return FormValidation.error("Invalid URL: " + e.getMessage());
             }
             return FormValidation.ok();
