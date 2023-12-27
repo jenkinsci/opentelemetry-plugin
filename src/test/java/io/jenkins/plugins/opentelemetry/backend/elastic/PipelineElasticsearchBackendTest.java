@@ -21,14 +21,12 @@ import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
+import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import org.apache.commons.io.IOUtils;
+import java.nio.charset.StandardCharsets;
 
 public class PipelineElasticsearchBackendTest extends ElasticStackIT {
 
-    private ElasticsearchLogStorageRetriever elasticsearchRetriever;
-
-    @Rule
-    public Timeout globalTimeout = Timeout.builder().withTimeout(10, TimeUnit.MINUTES).withLookingForStuckThread(true).build();
-    
     @Test
     public void test() throws Exception {
         jenkinsRule.createSlave("remote", null, null);
@@ -42,6 +40,7 @@ public class PipelineElasticsearchBackendTest extends ElasticStackIT {
 
     private void waitForLogs(WorkflowRun run) throws InterruptedException {
         // volume of retrieved logs in bytes
+        LogStorageRetriever elasticsearchRetriever = elasticStack.getElasticsearchRetriever();
         long logsLength = 0;
         MonitoringAction action = run.getAction(MonitoringAction.class);
         String traceId = action.getTraceId();
@@ -49,21 +48,32 @@ public class PipelineElasticsearchBackendTest extends ElasticStackIT {
         boolean complete = true;
         LogsQueryResult logsQueryResult = null;
         ByteBuffer byteBuffer = null;
+        String logContent = "";
+        Instant startTime = Instant.ofEpochMilli(run.getStartTimeInMillis());
+        Instant endTime = Instant.now();
         do {
             try {
-                Instant startTime = Instant.ofEpochMilli(run.getStartTimeInMillis());
-                Instant endTime = run.getDuration() == 0 ? null : startTime.plusMillis(run.getDuration());
                 logsQueryResult = elasticsearchRetriever.overallLog(run.getParent().getFullName(),
                         run.getNumber(), traceId, spanId, complete, startTime, endTime);
                 byteBuffer = logsQueryResult.getByteBuffer();
-                logsLength = byteBuffer.length();
+                if (byteBuffer.length()>0){
+                    logContent = IOUtils.toString(byteBuffer.newInputStream(), StandardCharsets.UTF_8);
+                }
             } catch (Throwable e) {
                 // NOOP
+                System.err.println("Error while retrieving logs: " + e.getMessage());
             }
             Thread.sleep(1000);
-        } while (logsLength < 10);
+        } while (!logContent.contains("Finished: SUCCESS"));
         assertNotNull(byteBuffer);
-        String logContent = byteBuffer.toString();
+        assertTrue(logContent.contains("Started"));
+        assertTrue(logContent.contains("[Pipeline] Start of Pipeline"));
+        assertTrue(logContent.contains("[Pipeline] node"));
+        assertTrue(logContent.contains("Running on remote in "));
+        assertTrue(logContent.contains("[Pipeline] {"));
+        assertTrue(logContent.contains("[Pipeline] echo"));
         assertTrue(logContent.contains("Hello"));
+        assertTrue(logContent.contains("[Pipeline] }"));
+        assertTrue(logContent.contains("Finished: SUCCESS"));
     }
 }
