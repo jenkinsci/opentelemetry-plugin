@@ -6,7 +6,6 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -19,6 +18,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Test;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
+import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
@@ -29,11 +29,11 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
 
     @Test
     public void test() throws Exception {
-        jenkinsRule.createSlave("remote", null, null);
+        jenkinsRule.createOnlineSlave(new LabelAtom("remote"));
         WorkflowJob p = jenkinsRule.jenkins.createProject(WorkflowJob.class, "p");
-        p.getFullName();
         p.setDefinition(new CpsFlowDefinition("node('remote') {\n" + "  echo 'Hello'\n" + "}", true));
         WorkflowRun run = jenkinsRule.buildAndAssertSuccess(p);
+        jenkinsRule.waitForCompletion(run);
         waitForLogs(run);
         jenkinsRule.assertLogContains("Hello", run);
     }
@@ -76,27 +76,25 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
         MonitoringAction action = run.getAction(MonitoringAction.class);
         String traceId = action.getTraceId();
         String spanId = action.getSpanId();
-        boolean complete = true;
-        LogsQueryResult logsQueryResult = null;
-        ByteBuffer byteBuffer = null;
         String logContent = "";
         Instant startTime = Instant.ofEpochMilli(run.getStartTimeInMillis());
-        Instant endTime = Instant.now();
         do {
             try {
-                logsQueryResult = elasticsearchRetriever.overallLog(run.getParent().getFullName(),
-                        run.getNumber(), traceId, spanId, complete, startTime, endTime);
-                byteBuffer = logsQueryResult.getByteBuffer();
+                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(run.getParent().getFullName(),
+                        run.getNumber(), traceId, spanId, true, startTime, Instant.now());
+                ByteBuffer byteBuffer = logsQueryResult.getByteBuffer();
                 if (byteBuffer.length() > 0) {
                     logContent = IOUtils.toString(byteBuffer.newInputStream(), StandardCharsets.UTF_8);
+                    System.err.println(logContent);
+                } else {
+                    System.err.println("No logs yet");
                 }
             } catch (Throwable e) {
                 // NOOP
                 System.err.println("Error while retrieving logs: " + e.getMessage());
             }
-            Thread.sleep(1000);
+            Thread.sleep(10000);
         } while (!logContent.contains("Finished: SUCCESS"));
-        assertNotNull(byteBuffer);
         assertTrue(logContent.contains("Started"));
         assertTrue(logContent.contains("[Pipeline] Start of Pipeline"));
         assertTrue(logContent.contains("[Pipeline] node"));

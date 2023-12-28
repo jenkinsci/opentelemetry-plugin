@@ -23,7 +23,8 @@ public abstract class ElasticStackIT {
     @ConfiguredWithCode("jcasc-elastic-backend.yml")
     public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
 
-    public ElasticStack elasticStack;
+    public static ElasticStack elasticStack;
+    private static boolean isInitialized = false;
 
     @ClassRule
     public static CheckIsLinuxOrMac isLinuxOrMac = new CheckIsLinuxOrMac();
@@ -43,8 +44,11 @@ public abstract class ElasticStackIT {
 
     @Before
     public void setUp() throws Exception {
-        elasticStack = new ElasticStack();
-        elasticStack.start();
-        elasticStack.configureElasticBackEnd();
+        if (!isInitialized){
+            elasticStack = new ElasticStack();
+            elasticStack.start();
+            elasticStack.configureElasticBackEnd();
+            isInitialized = true;
+        }
     }
 }
