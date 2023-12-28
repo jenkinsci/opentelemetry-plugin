@@ -28,8 +28,8 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend.TemplateBindings;
-import jenkins.model.GlobalConfiguration;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import jenkins.model.GlobalConfiguration;
 
 /**
  * Elastic Stack containers used on the tests.
