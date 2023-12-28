@@ -283,7 +283,7 @@ public class ElasticBackend extends ObservabilityBackend {
             }
             try {
                 new URI(kibanaBaseUrl).toURL();
-            } catch (URISyntaxException | MalformedURLException e) {
+            } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e) {
                 return FormValidation.error("Invalid URL: " + e.getMessage());
             }
             return FormValidation.ok();
