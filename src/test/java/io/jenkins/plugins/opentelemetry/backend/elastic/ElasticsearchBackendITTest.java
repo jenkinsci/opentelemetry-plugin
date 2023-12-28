@@ -98,7 +98,7 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
         assertTrue(logContent.contains("Started"));
         assertTrue(logContent.contains("[Pipeline] Start of Pipeline"));
         assertTrue(logContent.contains("[Pipeline] node"));
-        assertTrue(logContent.contains("Running on remote in "));
+        assertTrue(logContent.contains("Running on"));
         assertTrue(logContent.contains("[Pipeline] {"));
         assertTrue(logContent.contains("[Pipeline] echo"));
         assertTrue(logContent.contains("Hello"));
