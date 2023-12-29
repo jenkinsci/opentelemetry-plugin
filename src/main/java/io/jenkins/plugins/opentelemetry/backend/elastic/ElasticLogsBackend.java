@@ -5,23 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import com.google.errorprone.annotations.MustBeClosed;
-import groovy.text.GStringTemplateEngine;
-import groovy.text.Template;
-import hudson.DescriptorExtensionList;
-import hudson.ExtensionPoint;
-import hudson.model.AbstractDescribableImpl;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
-import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
-import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
-
-import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -29,7 +13,23 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class ElasticLogsBackend extends AbstractDescribableImpl<ElasticLogsBackend> implements Describable<ElasticLogsBackend>, ExtensionPoint {
+import org.apache.commons.lang.StringUtils;
+
+import com.google.errorprone.annotations.MustBeClosed;
+
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import groovy.text.GStringTemplateEngine;
+import groovy.text.Template;
+import hudson.DescriptorExtensionList;
+import hudson.ExtensionPoint;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
+import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import jenkins.model.Jenkins;
+
+public abstract class ElasticLogsBackend extends AbstractDescribableImpl<ElasticLogsBackend> implements ExtensionPoint {
     private final static Logger logger = Logger.getLogger(ElasticLogsBackend.class.getName());
 
     private transient Template buildLogsVisualizationUrlGTemplate;

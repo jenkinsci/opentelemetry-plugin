@@ -42,7 +42,7 @@ public class ConfigurationAsCodeElasticLogsBackendExclusiveTest {
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
 
         ElasticBackend elastic = (ElasticBackend) configuration.getObservabilityBackends().get(0);
-        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://kibana.europe-west1.gcp.cloud.es.io:9243"));
+        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://kibana.es.example.com"));
         MatcherAssert.assertThat(elastic.getName(), CoreMatchers.is("My Elastic"));
 
         ElasticLogsBackendWithoutJenkinsVisualization elasticLogsBackend = (ElasticLogsBackendWithoutJenkinsVisualization) elastic.getElasticLogsBackend();
