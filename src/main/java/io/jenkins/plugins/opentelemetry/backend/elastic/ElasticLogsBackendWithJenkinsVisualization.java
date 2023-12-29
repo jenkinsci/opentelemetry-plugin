@@ -177,12 +177,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             if (elasticsearchUrlValidation.kind != FormValidation.Kind.OK) {
                 return elasticsearchUrlValidation;
             }
-
-            Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(
-                    () -> elasticsearchCredentialsId);
-            // TODO cleanup code, we shouldn't have to instantiate the
-            // ElasticsearchLogStorageRetriever to check the proper configuration of the
-            // access to Elasticsearch
+            Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
             try (ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
                     disableSslVerifications,

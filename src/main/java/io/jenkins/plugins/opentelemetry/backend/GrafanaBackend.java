@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-public class GrafanaBackend extends ObservabilityBackend implements TemplateBindingsProvider {
+public class GrafanaBackend extends ObservabilityBackend {
 
     public static final String DEFAULT_BACKEND_NAME = "Grafana";
 

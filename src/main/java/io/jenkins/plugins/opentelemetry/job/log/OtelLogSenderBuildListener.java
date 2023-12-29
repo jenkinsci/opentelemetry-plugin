@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.BuildListener;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
@@ -14,9 +15,11 @@ import io.jenkins.plugins.opentelemetry.opentelemetry.common.OffsetClock;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.sdk.common.Clock;
 import jenkins.util.JenkinsJVM;
+import org.jenkinsci.plugins.workflow.log.OutputStreamTaskListener;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -33,7 +36,7 @@ import java.util.logging.Logger;
  * <p>
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java
  */
-abstract class OtelLogSenderBuildListener implements BuildListener {
+abstract class OtelLogSenderBuildListener implements BuildListener, OutputStreamTaskListener {
 
     protected final static Logger LOGGER = Logger.getLogger(OtelLogSenderBuildListener.class.getName());
     final RunTraceContext runTraceContext;
@@ -44,11 +47,14 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
      * Timestamps of the logs emitted by the Jenkins Agents must be chronologically ordered with the timestamps of
      * the logs & traces emitted on the Jenkins controller even if the system clock are not perfectly synchronized
      */
+    @SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
     transient Clock clock;
 
     @CheckForNull
-    transient PrintStream logger;
+    transient OutputStream outputStream;
 
+    @CheckForNull
+    transient PrintStream logger;
 
     public OtelLogSenderBuildListener(@NonNull RunTraceContext runTraceContext, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
         this.runTraceContext = runTraceContext;
@@ -58,6 +64,15 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
         // Constructor must always be invoked on the Jenkins Controller.
         // Instantiation on the Jenkins Agents is done via deserialization.
         JenkinsJVM.checkJenkinsJVM();
+    }
+
+    @NonNull
+    @Override
+    public synchronized final OutputStream getOutputStream() {
+        if (outputStream == null) {
+            outputStream = new OtelLogOutputStream(runTraceContext, getOtelLogger(), clock);
+        }
+        return outputStream;
     }
 
     @NonNull
@@ -150,7 +165,28 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
 
 
         private Object readResolve() {
-            adjustClock();
+            JenkinsJVM.checkNotJenkinsJVM();
+
+            /*
+             * Timestamps of the logs emitted by the Jenkins Agents must be chronologically ordered with the timestamps of
+             * the logs & traces emitted on the Jenkins controller even if the system clock are not perfectly synchronized
+             */
+            if (instantInNanosOnJenkinsControllerBeforeSerialization == 0) {
+                logger.log(Level.INFO, () -> "adjustClock: unexpected timeBeforeSerialization of 0ns, don't adjust the clock");
+                this.clock = Clock.getDefault();
+            } else {
+                long instantInNanosOnJenkinsAgentAtDeserialization = Clock.getDefault().now();
+                long offsetInNanosOnJenkinsAgent = instantInNanosOnJenkinsControllerBeforeSerialization - instantInNanosOnJenkinsAgentAtDeserialization;
+                logger.log(Level.FINE, () ->
+                    "adjustClock: " +
+                        "offsetInNanos: " + TimeUnit.MILLISECONDS.convert(offsetInNanosOnJenkinsAgent, TimeUnit.NANOSECONDS) + "ms / " + offsetInNanosOnJenkinsAgent + "ns. "+
+                        "A negative offset of few milliseconds is expected due to the latency of the communication from the Jenkins Controller to the Jenkins Agent. " +
+                        "Higher offsets indicate a synchronization gap of the system clocks between the Jenkins Controller that will be work arounded by the clock adjustment."
+                );
+                this.clock = OffsetClock.offsetClock(offsetInNanosOnJenkinsAgent);
+            }
+
+            // Setup OTel
             GlobalOpenTelemetrySdk.configure(
                 otelConfigProperties,
                 otelResourceAttributes,
@@ -161,26 +197,6 @@ abstract class OtelLogSenderBuildListener implements BuildListener {
             return this;
         }
 
-        /**
-         * Timestamps of the logs emitted by the Jenkins Agents must be chronologically ordered with the timestamps of
-         * the logs & traces emitted on the Jenkins controller even if the system clock are not perfectly synchronized
-         */
-        private void adjustClock() {
-            JenkinsJVM.checkNotJenkinsJVM();
-            if (instantInNanosOnJenkinsControllerBeforeSerialization == 0) {
-                logger.log(Level.INFO, () -> "adjustClock(): unexpected timeBeforeSerialization of 0ns, don't adjust the clock");
-                this.clock = Clock.getDefault();
-            } else {
-                long instantInNanosOnJenkinsAgentAtDeserialization = Clock.getDefault().now();
-                long offsetInNanosOnJenkinsAgent = instantInNanosOnJenkinsControllerBeforeSerialization - instantInNanosOnJenkinsAgentAtDeserialization;
-                logger.log(Level.FINE, () ->
-                    "adjustClock(): " +
-                        "offsetInNanos: " + TimeUnit.MILLISECONDS.convert(offsetInNanosOnJenkinsAgent, TimeUnit.NANOSECONDS) + "ms / " + offsetInNanosOnJenkinsAgent + "ns. "+
-                        "A negative offset of few milliseconds is expected due to the latency of the communication from the Jenkins Controller to the Jenkins Agent. " +
-                        "Higher offsets indicate a synchronization gap of the system clocks between the Jenkins Controller that will be work arounded by the clock adjustment."
-                );
-                this.clock = OffsetClock.offsetClock(offsetInNanosOnJenkinsAgent);
-            }
-        }
+
     }
 }

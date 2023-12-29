@@ -20,7 +20,7 @@ services:
             - "xpack.security.authc.api_key.enabled=true"
             - "logger.org.elasticsearch=${ES_LOG_LEVEL:-error}"
             - "action.destructive_requires_name=false"
-        image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-8.10.1}
+        image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-8.11.2}
         ports:
             - "9200"
         healthcheck:
@@ -39,7 +39,7 @@ services:
             ELASTICSEARCH_USERNAME: "${KIBANA_ES_USER:-kibana_system_user}"
             ELASTICSEARCH_PASSWORD: "${KIBANA_ES_PASS:-changeme}"
             STATUS_ALLOWANONYMOUS: 'true'
-        image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-8.10.1}
+        image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-8.11.2}
         ports:
             - "5601:5601"
         volumes:
@@ -50,7 +50,7 @@ services:
             test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q 'All services are available'"]
 
     fleet-server:
-        image: docker.elastic.co/beats/elastic-agent:${ELASTIC_STACK_VERSION:-8.10.1}
+        image: docker.elastic.co/beats/elastic-agent:${ELASTIC_STACK_VERSION:-8.11.2}
         privileged: true
         entrypoint: "/bin/bash"
         command:
