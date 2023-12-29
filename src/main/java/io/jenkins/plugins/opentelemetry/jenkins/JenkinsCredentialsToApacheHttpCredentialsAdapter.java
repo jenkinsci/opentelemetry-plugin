@@ -51,6 +51,9 @@ public class JenkinsCredentialsToApacheHttpCredentialsAdapter implements Credent
             } catch (NoSuchElementException e) {
                 throw new CredentialsNotFoundException("No Jenkins credentials found for id '" + jenkinsCredentialsId + "' and expected type 'UsernamePasswordCredentials'");
             }
+            if (jenkinsUsernamePasswordCredentials == null) {
+                throw new CredentialsNotFoundException("No Jenkins credentials found for id '" + jenkinsCredentialsId + "' and expected type 'UsernamePasswordCredentials'");
+            }
         }
         return jenkinsUsernamePasswordCredentials;
     }

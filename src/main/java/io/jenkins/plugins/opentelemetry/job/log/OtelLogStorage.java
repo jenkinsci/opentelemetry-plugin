@@ -160,7 +160,7 @@ class OtelLogStorage implements LogStorage {
         }
 
         Span span = tracer.spanBuilder("OtelLogStorage.overallLog")
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getFullDisplayName())
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
@@ -168,7 +168,7 @@ class OtelLogStorage implements LogStorage {
             LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
             Instant startTime = Instant.ofEpochMilli(run.getStartTimeInMillis());
             Instant endTime = run.getDuration() == 0 ? null : startTime.plusMillis(run.getDuration());
-            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(run.getFullDisplayName(), run.getNumber(), runTraceContext.getTraceId(), runTraceContext.getSpanId(), complete, startTime, endTime);
+            LogsQueryResult logsQueryResult = logStorageRetriever.overallLog(run.getParent().getFullName(), run.getNumber(), runTraceContext.getTraceId(), runTraceContext.getSpanId(), complete, startTime, endTime);
             span.setAttribute("completed", logsQueryResult.isComplete());
             return new OverallLog(logsQueryResult.getByteBuffer(), logsQueryResult.getLogsViewHeader(), logsQueryResult.getCharset(), logsQueryResult.isComplete(), build, tracer);
         } catch (Exception x) {
@@ -188,7 +188,7 @@ class OtelLogStorage implements LogStorage {
         }
 
         Span span = tracer.spanBuilder("OtelLogStorage.stepLog")
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getFullDisplayName())
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
@@ -201,7 +201,7 @@ class OtelLogStorage implements LogStorage {
             LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
             Instant startTime = Instant.ofEpochMilli(run.getStartTimeInMillis());
             Instant endTime = run.getDuration() == 0 ? null : startTime.plusMillis(run.getDuration());
-            LogsQueryResult logsQueryResult = logStorageRetriever.stepLog(run.getFullDisplayName(), run.getNumber(), flowNode.getId(), traceId, spanId, complete, startTime, endTime);
+            LogsQueryResult logsQueryResult = logStorageRetriever.stepLog(run.getParent().getFullName(), run.getNumber(), flowNode.getId(), traceId, spanId, complete, startTime, endTime);
             span.setAttribute("completed", logsQueryResult.isComplete())
                 .setAttribute("length", logsQueryResult.byteBuffer.length());
             return new AnnotatedLargeText<>(logsQueryResult.getByteBuffer(), logsQueryResult.getCharset(), logsQueryResult.isComplete(), flowNode);
@@ -219,7 +219,7 @@ class OtelLogStorage implements LogStorage {
     public File getLogFile(FlowExecutionOwner.Executable build, boolean complete) {
         logger.log(Level.FINE, "getLogFile(complete: " + complete + ")");
         Span span = tracer.spanBuilder("OtelLogStorage.getLogFile")
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getFullDisplayName())
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();

@@ -4,6 +4,10 @@ server.host: "0.0.0.0"
 
 telemetry.enabled: false
 
+logging:
+  root:
+    level: error
+
 elasticsearch.hosts: "${ELASTICSEARCH_HOSTS}"
 elasticsearch.username: "${ELASTICSEARCH_USERNAME}"
 elasticsearch.password: "${ELASTICSEARCH_PASSWORD}"
