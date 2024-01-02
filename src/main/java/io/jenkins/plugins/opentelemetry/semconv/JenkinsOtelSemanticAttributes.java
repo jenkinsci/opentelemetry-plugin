@@ -76,6 +76,11 @@ public final class JenkinsOtelSemanticAttributes {
      */
     public static final AttributeKey<String> JENKINS_STEP_ID = AttributeKey.stringKey("jenkins.pipeline.step.id");
     /**
+     * @see org.jenkinsci.plugins.workflow.pipelinegraphanalysis.GenericStatus
+     * @see org.jenkinsci.plugins.workflow.pipelinegraphanalysis.StatusAndTiming#computeChunkStatus2(org.jenkinsci.plugins.workflow.job.WorkflowRun,org.jenkinsci.plugins.workflow.graph.FlowNode,org.jenkinsci.plugins.workflow.graph.FlowNode,org.jenkinsci.plugins.workflow.graph.FlowNode,org.jenkinsci.plugins.workflow.graph.FlowNode)
+     */
+    public static final AttributeKey<String> JENKINS_STEP_RESULT = AttributeKey.stringKey("jenkins.pipeline.step.result");
+    /**
      * @see PluginWrapper#getShortName()
      */
     public static final AttributeKey<String> JENKINS_STEP_PLUGIN_NAME = AttributeKey.stringKey("jenkins.pipeline.step.plugin.name");
@@ -97,7 +102,7 @@ public final class JenkinsOtelSemanticAttributes {
     public static final String JENKINS = "jenkins";
 
     /**
-     * As {@link Jenkins.MasterComputer#getName()} return "", choose another name
+     * As {@link Jenkins.MasterComputer#getName()} returns "", choose another name
      *
      * @see Jenkins.MasterComputer#getName()
      */

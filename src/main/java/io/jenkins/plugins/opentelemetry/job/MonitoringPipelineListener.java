@@ -46,6 +46,8 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.StepListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.pipelinegraphanalysis.GenericStatus;
+import org.jenkinsci.plugins.workflow.pipelinegraphanalysis.StatusAndTiming;
 import org.jenkinsci.plugins.workflow.steps.*;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -129,7 +131,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     @Override
     public void onAfterStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run) {
         // end the JenkinsOtelSemanticAttributes.AGENT_ALLOCATE span
-        endCurrentSpan(stepStartNode, run);
+        endCurrentSpan(stepStartNode, run, null);
     }
 
     @Override
@@ -156,13 +158,17 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void onEndNodeStep(@NonNull StepEndNode node, @NonNull String nodeName, @NonNull WorkflowRun run) {
-        endCurrentSpan(node, run);
+    public void onEndNodeStep(@NonNull StepEndNode node, @NonNull String nodeName, FlowNode nextNode, @NonNull WorkflowRun run) {
+        StepStartNode nodeStartNode = node.getStartNode();
+        GenericStatus nodeStatus = StatusAndTiming.computeChunkStatus2(run, null, nodeStartNode, node, nextNode);
+        endCurrentSpan(node, run, nodeStatus);
     }
 
     @Override
-    public void onEndStageStep(@NonNull StepEndNode node, @NonNull String stageName, @NonNull WorkflowRun run) {
-        endCurrentSpan(node, run);
+    public void onEndStageStep(@NonNull StepEndNode node, @NonNull String stageName, FlowNode nextNode, @NonNull WorkflowRun run) {
+        StepStartNode stageStartNode = node.getStartNode();
+        GenericStatus stageStatus = StatusAndTiming.computeChunkStatus2(run, null, stageStartNode, node, nextNode);
+        endCurrentSpan(node, run, stageStatus);
     }
 
     protected List<StepHandler> getStepHandlers() {
@@ -212,12 +218,13 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void onAfterAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run) {
+    public void onAfterAtomicStep(@NonNull StepAtomNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
         if (isIgnoredStep(node.getDescriptor())){
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - don't end span for step '" + node.getDisplayFunctionName() + "'");
             return;
         }
-        endCurrentSpan(node, run);
+        GenericStatus stageStatus = StatusAndTiming.computeChunkStatus2(run, null, node, node, nextNode);
+        endCurrentSpan(node, run, stageStatus);
     }
 
     private boolean isIgnoredStep(@Nullable StepDescriptor stepDescriptor) {
@@ -289,23 +296,29 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
-    public void onEndParallelStepBranch(@NonNull StepEndNode node, @NonNull String branchName, @NonNull WorkflowRun run) {
-        endCurrentSpan(node, run);
+    public void onEndParallelStepBranch(@NonNull StepEndNode node, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run) {
+        StepStartNode parallelStartNode = node.getStartNode();
+        GenericStatus parallelStatus = StatusAndTiming.computeChunkStatus2(run, null, parallelStartNode, node, nextNode);
+        endCurrentSpan(node, run, parallelStatus);
     }
 
-    private void endCurrentSpan(FlowNode node, WorkflowRun run) {
+    private void endCurrentSpan(FlowNode node, WorkflowRun run, GenericStatus status) {
         try (Scope ignored = setupContext(run, node)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, node);
 
             Span span = getTracerService().getSpan(run, node);
+
             ErrorAction errorAction = node.getError();
             if (errorAction == null) {
+                if (status == null) status = GenericStatus.SUCCESS;
                 span.setStatus(StatusCode.OK);
             } else {
                 Throwable throwable = errorAction.getError();
                 if (throwable instanceof FlowInterruptedException) {
                     FlowInterruptedException interruptedException = (FlowInterruptedException) throwable;
                     List<CauseOfInterruption> causesOfInterruption = interruptedException.getCauses();
+
+                    if (status == null) status = GenericStatus.fromResult(interruptedException.getResult());
 
                     List<String> causeDescriptions = causesOfInterruption.stream().map(cause -> cause.getClass().getSimpleName() + ": " + cause.getShortDescription()).collect(Collectors.toList());
                     span.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_INTERRUPTION_CAUSES, causeDescriptions);
@@ -326,10 +339,17 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                         span.setStatus(StatusCode.ERROR, statusDescription);
                     }
                 } else {
+                    if (status == null) status = GenericStatus.FAILURE;
                     span.recordException(throwable);
                     span.setStatus(StatusCode.ERROR, throwable.getMessage());
                 }
             }
+
+            if (status != null) {
+                status = StatusAndTiming.coerceStatusApi(status, StatusAndTiming.API_V2);
+                span.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_RESULT, status.toString());
+            }
+
             span.end();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - < " + node.getDisplayFunctionName() + " - end " + OtelUtils.toDebugString(span));
 
