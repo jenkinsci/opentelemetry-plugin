@@ -14,11 +14,11 @@
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>opentelemetry</artifactId>
-    <version>${revision}${changelist}</version>
+    <version>${revision}.${changelist}</version>
     <packaging>hpi</packaging>
     <properties>
-        <revision>2.19.1</revision>
-        <changelist>-SNAPSHOT</changelist>
+        <revision>2</revision>
+        <changelist>999999-SNAPSHOT</changelist>
         <jenkins.version>2.401.3</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.33.0</opentelemetry.version>
