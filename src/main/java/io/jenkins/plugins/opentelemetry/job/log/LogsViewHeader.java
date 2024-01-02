@@ -54,9 +54,10 @@ public class LogsViewHeader {
             }
         };
         ConsoleAnnotationOutputStream<FlowExecutionOwner.Executable> caw = new ConsoleAnnotationOutputStream<>(w, consoleAnnotator, context, charset);
-        CountingOutputStream cos = new CountingOutputStream(caw);
-        cos.write((getMessage() + "\n").getBytes(StandardCharsets.UTF_8));
-        cos.flush();
-        return cos.getByteCount();
+        try(CountingOutputStream cos = new CountingOutputStream(caw)){
+            cos.write((getMessage() + "\n").getBytes(StandardCharsets.UTF_8));
+            cos.flush();
+            return cos.getByteCount();
+        }
     }
 }

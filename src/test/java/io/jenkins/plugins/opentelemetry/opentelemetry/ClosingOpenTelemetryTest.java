@@ -46,7 +46,7 @@ public class ClosingOpenTelemetryTest {
         assertThat(meter, instanceOf(ClosingOpenTelemetry.ClosingMeter.class));
 
         int before = closingOpenTelemetry.closeables.size();
-        ObservableLongCounter observableLongCounter = meter.counterBuilder("test-counter").setDescription("desc").setUnit("s").buildWithCallback(om -> om.record(1L));
+        meter.counterBuilder("test-counter").setDescription("desc").setUnit("s").buildWithCallback(om -> om.record(1L));
         int after = closingOpenTelemetry.closeables.size();
         assertThat(after, is(before + 1));
 

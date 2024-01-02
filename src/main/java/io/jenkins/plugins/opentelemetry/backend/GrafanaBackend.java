@@ -22,7 +22,8 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -266,8 +267,8 @@ public class GrafanaBackend extends ObservabilityBackend {
                 return FormValidation.ok();
             }
             try {
-                new URL(grafanaBaseUrl);
-            } catch (MalformedURLException e) {
+                new URI(grafanaBaseUrl).toURL();
+            } catch (URISyntaxException | MalformedURLException e) {
                 return FormValidation.error("Invalid URL: " + e.getMessage());
             }
             return FormValidation.ok();

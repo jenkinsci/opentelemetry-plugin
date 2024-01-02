@@ -5,20 +5,20 @@
 
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
-import io.jenkins.plugins.opentelemetry.job.RunFlowNodeIdentifier;
-import org.kohsuke.stapler.Stapler;
-import org.kohsuke.stapler.StaplerRequest;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
-import javax.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.servlet.http.HttpSession;
+
+import org.kohsuke.stapler.Stapler;
+import org.kohsuke.stapler.StaplerRequest;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
+import io.jenkins.plugins.opentelemetry.job.RunFlowNodeIdentifier;
 
 public interface LineIterator extends Iterator<String> {
     void skipLines(long skip);
