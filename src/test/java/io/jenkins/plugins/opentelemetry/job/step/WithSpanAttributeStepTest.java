@@ -5,22 +5,22 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
-import com.github.rutledgepaulv.prune.Tree;
-import hudson.model.Node;
-import hudson.model.Result;
-import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.sdk.trace.data.SpanData;
+import static org.junit.Assume.assumeFalse;
+
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Test;
 
-import static org.junit.Assume.assumeFalse;
+import com.github.rutledgepaulv.prune.Tree;
+
+import hudson.model.Result;
+import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.sdk.trace.data.SpanData;
 
 public class WithSpanAttributeStepTest extends BaseIntegrationTest {
 
@@ -38,12 +38,12 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             "       xsh (label: 'release-script', script: 'echo ze-echo-1') \n" +
             "    }\n" +
             "}";
-        final Node agent = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
 
         final String jobName = "test-simple-pipeline-with-with-span-attribute-step" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 

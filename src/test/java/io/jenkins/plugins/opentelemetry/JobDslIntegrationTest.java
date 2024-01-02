@@ -5,16 +5,15 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import com.github.rutledgepaulv.prune.Tree;
-import hudson.model.FreeStyleBuild;
-import hudson.model.FreeStyleProject;
-import javaposse.jobdsl.plugin.ExecuteDslScripts;
+import static org.junit.Assume.assumeFalse;
+
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
-import static org.junit.Assume.assumeFalse;
+import hudson.model.FreeStyleProject;
+import javaposse.jobdsl.plugin.ExecuteDslScripts;
 
 public class JobDslIntegrationTest extends BaseIntegrationTest {
     @Test
@@ -26,13 +25,13 @@ public class JobDslIntegrationTest extends BaseIntegrationTest {
         ExecuteDslScripts executeDslScripts = new ExecuteDslScripts();
         executeDslScripts.setScriptText("job('" + generatedJobName + "') { steps { shell('echo Hello World') } }");
         seedProject.getBuildersList().add(executeDslScripts);
-        FreeStyleBuild seedBuild = jenkinsRule.buildAndAssertSuccess(seedProject);
+        jenkinsRule.buildAndAssertSuccess(seedProject);
 
         FreeStyleProject generatedJob = (FreeStyleProject) jenkinsRule.jenkins.getItemByFullName(generatedJobName);
         MatcherAssert.assertThat(generatedJob, CoreMatchers.notNullValue());
 
         jenkinsRule.buildAndAssertSuccess(generatedJob);
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        getGeneratedSpans();
 
     }
 }

@@ -33,11 +33,11 @@ public class ConfigurationAsCodeElasticTest {
     public void should_support_configuration_as_code() {
         final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
-        MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("https://my-deployment.apm.europe-west1.gcp.cloud.es.io"));
+        MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("https://my-deployment.otel.example.com"));
         MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(1));
 
         ElasticBackend elastic = (ElasticBackend) configuration.getObservabilityBackends().get(0);
-        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://my-deployment.europe-west1.gcp.cloud.es.io:9243"));
+        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://my-deployment.es.example.com"));
         MatcherAssert.assertThat(elastic.getName(), CoreMatchers.is("My Elastic"));
 
         BearerTokenAuthentication authentication = (BearerTokenAuthentication) configuration.getAuthentication();

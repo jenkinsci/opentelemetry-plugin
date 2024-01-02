@@ -5,15 +5,17 @@
 
 package io.jenkins.plugins.opentelemetry.backend;
 
-import com.google.errorprone.annotations.MustBeClosed;
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import hudson.Extension;
-import hudson.util.FormValidation;
-import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
-import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
-import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+
 import org.apache.commons.lang.StringUtils;
 import org.jenkins.ui.icon.Icon;
 import org.jenkins.ui.icon.IconSet;
@@ -22,20 +24,18 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.logging.Logger;
+import com.google.errorprone.annotations.MustBeClosed;
 
-public class ElasticBackend extends ObservabilityBackend implements TemplateBindingsProvider {
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import hudson.Extension;
+import hudson.util.FormValidation;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
+import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 
-    private final static Logger LOGGER = Logger.getLogger(ElasticBackend.class.getName());
+public class ElasticBackend extends ObservabilityBackend {
 
     public static final String OTEL_ELASTIC_URL = "OTEL_ELASTIC_URL";
     public static final String DEFAULT_BACKEND_NAME = "Elastic Observability";
@@ -191,6 +191,7 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
     @NonNull
     @Override
     public Map<String, String> getOtelConfigurationProperties() {
+        // FIXME related to https://github.com/jenkinsci/opentelemetry-plugin/issues/683
         if (elasticLogsBackend == null) {
             return Collections.emptyMap();
         } else {
@@ -281,8 +282,8 @@ public class ElasticBackend extends ObservabilityBackend implements TemplateBind
                 return FormValidation.ok();
             }
             try {
-                new URL(kibanaBaseUrl);
-            } catch (MalformedURLException e) {
+                new URI(kibanaBaseUrl).toURL();
+            } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e) {
                 return FormValidation.error("Invalid URL: " + e.getMessage());
             }
             return FormValidation.ok();

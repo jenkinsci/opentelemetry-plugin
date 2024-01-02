@@ -18,7 +18,6 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Objects;
-import java.util.logging.Logger;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -27,8 +26,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class GitStepHandler extends AbstractGitStepHandler {
-
-    private final static Logger LOGGER = Logger.getLogger(GitStepHandler.class.getName());
 
     @Override
     public boolean canCreateSpanBuilder(@NonNull FlowNode flowNode, @NonNull WorkflowRun run) {

@@ -81,7 +81,7 @@ For details to set up Jenkins with Elastic, Jaeger or Prometheus, to configure t
 
 Monitor access to Jenkins to detect anomalous behaviours.
 
-For details, see the security logs, metrics, and trace attributes [here](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/security.md).
+For details, see the security logs, metrics, and trace attributes [here](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/security_obs.md).
 
 ## Storing Jenkins Pipeline Logs in an Observability Backend
 

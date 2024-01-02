@@ -5,9 +5,24 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.auth.Credentials;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.errorprone.annotations.MustBeClosed;
+
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import groovy.text.Template;
 import hudson.Extension;
 import hudson.Util;
@@ -21,17 +36,6 @@ import io.jenkins.plugins.opentelemetry.jenkins.CredentialsNotFoundException;
 import io.jenkins.plugins.opentelemetry.jenkins.JenkinsCredentialsToApacheHttpCredentialsAdapter;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.auth.Credentials;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.NoSuchElementException;
-import java.util.Objects;
 
 public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBackend {
     private String elasticsearchUrl;
@@ -48,12 +52,15 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         Template buildLogsVisualizationUrlTemplate = getBuildLogsVisualizationUrlTemplate();
         if (StringUtils.isBlank(elasticsearchUrl)) {
-            return null; // FIXME handle case where this logs retriever is miss configured lacking of an Elasticsearch URL. We should use the rendering  ElasticLogsBackendWithVisualizationOnlyThroughKibana
+            return null; // FIXME handle case where this logs retriever is miss configured lacking of an
+                         // Elasticsearch URL. We should use the rendering
+                         // ElasticLogsBackendWithVisualizationOnlyThroughKibana
         } else {
-            Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
+            Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(
+                    () -> elasticsearchCredentialsId);
             return new ElasticsearchLogStorageRetriever(
-                this.elasticsearchUrl, disableSslVerifications, credentials,
-                buildLogsVisualizationUrlTemplate, templateBindingsProvider);
+                    this.elasticsearchUrl, disableSslVerifications, credentials,
+                    buildLogsVisualizationUrlTemplate, templateBindingsProvider);
         }
     }
 
@@ -88,12 +95,14 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ElasticLogsBackendWithJenkinsVisualization that = (ElasticLogsBackendWithJenkinsVisualization) o;
         return Objects.equals(elasticsearchUrl, that.elasticsearchUrl)
-            && Objects.equals(disableSslVerifications, that.disableSslVerifications)
-            && Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
+                && Objects.equals(disableSslVerifications, that.disableSslVerifications)
+                && Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
     }
 
     @Override
@@ -104,15 +113,14 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
     @Override
     public String toString() {
         return "ElasticLogsBackendWithVisualizationJenkins{" +
-            "elasticsearchUrl='" + elasticsearchUrl + '\'' +
-            ", disableSslVerifications='" + disableSslVerifications + '\'' +
-            ", elasticsearchCredentialsId='" + elasticsearchCredentialsId + '\'' +
-            '}';
+                "elasticsearchUrl='" + elasticsearchUrl + '\'' +
+                ", disableSslVerifications='" + disableSslVerifications + '\'' +
+                ", elasticsearchCredentialsId='" + elasticsearchCredentialsId + '\'' +
+                '}';
     }
 
     @Extension(ordinal = 0)
     public static class DescriptorImpl extends ElasticLogsBackend.DescriptorImpl {
-        private static final String ERROR_MALFORMED_URL = "The url is malformed.";
         @Override
         public String getDisplayName() {
             return "Store pipeline logs In Elastic and visualize logs both in Elastic and through Jenkins";
@@ -123,27 +131,31 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                 return FormValidation.ok();
             }
             try {
-                new URL(url);
-            } catch (MalformedURLException e) {
+                new URI(url).toURL();
+            } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e) {
                 return FormValidation.error("Invalid URL: " + e.getMessage());
             }
             return FormValidation.ok();
         }
 
-        public ListBoxModel doFillElasticsearchCredentialsIdItems(Item context, @QueryParameter String elasticsearchCredentialsId) {
+        public ListBoxModel doFillElasticsearchCredentialsIdItems(Item context,
+                @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
-                || context != null && !context.hasPermission(context.CONFIGURE)) {
+                    || context != null && !context.hasPermission(context.CONFIGURE)) {
                 return new StandardListBoxModel();
             }
 
             return new StandardListBoxModel().includeEmptyValue()
-                .includeAs(ACL.SYSTEM, context, StandardUsernameCredentials.class)
-                .includeCurrentValue(elasticsearchCredentialsId);
+                    .includeAs(ACL.SYSTEM, context, StandardUsernameCredentials.class)
+                    .includeCurrentValue(elasticsearchCredentialsId);
         }
 
-        public FormValidation doCheckElasticsearchCredentialsId(Item context, @QueryParameter String elasticsearchCredentialsId) {
+        @SuppressFBWarnings(value="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT", 
+            justification="We don't care about the return value, we just want to check that the credentials are valid")
+        public FormValidation doCheckElasticsearchCredentialsId(Item context,
+                @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
-                || context != null && !context.hasPermission(context.CONFIGURE)) {
+                    || context != null && !context.hasPermission(context.CONFIGURE)) {
                 return FormValidation.ok();
             }
 
@@ -151,21 +163,21 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                 return FormValidation.error("Elasticsearch credentials are missing");
             }
             try {
-                new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId).getUserPrincipal().getName();
+                new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId)
+                        .getUserPrincipal().getName();
             } catch (CredentialsNotFoundException e) {
                 return FormValidation.error("Elasticsearch credentials are not valid");
             }
             return FormValidation.ok();
         }
 
-        public FormValidation doValidate(@QueryParameter String elasticsearchUrl, @QueryParameter boolean disableSslVerifications, @QueryParameter String elasticsearchCredentialsId) {
+        public FormValidation doValidate(@QueryParameter String elasticsearchUrl,
+                @QueryParameter boolean disableSslVerifications, @QueryParameter String elasticsearchCredentialsId) {
             FormValidation elasticsearchUrlValidation = doCheckElasticsearchUrl(elasticsearchUrl);
             if (elasticsearchUrlValidation.kind != FormValidation.Kind.OK) {
                 return elasticsearchUrlValidation;
             }
-
             Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
-            // TODO cleanup code, we shouldn't have to instantiate the ElasticsearchLogStorageRetriever to check the proper configuration of the access to Elasticsearch
             try (ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
                     disableSslVerifications,

@@ -5,18 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import com.github.rutledgepaulv.prune.Tree;
-import hudson.model.Cause;
-import hudson.model.FreeStyleBuild;
-import hudson.model.FreeStyleProject;
-import hudson.model.Node;
-import hudson.model.Result;
-import hudson.tasks.Ant;
-import hudson.tasks.ArtifactArchiver;
-import hudson.tasks.Shell;
-import hudson.tasks._ant.AntTargetNote;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.common.Attributes;
+import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
+import static org.junit.Assume.assumeFalse;
+
+import java.util.List;
+
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -31,11 +24,20 @@ import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
-import java.util.Arrays;
+import com.github.rutledgepaulv.prune.Tree;
 import java.util.List;
 
-import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
-import static org.junit.Assume.assumeFalse;
+import hudson.model.Cause;
+import hudson.model.FreeStyleBuild;
+import hudson.model.FreeStyleProject;
+import hudson.model.Node;
+import hudson.model.Result;
+import hudson.tasks.Ant;
+import hudson.tasks.ArtifactArchiver;
+import hudson.tasks.Shell;
+import hudson.tasks._ant.AntTargetNote;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.common.Attributes;
 
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
 
@@ -200,8 +202,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
             MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
             assertFreestyleJobMetadata(build, spans);
-            // Jenkins UTs classloader does not load the plugins :/ so let's use the default value.
-            assertBuildStepMetadata(spans, "ant", JENKINS_CORE);
+            assertBuildStepMetadata(spans, "ant", "ant");
             assertNodeMetadata(spans, rootSpanName, true);
         } finally {
           jenkinsRule.jenkins.removeNode(agent);
