@@ -134,7 +134,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                     "'''\n" +
                     "    }\n" +
                     "}";
-            final Node node = jenkinsRule.createOnlineSlave();
+            jenkinsRule.createOnlineSlave();
 
             WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-trace-environment-variables-injected-in-shell-steps-" + jobNameSuffix.incrementAndGet());
             pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
@@ -293,7 +293,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testChainOfPipelines() throws Exception {
-        final Node node = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
 
         String childPipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
             "node() {\n" +
@@ -345,7 +345,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "        }\n" +
                 "    }\n" +
                 "}";
-        final Node agent = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-parallel-step" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
@@ -405,7 +405,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "    git credentialsId: '" + globalCredentialId + "', url: 'https://github.com/octocat/Hello-World' \n" +
                 "  }\n" +
                 "}";
-        final Node agent = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
@@ -433,7 +433,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
             "    checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [[$class: 'CloneOption', depth: 2, noTags: true, reference: '', shallow: true]], userRemoteConfigs: [[url: 'https://github.com/octocat/Hello-World']]]) \n" +
             "  }\n" +
             "}";
-        final Node agent = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
@@ -462,7 +462,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
             "    checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/octocat/Hello-World']]]) \n" +
             "  }\n" +
             "}";
-        final Node agent = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
@@ -492,7 +492,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
             "        }, failFast:true\n" +
             "    }\n" +
             "}";
-        Node agent = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
