@@ -19,7 +19,7 @@
     <properties>
         <revision>2.19.1</revision>
         <changelist>-SNAPSHOT</changelist>
-        <jenkins.version>2.387.3</jenkins.version>
+        <jenkins.version>2.401.3</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.33.0</opentelemetry.version>
         <!--
@@ -31,7 +31,7 @@
         <opentelemetry-semconv>1.23.1-alpha</opentelemetry-semconv>
         <useBeta>true</useBeta>
         <elasticstack.version>8.11.2</elasticstack.version>
-        <error-prone.version>2.23.0</error-prone.version>
+        <error-prone.version>2.24.0</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
@@ -44,8 +44,8 @@
         <dependencies>
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
-                <artifactId>bom-2.387.x</artifactId>
-                <version>2102.v854b_fec19c92</version>
+                <artifactId>bom-2.401.x</artifactId>
+                <version>2312.v91115fa_5b_2b_6</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -233,7 +233,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>cloudbees-disk-usage-simple</artifactId>
-            <version>187.v6378d330d1d4</version>
+            <version>203.v3f46a_7462b_1a_</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -451,6 +451,15 @@
                         <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
                         <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                     </loggers>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <jenkins.test.timeout>600</jenkins.test.timeout>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

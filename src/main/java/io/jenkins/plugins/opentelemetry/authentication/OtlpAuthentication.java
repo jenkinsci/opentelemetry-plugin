@@ -5,17 +5,16 @@
 
 package io.jenkins.plugins.opentelemetry.authentication;
 
+import java.util.Map;
+
 import com.google.common.collect.ComparisonChain;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.DescriptorExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporterBuilder;
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
 import jenkins.model.Jenkins;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
 
 public abstract class OtlpAuthentication implements Describable<OtlpAuthentication>, ExtensionPoint {
     public abstract void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties);

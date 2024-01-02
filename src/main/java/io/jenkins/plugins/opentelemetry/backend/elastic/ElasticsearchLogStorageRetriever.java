@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.ilm.Phases;
 import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
+import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.google.errorprone.annotations.MustBeClosed;
@@ -231,7 +232,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
      * Example of a successful check:
      * <pre>{@code
      * OK: Verify existence of the Elasticsearch Index Template 'logs-apm.app' used to store Jenkins pipeline logs...
-     * OK: Connected to Elasticsearch https://***.europe-west1.gcp.cloud.es.io:9243 with user 'jenkins'.
+     * OK: Connected to Elasticsearch https://***.es.example.com with user 'jenkins'.
      * OK: Index Template 'logs-apm.app' found.
      * OK: Verify existence of the Index Lifecycle Management (ILM) Policy 'logs-apm.app' associated with the Index Template 'logs-apm.app' to define the time to live of the Jenkins pipeline logs in Elasticsearch...
      * OK: Index Lifecycle Policy 'logs-apm.app_logs-default_policy' found.
@@ -249,8 +250,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             return validations;
         }
 
-
-        // TODO remove workaround https://github.com/jenkinsci/opentelemetry-plugin/issues/336
         // we just check the existence of the Index Template and assume the Index Lifecycle Policy is "logs-apm.app_logs-default_policy"
 
         validations.add(FormValidation.ok("Verify existence of the Elasticsearch Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' used to store Jenkins pipeline logs..."));
@@ -340,19 +339,25 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             return phaseName + " [phase not defined]";
         }
         List<String> retentionPolicySpec = new ArrayList<>();
-        JsonValue actionsAsJson = phase.actions().toJson();
-        JsonObject hotPhaseActions = actionsAsJson.asJsonObject();
-        if (hotPhaseActions.containsKey("rollover")) {
-            JsonObject rollOver = hotPhaseActions.getJsonObject("rollover");
-            String maxSize = rollOver.getString("max_size", "not defined");
-            String maxAge = Optional
-                .ofNullable(rollOver.getString("max_age", null))
-                .map(a -> Time.of(b -> b.time(a))).map(Time::time).orElse("Not defined");
-            retentionPolicySpec.add("rollover[maxAge=" + maxAge + ", maxSize=" + maxSize + "]");
-        }
-        if (hotPhaseActions.containsKey("delete")) {
-            String minAge = phase.minAge().time();
-            retentionPolicySpec.add("delete[min_age=" + minAge + "]");
+        JsonData actions = phase.actions();
+        if (actions != null){
+            JsonValue actionsAsJson = actions.toJson();
+            JsonObject hotPhaseActions = actionsAsJson.asJsonObject();
+            if (hotPhaseActions.containsKey("rollover")) {
+                JsonObject rollOver = hotPhaseActions.getJsonObject("rollover");
+                String maxSize = rollOver.getString("max_size", "not defined");
+                String maxAge = Optional
+                    .ofNullable(rollOver.getString("max_age", null))
+                    .map(a -> Time.of(b -> b.time(a))).map(Time::time).orElse("Not defined");
+                retentionPolicySpec.add("rollover[maxAge=" + maxAge + ", maxSize=" + maxSize + "]");
+            }
+            if (hotPhaseActions.containsKey("delete")) {
+                Time minAge2 = phase.minAge();
+                if(minAge2 != null){
+                    String minAge = minAge2.time();
+                    retentionPolicySpec.add("delete[min_age=" + minAge + "]");
+                }
+            }
         }
         return phaseName + "[" + String.join(",", retentionPolicySpec) + "]";
     }

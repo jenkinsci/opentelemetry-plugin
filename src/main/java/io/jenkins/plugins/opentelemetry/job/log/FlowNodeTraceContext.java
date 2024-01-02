@@ -25,7 +25,7 @@ public class FlowNodeTraceContext extends RunTraceContext {
         String spanId = span.getSpanContext().getSpanId();
         String traceId = span.getSpanContext().getTraceId();
         Map<String, String> w3cTraceContext = OtelUtils.getW3cTraceContext(span);
-        return new FlowNodeTraceContext(run.getFullDisplayName(), run.getNumber(), flowNode.getId(), traceId, spanId, w3cTraceContext);
+        return new FlowNodeTraceContext(run.getParent().getFullName(), run.getNumber(), flowNode.getId(), traceId, spanId, w3cTraceContext);
     }
 
     private final String flowNodeId;

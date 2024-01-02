@@ -1,9 +1,22 @@
 package io.jenkins.plugins.opentelemetry.remotespan;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+
+import java.util.Optional;
+
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.junit.Test;
+
 import com.github.rutledgepaulv.prune.Tree;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
+
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -11,22 +24,8 @@ import hudson.security.AuthorizationStrategy;
 import hudson.security.SecurityRealm;
 import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.junit.Test;
-
-import java.util.Optional;
-import java.util.logging.Logger;
-
-import static com.google.common.base.Verify.verify;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
 
 public class RemoteSpanDisabledTest extends BaseIntegrationTest {
-    private static final Logger LOGGER = Logger.getLogger(RemoteSpanDisabledTest.class.getName());
     static final String PARENT_TRACE_ID = "4bf92f3577b34da6a3ce929d0e0e4736";
     static final String PARENT_SPAN_ID = "00f067aa0ba902b7";
 

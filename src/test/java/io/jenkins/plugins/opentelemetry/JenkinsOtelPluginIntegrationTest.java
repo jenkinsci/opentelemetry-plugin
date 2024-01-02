@@ -5,8 +5,27 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static org.junit.Assume.assumeFalse;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.apache.commons.lang3.SystemUtils;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.jvnet.hudson.test.recipes.WithPlugin;
+
 import com.github.rutledgepaulv.prune.Tree;
 import com.google.common.collect.Iterables;
+
 import hudson.Functions;
 import hudson.model.Node;
 import hudson.model.Result;
@@ -21,24 +40,6 @@ import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterUtils;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.jvnet.hudson.test.recipes.WithPlugin;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static org.junit.Assume.assumeFalse;
 
 /**
  * Note usage of `def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}}` is inspired by
@@ -61,12 +62,12 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "    }\n" +
                 "}";
-        final Node agent = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
 
         final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
@@ -137,7 +138,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
             WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-trace-environment-variables-injected-in-shell-steps-" + jobNameSuffix.incrementAndGet());
             pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-            WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+            jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
             final Tree<SpanDataWrapper> spans = getGeneratedSpans();
             MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
@@ -165,7 +166,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         final String jobName = "test-pipeline-with-node-steps-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
@@ -210,12 +211,12 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "    }\n" +
                 "}";
 
-        final Node agent = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
 
         String jobName = "test-pipeline-with-skipped-tests-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
@@ -246,11 +247,11 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
                 "    }\n" +
                 "}";
-        final Node agent = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-wrapping-step-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
@@ -277,11 +278,11 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "       error 'ze-pipeline-error' \n" +
                 "    }\n" +
                 "}";
-        final Node node = jenkinsRule.createOnlineSlave();
+        jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-error-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
@@ -312,7 +313,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         WorkflowJob parentPipeline = jenkinsRule.createProject(WorkflowJob.class, "parent-pipeline-" + jobNameSuffix.incrementAndGet());
         parentPipeline.setDefinition(new CpsFlowDefinition(parentPipelineScript, true));
-        WorkflowRun parentBuild = jenkinsRule.assertBuildStatus(Result.SUCCESS, parentPipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, parentPipeline.scheduleBuild2(0));
 
         String childPipelineRootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + childPipeline.getName();
 
@@ -348,7 +349,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-parallel-step" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
@@ -407,7 +408,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         final Node agent = jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "git: github.com/octocat/Hello-World", "Stage: foo", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
@@ -435,7 +436,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         final Node agent = jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "checkout: github.com/octocat/Hello-World", "Stage: foo", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
@@ -464,7 +465,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         final Node agent = jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "checkout: github.com/octocat/Hello-World", "Stage: foo", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
@@ -494,7 +495,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         Node agent = jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        WorkflowRun build = jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
+        jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "sleep", "Parallel branch: branchThatWillBeInterrupted", "Stage: ze-parallel-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
