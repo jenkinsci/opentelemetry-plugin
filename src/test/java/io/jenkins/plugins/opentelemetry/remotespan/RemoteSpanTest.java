@@ -1,9 +1,9 @@
 package io.jenkins.plugins.opentelemetry.remotespan;
 
 import com.github.rutledgepaulv.prune.Tree;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 import hudson.ExtensionList;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;

@@ -13,9 +13,6 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Test;
 
 import com.github.rutledgepaulv.prune.Tree;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
 
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
@@ -24,6 +21,11 @@ import hudson.security.AuthorizationStrategy;
 import hudson.security.SecurityRealm;
 import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+
 
 public class RemoteSpanDisabledTest extends BaseIntegrationTest {
     static final String PARENT_TRACE_ID = "4bf92f3577b34da6a3ce929d0e0e4736";
