@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.commons.lang.StringUtils;
 import org.jenkins.ui.icon.Icon;
@@ -31,9 +32,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.util.FormValidation;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import jenkins.model.GlobalConfiguration;
 
 public class ElasticBackend extends ObservabilityBackend {
 
@@ -157,15 +160,19 @@ public class ElasticBackend extends ObservabilityBackend {
             return null;
         }
         // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
-        String kibanaSpaceBaseUrl;
+        String kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
         if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
-            kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
+            kibanaSpaceBaseUrl += "/app/kibana#/dashboards?";
         } else {
-            kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8);
+            kibanaSpaceBaseUrl += "/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8) + "/app/kibana#/dashboards?";
         }
-        return kibanaSpaceBaseUrl + "/app/kibana#/dashboards?" +
-            "title=" + URLEncoder.encode(getKibanaDashboardTitle(), StandardCharsets.UTF_8) + "&" +
-            "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
+        if (StringUtils.isNotBlank(this.getKibanaDashboardUrlParameters())){
+            kibanaSpaceBaseUrl += this.getKibanaDashboardUrlParameters();
+        } else {
+            kibanaSpaceBaseUrl += "title=" + URLEncoder.encode(getKibanaDashboardTitle(), StandardCharsets.UTF_8) + "&" +
+                "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
+        }
+        return kibanaSpaceBaseUrl;
     }
 
     public ElasticLogsBackend getElasticLogsBackend() {
@@ -297,5 +304,18 @@ public class ElasticBackend extends ObservabilityBackend {
         String KIBANA_BASE_URL = "kibanaBaseUrl";
         String KIBANA_DASHBOARD_TITLE = "kibanaDashboardTitle";
         String KIBANA_SPACE_IDENTIFIER = "kibanaSpaceIdentifier";
+    }
+
+
+    public static Optional<ElasticBackend> get(){
+        Optional<ElasticBackend> ret = null;
+        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+        if (configuration != null) {
+            Optional<ObservabilityBackend> backend = configuration.getObservabilityBackends().stream().filter(x -> x instanceof ElasticBackend).findFirst();
+            if (!backend.isEmpty()) {
+                ret = Optional.of((ElasticBackend) backend.get());
+            }
+        }
+        return ret;
     }
 }
