@@ -75,6 +75,7 @@ Attributes reported on the span of pipeline steps:
 | jenkins.pipeline.step.name       | Step name (user friendly) | String |
 | jenkins.pipeline.step.type       | Step name | String |
 | jenkins.pipeline.step.id         | Step id   | String |
+| jenkins.pipeline.step.result     | Step result | Enum (`ABORTED`, `FAILURE`, `NOT_EXECUTED`, `PAUSED_PENDING_INPUT`, `QUEUED`, `SUCCESS`, `UNSTABLE`; see [GenericStatus](https://javadoc.jenkins.io/plugin/pipeline-graph-analysis/org/jenkinsci/plugins/workflow/pipelinegraphanalysis/GenericStatus.html)) |
 | jenkins.pipeline.step.plugin.name | Jenkins plugin for that particular step | String |
 | jenkins.pipeline.step.plugin.version| Jenkins plugin version | String |
 | jenkins.pipeline.step.agent.label | Labels attached to the agent | String |
