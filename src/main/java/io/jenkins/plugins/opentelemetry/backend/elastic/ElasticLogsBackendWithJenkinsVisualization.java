@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.auth.Credentials;
@@ -38,6 +39,10 @@ import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.Jenkins;
 
 public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBackend {
+    private static final String MSG_ELASTICSEARCH_URL_IS_BLANK = "Elasticsearch URL is blank, logs will not be stored in Elasticsearch";
+
+    private final static Logger logger = Logger.getLogger(ElasticLogsBackendWithJenkinsVisualization.class.getName());
+
     private String elasticsearchUrl;
     private boolean disableSslVerifications;
     private String elasticsearchCredentialsId;
@@ -52,9 +57,8 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         Template buildLogsVisualizationUrlTemplate = getBuildLogsVisualizationUrlTemplate();
         if (StringUtils.isBlank(elasticsearchUrl)) {
-            return null; // FIXME handle case where this logs retriever is miss configured lacking of an
-                         // Elasticsearch URL. We should use the rendering
-                         // ElasticLogsBackendWithVisualizationOnlyThroughKibana
+            logger.warning(MSG_ELASTICSEARCH_URL_IS_BLANK);
+            throw new IllegalStateException(MSG_ELASTICSEARCH_URL_IS_BLANK);
         } else {
             Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(
                     () -> elasticsearchCredentialsId);
