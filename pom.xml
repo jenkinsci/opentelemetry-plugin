@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.77</version>
+        <version>4.79</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -30,7 +30,7 @@
         <opentelemetry-contrib.version>1.32.0-alpha</opentelemetry-contrib.version>
         <opentelemetry-semconv>1.23.1-alpha</opentelemetry-semconv>
         <useBeta>true</useBeta>
-        <elasticstack.version>8.12.0</elasticstack.version>
+        <elasticstack.version>8.12.2</elasticstack.version>
         <error-prone.version>2.24.1</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
@@ -422,7 +422,7 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>1.19.3</version>
+            <version>1.19.7</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>

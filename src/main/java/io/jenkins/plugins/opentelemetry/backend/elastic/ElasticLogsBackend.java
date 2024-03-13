@@ -10,6 +10,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,6 +26,7 @@ import hudson.ExtensionPoint;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.Jenkins;
@@ -54,10 +56,11 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
 
         if (this.buildLogsVisualizationUrlGTemplate == null) {
             String kibanaSpaceBaseUrl;
-            if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
+            String spaceIdentifier = this.getKibanaSpaceIdentifier();
+            if (StringUtils.isBlank(spaceIdentifier)) {
                 kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
             } else {
-                kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8);
+                kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/" + URLEncoder.encode(spaceIdentifier, StandardCharsets.UTF_8);
             }
 
             String urlTemplate = kibanaSpaceBaseUrl + "/app/logs/stream?" +
@@ -79,8 +82,13 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
     }
 
     private String getKibanaSpaceIdentifier() {
-        // FIXME implement getKibanaSpaceIdentifier
-        return "";
+        String ret = "";
+        Optional<ElasticBackend> backend = ElasticBackend.get();
+        if (!backend.isEmpty()) {
+            ElasticBackend elasticLogsBackend = backend.get();
+            ret = elasticLogsBackend.getKibanaSpaceIdentifier();
+        }
+        return ret;
     }
 
     @Override
