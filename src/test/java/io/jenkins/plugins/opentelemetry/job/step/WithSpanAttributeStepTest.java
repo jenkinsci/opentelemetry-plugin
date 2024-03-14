@@ -119,49 +119,49 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         { // attribute 'pipeline.type' - implicitly TARGET_ONLY
             SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualPipelineType = actualSpanData.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
-            MatcherAssert.assertThat(actualPipelineType, CoreMatchers.is("release"));
+            MatcherAssert.assertThat("attribute is set on target",actualPipelineType, CoreMatchers.is("release"));
             SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualStageType2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
-            MatcherAssert.assertThat(actualStageType2, CoreMatchers.nullValue()); // not set on children
+            MatcherAssert.assertThat("attribute is not set on child", actualStageType2, CoreMatchers.nullValue());
         }
 
         { // attribute 'pipeline.importance' - TARGET_AND_CHILDREN, can be configured anywhere in the pipeline
             SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualPipelineType = actualSpanData.getAttributes().get(AttributeKey.stringKey("pipeline.importance"));
-            MatcherAssert.assertThat(actualPipelineType, CoreMatchers.is("critical"));
+            MatcherAssert.assertThat("attribute is set on target", actualPipelineType, CoreMatchers.is("critical"));
 //            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
 //            String actualStageType2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("pipeline.importance"));
-//            MatcherAssert.assertThat(actualStageType2, CoreMatchers.is("critical")); // set on children
+//            MatcherAssert.assertThat("attribute is set on child", actualStageType2, CoreMatchers.is("critical"));
         }
 
         { // attribute 'stage.type' - TARGET_ONLY
             SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualStageType = actualSpanData.getAttributes().get(AttributeKey.stringKey("stage.type"));
-            MatcherAssert.assertThat(actualStageType, CoreMatchers.is("build-java-maven"));
+            MatcherAssert.assertThat("attribute is set on target", actualStageType, CoreMatchers.is("build-java-maven"));
             SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "test-script".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualStageType2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("stage.type"));
-            MatcherAssert.assertThat(actualStageType2, CoreMatchers.nullValue()); // not set on children
+            MatcherAssert.assertThat("attribute is not set on child", actualStageType2, CoreMatchers.nullValue());
             SpanData actualSpanData3 = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualStageType3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("stage.type"));
-            MatcherAssert.assertThat(actualStageType3, CoreMatchers.nullValue()); // not set on parent
+            MatcherAssert.assertThat("attribute is not set on parent", actualStageType3, CoreMatchers.nullValue());
             SpanData actualSpanData4 = spans.breadthFirstStream().filter(sdw -> "Stage: test".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualStageType4 = actualSpanData4.getAttributes().get(AttributeKey.stringKey("stage.type"));
-            MatcherAssert.assertThat(actualStageType4, CoreMatchers.nullValue()); // not set on sibling
+            MatcherAssert.assertThat("attribute is not set on sibling", actualStageType4, CoreMatchers.nullValue());
         }
 
         { // attribute 'build.tool' - TARGET_AND_CHILDREN
             SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualStageType = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
-            MatcherAssert.assertThat(actualStageType, CoreMatchers.is("maven"));
+            MatcherAssert.assertThat("attribute is set on target", actualStageType, CoreMatchers.is("maven"));
 //            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "test-script".equals(sdw.spanData.getName())).findFirst().get().spanData;
 //            String actualStageType2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("build.tool"));
-//            MatcherAssert.assertThat(actualStageType2, CoreMatchers.is("maven")); // set on children
+//            MatcherAssert.assertThat("attribute is set on child", actualStageType2, CoreMatchers.is("maven"));
             SpanData actualSpanData3 = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualStageType3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("build.tool"));
-            MatcherAssert.assertThat(actualStageType3, CoreMatchers.nullValue()); // not set on parent
+            MatcherAssert.assertThat("attribute is not set on parent", actualStageType3, CoreMatchers.nullValue());
             SpanData actualSpanData4 = spans.breadthFirstStream().filter(sdw -> "Stage: test".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualStageType4 = actualSpanData4.getAttributes().get(AttributeKey.stringKey("build.tool"));
-            MatcherAssert.assertThat(actualStageType4, CoreMatchers.nullValue()); // not set on sibling
+            MatcherAssert.assertThat("attribute is not set on sibling", actualStageType4, CoreMatchers.nullValue());
         }
 
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
