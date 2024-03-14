@@ -15,6 +15,7 @@ import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.jenkins.plugins.opentelemetry.job.action.AttributeSetterAction;
 import io.jenkins.plugins.opentelemetry.job.action.BuildStepMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.OtelMonitoringAction;
@@ -218,27 +219,36 @@ public class OtelTraceService {
 
     public void putSpan(@NonNull AbstractBuild build, @NonNull Span span) {
         build.addAction(new MonitoringAction(span));
+        build.getActions(AttributeSetterAction.class).forEach(setter -> setter.setToSpan(span));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putSpan(AbstractBuild build, BuildStep buildStep, Span span) {
         build.addAction(new BuildStepMonitoringAction(span));
+        build.getActions(AttributeSetterAction.class).forEach(setter -> setter.setToSpan(span));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + ", " + buildStep + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putSpan(@NonNull Run run, @NonNull Span span) {
         run.addAction(new MonitoringAction(span));
+        run.getActions(AttributeSetterAction.class).forEach(setter -> setter.setToSpan(span));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putRunPhaseSpan(@NonNull Run run, @NonNull Span span) {
         run.addAction(new RunPhaseMonitoringAction(span));
+        run.getActions(AttributeSetterAction.class).forEach(setter -> setter.setToSpan(span));
         LOGGER.log(Level.FINEST, () -> "putRunPhaseSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
         flowNode.addAction(new FlowNodeMonitoringAction(span));
+        run.getActions(AttributeSetterAction.class).forEach(setter -> setter.setToSpan(span));
+        Iterable<FlowNode> ancestors = ImmutableList.copyOf(getAncestors(flowNode)).reverse();
+        for (FlowNode currentFlowNode : ancestors) {
+            currentFlowNode.getActions(AttributeSetterAction.class).forEach(setter -> setter.setToSpan(span));
+        }
 
         LOGGER.log(Level.FINE, () -> "putSpan(" + run.getFullDisplayName() + ", " +
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");

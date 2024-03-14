@@ -16,6 +16,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import io.jenkins.plugins.opentelemetry.job.action.AttributeSetterAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
@@ -269,10 +272,42 @@ public class WithSpanAttributeStep extends Step {
             }
             logger.log(Level.FINE, () -> "setSpanAttribute: run=\"" + run.getParent().getName() + "#" + run.getId() + "\", key=" + key + " value=\"" + value + "\" type=" + attributeType);
             span.setAttribute(attributeKey, convertedValue);
+            if (SetOn.TARGET_AND_CHILDREN.equals(setOn)) {
+                // also set on all child spans
+                // ? log a warning if the span has ended
+                // TODO: handle yet to be created spans
+                //       how to get parent withSpanAttributeStep?
+                switch (target) {
+                    // Best effort to set attribute on children.
+                    // Some child spans that were created before the execution of withSpanAttribute might be missed.
+                    case PIPELINE_ROOT_SPAN:
+                        Span phaseSpan= otelTraceService.getSpan(run);
+                        phaseSpan.setAttribute(attributeKey, convertedValue);
+                        Span currentSpan= otelTraceService.getSpan(run, flowNode);
+                        currentSpan.setAttribute(attributeKey, convertedValue);
+                        run.addAction(new AttributeSetterAction(attributeKey, convertedValue));
+                        break;
+                    case CURRENT_SPAN:
+                        getClosestBlockNode(flowNode).addAction(new AttributeSetterAction(attributeKey, convertedValue));
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unsupported target span '" + target + "'. ");
+                }
+            }
 
             return null;
         }
 
         private static final long serialVersionUID = 1L;
+    }
+
+    private static FlowNode getClosestBlockNode(@NonNull final FlowNode flowNode) {
+        if (flowNode instanceof StepEndNode) {
+            return ((StepEndNode) flowNode).getStartNode();
+        }
+        if (flowNode instanceof StepStartNode) {
+            return flowNode;
+        }
+        return flowNode.getEnclosingBlocks().get(0);
     }
 }
