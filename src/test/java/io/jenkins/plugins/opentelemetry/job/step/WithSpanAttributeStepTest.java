@@ -25,7 +25,7 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 public class WithSpanAttributeStepTest extends BaseIntegrationTest {
 
     @Test
-    public void testSimplePipelineWithWithSpanAttributeStep() throws Exception {
+    public void testSimplePipelineWithWithSpanAttributeStepTarget() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // BEFORE
 
@@ -33,6 +33,7 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             "withSpanAttribute(key: 'pipeline.type', value: 'release', target: 'PIPELINE_ROOT_SPAN')\n" +
             "node() {\n" +
             "    stage('build') {\n" +
+            "       withSpanAttribute(key: 'pipeline.importance', value: 'critical', target: 'PIPELINE_ROOT_SPAN')\n" +
             "       withSpanAttribute(key: 'stage.type', value: 'build-java-maven', target: 'CURRENT_SPAN')\n" +
             "       withSpanAttribute(key: 'build.tool', value: 'maven')\n" +
             "       xsh (label: 'release-script', script: 'echo ze-echo-1') \n" +
@@ -40,7 +41,7 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             "}";
         jenkinsRule.createOnlineSlave();
 
-        final String jobName = "test-simple-pipeline-with-with-span-attribute-step" + jobNameSuffix.incrementAndGet();
+        final String jobName = "test-simple-pipeline-with-with-span-attribute-step-target" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
@@ -58,6 +59,12 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualPipelineType = actualSpanData.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
             MatcherAssert.assertThat(actualPipelineType, CoreMatchers.is("release"));
+        }
+
+        { // attribute 'pipeline.importance' - PIPELINE_ROOT_SPAN, can be configured anywhere in the pipeline
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineType = actualSpanData.getAttributes().get(AttributeKey.stringKey("pipeline.importance"));
+            MatcherAssert.assertThat(actualPipelineType, CoreMatchers.is("critical"));
         }
 
         { // attribute 'stage.type' - CURRENT_SPAN
