@@ -46,11 +46,15 @@ public class WithSpanAttributeStep extends Step {
 
     enum Target {CURRENT_SPAN, PIPELINE_ROOT_SPAN}
 
+    enum SetOn {TARGET_ONLY, TARGET_AND_CHILDREN}
+
     String key;
     Object value;
     AttributeType type;
 
     Target target;
+
+    SetOn setOn;
 
     @DataBoundConstructor
     public WithSpanAttributeStep() {
@@ -84,7 +88,7 @@ public class WithSpanAttributeStep extends Step {
             }
         }
 
-        return new Execution(key, value, type, Objects.requireNonNullElse(target, Target.CURRENT_SPAN), context);
+        return new Execution(key, value, type, Objects.requireNonNullElse(target, Target.CURRENT_SPAN), Objects.requireNonNullElse(setOn, SetOn.TARGET_ONLY), context);
     }
 
     public String getKey() {
@@ -140,6 +144,24 @@ public class WithSpanAttributeStep extends Step {
         return Optional.ofNullable(target).map(Target::name).orElse(null);
     }
 
+    /**
+     * @param setOn case-insensitive representation of {@link SetOn}
+     */
+    @DataBoundSetter
+    public void setSetOn(String setOn) {
+        this.setOn = Optional.ofNullable(setOn)
+            .map(String::trim)
+            .filter(Predicate.not(String::isEmpty))
+            .map(String::toUpperCase)
+            .map(SetOn::valueOf)
+            .orElse(null);
+    }
+
+    @CheckForNull
+    public String getSetOn() {
+        return Optional.ofNullable(setOn).map(SetOn::name).orElse(null);
+    }
+
     @Extension
     public static final class DescriptorImpl extends StepDescriptor {
         public static final String FUNCTION_NAME = "withSpanAttribute";
@@ -180,12 +202,15 @@ public class WithSpanAttributeStep extends Step {
 
         private final Target target;
 
-        Execution(String key, Object value, AttributeType attributeType, Target target, StepContext context) {
+        private final SetOn setOn;
+
+        Execution(String key, Object value, AttributeType attributeType, Target target, SetOn setOn, StepContext context) {
             super(context);
             this.key = key;
             this.value = value;
             this.attributeType = attributeType;
             this.target = target;
+            this.setOn = setOn;
         }
 
         @Override
