@@ -8,6 +8,11 @@ package io.jenkins.plugins.opentelemetry.init;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.opentelemetry.api.OpenTelemetry;
+/*
+ * NOTE: in instrumentation 2.x, the following classes will suffer from the following changes:
+ * - io.opentelemetry.instrumentation.runtimemetrics.java8.* -> io.opentelemetry.instrumentation.runtimemetrics.java8¡.internal.Experimental*
+ * - The metrics process.runtime.jvm.* are moved to jvm.* ans some are renamed see https://github.com/open-telemetry/semantic-conventions/issues/42 and related issues
+ */
 import io.opentelemetry.instrumentation.runtimemetrics.java8.BufferPools;
 import io.opentelemetry.instrumentation.runtimemetrics.java8.Classes;
 import io.opentelemetry.instrumentation.runtimemetrics.java8.Cpu;
