@@ -33,6 +33,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
+import org.apache.commons.codec.net.URLCodec;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URLEncoder;
@@ -218,7 +219,12 @@ public class OtelUtils {
 
     @NonNull
     public static String urlEncode(String value) {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+        try {
+            URLCodec encoder = new URLCodec(StandardCharsets.UTF_8.name());
+            return encoder.encode(value);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to URL encode value: " + value, e);
+        }
     }
 
     @NonNull

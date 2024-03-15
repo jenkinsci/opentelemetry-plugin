@@ -8,7 +8,6 @@ package io.jenkins.plugins.opentelemetry.backend;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,6 +36,7 @@ import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.GlobalConfiguration;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 
 public class ElasticBackend extends ObservabilityBackend {
 
@@ -102,10 +102,9 @@ public class ElasticBackend extends ObservabilityBackend {
         Map<String, Object> bindings = new LinkedHashMap<>();
         bindings.put(TemplateBindings.BACKEND_NAME, getName());
         bindings.put(TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/elastic.png");
-
         bindings.put(TemplateBindings.KIBANA_BASE_URL, this.getKibanaBaseUrl());
-        bindings.put(TemplateBindings.KIBANA_DASHBOARD_TITLE, this.kibanaDashboardTitle);
-        bindings.put(TemplateBindings.KIBANA_SPACE_IDENTIFIER, this.kibanaSpaceIdentifier);
+        bindings.put(TemplateBindings.KIBANA_DASHBOARD_TITLE, OtelUtils.urlEncode(this.kibanaDashboardTitle));
+        bindings.put(TemplateBindings.KIBANA_SPACE_IDENTIFIER, OtelUtils.urlEncode(this.kibanaSpaceIdentifier));
         return bindings;
     }
 
@@ -164,14 +163,9 @@ public class ElasticBackend extends ObservabilityBackend {
         if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
             kibanaSpaceBaseUrl += "/app/kibana#/dashboards?";
         } else {
-            kibanaSpaceBaseUrl += "/s/" + URLEncoder.encode(this.getKibanaSpaceIdentifier(), StandardCharsets.UTF_8) + "/app/kibana#/dashboards?";
+            kibanaSpaceBaseUrl += "/s/${kibanaSpaceIdentifier}/app/kibana#/dashboards?";
         }
-        if (StringUtils.isNotBlank(this.getKibanaDashboardUrlParameters())){
-            kibanaSpaceBaseUrl += this.getKibanaDashboardUrlParameters();
-        } else {
-            kibanaSpaceBaseUrl += "title=" + URLEncoder.encode(getKibanaDashboardTitle(), StandardCharsets.UTF_8) + "&" +
-                "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
-        }
+        kibanaSpaceBaseUrl += this.getKibanaDashboardUrlParameters();
         return kibanaSpaceBaseUrl;
     }
 

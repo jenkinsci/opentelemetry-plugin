@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
@@ -60,7 +59,7 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
             if (StringUtils.isBlank(spaceIdentifier)) {
                 kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
             } else {
-                kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/" + URLEncoder.encode(spaceIdentifier, StandardCharsets.UTF_8);
+                kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/${spaceIdentifier}";
             }
 
             String urlTemplate = kibanaSpaceBaseUrl + "/app/logs/stream?" +
