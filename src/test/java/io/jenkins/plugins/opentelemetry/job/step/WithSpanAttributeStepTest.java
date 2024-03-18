@@ -193,6 +193,17 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
     }
 
+    /*
+     * The OpenTelemetry spec requires that attribute keys be unique for a given collection of attributes.
+     * A conforming API implementation (like the Java one) if they allow calling setAttribute multiple times ensures this uniqueness constraint by
+     * only taking the last value into account. https://opentelemetry.io/docs/specs/otel/common/#attribute-collections
+     * It could be useful to set a given attribute key with `withSpanAttribute` at different points of the pipeline.
+     * For example to set a default value for the whole pipeline and override it for a given stage.
+     * This test verifies this behavior by checking that withSpanAttribute occurring at a later point in the pipeline
+     * override previous values. Also, the child span structure is taken into account.
+     * N.B. that using withSpanAttribute(target: 'PIPELINE_ROOT_SPAN') inside several parallel stages with the same key
+     *      could be non-deterministic which value is taken. (whichever stage's withSpanAttribute step is executed last wins)
+     */
     @Test
     public void testSimplePipelineWithWithSpanAttributeStepOverride() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
