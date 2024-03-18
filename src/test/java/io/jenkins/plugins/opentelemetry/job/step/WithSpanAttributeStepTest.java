@@ -91,13 +91,14 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             "withSpanAttribute(key: 'pipeline.type', value: 'release', target: 'PIPELINE_ROOT_SPAN')\n" +
             "node() {\n" +
             "    stage('build') {\n" +
+            "       xsh (label: 'release-script-1', script: 'echo ze-echo-1') \n" +
             "       withSpanAttribute(key: 'pipeline.importance', value: 'critical', target: 'PIPELINE_ROOT_SPAN', setOn: 'TARGET_AND_CHILDREN')\n" +
             "       withSpanAttribute(key: 'stage.type', value: 'build-java-maven', target: 'CURRENT_SPAN', setOn: 'TARGET_ONLY')\n" +
             "       withSpanAttribute(key: 'build.tool', value: 'maven', setOn: 'TARGET_AND_CHILDREN')\n" +
-            "       xsh (label: 'release-script', script: 'echo ze-echo-1') \n" +
+            "       xsh (label: 'release-script-2', script: 'echo ze-echo-2') \n" +
             "    }\n" +
             "    stage('test') {\n" +
-            "       xsh (label: 'test-script', script: 'echo ze-echo-2') \n" +
+            "       xsh (label: 'test-script', script: 'echo ze-echo-3') \n" +
             "    }\n" +
             "}";
         jenkinsRule.createOnlineSlave();
@@ -113,7 +114,8 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "release-script", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script-1", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script-2", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "test-script", "Stage: test", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
@@ -169,7 +171,7 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
             MatcherAssert.assertThat("attribute is set on target", actualBuildTool, CoreMatchers.is("maven"));
-            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "release-script".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "release-script-2".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualBuildTool2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("build.tool"));
             MatcherAssert.assertThat("attribute is set on child", actualBuildTool2, CoreMatchers.is("maven"));
             SpanData actualSpanData3 = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
@@ -181,12 +183,17 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             SpanData actualSpanData5 = spans.breadthFirstStream().filter(sdw -> "Phase: Start".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualBuildTool5 = actualSpanData5.getAttributes().get(AttributeKey.stringKey("build.tool"));
             MatcherAssert.assertThat("attribute is not set on parent", actualBuildTool5, CoreMatchers.nullValue());
+            SpanData actualSpanData6 = spans.breadthFirstStream().filter(sdw -> "release-script-1".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool6 = actualSpanData6.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat("attribute is not set on closed child span", actualBuildTool6, CoreMatchers.nullValue());
         }
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
     }
 
     // TODO: test for overriding same key
 
     // TODO: test for block withSpanAttribute(...) { xsh() }
+
+    // TODO: Fix RuntimeException: Failed to serialize io.jenkins.plugins.opentelemetry.job.action.AttributeSetterAction#attributeKey for class io.jenkins.plugins.opentelemetry.job.action.AttributeSetterAction
 }
