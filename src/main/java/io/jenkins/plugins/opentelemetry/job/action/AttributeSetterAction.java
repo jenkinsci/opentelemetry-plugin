@@ -16,7 +16,7 @@ import java.util.logging.Logger;
  */
 public class AttributeSetterAction implements Action, RunAction2 {
 
-    private static final Logger logger = Logger.getLogger(WithSpanAttributeStep.class.getName());
+    private static final Logger logger = Logger.getLogger(AttributeSetterAction.class.getName());
 
     private final String key;
 

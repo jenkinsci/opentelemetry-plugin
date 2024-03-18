@@ -233,6 +233,7 @@ public class WithSpanAttributeStep extends Step {
                     throw new IllegalArgumentException("Unsupported target span '" + target + "'. ");
             }
             AttributeSetterAction setAttribute = new AttributeSetterAction(run, key, value, attributeType);
+            logger.log(Level.FINE, () -> "setSpanAttribute: run=\"" + run.getParent().getName() + "#" + run.getId() + "\", key=" + key + " value=\"" + value + "\" type=" + attributeType);
             setAttribute.setToSpan(span);
             if (SetOn.TARGET_AND_CHILDREN.equals(setOn)) {
                 switch (target) {
