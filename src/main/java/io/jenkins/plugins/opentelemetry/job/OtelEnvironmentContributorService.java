@@ -52,7 +52,7 @@ public class OtelEnvironmentContributorService {
         }
         MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
         if (monitoringAction == null) {
-            LOGGER.log(Level.INFO, () -> "MonitoringAction NOT found on run " + run);
+            LOGGER.log(Level.FINE, () -> "MonitoringAction NOT found on run " + run);
         } else {
             // Add visualization link as environment variables to provide visualization links in notifications (to GitHub, slack messages...)
             for (MonitoringAction.ObservabilityBackendLink link : monitoringAction.getLinks()) {
