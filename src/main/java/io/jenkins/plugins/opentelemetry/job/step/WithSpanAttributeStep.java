@@ -235,13 +235,12 @@ public class WithSpanAttributeStep extends Step {
             AttributeSetterAction setAttribute = new AttributeSetterAction(run, key, value, attributeType);
             setAttribute.setToSpan(span);
             if (SetOn.TARGET_AND_CHILDREN.equals(setOn)) {
-                // also set on all child spans
-                // ? log a warning if the span has ended
-                // TODO: handle yet to be created spans
-                //       how to get parent withSpanAttributeStep?
                 switch (target) {
-                    // Best effort to set attribute on children.
+                    // We use Best Effort to set the attribute on existing child spans.
                     // Some child spans that were created before the execution of withSpanAttribute might be missed.
+                    // Ideally we would set the attribute on all child spans that are still in progress and log a warning
+                    // for closed child spans. (We cannot change attributes on a span that is closed, as it might already have been sent out.)
+                    // Child spans created after the execution of withSpanAttribute will all have the attribute set correctly.
                     case PIPELINE_ROOT_SPAN:
                         Span phaseSpan= otelTraceService.getSpan(run);
                         setAttribute.setToSpan(phaseSpan);
