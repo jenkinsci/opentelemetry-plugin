@@ -124,7 +124,9 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualPipelineType2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
             MatcherAssert.assertThat("attribute is not set on child", actualPipelineType2, CoreMatchers.nullValue());
-            // TODO: assert phase
+            SpanData actualSpanData3 = spans.breadthFirstStream().filter(sdw -> "Phase: Run".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineType3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat("attribute is not set on child", actualPipelineType3, CoreMatchers.nullValue());
         }
 
         { // attribute 'pipeline.importance' - TARGET_AND_CHILDREN, can be configured anywhere in the pipeline
@@ -137,7 +139,15 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             SpanData actualSpanData3 = spans.breadthFirstStream().filter(sdw -> "Stage: test".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualPipelineImportance3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("pipeline.importance"));
             MatcherAssert.assertThat("attribute is set on child", actualPipelineImportance3, CoreMatchers.is("critical"));
-            // TODO: assert on all phases (ie best-effort)
+            SpanData actualSpanData4 = spans.breadthFirstStream().filter(sdw -> "Phase: Start".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineImportance4 = actualSpanData4.getAttributes().get(AttributeKey.stringKey("pipeline.importance"));
+            MatcherAssert.assertThat("attribute is not set on closed child span", actualPipelineImportance4, CoreMatchers.nullValue());
+            SpanData actualSpanData5 = spans.breadthFirstStream().filter(sdw -> "Phase: Run".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineImportance5 = actualSpanData5.getAttributes().get(AttributeKey.stringKey("pipeline.importance"));
+            MatcherAssert.assertThat("attribute is set on child", actualPipelineImportance5, CoreMatchers.is("critical"));
+            SpanData actualSpanData6 = spans.breadthFirstStream().filter(sdw -> "Phase: Finalise".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineImportance6 = actualSpanData6.getAttributes().get(AttributeKey.stringKey("pipeline.importance"));
+            MatcherAssert.assertThat("attribute is set on child", actualPipelineImportance6, CoreMatchers.is("critical"));
         }
 
         { // attribute 'stage.type' - TARGET_ONLY
@@ -168,7 +178,9 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             SpanData actualSpanData4 = spans.breadthFirstStream().filter(sdw -> "Stage: test".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualBuildTool4 = actualSpanData4.getAttributes().get(AttributeKey.stringKey("build.tool"));
             MatcherAssert.assertThat("attribute is not set on sibling", actualBuildTool4, CoreMatchers.nullValue());
-            // TODO: assert phase
+            SpanData actualSpanData5 = spans.breadthFirstStream().filter(sdw -> "Phase: Start".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool5 = actualSpanData5.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat("attribute is not set on parent", actualBuildTool5, CoreMatchers.nullValue());
         }
 
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
