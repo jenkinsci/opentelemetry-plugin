@@ -232,46 +232,8 @@ public class WithSpanAttributeStep extends Step {
                 default:
                     throw new IllegalArgumentException("Unsupported target span '" + target + "'. ");
             }
-            Object convertedValue;
-            AttributeKey attributeKey;
-            switch (attributeType) {
-                case BOOLEAN:
-                    attributeKey = AttributeKey.booleanKey(key);
-                    convertedValue = value instanceof Boolean ? value : Boolean.parseBoolean(value.toString());
-                    break;
-                case DOUBLE:
-                    attributeKey = AttributeKey.doubleKey(key);
-                    convertedValue = value instanceof Double ? value : value instanceof Float ? ((Float) value).doubleValue() : Double.parseDouble(value.toString());
-                    break;
-                case STRING:
-                    attributeKey = AttributeKey.stringKey(key);
-                    convertedValue = value instanceof String ? value : value.toString();
-                    break;
-                case LONG:
-                    attributeKey = AttributeKey.longKey(key);
-                    convertedValue = value instanceof Long ?  value : value instanceof Integer ?  ((Integer) value).longValue() : Long.parseLong(value.toString());
-                    break;
-                case BOOLEAN_ARRAY:
-                    attributeKey = AttributeKey.booleanArrayKey(key);
-                    convertedValue = value; // todo try to convert if needed
-                    break;
-                case DOUBLE_ARRAY:
-                    attributeKey = AttributeKey.doubleArrayKey(key);
-                    convertedValue = value; // todo try to convert if needed
-                    break;
-                case LONG_ARRAY:
-                    attributeKey = AttributeKey.longArrayKey(key);
-                    convertedValue = value; // todo try to convert if needed
-                    break;
-                case STRING_ARRAY:
-                    attributeKey = AttributeKey.stringArrayKey(key);
-                    convertedValue = value; // todo try to convert if needed
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported span attribute type '" + attributeType + "'. ");
-            }
-            logger.log(Level.FINE, () -> "setSpanAttribute: run=\"" + run.getParent().getName() + "#" + run.getId() + "\", key=" + key + " value=\"" + value + "\" type=" + attributeType);
-            span.setAttribute(attributeKey, convertedValue);
+            AttributeSetterAction setAttribute = new AttributeSetterAction(run, key, value, attributeType);
+            setAttribute.setToSpan(span);
             if (SetOn.TARGET_AND_CHILDREN.equals(setOn)) {
                 // also set on all child spans
                 // ? log a warning if the span has ended
@@ -282,13 +244,13 @@ public class WithSpanAttributeStep extends Step {
                     // Some child spans that were created before the execution of withSpanAttribute might be missed.
                     case PIPELINE_ROOT_SPAN:
                         Span phaseSpan= otelTraceService.getSpan(run);
-                        phaseSpan.setAttribute(attributeKey, convertedValue);
+                        setAttribute.setToSpan(phaseSpan);
                         Span currentSpan= otelTraceService.getSpan(run, flowNode);
-                        currentSpan.setAttribute(attributeKey, convertedValue);
-                        run.addAction(new AttributeSetterAction(attributeKey, convertedValue));
+                        setAttribute.setToSpan(currentSpan);
+                        run.addAction(setAttribute);
                         break;
                     case CURRENT_SPAN:
-                        getClosestBlockNode(flowNode).addAction(new AttributeSetterAction(attributeKey, convertedValue));
+                        getClosestBlockNode(flowNode).addAction(setAttribute);
                         break;
                     default:
                         throw new IllegalArgumentException("Unsupported target span '" + target + "'. ");

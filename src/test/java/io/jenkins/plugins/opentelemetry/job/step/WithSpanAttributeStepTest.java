@@ -336,5 +336,4 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
     }
 
-    // TODO: Fix RuntimeException: Failed to serialize io.jenkins.plugins.opentelemetry.job.action.AttributeSetterAction#attributeKey for class io.jenkins.plugins.opentelemetry.job.action.AttributeSetterAction
 }
