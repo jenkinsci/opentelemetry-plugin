@@ -224,10 +224,10 @@ public class WithSpanAttributeStep extends Step {
             final Span span;
             switch (target) {
                 case PIPELINE_ROOT_SPAN:
-                    span= otelTraceService.getPipelineRootSpan(run);
+                    span = otelTraceService.getPipelineRootSpan(run);
                     break;
                 case CURRENT_SPAN:
-                    span= otelTraceService.getSpan(run, flowNode);
+                    span = otelTraceService.getSpan(run, flowNode);
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported target span '" + target + "'. ");
@@ -243,9 +243,9 @@ public class WithSpanAttributeStep extends Step {
                     // for closed child spans. (We cannot change attributes on a span that is closed, as it might already have been sent out.)
                     // Child spans created after the execution of withSpanAttribute will all have the attribute set correctly.
                     case PIPELINE_ROOT_SPAN:
-                        Span phaseSpan= otelTraceService.getSpan(run);
+                        Span phaseSpan = otelTraceService.getSpan(run);
                         setAttribute.setToSpan(phaseSpan);
-                        Span currentSpan= otelTraceService.getSpan(run, flowNode);
+                        Span currentSpan = otelTraceService.getSpan(run, flowNode);
                         setAttribute.setToSpan(currentSpan);
                         run.addAction(setAttribute);
                         break;
