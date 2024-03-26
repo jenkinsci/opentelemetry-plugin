@@ -24,7 +24,7 @@ import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
  * <p>
  * Used by components that create counters...
  */
-public interface OtelComponent extends Comparable<OtelComponent>{
+public interface OpenTelemetryLifecycleListener extends Comparable<OpenTelemetryLifecycleListener>{
 
     /**
      * Invoked soon after the Otel SDK has been initialized.
@@ -64,7 +64,7 @@ public interface OtelComponent extends Comparable<OtelComponent>{
     }
 
     @Override
-    default int compareTo(OtelComponent other) {
+    default int compareTo(OpenTelemetryLifecycleListener other) {
         if (this.ordinal() == other.ordinal()) {
             return this.getClass().getName().compareTo(other.getClass().getName());
         } else {

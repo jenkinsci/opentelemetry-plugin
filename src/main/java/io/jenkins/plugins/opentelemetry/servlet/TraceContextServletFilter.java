@@ -1,7 +1,7 @@
 package io.jenkins.plugins.opentelemetry.servlet;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.context.Context;
@@ -24,7 +24,7 @@ public class TraceContextServletFilter implements Filter {
 
     protected static final Pattern JENKINS_TRIGGER_BUILD_URL_PATTERN = Pattern.compile("^(/[^/]+)?/job/([\\w/-]+)/build(WithParameters)?$");
 
-    private OpenTelemetrySdkProvider openTelemetrySdkProvider;
+    private JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain) throws IOException, ServletException {
@@ -37,7 +37,7 @@ public class TraceContextServletFilter implements Filter {
 
     public void _doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
         if (isW3cTraceContextPropagationEnabled() && isJenkinsRemoteBuildTriggerRequest(request)) {
-            Context context = getOpenTelemetrySdkProvider()
+            Context context = getJenkinsControllerOpenTelemetry()
                 .getPropagators()
                 .getTextMapPropagator()
                 .extract(Context.current(), request, new OtelUtils.HttpServletRequestTextMapGetter());
@@ -57,7 +57,7 @@ public class TraceContextServletFilter implements Filter {
     }
 
     private boolean isW3cTraceContextPropagationEnabled() {
-        return getOpenTelemetrySdkProvider().getConfig()
+        return getJenkinsControllerOpenTelemetry().getConfig()
             .getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED, false);
     }
 
@@ -72,10 +72,10 @@ public class TraceContextServletFilter implements Filter {
         return TraceContextServletFilter.class.hashCode();
     }
 
-    protected OpenTelemetrySdkProvider getOpenTelemetrySdkProvider() {
-        if (this.openTelemetrySdkProvider == null) {
-            this.openTelemetrySdkProvider = OpenTelemetrySdkProvider.get();
+    protected JenkinsControllerOpenTelemetry getJenkinsControllerOpenTelemetry() {
+        if (this.jenkinsControllerOpenTelemetry == null) {
+            this.jenkinsControllerOpenTelemetry = JenkinsControllerOpenTelemetry.get();
         }
-        return this.openTelemetrySdkProvider;
+        return this.jenkinsControllerOpenTelemetry;
     }
 }

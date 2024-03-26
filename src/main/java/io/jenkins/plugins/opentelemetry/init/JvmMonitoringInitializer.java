@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.opentelemetry.api.OpenTelemetry;
 /*
  * NOTE: in instrumentation 2.x, the following classes will suffer from the following changes:
@@ -29,7 +29,7 @@ import java.util.logging.Logger;
  * Inspired by io.opentelemetry.instrumentation.javaagent.runtimemetrics.RuntimeMetricsInstaller
  */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class JvmMonitoringInitializer implements OtelComponent {
+public class JvmMonitoringInitializer implements OpenTelemetryLifecycleListener {
 
     private final static Logger LOGGER = Logger.getLogger(JvmMonitoringInitializer.class.getName());
 

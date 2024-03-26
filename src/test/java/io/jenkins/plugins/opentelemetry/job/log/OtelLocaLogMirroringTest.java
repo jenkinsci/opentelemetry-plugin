@@ -3,7 +3,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import hudson.ExtensionList;
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
@@ -36,7 +36,7 @@ public class OtelLocaLogMirroringTest {
     @ClassRule
     public static JenkinsRule jenkinsRule = new JenkinsRule();
 
-    static OpenTelemetrySdkProvider openTelemetrySdkProvider;
+    static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
     static WorkflowJob pipeline;
 
@@ -52,15 +52,15 @@ public class OtelLocaLogMirroringTest {
 
         OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
         OtelTraceService.STRICT_MODE = true;
-        ExtensionList<OpenTelemetrySdkProvider> openTelemetrySdkProviders = jenkinsRule.getInstance().getExtensionList(OpenTelemetrySdkProvider.class);
-        verify(openTelemetrySdkProviders.size() == 1, "Number of openTelemetrySdkProviders: %s", openTelemetrySdkProviders.size());
+        ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries = jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
+        verify(jenkinsOpenTelemetries.size() == 1, "Number of jenkinsControllerOpenTelemetrys: %s", jenkinsOpenTelemetries.size());
 
-        openTelemetrySdkProvider = openTelemetrySdkProviders.get(0);
-        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap()));
+        jenkinsControllerOpenTelemetry = jenkinsOpenTelemetries.get(0);
+        jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap()));
     }
     @AfterClass
     public static void afterClass() {
-        openTelemetrySdkProvider.shutdown();
+        jenkinsControllerOpenTelemetry.shutdown();
         GlobalOpenTelemetry.resetForTest();
     }
 
@@ -96,7 +96,7 @@ public class OtelLocaLogMirroringTest {
     }
 
     private void reInitProvider(Map<String, String> configuration) {
-        openTelemetrySdkProvider.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), configuration));
+        jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), configuration));
     }
 
 

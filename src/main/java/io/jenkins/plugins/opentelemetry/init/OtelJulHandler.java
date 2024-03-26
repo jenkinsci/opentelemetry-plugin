@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.events.EventEmitter;
@@ -29,7 +29,7 @@ import java.util.logging.*;
  * Inspired by https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v1.14.0/instrumentation/java-util-logging/javaagent/src/main/java/io/opentelemetry/javaagent/instrumentation/jul/JavaUtilLoggingHelper.java
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class OtelJulHandler extends Handler implements OtelComponent {
+public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleListener {
 
     private final static Logger logger = Logger.getLogger(OtelJulHandler.class.getName());
 
