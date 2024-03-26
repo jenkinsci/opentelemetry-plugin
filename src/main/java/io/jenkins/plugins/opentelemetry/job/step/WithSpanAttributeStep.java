@@ -16,7 +16,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import io.jenkins.plugins.opentelemetry.job.action.AttributeSetterAction;
+import hudson.model.Actionable;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.semconv.ResourceAttributes;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -232,9 +235,46 @@ public class WithSpanAttributeStep extends Step {
                 default:
                     throw new IllegalArgumentException("Unsupported target span '" + target + "'. ");
             }
-            AttributeSetterAction setAttribute = new AttributeSetterAction(run, key, value, attributeType);
+            Object convertedValue;
+            AttributeKey attributeKey;
+            switch (attributeType) {
+                case BOOLEAN:
+                    attributeKey = AttributeKey.booleanKey(key);
+                    convertedValue = value instanceof Boolean ? value : Boolean.parseBoolean(value.toString());
+                    break;
+                case DOUBLE:
+                    attributeKey = AttributeKey.doubleKey(key);
+                    convertedValue = value instanceof Double ? value : value instanceof Float ? ((Float) value).doubleValue() : Double.parseDouble(value.toString());
+                    break;
+                case STRING:
+                    attributeKey = AttributeKey.stringKey(key);
+                    convertedValue = value instanceof String ? value : value.toString();
+                    break;
+                case LONG:
+                    attributeKey = AttributeKey.longKey(key);
+                    convertedValue = value instanceof Long ?  value : value instanceof Integer ?  ((Integer) value).longValue() : Long.parseLong(value.toString());
+                    break;
+                case BOOLEAN_ARRAY:
+                    attributeKey = AttributeKey.booleanArrayKey(key);
+                    convertedValue = value; // todo try to convert if needed
+                    break;
+                case DOUBLE_ARRAY:
+                    attributeKey = AttributeKey.doubleArrayKey(key);
+                    convertedValue = value; // todo try to convert if needed
+                    break;
+                case LONG_ARRAY:
+                    attributeKey = AttributeKey.longArrayKey(key);
+                    convertedValue = value; // todo try to convert if needed
+                    break;
+                case STRING_ARRAY:
+                    attributeKey = AttributeKey.stringArrayKey(key);
+                    convertedValue = value; // todo try to convert if needed
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported span attribute type '" + attributeType + "'. ");
+            }
             logger.log(Level.FINE, () -> "setSpanAttribute: run=\"" + run.getParent().getName() + "#" + run.getId() + "\", key=" + key + " value=\"" + value + "\" type=" + attributeType);
-            setAttribute.setToSpan(span);
+            span.setAttribute(attributeKey, convertedValue);
             if (SetOn.TARGET_AND_CHILDREN.equals(setOn)) {
                 switch (target) {
                     // We use Best Effort to set the attribute on existing child spans.
@@ -244,13 +284,13 @@ public class WithSpanAttributeStep extends Step {
                     // Child spans created after the execution of withSpanAttribute will all have the attribute set correctly.
                     case PIPELINE_ROOT_SPAN:
                         Span phaseSpan = otelTraceService.getSpan(run);
-                        setAttribute.setToSpan(phaseSpan);
+                        phaseSpan.setAttribute(attributeKey, convertedValue);
                         Span currentSpan = otelTraceService.getSpan(run, flowNode);
-                        setAttribute.setToSpan(currentSpan);
-                        run.addAction(setAttribute);
+                        currentSpan.setAttribute(attributeKey, convertedValue);
+                        addAttributeToRunAction(run, attributeKey, convertedValue);
                         break;
                     case CURRENT_SPAN:
-                        getClosestBlockNode(flowNode).addAction(setAttribute);
+                        addAttributeToRunAction(getClosestBlockNode(flowNode), attributeKey, convertedValue);
                         break;
                     default:
                         throw new IllegalArgumentException("Unsupported target span '" + target + "'. ");
@@ -258,6 +298,15 @@ public class WithSpanAttributeStep extends Step {
             }
 
             return null;
+        }
+
+        private void addAttributeToRunAction(Actionable actionable, AttributeKey attributeKey, Object convertedValue) {
+            OpenTelemetryAttributesAction openTelemetryAttributesAction = actionable.getAction(OpenTelemetryAttributesAction.class);
+            if (openTelemetryAttributesAction == null) {
+                actionable.addAction(new OpenTelemetryAttributesAction());
+                openTelemetryAttributesAction = actionable.getAction(OpenTelemetryAttributesAction.class);
+            }
+            openTelemetryAttributesAction.getAttributes().put(attributeKey, convertedValue);
         }
 
         private static final long serialVersionUID = 1L;
@@ -272,4 +321,5 @@ public class WithSpanAttributeStep extends Step {
         }
         return flowNode.getEnclosingBlocks().get(0);
     }
+
 }
