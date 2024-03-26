@@ -111,7 +111,7 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             Computer computer = context.get(Computer.class);
             String computerHostname = computer == null ? "#null#" : computer.getHostName();
             String computerActions = computer == null ? "#null#" :  computer.getAllActions().stream().map(action -> action.getClass().getSimpleName()).collect(Collectors.joining(", "));
-            String computerName= computer == null ? "#null#" : computer.getName() + "/" + computer.getDisplayName();
+            String computerName = computer == null ? "#null#" : computer.getName() + "/" + computer.getDisplayName();
             log(Level.FINE, () -> run.getFullDisplayName() + " - notifyOfNewStep - Process " + PipelineNodeUtil.getDetailedDebugString(flowNode) + " - computer[name: " + computerName + ", hostname: " + computerHostname + "," + computerActions + "]");
         } catch (IOException | InterruptedException | RuntimeException e) {
             e.printStackTrace();
