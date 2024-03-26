@@ -5,6 +5,22 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.Extension;
+import hudson.model.Item;
+import hudson.model.ItemGroup;
+import hudson.model.TaskListener;
+import hudson.util.ListBoxModel;
+import io.opentelemetry.api.common.AttributeType;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -15,26 +31,9 @@ import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import org.jenkinsci.plugins.workflow.steps.Step;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
-import org.jenkinsci.plugins.workflow.steps.StepExecution;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.Extension;
-import hudson.model.Item;
-import hudson.model.ItemGroup;
-import hudson.model.TaskListener;
-import hudson.util.ListBoxModel;
-import io.opentelemetry.api.common.AttributeType;
-
 @Extension
-public class WithSpanAttributeStep extends Step {
-    private final static Logger logger = Logger.getLogger(WithSpanAttributeStep.class.getName());
+public class SetSpanAttributeStep extends Step {
+    private final static Logger logger = Logger.getLogger(SetSpanAttributeStep.class.getName());
 
     String key;
     Object value;
@@ -43,7 +42,7 @@ public class WithSpanAttributeStep extends Step {
     SpanAttributeTarget target;
 
     @DataBoundConstructor
-    public WithSpanAttributeStep() {
+    public SetSpanAttributeStep() {
 
     }
 
@@ -55,7 +54,7 @@ public class WithSpanAttributeStep extends Step {
             return new StepExecution(context) {
                 @Override
                 public boolean start() {
-                    getContext().onFailure(new IllegalArgumentException("withSpanAttribute requires the value parameter"));
+                    getContext().onFailure(new IllegalArgumentException("setSpanAttribute requires the value parameter"));
                     return true;
                 }
             };
@@ -133,7 +132,7 @@ public class WithSpanAttributeStep extends Step {
 
     @Extension
     public static final class DescriptorImpl extends StepDescriptor {
-        public static final String FUNCTION_NAME = "withSpanAttribute";
+        public static final String FUNCTION_NAME = "setSpanAttribute";
 
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
@@ -148,7 +147,7 @@ public class WithSpanAttributeStep extends Step {
         @NonNull
         @Override
         public String getDisplayName() {
-            return "Set Span Attribute on child spans";
+            return "Set Span Attribute";
         }
 
         public ListBoxModel doFillTypeItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
@@ -160,10 +159,6 @@ public class WithSpanAttributeStep extends Step {
             return new ListBoxModel(Arrays.stream(SpanAttributeTarget.values()).map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
         }
 
-        @Override
-        public boolean takesImplicitBlockArgument() {
-            return true;
-        }
     }
 
 }

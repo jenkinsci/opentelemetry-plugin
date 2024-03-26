@@ -379,19 +379,30 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
                 computer.addAction(openTelemetryAttributesAction);
             }
-            OpenTelemetryAttributesAction openTelemetryAttributesAction = computer.getAction(OpenTelemetryAttributesAction.class);
+            OpenTelemetryAttributesAction otelComputerAttributesAction = computer.getAction(OpenTelemetryAttributesAction.class);
+            OpenTelemetryAttributesAction otelChildAttributesAction = context.get(OpenTelemetryAttributesAction.class);
 
             try (Scope ignored = setupContext(run, node)) {
                 Span currentSpan = Span.current();
-                LOGGER.log(Level.FINE, () -> "Add resource attributes to span " + OtelUtils.toDebugString(currentSpan) + " - " + openTelemetryAttributesAction);
-                for (Map.Entry<AttributeKey<?>, Object> entry : openTelemetryAttributesAction.getAttributes().entrySet()) {
-                    AttributeKey<?> attributeKey = entry.getKey();
-                    Object value = verifyNotNull(entry.getValue());
-                    currentSpan.setAttribute((AttributeKey<? super Object>) attributeKey, value);
-                }
+                LOGGER.log(Level.FINE, () -> "Add resource attributes to span " + OtelUtils.toDebugString(currentSpan) + " - " + otelComputerAttributesAction);
+                setAttributesToSpan(currentSpan, otelComputerAttributesAction);
+
+                LOGGER.log(Level.FINE, () -> "Add attributes to child span " + OtelUtils.toDebugString(currentSpan) + " - " + otelChildAttributesAction);
+                setAttributesToSpan(currentSpan, otelChildAttributesAction);
             }
         } catch (IOException | InterruptedException | RuntimeException e) {
             LOGGER.log(Level.WARNING,"Exception processing " + step + " - " + context, e);
+        }
+    }
+
+    private void setAttributesToSpan(@NonNull Span span, OpenTelemetryAttributesAction openTelemetryAttributesAction) {
+        if (openTelemetryAttributesAction == null) {
+            return;
+        }
+        for (Map.Entry<AttributeKey<?>, Object> entry : openTelemetryAttributesAction.getAttributes().entrySet()) {
+            AttributeKey<?> attributeKey = entry.getKey();
+            Object value = verifyNotNull(entry.getValue());
+            span.setAttribute((AttributeKey<? super Object>) attributeKey, value);
         }
     }
 

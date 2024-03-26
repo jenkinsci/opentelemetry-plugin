@@ -249,10 +249,6 @@ public class OtelTraceService {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
         flowNode.addAction(new FlowNodeMonitoringAction(span));
         setAttributesToSpan(span, run.getAction(OpenTelemetryAttributesAction.class));
-        Iterable<FlowNode> ancestors = ImmutableList.copyOf(getAncestors(flowNode)).reverse();
-        for (FlowNode currentFlowNode : ancestors) {
-            setAttributesToSpan(span, currentFlowNode.getAction(OpenTelemetryAttributesAction.class));
-        }
 
         LOGGER.log(Level.FINE, () -> "putSpan(" + run.getFullDisplayName() + ", " +
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
