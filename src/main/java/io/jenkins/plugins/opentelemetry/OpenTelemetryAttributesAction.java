@@ -30,7 +30,7 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
 
     private transient Map<AttributeKey<?>, Object> attributes;
 
-    private final transient Set<String> appliedToSpans = new HashSet<>();
+    private transient Set<String> appliedToSpans;
 
     @NonNull
     public Map<AttributeKey<?>, Object> getAttributes() {
@@ -46,6 +46,9 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
      * @return true iff a span did not previously have these attributes applied
      */
     public boolean isNotYetAppliedToSpan(String spanId) {
+        if (appliedToSpans == null) {
+            appliedToSpans = new HashSet<>();
+        }
         return appliedToSpans.add(spanId);
     }
 
