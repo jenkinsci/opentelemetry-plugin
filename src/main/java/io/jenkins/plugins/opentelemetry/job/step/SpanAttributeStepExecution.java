@@ -163,14 +163,16 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
             resultingAttributes.getAttributes().putAll(existingAttributes.getAttributes());
         }
         resultingAttributes.getAttributes().put(attributeKey, convertedValue);
-        return  resultingAttributes;
+        return resultingAttributes;
     }
 
     private static final long serialVersionUID = 1L;
 
     private static class NopCallback extends BodyExecutionCallback.TailCall {
 
-        public static NopCallback INSTANCE = new NopCallback();
+        private static final long serialVersionUID = 957579239256583870L;
+
+        public static final NopCallback INSTANCE = new NopCallback();
 
         @Override
         protected void finished(StepContext context) throws Exception {
