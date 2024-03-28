@@ -286,4 +286,151 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
     }
 
+    @Test
+    public void testDeclarativePipelineWithWithSpanAttributeStep1() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        // BEFORE
+
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+            "pipeline {\n" +
+            "    agent any\n" +
+            "    options {\n" +
+            "        withSpanAttribute(key: 'build.tool', value: 'maven') \n" +
+            "    }\n" +
+            "    stages {\n" +
+            "        stage('build') {\n" +
+            "            steps {\n" +
+            "                xsh (label: 'release-script', script: 'echo ze-echo-1')\n" +
+            "            }\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-declarative-pipeline-with-with-span-attribute-step" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+
+        checkChainOfSpans(spans, "Phase: Start", rootSpanName);
+        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
+
+        {
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("maven"));
+            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "release-script".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("maven"));
+            SpanData actualSpanData3 = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineType3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat("attribute is not set on root span", actualPipelineType3, CoreMatchers.nullValue());
+        }
+
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+    }
+
+    @Test
+    public void testDeclarativePipelineWithWithSpanAttributeStep2() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        // BEFORE
+
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+            "pipeline {\n" +
+            "    agent any\n" +
+            "    options {\n" +
+            "        withSpanAttribute(key: 'pipeline.type', value: 'release', target: 'PIPELINE_ROOT_SPAN') \n" +
+            "    }\n" +
+            "    stages {\n" +
+            "        stage('build') {\n" +
+            "            steps {\n" +
+            "                xsh (label: 'release-script', script: 'echo ze-echo-1')\n" +
+            "            }\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-declarative-pipeline-with-with-span-attribute-step" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+
+        checkChainOfSpans(spans, "Phase: Start", rootSpanName);
+        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
+
+        {
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("release"));
+            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "release-script".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("release"));
+            SpanData actualSpanData3 = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualBuildTool3, CoreMatchers.is("release"));
+            SpanData actualSpanData4 = spans.breadthFirstStream().filter(sdw -> "Phase: Finalise".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool4 = actualSpanData4.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualBuildTool4, CoreMatchers.is("release"));
+        }
+
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+    }
+
+    @Test
+    public void testDeclarativePipelineWithWithSpanAttributeStep3() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        // BEFORE
+
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+            "pipeline {\n" +
+            "    agent any\n" +
+            "    options {\n" +
+            "        withSpanAttribute(key: 'build.tool', value: 'maven') \n" +
+            "        withSpanAttribute(key: 'pipeline.type', value: 'release', target: 'PIPELINE_ROOT_SPAN') \n" +
+            "    }\n" +
+            "    stages {\n" +
+            "        stage('build') {\n" +
+            "            steps {\n" +
+            "                xsh (label: 'release-script', script: 'echo ze-echo-1')\n" +
+            "            }\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-declarative-pipeline-with-with-span-attribute-step" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
+        // Build fails due to org.codehaus.groovy.control.MultipleCompilationErrorsException: startup failed:
+        // WorkflowScript: 4: Duplicate option name: "withSpanAttribute" @ line 4, column 5.
+        //       options {
+        //       ^
+
+        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+
+        checkChainOfSpans(spans, "Phase: Start", rootSpanName);
+        checkChainOfSpans(spans, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
+
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(4L));
+    }
+
 }
