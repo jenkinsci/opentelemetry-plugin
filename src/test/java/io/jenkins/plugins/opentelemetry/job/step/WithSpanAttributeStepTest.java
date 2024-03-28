@@ -148,81 +148,101 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
      * N.B. that using withSpanAttribute(target: 'PIPELINE_ROOT_SPAN') inside several parallel stages with the same key
      *      could be non-deterministic which value is taken. (whichever stage's withSpanAttribute step is executed last wins)
      */
-//    @Test
-//    public void testSimplePipelineWithWithSpanAttributeStepOverride() throws Exception {
-//        assumeFalse(SystemUtils.IS_OS_WINDOWS);
-//        // BEFORE
-//
-//        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-//            "setSpanAttribute(key: 'build.tool', value: 'a'/*, setOn: 'TARGET_AND_CHILDREN'*/)\n" +
-//            "setSpanAttribute(key: 'build.tool', value: 'b'/*, setOn: 'TARGET_AND_CHILDREN'*/)\n" +
-//            "node() {\n" +
-//            "    stage('build') {\n" +
-//            "       xsh (label: 'release-script-1', script: 'echo ze-echo-1') \n" +
-//            "       setSpanAttribute(key: 'build.tool', value: 'c', target: 'PIPELINE_ROOT_SPAN'/*, setOn: 'TARGET_AND_CHILDREN'*/)\n" +
-//            "       setSpanAttribute(key: 'build.tool', value: 'd', target: 'PIPELINE_ROOT_SPAN')\n" +
-//            "       setSpanAttribute(key: 'build.tool', value: 'e'/*, setOn: 'TARGET_AND_CHILDREN'*/)\n" +
-//            "       setSpanAttribute(key: 'build.tool', value: 'f'/*, setOn: 'TARGET_AND_CHILDREN'*/)\n" +
-//            "       setSpanAttribute(key: 'build.tool', value: 'g', target: 'CURRENT_SPAN'/*, setOn: 'TARGET_ONLY'*/)\n" +
-//            "       xsh (label: 'release-script-2', script: 'echo ze-echo-2') \n" +
-//            "    }\n" +
-//            "}";
-//        jenkinsRule.createOnlineSlave();
-//
-//        final String jobName = "test-simple-pipeline-with-with-span-attribute-step-override" + jobNameSuffix.incrementAndGet();
-//        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
-//        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-//        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
-//
-//        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
-//
-//        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-//
-//        checkChainOfSpans(spans, "Phase: Start", rootSpanName);
-//        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-//        checkChainOfSpans(spans, "release-script-1", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-//        checkChainOfSpans(spans, "release-script-2", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-//        checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-//
-//        { // value 'b' - overrides 'a' for child spans (implicit: of the root span)
-//            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI.equals(sdw.spanData.getName())).findFirst().get().spanData;
-//            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
-//            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("b"));
-//            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "release-script-1".equals(sdw.spanData.getName())).findFirst().get().spanData;
-//            String actualBuildTool2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("build.tool"));
-//            MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("b"));
-//        }
-//
-//        { // value 'c' - overrides 'b' for child spans of the root span that haven't been created yet
-//            // Current phase attribute is also overridden.
-//            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Phase: Run".equals(sdw.spanData.getName())).findFirst().get().spanData;
-//            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
-//            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("c"));
-//            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "Phase: Finalise".equals(sdw.spanData.getName())).findFirst().get().spanData;
-//            String actualBuildTool2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("build.tool"));
-//            MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("c"));
-//        }
-//
-//        { // value 'd' - overrides 'c' for the root span only
-//            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
-//            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
-//            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("d"));
-//        }
-//
-//        { // value 'f' - overrides 'c' and 'e' for child spans of the current span that haven't been created yet
-//            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "release-script-2".equals(sdw.spanData.getName())).findFirst().get().spanData;
-//            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
-//            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("f"));
-//        }
-//
-//        { // value 'g' - overrides 'f' for the current span only
+    @Test
+    public void testSimplePipelineWithWithSpanAttributeStepOverride() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        // BEFORE
+
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+            "withSpanAttribute(key: 'build.tool', value: 'a') {\n" +
+            "  withSpanAttribute(key: 'build.tool', value: 'b') {\n" +
+            "    withSpanAttribute(key: 'build.tool', value: 'c', target: 'PIPELINE_ROOT_SPAN') {\n" +
+            "      withSpanAttribute(key: 'build.tool', value: 'd', target: 'PIPELINE_ROOT_SPAN') {\n" +
+            "        node() {\n" +
+            "          stage('build') {\n" +
+            "            xsh (label: 'release-script-1', script: 'echo ze-echo-1') \n" +
+            "            setSpanAttribute(key: 'build.tool', value: 'e', target: 'CURRENT_SPAN')\n" +
+            "            setSpanAttribute(key: 'build.tool', value: 'f', target: 'PIPELINE_ROOT_SPAN')\n" +
+            "            xsh (label: 'release-script-2', script: 'echo ze-echo-2') \n" +
+            "          }\n" +
+            "          stage('test') {\n" +
+            "            xsh (label: 'test-script-1', script: 'echo ze-echo-3') \n" +
+            "            withSpanAttribute(key: 'build.tool', value: 'g') {\n" +
+            "              withSpanAttribute(key: 'build.tool', value: 'h') {\n" +
+            "                xsh (label: 'test-script-2', script: 'echo ze-echo-4') \n" +
+            "              }\n" +
+            "            }\n" +
+            "            xsh (label: 'test-script-3', script: 'echo ze-echo-5') \n" +
+            "          }\n" +
+            "        }\n" +
+            "      }\n" +
+            "    }\n" +
+            "  }\n" +
+            "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-simple-pipeline-with-with-span-attribute-step-override" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+
+        checkChainOfSpans(spans, "Phase: Start", rootSpanName);
+        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script-1", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script-2", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "test-script-1", "Stage: test", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "test-script-2", "Stage: test", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "test-script-3", "Stage: test", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
+
+        { // value 'd' - overrides 'a', 'b' and 'c' for the root span and child spans
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI.equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("d"));
+            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "Phase: Finalise".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("d"));
+            SpanData actualSpanData3 = spans.breadthFirstStream().filter(sdw -> "release-script-1".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool3, CoreMatchers.is("d"));
+            SpanData actualSpanData4 = spans.breadthFirstStream().filter(sdw -> "release-script-2".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool4 = actualSpanData4.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool4, CoreMatchers.is("d"));
+            SpanData actualSpanData5 = spans.breadthFirstStream().filter(sdw -> "test-script-1".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool5 = actualSpanData5.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool5, CoreMatchers.is("d"));
+            SpanData actualSpanData6 = spans.breadthFirstStream().filter(sdw -> "test-script-3".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool6 = actualSpanData6.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool6, CoreMatchers.is("d"));
+        }
+
+//        { // value 'e' - overrides 'd' for the current span only
 //            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
 //            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
-//            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("g"));
+//            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("e"));
 //        }
-//
-//        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
-//    }
+
+        { // value 'f' - overrides 'd' for the root span only
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("f"));
+        }
+
+        { // value 'h' - overrides 'd' and 'g' for the current span and child spans
+//            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: test".equals(sdw.spanData.getName())).findFirst().get().spanData;
+//            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
+//            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("h"));
+            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "test-script-2".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("h"));
+        }
+
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
+    }
 
     @Test
     public void testSimplePipelineWithWithSpanAttributeStepBlock() throws Exception {
