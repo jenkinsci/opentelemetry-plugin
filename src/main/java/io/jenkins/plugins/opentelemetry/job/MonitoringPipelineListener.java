@@ -400,6 +400,10 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         if (openTelemetryAttributesAction == null) {
             return;
         }
+        if (!openTelemetryAttributesAction.isNotYetAppliedToSpan(span.getSpanContext().getSpanId())) {
+            // do not reapply attributes, if previously applied
+            return;
+        }
         for (Map.Entry<AttributeKey<?>, Object> entry : openTelemetryAttributesAction.getAttributes().entrySet()) {
             AttributeKey<?> attributeKey = entry.getKey();
             Object value = verifyNotNull(entry.getValue());

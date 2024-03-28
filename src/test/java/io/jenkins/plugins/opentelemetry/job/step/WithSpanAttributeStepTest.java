@@ -220,11 +220,11 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             MatcherAssert.assertThat(actualBuildTool6, CoreMatchers.is("d"));
         }
 
-//        { // value 'e' - overrides 'd' for the current span only
-//            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
-//            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
-//            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("e"));
-//        }
+        { // value 'e' - overrides 'd' for the current span only
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("e"));
+        }
 
         { // value 'f' - overrides 'd' for the root span only
             SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
@@ -233,9 +233,9 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         }
 
         { // value 'h' - overrides 'd' and 'g' for the current span and child spans
-//            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: test".equals(sdw.spanData.getName())).findFirst().get().spanData;
-//            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
-//            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("h"));
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: test".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("h"));
             SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "test-script-2".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualBuildTool2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("build.tool"));
             MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("h"));

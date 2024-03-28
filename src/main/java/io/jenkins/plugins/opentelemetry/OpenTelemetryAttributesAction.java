@@ -13,7 +13,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -28,12 +30,36 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
 
     private transient Map<AttributeKey<?>, Object> attributes;
 
+    private transient Set<String> appliedToSpans;
+
     @NonNull
     public Map<AttributeKey<?>, Object> getAttributes() {
         if (attributes == null) {
             attributes = new HashMap<>();
         }
         return attributes;
+    }
+
+    /**
+     * Remember a span to which these attributes are applied.
+     * @param spanId
+     * @return true iff a span did not previously have these attributes applied
+     */
+    public boolean isNotYetAppliedToSpan(String spanId) {
+        Set<String> spanSet;
+        if (appliedToSpans == null) {
+            spanSet = getAppliedToSpans();
+        } else {
+            spanSet = appliedToSpans;
+        }
+        return spanSet.add(spanId);
+    }
+
+    private synchronized Set<String> getAppliedToSpans() {
+        if (appliedToSpans == null) {
+            appliedToSpans = new HashSet<>();
+        }
+        return appliedToSpans;
     }
 
     @Override
