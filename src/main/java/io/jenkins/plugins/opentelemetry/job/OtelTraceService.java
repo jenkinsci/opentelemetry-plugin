@@ -223,19 +223,16 @@ public class OtelTraceService {
 
     public void putSpan(@NonNull AbstractBuild build, @NonNull Span span) {
         build.addAction(new MonitoringAction(span));
-        setAttributesToSpan(span, build.getAction(OpenTelemetryAttributesAction.class));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putSpan(AbstractBuild build, BuildStep buildStep, Span span) {
         build.addAction(new BuildStepMonitoringAction(span));
-        setAttributesToSpan(span, build.getAction(OpenTelemetryAttributesAction.class));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + ", " + buildStep + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putSpan(@NonNull Run run, @NonNull Span span) {
         run.addAction(new MonitoringAction(span));
-        setAttributesToSpan(span, run.getAction(OpenTelemetryAttributesAction.class));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
@@ -248,7 +245,6 @@ public class OtelTraceService {
     public void putSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
         flowNode.addAction(new FlowNodeMonitoringAction(span));
-        setAttributesToSpan(span, run.getAction(OpenTelemetryAttributesAction.class));
 
         LOGGER.log(Level.FINE, () -> "putSpan(" + run.getFullDisplayName() + ", " +
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
