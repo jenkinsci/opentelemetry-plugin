@@ -107,7 +107,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + JenkinsOtelSemanticAttributes.AGENT + "(" + agentLabel + ") - begin " + OtelUtils.toDebugString(agentSpan));
 
-            getTracerService().putSpan(run, agentSpan, stepStartNode);
+            getTracerService().putAgentSpan(run, agentSpan, stepStartNode);
 
             try (Scope allocateAgentSpanScope = agentSpan.makeCurrent()) {
                 SpanBuilder allocateAgentSpanBuilder = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI)
@@ -124,7 +124,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
                 LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + JenkinsOtelSemanticAttributes.AGENT_ALLOCATE + "(" + agentLabel + ") - begin " + OtelUtils.toDebugString(allocateAgentSpan));
 
-                getTracerService().putSpan(run, allocateAgentSpan, stepStartNode);
+                getTracerService().putAgentSpan(run, allocateAgentSpan, stepStartNode);
             }
         }
     }

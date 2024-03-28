@@ -242,6 +242,12 @@ public class OtelTraceService {
         LOGGER.log(Level.FINEST, () -> "putRunPhaseSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
+    public void putAgentSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
+        setAttributesToSpan(span, run.getAction(OpenTelemetryAttributesAction.class));
+        putSpan(run, span, flowNode);
+        LOGGER.log(Level.FINEST, () -> "putAgentSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
+    }
+
     public void putSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
         flowNode.addAction(new FlowNodeMonitoringAction(span));
