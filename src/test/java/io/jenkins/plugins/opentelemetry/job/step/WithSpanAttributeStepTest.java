@@ -27,7 +27,7 @@ import java.util.Optional;
 public class WithSpanAttributeStepTest extends BaseIntegrationTest {
 
     @Test
-    public void testSimplePipelineWithWithSpanAttributeStepSetOn() throws Exception {
+    public void testSimplePipelineWithWithSpanAttributeStepMix() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // BEFORE
 
@@ -77,7 +77,7 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             MatcherAssert.assertThat("attribute is not set on child", actualPipelineType3, CoreMatchers.nullValue());
         }
 
-        { // attribute 'pipeline.importance' - TARGET_AND_CHILDREN, can be configured anywhere in the pipeline
+        { // attribute 'pipeline.importance' - TARGET_AND_CHILDREN, must contain the rest of the pipeline
             SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualPipelineImportance = actualSpanData.getAttributes().get(AttributeKey.stringKey("pipeline.importance"));
             MatcherAssert.assertThat("attribute is set on target", actualPipelineImportance, CoreMatchers.is("critical"));
@@ -224,25 +224,6 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
 //        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
 //    }
 
-    /*
-     * Block syntax is not supported for withSpanAttribute step.
-     * To support it WithSpanAttributeStep would need return a StepExecution implementation from start.
-     * This StepExecution implementation would have to call
-     * getContext().newBodyInvoker().withCallback(...).start();
-     *
-     * However before implementing something like that, first would have to be clarified:
-     * - whether a new span should be created
-     * - how the target and setOn parameters should be handled in this case
-     *   - should implicit behavior be different (eg. implicit TARGET_AND_CHILDREN)
-     *   - are there combinations that don't make sense (eg. any that do not include setting the attributes on the children)
-     *
-     * It would probably be easier to implement a separate step
-     * newSpan (name:'...', ...) {
-     *   withSpanAttribute(key: 'x', value: 'y', setOn: 'TARGET_AND_CHILDREN')
-     *   ...
-     * }
-     * and maybe add an additional enum for setOn: 'CHILDREN_ONLY'
-     */
     @Test
     public void testSimplePipelineWithWithSpanAttributeStepBlock() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
@@ -262,9 +243,6 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
-        // Build fails due to withSpanAttribute using a closure with error message:
-        // org.jenkinsci.plugins.workflow.actions.ErrorAction$ErrorId: 934c5dc1-2de4-4df1-a6da-1390b0e95afe
-        // java.lang.IllegalArgumentException: Expected named arguments but got [{key=build.tool, value=maven}, org.jenkinsci.plugins.workflow.cps.CpsClosure2@738f6fad]
 
         String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
