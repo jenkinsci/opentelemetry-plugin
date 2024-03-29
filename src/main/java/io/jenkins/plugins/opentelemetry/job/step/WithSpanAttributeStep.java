@@ -75,7 +75,7 @@ public class WithSpanAttributeStep extends Step {
             }
         }
 
-        return new SpanAttributeStepExecution(key, value, type, Objects.requireNonNullElse(target, SpanAttributeTarget.CURRENT_SPAN), context.hasBody(), context);
+        return new SpanAttributeStepExecution(List.of(new SpanAttribute(key, value, type, Objects.requireNonNullElse(target, SpanAttributeTarget.CURRENT_SPAN))), context.hasBody(), context);
     }
 
     public String getKey() {
