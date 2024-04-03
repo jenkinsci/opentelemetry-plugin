@@ -26,9 +26,9 @@
         Don't forget to bump opentelemetry-resources
         -->
         <opentelemetry-alpha.version>1.36.0-alpha</opentelemetry-alpha.version>
-        <opentelemetry-instrumentation-alpha.version>1.33.0-alpha</opentelemetry-instrumentation-alpha.version>
-        <opentelemetry-contrib.version>1.33.0-alpha</opentelemetry-contrib.version>
-        <opentelemetry-semconv>1.23.1-alpha</opentelemetry-semconv>
+        <opentelemetry-instrumentation-alpha.version>2.2.0-alpha</opentelemetry-instrumentation-alpha.version>
+        <opentelemetry-contrib.version>1.34.0-alpha</opentelemetry-contrib.version>
+        <opentelemetry-semconv>1.24.0-alpha</opentelemetry-semconv>
         <useBeta>true</useBeta>
         <elasticstack.version>8.13.0</elasticstack.version>
         <error-prone.version>2.26.1</error-prone.version>
