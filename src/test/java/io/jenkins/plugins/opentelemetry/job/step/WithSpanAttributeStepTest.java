@@ -375,17 +375,17 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
 
         {
             SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
-            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
-            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("release"));
+            String actualPipelineType = actualSpanData.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualPipelineType, CoreMatchers.is("release"));
             SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "release-script".equals(sdw.spanData.getName())).findFirst().get().spanData;
-            String actualBuildTool2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
-            MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("release"));
+            String actualPipelineType2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualPipelineType2, CoreMatchers.is("release"));
             SpanData actualSpanData3 = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
-            String actualBuildTool3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
-            MatcherAssert.assertThat(actualBuildTool3, CoreMatchers.is("release"));
+            String actualPipelineType3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualPipelineType3, CoreMatchers.is("release"));
             SpanData actualSpanData4 = spans.breadthFirstStream().filter(sdw -> "Phase: Finalise".equals(sdw.spanData.getName())).findFirst().get().spanData;
-            String actualBuildTool4 = actualSpanData4.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
-            MatcherAssert.assertThat(actualBuildTool4, CoreMatchers.is("release"));
+            String actualPipelineType4 = actualSpanData4.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualPipelineType4, CoreMatchers.is("release"));
         }
 
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
@@ -431,6 +431,68 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(4L));
+    }
+
+    @Test
+    public void testDeclarativePipelineWithWithSpanAttributesStep() throws Exception {
+        assumeFalse(SystemUtils.IS_OS_WINDOWS);
+        // BEFORE
+
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+            "pipeline {\n" +
+            "    agent any\n" +
+            "    options {\n" +
+            "        withSpanAttributes([spanAttribute(key: 'build.tool', value: 'maven'),spanAttribute(key: 'pipeline.type', value: 'release', target: 'PIPELINE_ROOT_SPAN')]) \n" +
+            "    }\n" +
+            "    stages {\n" +
+            "        stage('build') {\n" +
+            "            steps {\n" +
+            "                xsh (label: 'release-script', script: 'echo ze-echo-1')\n" +
+            "            }\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-declarative-pipeline-with-with-span-attributes-step" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+
+        checkChainOfSpans(spans, "Phase: Start", rootSpanName);
+        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
+
+        {
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineType = actualSpanData.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualPipelineType, CoreMatchers.is("release"));
+            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("maven"));
+            SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "release-script".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineType2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualPipelineType2, CoreMatchers.is("release"));
+            String actualBuildTool2 = actualSpanData2.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("maven"));
+            SpanData actualSpanData3 = spans.breadthFirstStream().filter(sdw -> rootSpanName.equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineType3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualPipelineType3, CoreMatchers.is("release"));
+            String actualBuildTool3 = actualSpanData3.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool3, CoreMatchers.nullValue());
+            SpanData actualSpanData4 = spans.breadthFirstStream().filter(sdw -> "Phase: Finalise".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualPipelineType4 = actualSpanData4.getAttributes().get(AttributeKey.stringKey("pipeline.type"));
+            MatcherAssert.assertThat(actualPipelineType4, CoreMatchers.is("release"));
+            String actualBuildTool4 = actualSpanData4.getAttributes().get(AttributeKey.stringKey("build.tool"));
+            MatcherAssert.assertThat(actualBuildTool4, CoreMatchers.nullValue());
+        }
+
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
     }
 
 }

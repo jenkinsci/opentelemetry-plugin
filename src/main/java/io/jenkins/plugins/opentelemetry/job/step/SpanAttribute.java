@@ -1,14 +1,22 @@
 package io.jenkins.plugins.opentelemetry.job.step;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.Extension;
+import hudson.ExtensionPoint;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.AttributeType;
 import io.opentelemetry.api.trace.Span;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.Serializable;
+import java.util.Objects;
 
-public class SpanAttribute implements Serializable {
+public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implements ExtensionPoint, Serializable {
 
-    private static final long serialVersionUID = 1476074822521826731L;
+    private static final long serialVersionUID = -8621147407454968274L;
 
     private String key;
 
@@ -24,11 +32,12 @@ public class SpanAttribute implements Serializable {
 
     private transient Span targetSpan;
 
-	public SpanAttribute(String key, Object value, AttributeType attributeType, SpanAttributeTarget target) {
+    @DataBoundConstructor
+    public SpanAttribute(String key, Object value, AttributeType attributeType, SpanAttributeTarget target) {
 		this.key = key;
 		this.value = value;
 		this.attributeType = attributeType;
-		this.target = target;
+		this.target = Objects.requireNonNullElse(target, SpanAttributeTarget.CURRENT_SPAN);
 	}
 
     public void setDefaultType() {
@@ -136,4 +145,15 @@ public class SpanAttribute implements Serializable {
         this.targetSpan = targetSpan;
     }
 
+    @Symbol("spanAttribute")
+    @Extension
+    public static class DescriptorImpl extends Descriptor<SpanAttribute> {
+
+        @NonNull
+        @Override
+        public String getDisplayName() {
+            return "An individual span attribute key value pair";
+        }
+
+    }
 }
