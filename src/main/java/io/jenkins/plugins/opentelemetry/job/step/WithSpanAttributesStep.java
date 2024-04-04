@@ -47,13 +47,20 @@ public class WithSpanAttributesStep extends Step {
                 }
             };
         }
-        if (spanAttributes.stream().anyMatch(spanAttribute -> spanAttribute.getValue() == null)) {
+        List<SpanAttribute> noValueSet = spanAttributes.stream().filter(spanAttribute -> spanAttribute.getValue() == null).collect(Collectors.toList());
+        if (!noValueSet.isEmpty()) {
+            String keys = noValueSet.stream().map(SpanAttribute::getKey).reduce("", (accumulator, spanAttribute) -> {
+                if (accumulator.isEmpty()) {
+                    return spanAttribute;
+                }
+                return accumulator + ", " + spanAttribute;
+            });
             // null attributes are NOT supported
             // todo log message
             return new StepExecution(context) {
                 @Override
                 public boolean start() {
-                    getContext().onFailure(new IllegalArgumentException("withSpanAttributes requires that all spanAttributes have a value set"));
+                    getContext().onFailure(new IllegalArgumentException("withSpanAttributes requires that all spanAttributes have a value set. The attribute(s) with the following keys violate this requirement: " + keys));
                     return true;
                 }
             };

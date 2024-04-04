@@ -54,7 +54,7 @@ public class SetSpanAttributeStep extends Step {
             return new StepExecution(context) {
                 @Override
                 public boolean start() {
-                    getContext().onFailure(new IllegalArgumentException("setSpanAttribute requires the value parameter"));
+                    getContext().onFailure(new IllegalArgumentException("setSpanAttribute requires the value parameter for key " + key));
                     return true;
                 }
             };
