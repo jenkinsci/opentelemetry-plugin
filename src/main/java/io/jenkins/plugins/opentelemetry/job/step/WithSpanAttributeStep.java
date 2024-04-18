@@ -147,7 +147,7 @@ public class WithSpanAttributeStep extends Step {
         @NonNull
         @Override
         public String getDisplayName() {
-            return "Set Span Attribute on child spans";
+            return "Set Span Attribute (Deprecated)";
         }
 
         public ListBoxModel doFillTypeItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
@@ -159,10 +159,6 @@ public class WithSpanAttributeStep extends Step {
             return new ListBoxModel(Arrays.stream(SpanAttributeTarget.values()).map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
         }
 
-        @Override
-        public boolean takesImplicitBlockArgument() {
-            return true;
-        }
     }
 
 }

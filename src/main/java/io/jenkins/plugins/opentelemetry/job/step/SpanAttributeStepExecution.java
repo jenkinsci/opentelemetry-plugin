@@ -81,10 +81,10 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
             spanAttributes.forEach(spanAttribute -> {
                 switch (spanAttribute.getTarget()) {
                     // We use Best Effort to set the attribute on existing child spans.
-                    // Some child spans that were created before the execution of withSpanAttribute might be missed.
+                    // Some child spans that were created before the execution of withSpanAttributes might be missed.
                     // Ideally we would set the attribute on all child spans that are still in progress and log a warning
                     // for closed child spans. (We cannot change attributes on a span that is closed, as it might already have been sent out.)
-                    // Child spans created after the execution of withSpanAttribute will all have the attribute set correctly.
+                    // Child spans created after the execution of withSpanAttributes will all have the attribute set correctly.
                     case PIPELINE_ROOT_SPAN:
                         Span phaseSpan = otelTraceService.getSpan(run);
                         phaseSpan.setAttribute(spanAttribute.getAttributeKey(), spanAttribute.getConvertedValue());

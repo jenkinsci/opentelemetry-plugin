@@ -18,9 +18,10 @@ import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
-import io.jenkins.plugins.opentelemetry.job.step.SetSpanAttributeStep;
+import io.jenkins.plugins.opentelemetry.job.step.SetSpanAttributesStep;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
 import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributeStep;
+import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributesStep;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.events.EventEmitter;
@@ -233,7 +234,10 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             return true;
         }
         String stepFunctionName = stepDescriptor.getFunctionName();
-        boolean ignoreStep = SetSpanAttributeStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName) || WithSpanAttributeStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName) || this.ignoredSteps.contains(stepFunctionName);
+        boolean ignoreStep = SetSpanAttributesStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
+            || WithSpanAttributeStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
+            || WithSpanAttributesStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
+            || this.ignoredSteps.contains(stepFunctionName);
         LOGGER.log(Level.FINER, ()-> "isIgnoreStep(" + stepDescriptor + "): " + ignoreStep);
         return ignoreStep;
     }
