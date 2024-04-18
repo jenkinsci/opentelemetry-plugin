@@ -147,7 +147,7 @@ public class WithSpanAttributeStep extends Step {
         @NonNull
         @Override
         public String getDisplayName() {
-            return "Set Span Attribute (Deprecated)";
+            return "Set Span Attribute";
         }
 
         public ListBoxModel doFillTypeItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
