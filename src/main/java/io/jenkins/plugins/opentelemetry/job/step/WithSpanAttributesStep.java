@@ -55,8 +55,7 @@ public class WithSpanAttributesStep extends Step {
                 }
                 return accumulator + ", " + spanAttribute;
             });
-            // null attributes are NOT supported
-            // todo log message
+            // null attributes are NOT supported, log an error
             return new StepExecution(context) {
                 @Override
                 public boolean start() {

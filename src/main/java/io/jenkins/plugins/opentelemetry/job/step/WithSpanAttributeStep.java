@@ -51,7 +51,6 @@ public class WithSpanAttributeStep extends Step {
     public StepExecution start(StepContext context) throws Exception {
         if (value == null) {
             // null attributes are NOT supported
-            // todo log message
             return new StepExecution(context) {
                 @Override
                 public boolean start() {
