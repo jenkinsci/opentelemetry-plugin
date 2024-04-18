@@ -11,6 +11,7 @@ import io.opentelemetry.api.trace.Span;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -39,6 +40,13 @@ public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implem
 		this.attributeType = attributeType;
 		this.target = Objects.requireNonNullElse(target, SpanAttributeTarget.CURRENT_SPAN);
 	}
+
+    // set transient fields on deserialization
+    protected Object readResolve() throws ObjectStreamException {
+        setDefaultType();
+        convert();
+        return this;
+    }
 
     public void setDefaultType() {
         if (attributeType != null) {
