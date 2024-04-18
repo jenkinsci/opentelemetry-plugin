@@ -22,8 +22,6 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.trace.data.SpanData;
 
-import java.util.Optional;
-
 public class WithSpanAttributeStepTest extends BaseIntegrationTest {
 
     @Test
