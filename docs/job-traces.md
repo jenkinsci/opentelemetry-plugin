@@ -12,7 +12,10 @@ The attributes of the traces and spans are normalized in order
 
 ### Enriching pipeline build traces with custom span attributes
 
-[Attributes](https://opentelemetry.io/docs/reference/specification/common/#attribute) can be added to the spans associated with pipeline steps using the `withSpanAttribute(key, value[, type]) ` step.
+[Attributes](https://opentelemetry.io/docs/reference/specification/common/#attribute) can be added to the spans associated with pipeline steps using one of the following pipeline steps:
+* `withSpanAttribute(key, value[, type][, target])`
+* `setSpanAttributes([spanAttribute(key, value[, type][, target])])`
+* `withSpanAttributes([spanAttribute(key, value[, type][, target])])`
 
 Example:
 
@@ -21,6 +24,10 @@ withSpanAttribute(key: "pipeline_type", value: "release_pipeline", target: "PIPE
 ...
 stage ("build") {
     withSpanAttribute(key: "build.tool", value: "maven")
+    setSpanAttributes([spanAttribute(key: "build.tool", value: "maven")])
+    withSpanAttributes([spanAttribute(key: "test.tool", value: "junit")]) {
+        sh "./run-tests.sh"
+    }
 }
 ````
 
@@ -30,7 +37,26 @@ If not specified, the `type` of the attribute is inferred from the passed `value
    * `CURRENT_SPAN` (default value): the attribute is set on the span of the current pipeline phase (current node, stage, step...)
    * `PIPELINE_ROOT_SPAN`: the attribute is set on the root span of the pipeline (ie the "BUILD ..." span)
 
-Note that the `withSpanAttribute` doesn't create a span in the pipeline build trace.
+Note that none of the steps `setSpanAttributes`, `withSpanAttribute`, `withSpanAttributes` create a span in the pipeline build trace.
+
+`withSpanAttribute` and `setSpanAttributes` set the given attribute(s) on the target.
+
+`withSpanAttributes` sets the given attribute(s) on child spans.
+
+It's also possible to use `withSpanAttributes` in declarative pipelines:
+
+````groovy
+pipeline {
+    options {
+        withSpanAttributes([spanAttribute(key: 'pipeline.type', value: 'release', target: 'PIPELINE_ROOT_SPAN')])
+    }
+    stages {
+        stage('build') {
+            ...
+        }
+    }
+}
+````
 
 ### Pipeline, freestyle, and matrix project build spans
 
