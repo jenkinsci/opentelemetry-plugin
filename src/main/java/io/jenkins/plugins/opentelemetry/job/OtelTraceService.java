@@ -238,11 +238,15 @@ public class OtelTraceService {
 
     public void putRunPhaseSpan(@NonNull Run run, @NonNull Span span) {
         run.addAction(new RunPhaseMonitoringAction(span));
+        // Phase spans do not get the attributes from the StepContext.
+        // To ensure that attributes of child spans of the root span are set correctly we read them from an OpenTelemetryAttributesAction set on the Run.
         setAttributesToSpan(span, run.getAction(OpenTelemetryAttributesAction.class));
         LOGGER.log(Level.FINEST, () -> "putRunPhaseSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
     public void putAgentSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
+        // Agent spans do not get the attributes from the StepContext.
+        // To ensure that attributes of child spans of the root span are set correctly we read them from an OpenTelemetryAttributesAction set on the Run.
         setAttributesToSpan(span, run.getAction(OpenTelemetryAttributesAction.class));
         putSpan(run, span, flowNode);
         LOGGER.log(Level.FINEST, () -> "putAgentSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
