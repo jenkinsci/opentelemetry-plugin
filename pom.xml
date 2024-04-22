@@ -9,7 +9,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.79</version>
+        <version>4.81</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -30,8 +30,8 @@
         <opentelemetry-contrib.version>1.33.0-alpha</opentelemetry-contrib.version>
         <opentelemetry-semconv>1.23.1-alpha</opentelemetry-semconv>
         <useBeta>true</useBeta>
-        <elasticstack.version>8.12.2</elasticstack.version>
-        <error-prone.version>2.26.0</error-prone.version>
+        <elasticstack.version>8.13.2</elasticstack.version>
+        <error-prone.version>2.26.1</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
@@ -71,7 +71,7 @@
             <dependency>
                 <groupId>org.eclipse.parsson</groupId>
                 <artifactId>parsson</artifactId>
-                <version>1.1.4</version>
+                <version>1.1.6</version>
             </dependency>
             <dependency>
                 <groupId>io.prometheus</groupId>
@@ -439,7 +439,7 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>4.2.0</version>
+            <version>4.2.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
