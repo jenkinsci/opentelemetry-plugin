@@ -20,6 +20,8 @@ import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.opentelemetry.sdk.resources.Resource;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.apache.commons.codec.net.URLCodec;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -131,9 +133,8 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
         }
         Map<String, String> resourceMap =
             resource.getAttributes().asMap().entrySet().stream()
-                .collect(Collectors.toMap(entry -> entry.getKey().getKey(), entry -> Objects.toString(entry.getValue())));
+                .collect(Collectors.toMap(entry -> entry.getKey().getKey(), entry -> OtelUtils.urlEncode(Objects.toString(entry.getValue()))));
         Map<String, Object> mergedBindings = mergeBindings(Collections.singletonMap("resource", resourceMap));
-
         try {
             return this.metricsVisualizationUrlGTemplate.make(mergedBindings).toString();
         } catch (MissingPropertyException e) {
