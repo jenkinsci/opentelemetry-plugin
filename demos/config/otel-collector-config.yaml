@@ -11,7 +11,10 @@ exporters:
       enabled: true
     const_labels:
       label1: value1
-  logging:
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
 
   zipkin:
     endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
@@ -51,11 +54,11 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, zipkin, otlp/jaeger, otlp/elastic]
+      exporters: [debug, zipkin, otlp/jaeger, otlp/elastic]
     metrics:
       receivers: [otlp]
       processors: [filter, batch]
-      exporters: [logging, prometheus, otlp/elastic]
+      exporters: [debug, prometheus, otlp/elastic]
     logs:
       receivers: [otlp]
-      exporters: [logging, otlp/elastic]
+      exporters: [debug, otlp/elastic]
