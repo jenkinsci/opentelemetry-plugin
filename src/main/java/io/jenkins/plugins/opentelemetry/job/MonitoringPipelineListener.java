@@ -18,8 +18,10 @@ import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
+import io.jenkins.plugins.opentelemetry.job.step.SetSpanAttributesStep;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
 import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributeStep;
+import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributesStep;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.events.EventEmitter;
@@ -106,7 +108,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + JenkinsOtelSemanticAttributes.AGENT + "(" + agentLabel + ") - begin " + OtelUtils.toDebugString(agentSpan));
 
-            getTracerService().putSpan(run, agentSpan, stepStartNode);
+            getTracerService().putAgentSpan(run, agentSpan, stepStartNode);
 
             try (Scope allocateAgentSpanScope = agentSpan.makeCurrent()) {
                 SpanBuilder allocateAgentSpanBuilder = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI)
@@ -123,7 +125,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
                 LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + JenkinsOtelSemanticAttributes.AGENT_ALLOCATE + "(" + agentLabel + ") - begin " + OtelUtils.toDebugString(allocateAgentSpan));
 
-                getTracerService().putSpan(run, allocateAgentSpan, stepStartNode);
+                getTracerService().putAgentSpan(run, allocateAgentSpan, stepStartNode);
             }
         }
     }
@@ -232,7 +234,10 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             return true;
         }
         String stepFunctionName = stepDescriptor.getFunctionName();
-        boolean ignoreStep = WithSpanAttributeStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName) || this.ignoredSteps.contains(stepFunctionName);
+        boolean ignoreStep = SetSpanAttributesStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
+            || WithSpanAttributeStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
+            || WithSpanAttributesStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
+            || this.ignoredSteps.contains(stepFunctionName);
         LOGGER.log(Level.FINER, ()-> "isIgnoreStep(" + stepDescriptor + "): " + ignoreStep);
         return ignoreStep;
     }
@@ -379,19 +384,35 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
                 computer.addAction(openTelemetryAttributesAction);
             }
-            OpenTelemetryAttributesAction openTelemetryAttributesAction = computer.getAction(OpenTelemetryAttributesAction.class);
+            OpenTelemetryAttributesAction otelComputerAttributesAction = computer.getAction(OpenTelemetryAttributesAction.class);
+            OpenTelemetryAttributesAction otelChildAttributesAction = context.get(OpenTelemetryAttributesAction.class);
 
             try (Scope ignored = setupContext(run, node)) {
                 Span currentSpan = Span.current();
-                LOGGER.log(Level.FINE, () -> "Add resource attributes to span " + OtelUtils.toDebugString(currentSpan) + " - " + openTelemetryAttributesAction);
-                for (Map.Entry<AttributeKey<?>, Object> entry : openTelemetryAttributesAction.getAttributes().entrySet()) {
-                    AttributeKey<?> attributeKey = entry.getKey();
-                    Object value = verifyNotNull(entry.getValue());
-                    currentSpan.setAttribute((AttributeKey<? super Object>) attributeKey, value);
-                }
+                LOGGER.log(Level.FINE, () -> "Add resource attributes to span " + OtelUtils.toDebugString(currentSpan) + " - " + otelComputerAttributesAction);
+                setAttributesToSpan(currentSpan, otelComputerAttributesAction);
+
+                LOGGER.log(Level.FINE, () -> "Add attributes to child span " + OtelUtils.toDebugString(currentSpan) + " - " + otelChildAttributesAction);
+                setAttributesToSpan(currentSpan, otelChildAttributesAction);
             }
         } catch (IOException | InterruptedException | RuntimeException e) {
             LOGGER.log(Level.WARNING,"Exception processing " + step + " - " + context, e);
+        }
+    }
+
+    private void setAttributesToSpan(@NonNull Span span, OpenTelemetryAttributesAction openTelemetryAttributesAction) {
+        if (openTelemetryAttributesAction == null) {
+            return;
+        }
+        if (!openTelemetryAttributesAction.isNotYetAppliedToSpan(span.getSpanContext().getSpanId())) {
+            // Do not reapply attributes, if previously applied.
+            // This is important for overriding of attributes to work in an intuitive manner.
+            return;
+        }
+        for (Map.Entry<AttributeKey<?>, Object> entry : openTelemetryAttributesAction.getAttributes().entrySet()) {
+            AttributeKey<?> attributeKey = entry.getKey();
+            Object value = verifyNotNull(entry.getValue());
+            span.setAttribute((AttributeKey<? super Object>) attributeKey, value);
         }
     }
 
