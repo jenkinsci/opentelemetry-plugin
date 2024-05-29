@@ -37,7 +37,6 @@ import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.ResourceAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.model.CauseOfInterruption;
-import org.apache.commons.compress.utils.Sets;
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
@@ -83,7 +82,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     @PostConstruct
     public void postConstruct() {
         final JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration = JenkinsOpenTelemetryPluginConfiguration.get();
-        this.ignoredSteps = Sets.newHashSet(jenkinsOpenTelemetryPluginConfiguration.getIgnoredSteps().split(","));
+        this.ignoredSteps = new HashSet<>(Arrays.asList(jenkinsOpenTelemetryPluginConfiguration.getIgnoredSteps().split(",")));
         this.statusUnsetCausesOfInterruption = new HashSet<>(jenkinsOpenTelemetryPluginConfiguration.getStatusUnsetCausesOfInterruption());
     }
 
