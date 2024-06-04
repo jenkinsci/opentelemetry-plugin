@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry.backend;
 
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -19,7 +19,7 @@ public class DynatraceBackendTest {
     public void testGetMetricsVisualizationUrlDashboardIsSet() {
         DynatraceBackend backend = new DynatraceBackend("https://{your-environment-id}.live.dynatrace.com/");
         backend.setDashboardId("311fa105-1f09-4005-926d-8d27bc33a717");
-        Resource resource = Resource.builder().put(ResourceAttributes.SERVICE_NAME, "jenkins").build();
+        Resource resource = Resource.builder().put(ServiceAttributes.SERVICE_NAME, "jenkins").build();
 
 
         String actual = backend.getMetricsVisualizationUrl(resource);
@@ -29,7 +29,7 @@ public class DynatraceBackendTest {
     @Test
     public void testGetMetricsVisualizationUrlDashboardIsNotSet() {
         DynatraceBackend backend = new DynatraceBackend("https://{your-environment-id}.live.dynatrace.com/");
-        Resource resource = Resource.builder().put(ResourceAttributes.SERVICE_NAME, "jenkins").build();
+        Resource resource = Resource.builder().put(ServiceAttributes.SERVICE_NAME, "jenkins").build();
 
         String actual = backend.getMetricsVisualizationUrl(resource);
         assertThat(actual, is(nullValue()));
