@@ -11,6 +11,9 @@
     In jenkins pipeline logs screens, an hyperlink to the logs visualization in Grafana is displayed as a replacement to the logs.
     </i>
 
+    <f:entry title="Loki OpenTelemetry logs format" field="lokiOTelLogFormat">
+        <f:select />
+    </f:entry>
     <f:entry title="Loki Datasource Identifier" field="grafanaLokiDatasourceIdentifier"
              description="Identifier of the Grafana Loki datasource in which the Jenkins pipeline build logs are stored.">
         <f:textbox default="${descriptor.defaultLokiDataSourceIdentifier}"/>

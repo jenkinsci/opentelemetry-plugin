@@ -10,6 +10,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.grafana.GrafanaLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
@@ -272,6 +273,12 @@ public class GrafanaBackend extends ObservabilityBackend {
                 return FormValidation.error("Invalid URL: " + e.getMessage());
             }
             return FormValidation.ok();
+        }
+        public ListBoxModel doFillTempoQueryTypeItems() {
+            ListBoxModel items = new ListBoxModel();
+            items.add("Query Tempo using TraceQL", "traceql");
+            items.add( "Query Tempo by TraceID (older Tempo versions)", "traceid");
+            return items;
         }
     }
 
