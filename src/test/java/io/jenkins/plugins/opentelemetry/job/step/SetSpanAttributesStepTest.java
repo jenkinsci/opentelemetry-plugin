@@ -5,8 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
-import static org.junit.Assume.assumeFalse;
-
+import com.github.rutledgepaulv.prune.Tree;
+import hudson.model.Result;
+import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.sdk.trace.data.SpanData;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -14,28 +18,22 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Test;
 
-import com.github.rutledgepaulv.prune.Tree;
+import static org.junit.Assume.assumeFalse;
 
-import hudson.model.Result;
-import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.sdk.trace.data.SpanData;
-
-public class WithSpanAttributeStepTest extends BaseIntegrationTest {
+public class SetSpanAttributesStepTest extends BaseIntegrationTest {
 
     @Test
-    public void testSimplePipelineWithWithSpanAttributeStep() throws Exception {
+    public void testSimplePipelineWithSetSpanAttributesStep() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // BEFORE
 
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-            "withSpanAttribute(key: 'pipeline.type', value: 'release', target: 'PIPELINE_ROOT_SPAN')\n" +
+            "setSpanAttributes([spanAttribute(key: 'pipeline.type', value: 'release', target: 'PIPELINE_ROOT_SPAN')])\n" +
             "node() {\n" +
             "    stage('build') {\n" +
-            "       withSpanAttribute(key: 'pipeline.importance', value: 'critical', target: 'PIPELINE_ROOT_SPAN')\n" +
-            "       withSpanAttribute(key: 'stage.type', value: 'build-java-maven', target: 'CURRENT_SPAN')\n" +
-            "       withSpanAttribute(key: 'build.tool', value: 'maven')\n" +
+            "       setSpanAttributes([spanAttribute(key: 'pipeline.importance', value: 'critical', target: 'PIPELINE_ROOT_SPAN')])\n" +
+            "       setSpanAttributes([spanAttribute(key: 'stage.type', value: 'build-java-maven', target: 'CURRENT_SPAN')])\n" +
+            "       setSpanAttributes([spanAttribute(key: 'build.tool', value: 'maven'), spanAttribute(key: 'test.tool', value: 'junit')])\n" +
             "       xsh (label: 'release-script', script: 'echo ze-echo-1') \n" +
             "    }\n" +
             "}";
@@ -77,6 +75,12 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
             MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("maven"));
+        }
+
+        { // attribute 'test.tool' - implicitly CURRENT_SPAN, multiple spanAttributes specified in list
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> "Stage: build".equals(sdw.spanData.getName())).findFirst().get().spanData;
+            String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("test.tool"));
+            MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("junit"));
         }
 
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
