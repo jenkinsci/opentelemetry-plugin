@@ -17,7 +17,8 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.ExceptionAttributes;
+import io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes;
 import jenkins.YesNoMaybe;
 
 import java.io.PrintWriter;
@@ -99,19 +100,19 @@ public class OtelJulHandler extends Handler implements OtelComponent {
             // throwable
             Throwable throwable = logRecord.getThrown();
             if (throwable != null) {
-                attributes.put(SemanticAttributes.EXCEPTION_TYPE, throwable.getClass().getName());
-                attributes.put(SemanticAttributes.EXCEPTION_MESSAGE, throwable.getMessage());
+                attributes.put(ExceptionAttributes.EXCEPTION_TYPE, throwable.getClass().getName());
+                attributes.put(ExceptionAttributes.EXCEPTION_MESSAGE, throwable.getMessage());
                 StringWriter writer = new StringWriter();
                 throwable.printStackTrace(new PrintWriter(writer));
-                attributes.put(SemanticAttributes.EXCEPTION_STACKTRACE, writer.toString());
+                attributes.put(ExceptionAttributes.EXCEPTION_STACKTRACE, writer.toString());
             }
 
             if (captureExperimentalAttributes) {
                 Thread currentThread = Thread.currentThread();
-                attributes.put(SemanticAttributes.THREAD_NAME, currentThread.getName());
-                attributes.put(SemanticAttributes.THREAD_ID, currentThread.getId());
+                attributes.put(ThreadIncubatingAttributes.THREAD_NAME, currentThread.getName());
+                attributes.put(ThreadIncubatingAttributes.THREAD_ID, currentThread.getId());
             } else {
-                attributes.put(SemanticAttributes.THREAD_ID, logRecord.getThreadID());
+                attributes.put(ThreadIncubatingAttributes.THREAD_ID, logRecord.getThreadID());
             }
 
             logBuilder = logBuilder
