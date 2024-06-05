@@ -9,16 +9,21 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.NetworkAttributes;
+import io.opentelemetry.semconv.ServerAttributes;
+import io.opentelemetry.semconv.UrlAttributes;
+import io.opentelemetry.semconv.incubating.PeerIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.RpcIncubatingAttributes;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.net.URISyntaxException;
 import java.util.logging.Logger;
 
@@ -74,13 +79,13 @@ public abstract class AbstractGitStepHandler implements StepHandler {
             String spanName = stepFunctionName + ": " + host + "/" + gitRepositoryPath;
             spanBuilder = tracer.spanBuilder(spanName);
             spanBuilder
-                    .setAttribute(SemanticAttributes.RPC_SYSTEM, gitUri.getScheme())
-                    .setAttribute(SemanticAttributes.RPC_SERVICE, "git")
-                    .setAttribute(SemanticAttributes.RPC_METHOD, "checkout")
-                    .setAttribute(SemanticAttributes.NET_PEER_NAME, host)
-                    .setAttribute(SemanticAttributes.PEER_SERVICE, host)
-                    .setAttribute(SemanticAttributes.HTTP_URL, sanitizeUrl(gitUri))
-                    .setAttribute(SemanticAttributes.HTTP_METHOD, "POST")
+                    .setAttribute(RpcIncubatingAttributes.RPC_SYSTEM, gitUri.getScheme())
+                    .setAttribute(RpcIncubatingAttributes.RPC_SERVICE, "git")
+                    .setAttribute(RpcIncubatingAttributes.RPC_METHOD, "checkout")
+                    .setAttribute(ServerAttributes.SERVER_ADDRESS, host)
+                    .setAttribute(PeerIncubatingAttributes.PEER_SERVICE, host)
+                    .setAttribute(UrlAttributes.URL_FULL, sanitizeUrl(gitUri))
+                    .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, "POST")
                     .setSpanKind(SpanKind.CLIENT)
             ;
 
@@ -92,12 +97,12 @@ public abstract class AbstractGitStepHandler implements StepHandler {
             String spanName = stepFunctionName + ": " + host + "/" + gitRepositoryPath;
             spanBuilder = tracer.spanBuilder(spanName);
             spanBuilder
-                    .setAttribute(SemanticAttributes.RPC_SYSTEM, "ssh")
-                    .setAttribute(SemanticAttributes.RPC_SERVICE, "git")
-                    .setAttribute(SemanticAttributes.RPC_METHOD, "checkout")
-                    .setAttribute(SemanticAttributes.NET_PEER_NAME, host)
-                    .setAttribute(SemanticAttributes.PEER_SERVICE, host)
-                    .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP)
+                    .setAttribute(RpcIncubatingAttributes.RPC_SYSTEM, "ssh")
+                    .setAttribute(RpcIncubatingAttributes.RPC_SERVICE, "git")
+                    .setAttribute(RpcIncubatingAttributes.RPC_METHOD, "checkout")
+                    .setAttribute(ServerAttributes.SERVER_ADDRESS, host)
+                    .setAttribute(PeerIncubatingAttributes.PEER_SERVICE, host)
+                    .setAttribute(NetworkAttributes.NETWORK_TRANSPORT, NetworkAttributes.NetworkTransportValues.TCP)
                     .setSpanKind(SpanKind.CLIENT)
             ;
         } else if (("file".equals(gitUri.getScheme())

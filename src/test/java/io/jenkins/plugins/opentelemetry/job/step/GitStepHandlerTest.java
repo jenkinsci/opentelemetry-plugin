@@ -5,18 +5,19 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.testing.trace.SpanBuilderMock;
 import io.opentelemetry.sdk.testing.trace.TracerMock;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.ServerAttributes;
+import io.opentelemetry.semconv.UrlAttributes;
 import org.eclipse.jgit.transport.URIish;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 
 public class GitStepHandlerTest {
@@ -26,7 +27,7 @@ public class GitStepHandlerTest {
         SpanBuilderMock spanBuilder = testGithubUrl("https://github.com/open-telemetry/opentelemetry-java", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.HTTP_URL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java"));
+        MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
 
@@ -35,7 +36,7 @@ public class GitStepHandlerTest {
         SpanBuilderMock spanBuilder = testGithubUrl("git@github.com:open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.NET_PEER_NAME), Matchers.equalTo("github.com"));
+        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("github.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
 
@@ -45,7 +46,7 @@ public class GitStepHandlerTest {
         SpanBuilderMock spanBuilder = testGithubUrl("user@example.com:open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.NET_PEER_NAME), Matchers.equalTo("example.com"));
+        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
 
@@ -55,7 +56,7 @@ public class GitStepHandlerTest {
         SpanBuilderMock spanBuilder = testGithubUrl("example.com:open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.NET_PEER_NAME), Matchers.equalTo("example.com"));
+        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
 
@@ -65,7 +66,7 @@ public class GitStepHandlerTest {
         SpanBuilderMock spanBuilder = testGithubUrl("ssh://user@example.com/project.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.NET_PEER_NAME), Matchers.equalTo("example.com"));
+        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("project"));
     }
 
@@ -75,7 +76,7 @@ public class GitStepHandlerTest {
         SpanBuilderMock spanBuilder = testGithubUrl("ssh://user@example.com:2222/project.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.NET_PEER_NAME), Matchers.equalTo("example.com"));
+        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("project"));
     }
 
@@ -85,7 +86,7 @@ public class GitStepHandlerTest {
         SpanBuilderMock spanBuilder = testGithubUrl("ssh://example.com/project.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.NET_PEER_NAME), Matchers.equalTo("example.com"));
+        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("project"));
     }
 
@@ -93,7 +94,7 @@ public class GitStepHandlerTest {
     public void testHttpsGithubUrlWithSuffix() throws Exception {
         SpanBuilderMock spanBuilder = testGithubUrl("https://github.com/open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.HTTP_URL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
+        MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
 
@@ -101,7 +102,7 @@ public class GitStepHandlerTest {
     public void testHttpsGithubUrlWithUsername() throws Exception {
         SpanBuilderMock spanBuilder = testGithubUrl("https://my_username@github.com/open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.HTTP_URL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
+        MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
 
@@ -109,7 +110,7 @@ public class GitStepHandlerTest {
     public void testHttpsGithubUrlWithUsernamePassword() throws Exception {
         SpanBuilderMock spanBuilder = testGithubUrl("https://my_username:my_password@github.com/open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.HTTP_URL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
+        MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
 
@@ -119,7 +120,7 @@ public class GitStepHandlerTest {
         SpanBuilderMock spanBuilder = testGithubUrl("file:///srv/git/project.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.HTTP_URL), Matchers.is(Matchers.nullValue()));
+        MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.is(Matchers.nullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("srv/git/project"));
     }
 
@@ -129,7 +130,7 @@ public class GitStepHandlerTest {
         SpanBuilderMock spanBuilder = testGithubUrl("/srv/git/project.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.HTTP_URL), Matchers.is(Matchers.nullValue()));
+        MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.is(Matchers.nullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("srv/git/project"));
     }
 
@@ -139,7 +140,7 @@ public class GitStepHandlerTest {
         SpanBuilderMock spanBuilder = testGithubUrl("c:\\srv/git/project.git", "master", "my-git-user");
         Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(SemanticAttributes.HTTP_URL), Matchers.is(Matchers.nullValue()));
+        MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.is(Matchers.nullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_REPOSITORY), Matchers.equalTo("c:\\srv/git/project"));
     }
 

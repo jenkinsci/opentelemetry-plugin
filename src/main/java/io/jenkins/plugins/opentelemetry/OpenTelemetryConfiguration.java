@@ -7,15 +7,16 @@ package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
-import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
+import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import org.apache.commons.lang.StringUtils;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -157,10 +158,10 @@ public class OpenTelemetryConfiguration {
     public Resource toOpenTelemetryResource() {
         ResourceBuilder resourceBuilder = Resource.builder();
         this.getServiceName().ifPresent(serviceName ->
-            resourceBuilder.put(ResourceAttributes.SERVICE_NAME, serviceName));
+            resourceBuilder.put(ServiceAttributes.SERVICE_NAME, serviceName));
 
         this.getServiceNamespace().ifPresent(serviceNamespace ->
-            resourceBuilder.put(ResourceAttributes.SERVICE_NAMESPACE, serviceNamespace));
+            resourceBuilder.put(ServiceIncubatingAttributes.SERVICE_NAMESPACE, serviceNamespace));
 
         resourceBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION, OtelUtils.getOpentelemetryPluginVersion());
 

@@ -19,7 +19,8 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.ClientAttributes;
+import io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.security.SecurityListener;
 import org.springframework.security.core.Authentication;
@@ -92,7 +93,7 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
         attributesBuilder
             .put(JenkinsOtelSemanticAttributes.EVENT_CATEGORY, JenkinsOtelSemanticAttributes.EventCategoryValues.AUTHENTICATION)
             .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.SUCCESS)
-            .put(SemanticAttributes.ENDUSER_ID, user.map(User::getId).orElse(username))
+            .put(EnduserIncubatingAttributes.ENDUSER_ID, user.map(User::getId).orElse(username))
         ;
 
         // Stapler.getCurrentRequest() returns null, it's not yet initialized
@@ -103,7 +104,7 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
             if (details instanceof WebAuthenticationDetails) {
                 WebAuthenticationDetails webAuthenticationDetails = (WebAuthenticationDetails) details;
                 attributesBuilder
-                    .put(SemanticAttributes.NET_SOCK_PEER_ADDR, webAuthenticationDetails.getRemoteAddress());
+                    .put(ClientAttributes.CLIENT_ADDRESS, webAuthenticationDetails.getRemoteAddress());
                 message += " from " + webAuthenticationDetails.getRemoteAddress();
             }
         }
@@ -127,7 +128,7 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
         attributesBuilder
             .put(JenkinsOtelSemanticAttributes.EVENT_CATEGORY, JenkinsOtelSemanticAttributes.EventCategoryValues.AUTHENTICATION)
             .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.FAILURE)
-            .put(SemanticAttributes.ENDUSER_ID, username)
+            .put(EnduserIncubatingAttributes.ENDUSER_ID, username)
         ;
 
         // TODO find a solution to retrieve the remoteIpAddress

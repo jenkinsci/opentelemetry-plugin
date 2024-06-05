@@ -30,7 +30,8 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
+import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
@@ -60,7 +61,16 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -193,7 +203,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_URL.getKey(), this.jenkinsLocationConfiguration.getUrl());
         // use same Jenkins instance identifier as the Jenkins Support Core plugin. No need to add the complexity of the instance-identity-plugin
         // https://github.com/jenkinsci/support-core-plugin/blob/support-core-2.81/src/main/java/com/cloudbees/jenkins/support/impl/AboutJenkins.java#L401
-        configurationProperties.put(ResourceAttributes.SERVICE_INSTANCE_ID.getKey(), Jenkins.get().getLegacyInstanceId());
+        configurationProperties.put(ServiceIncubatingAttributes.SERVICE_INSTANCE_ID.getKey(), Jenkins.get().getLegacyInstanceId());
         properties.forEach((k, v) -> configurationProperties.put(Objects.toString(k, "#null#"), Objects.toString(v, "#null#")));
 
         return new OpenTelemetryConfiguration(
@@ -483,7 +493,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
-     * @see ResourceAttributes#SERVICE_NAME
+     * @see io.opentelemetry.semconv.ServiceAttributes#SERVICE_NAME
      */
     public String getServiceName() {
         return (Strings.isNullOrEmpty(this.serviceName)) ? JenkinsOtelSemanticAttributes.JENKINS : this.serviceName;
@@ -496,7 +506,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
-     * @see ResourceAttributes#SERVICE_NAMESPACE
+     * @see ServiceIncubatingAttributes#SERVICE_NAMESPACE
      */
     public String getServiceNamespace() {
         return (Strings.isNullOrEmpty(this.serviceNamespace)) ? JenkinsOtelSemanticAttributes.JENKINS : this.serviceNamespace;
@@ -563,8 +573,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         LogStorageRetriever logStorageRetriever = null;
 
         Resource otelSdkResource = openTelemetrySdkProvider.getResource();
-        String serviceName = Objects.requireNonNull(otelSdkResource.getAttribute(ResourceAttributes.SERVICE_NAME), "service.name can't be null");
-        String serviceNamespace = otelSdkResource.getAttribute(ResourceAttributes.SERVICE_NAMESPACE);
+        String serviceName = Objects.requireNonNull(otelSdkResource.getAttribute(ServiceAttributes.SERVICE_NAME), "service.name can't be null");
+        String serviceNamespace = otelSdkResource.getAttribute(ServiceIncubatingAttributes.SERVICE_NAMESPACE);
 
         Map<String, Object> bindings;
         if (serviceNamespace == null) {

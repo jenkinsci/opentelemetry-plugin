@@ -15,7 +15,7 @@ import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes;
 import jenkins.YesNoMaybe;
 import org.jenkinsci.plugins.github_branch_source.Connector;
 import org.jenkinsci.plugins.github_branch_source.GitHubAppCredentials;
@@ -110,7 +110,7 @@ public class GitHubClientMonitoring implements OtelComponent {
                                     if (gitHubLogin == null) {
                                         gitHubLogin = gitHub.getMyself().getLogin();
                                     }
-                                    attributesBuilder.put(SemanticAttributes.ENDUSER_ID, gitHubLogin);
+                                    attributesBuilder.put(EnduserIncubatingAttributes.ENDUSER_ID, gitHubLogin);
                                     authentication = "login:" + gitHubLogin;
                                 } else if (credentialsTokenProviderClass.isAssignableFrom(authorizationProvider.getClass())) {
                                     GitHub jwtTokenBasedGitHub = (GitHub) dependentAuthorizationProvider_gitHubField.get(authorizationProvider);

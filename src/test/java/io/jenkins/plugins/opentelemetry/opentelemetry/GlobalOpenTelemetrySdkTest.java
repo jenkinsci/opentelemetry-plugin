@@ -6,7 +6,8 @@
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
+import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -35,9 +36,9 @@ public class GlobalOpenTelemetrySdkTest {
             config.put("otel.metrics.exporter", "none");
             config.put("otel.logs.exporter", "none");
             Resource resource = Resource.builder()
-                .put(ResourceAttributes.SERVICE_NAME, "jenkins")
-                .put(ResourceAttributes.SERVICE_VERSION, "1.2.3")
-                .put(ResourceAttributes.SERVICE_NAME.getKey(), "cicd")
+                .put(ServiceAttributes.SERVICE_NAME, "jenkins")
+                .put(ServiceAttributes.SERVICE_VERSION, "1.2.3")
+                .put(ServiceIncubatingAttributes.SERVICE_NAMESPACE, "cicd")
                 .build();
 
             Map<String, String> resourceAttributes = new HashMap<>();
@@ -59,9 +60,9 @@ public class GlobalOpenTelemetrySdkTest {
             config.put("otel.metrics.exporter", "none");
             config.put("otel.logs.exporter", "none");
             Resource resource = Resource.builder()
-                .put(ResourceAttributes.SERVICE_NAME, "jenkins")
-                .put(ResourceAttributes.SERVICE_VERSION, "1.2.3")
-                .put(ResourceAttributes.SERVICE_NAME.getKey(), "cicd")
+                .put(ServiceAttributes.SERVICE_NAME, "jenkins")
+                .put(ServiceAttributes.SERVICE_VERSION, "1.2.3")
+                .put(ServiceIncubatingAttributes.SERVICE_NAMESPACE, "cicd")
                 .build();
 
             Map<String, String> resourceAttributes = new HashMap<>();
@@ -100,9 +101,9 @@ public class GlobalOpenTelemetrySdkTest {
             // CONFIGURE ONCE
             {
                 final Resource resource = Resource.builder()
-                    .put(ResourceAttributes.SERVICE_NAME, "jenkins")
-                    .put(ResourceAttributes.SERVICE_VERSION, "1.2.3")
-                    .put(ResourceAttributes.SERVICE_NAME.getKey(), "cicd")
+                    .put(ServiceAttributes.SERVICE_NAME, "jenkins")
+                    .put(ServiceAttributes.SERVICE_VERSION, "1.2.3")
+                    .put(ServiceIncubatingAttributes.SERVICE_NAMESPACE, "cicd")
                     .build();
 
                 final Map<String, String> resourceAttributes = new HashMap<>();
@@ -115,9 +116,9 @@ public class GlobalOpenTelemetrySdkTest {
             // CONFIGURE A SECOND TIME WITH SAME CONFIG PROPERTIES AND DIFFERENT RESOURCE ATTRIBUTES
             {
                 final Resource differentResource = Resource.builder()
-                    .put(ResourceAttributes.SERVICE_NAME, "jenkins")
-                    .put(ResourceAttributes.SERVICE_VERSION, "1.2.3")
-                    .put(ResourceAttributes.SERVICE_NAME.getKey(), "another_namespace")
+                    .put(ServiceAttributes.SERVICE_NAME, "jenkins")
+                    .put(ServiceAttributes.SERVICE_VERSION, "1.2.3")
+                    .put(ServiceAttributes.SERVICE_NAME.getKey(), "another_namespace")
                     .build();
                 final Map<String, String> differentResourceAttributes = new HashMap<>();
                 differentResource.getAttributes().forEach((k, v) -> differentResourceAttributes.put(k.getKey(), v.toString()));
@@ -137,9 +138,9 @@ public class GlobalOpenTelemetrySdkTest {
 
 
             final Resource resource = Resource.builder()
-                .put(ResourceAttributes.SERVICE_NAME, "jenkins")
-                .put(ResourceAttributes.SERVICE_VERSION, "1.2.3")
-                .put(ResourceAttributes.SERVICE_NAME.getKey(), "cicd")
+                .put(ServiceAttributes.SERVICE_NAME, "jenkins")
+                .put(ServiceAttributes.SERVICE_VERSION, "1.2.3")
+                .put(ServiceIncubatingAttributes.SERVICE_NAMESPACE, "cicd")
                 .build();
 
             final Map<String, String> resourceAttributes = new HashMap<>();
