@@ -14,16 +14,29 @@ import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Store pipeline logs both in Loki and in the Jenkins home directory. Visualization of logs is done retrieving logs
+ * from the Jenkins home directory.
+ */
 public class GrafanaLogsBackendBackendWithLogMirroringInJenkins extends GrafanaLogsBackend {
     @DataBoundConstructor
     public GrafanaLogsBackendBackendWithLogMirroringInJenkins() {
     }
 
+    /**
+     * Logs should be retrieved from the Jenkins home, not from Loki
+     *
+     * @return {@code null}
+     */
     @Override
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         return null;
     }
 
+    /**
+     * Activate the log mirroring to disk in addition to activation of the OTel export of pipeline logs done by the
+     * {@link GrafanaLogsBackend#getOtelConfigurationProperties()}
+     */
     public Map<String, String> getOtelConfigurationProperties() {
         Map<String, String> properties = new HashMap<>(super.getOtelConfigurationProperties());
         properties.put("otel.logs.mirror_to_disk", Boolean.TRUE.toString());
