@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.backend.grafana;
 
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
 import hudson.DescriptorExtensionList;
@@ -14,6 +15,7 @@ import hudson.ExtensionPoint;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import hudson.util.ListBoxModel;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.GrafanaBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
@@ -22,19 +24,39 @@ import jenkins.model.Jenkins;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import org.kohsuke.stapler.DataBoundSetter;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<GrafanaLogsBackend> implements Describable<GrafanaLogsBackend>, ExtensionPoint {
+    public enum LokiOTelLogFormat {
+        LOKI_V2_JSON_OTEL_FORMAT ("Loki V2 OTel logs format as JSON"),
+        LOKI_V3_OTEL_FORMAT("Loki V3 OTel logs format using Loki labels and structured metadata");
+
+        final String displayName;
+
+        LokiOTelLogFormat(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+    }
+
     private final static Logger logger = Logger.getLogger(GrafanaLogsBackend.class.getName());
 
     private transient Template buildLogsVisualizationUrlGTemplate;
+
+    protected LokiOTelLogFormat lokiOTelLogFormat = LokiOTelLogFormat.LOKI_V2_JSON_OTEL_FORMAT;
 
     /**
      * Returns {@code null} if the backend is not capable of retrieving logs(ie the {@link NoGrafanaLogsBackend}
@@ -43,6 +65,7 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
     @MustBeClosed
     public abstract LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider);
 
+    @NonNull
     public Template getBuildLogsVisualizationMessageTemplate() {
         try {
             return new GStringTemplateEngine().createTemplate("View build logs in ${backendName}");
@@ -51,22 +74,33 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
         }
     }
 
+    @NonNull
     public Template getBuildLogsVisualizationUrlTemplate() {
         if (this.buildLogsVisualizationUrlGTemplate == null) {
-
             final String START = "__START__";
             final String END = "__END__";
 
+            String logQlQuery;
+            switch (Optional.ofNullable(lokiOTelLogFormat).orElse(LokiOTelLogFormat.LOKI_V2_JSON_OTEL_FORMAT)) {
+                case LOKI_V3_OTEL_FORMAT:
+                    // skip filtering on the optional `service.namespace` as the logic would be complex when it's not required to retrieve the right log lines
+                    logQlQuery = "{service_name=\"" + START + GrafanaBackend.TemplateBindings.SERVICE_NAME + END + "\"} " +
+                        "| trace_id=\"" + START + GrafanaBackend.TemplateBindings.TRACE_ID + END + "\"";
+                    break;
+                case LOKI_V2_JSON_OTEL_FORMAT:
+                default:
+                    logQlQuery =
+                        "{job=\"" + START + GrafanaBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME + END + "\"} " +
+                            "| json " +
+                            "| traceid=\"" + START + GrafanaBackend.TemplateBindings.TRACE_ID + END + "\" " +
+                            "| line_format \"{{.body}}\"";
+            }
             JsonObject panesAsJson = Json.createObjectBuilder()
                 .add("NZj", Json.createObjectBuilder()
                     .add("datasource", START + GrafanaBackend.TemplateBindings.GRAFANA_LOKI_DATASOURCE_IDENTIFIER + END)
                     .add("queries", Json.createArrayBuilder().add(Json.createObjectBuilder()
                         .add("refId", "A")
-                        .add("expr",
-                            "{job=\"" + START + GrafanaBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME + END + "\"} " +
-                                "| json " +
-                                "| traceid=\"" + START + GrafanaBackend.TemplateBindings.TRACE_ID + END + "\" " +
-                                "| line_format \"{{.body}}\"")
+                        .add("expr", logQlQuery)
                         .add("queryType", "range")
                         .add("datasource", Json.createObjectBuilder()
                             .add("type", "loki")
@@ -118,6 +152,16 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
         return (DescriptorImpl) super.getDescriptor();
     }
 
+    @NonNull
+    public String getLokiOTelLogFormat() {
+        return Optional.ofNullable(lokiOTelLogFormat).map(Enum::name).orElse(LokiOTelLogFormat.LOKI_V2_JSON_OTEL_FORMAT.name());
+    }
+
+    @DataBoundSetter
+    public void setLokiOTelLogFormat(String lokiOTelLogFormat) {
+        this.lokiOTelLogFormat = LokiOTelLogFormat.valueOf(lokiOTelLogFormat);
+    }
+
     /**
      * Returns all the registered {@link GrafanaLogsBackend} descriptors.
      */
@@ -126,6 +170,12 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
     }
 
     public abstract static class DescriptorImpl extends Descriptor<GrafanaLogsBackend> {
-
+        public ListBoxModel doFillLokiOTelLogFormatItems() {
+            ListBoxModel items = new ListBoxModel();
+            for (LokiOTelLogFormat lokiOTelLogFormat : LokiOTelLogFormat.values()) {
+                items.add(lokiOTelLogFormat.getDisplayName(), lokiOTelLogFormat.name());
+            }
+            return items;
+        }
     }
 }
