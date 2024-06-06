@@ -274,10 +274,11 @@ public class GrafanaBackend extends ObservabilityBackend {
             }
             return FormValidation.ok();
         }
+
         public ListBoxModel doFillTempoQueryTypeItems() {
             ListBoxModel items = new ListBoxModel();
             items.add("Query Tempo using TraceQL", "traceql");
-            items.add( "Query Tempo by TraceID (older Tempo versions)", "traceid");
+            items.add("Query Tempo by TraceID (older Tempo versions)", "traceid");
             return items;
         }
     }

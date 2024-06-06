@@ -38,13 +38,13 @@ import java.util.logging.Logger;
 
 public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<GrafanaLogsBackend> implements Describable<GrafanaLogsBackend>, ExtensionPoint {
     public enum LokiOTelLogFormat {
-        LOKI_V2_JSON_OTEL_FORMAT ("Loki V2 OTel logs as JSON"),
-        LOKI_V3_OTEL_FORMAT("Loki V3 OTel logs format using Loki labels and metadata");
+        LOKI_V2_JSON_OTEL_FORMAT ("Loki V2 OTel logs format as JSON"),
+        LOKI_V3_OTEL_FORMAT("Loki V3 OTel logs format using Loki labels and structured metadata");
 
         final String displayName;
 
-        LokiOTelLogFormat(String description) {
-            this.displayName = description;
+        LokiOTelLogFormat(String displayName) {
+            this.displayName = displayName;
         }
 
         public String getDisplayName() {
