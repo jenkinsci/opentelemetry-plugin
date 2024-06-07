@@ -13,8 +13,9 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
+import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
@@ -47,11 +48,11 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
     private LongCounter loginFailureCounter;
     private LongCounter loginCounter;
 
-    private EventEmitter eventEmitter;
+    private EventLogger eventLogger;
 
     @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-        this.eventEmitter = eventEmitter;
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
+        this.eventLogger = eventLogger;
 
         loginSuccessCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_SUCCESS)
@@ -110,13 +111,12 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
         }
         attributesBuilder.put("message", message);
 
-        eventEmitter.emit("user_login", attributesBuilder.build());
+        eventLogger.builder("user_login")
+            .setAttributes(attributesBuilder.build())
+            .setSeverity(Severity.INFO)
+            .emit();
     }
 
-    @Override
-    protected void userCreated(@NonNull String username) {
-        super.userCreated(username);
-    }
 
     @Override
     protected void failedToLogIn(@NonNull String username) {
@@ -135,16 +135,10 @@ public class AuditingSecurityListener extends SecurityListener implements OtelCo
 
         attributesBuilder.put("message", message);
 
-        eventEmitter.emit("user_login", attributesBuilder.build());
+        eventLogger.builder("user_login")
+            .setAttributes(attributesBuilder.build())
+            .setSeverity(Severity.WARN)
+            .emit();
     }
 
-    @Override
-    protected void loggedOut(@NonNull String username) {
-        super.loggedOut(username);
-    }
-
-    @Override
-    public void beforeSdkShutdown() {
-
-    }
 }

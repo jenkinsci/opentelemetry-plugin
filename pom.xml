@@ -21,13 +21,10 @@
         <changelist>999999-SNAPSHOT</changelist>
         <jenkins.version>2.401.3</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.36.0</opentelemetry.version>
-        <!--
-        Don't forget to bump opentelemetry-resources
-        -->
-        <opentelemetry-alpha.version>1.36.0-alpha</opentelemetry-alpha.version>
-        <opentelemetry-instrumentation-alpha.version>1.33.0-alpha</opentelemetry-instrumentation-alpha.version>
-        <opentelemetry-contrib.version>1.33.0-alpha</opentelemetry-contrib.version>
+        <opentelemetry.version>1.38.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.38.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry-instrumentation-alpha.version>2.4.0-alpha</opentelemetry-instrumentation-alpha.version>
+        <opentelemetry-contrib.version>1.36.0-alpha</opentelemetry-contrib.version>
         <opentelemetry-semconv>1.25.0-alpha</opentelemetry-semconv>
         <useBeta>true</useBeta>
         <elasticstack.version>8.13.4</elasticstack.version>
@@ -89,7 +86,7 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-api-events</artifactId>
+            <artifactId>opentelemetry-api-incubator</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>

@@ -9,7 +9,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.events.GlobalEventEmitterProvider;
+import io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.MeterProvider;
@@ -242,7 +242,7 @@ public final class GlobalOpenTelemetrySdk {
             logger.log(Level.FINE, "Shutdown OpenTelemetry..."); // TODO dump config details
             CompletableResultCode result = openTelemetrySdk.shutdown();
             GlobalOpenTelemetry.resetForTest();
-            GlobalEventEmitterProvider.resetForTest();
+            GlobalEventLoggerProvider.resetForTest();
 
             return result;
         }
