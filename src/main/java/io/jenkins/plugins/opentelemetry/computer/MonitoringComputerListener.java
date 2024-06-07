@@ -16,7 +16,7 @@ import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
@@ -42,7 +42,7 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
     private LongCounter failureAgentCounter;
 
     @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
         final Jenkins jenkins = Jenkins.get();
         Computer controllerComputer = jenkins.getComputer("");
         if (controllerComputer == null) {

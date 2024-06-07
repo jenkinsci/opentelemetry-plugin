@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.job;
 
 import com.google.errorprone.annotations.MustBeClosed;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.model.AbstractBuild;
@@ -16,7 +17,7 @@ import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -28,7 +29,6 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -130,7 +130,7 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Ot
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
         this.tracer = Objects.requireNonNull(tracer, "Provided tracer is null");
     }
 

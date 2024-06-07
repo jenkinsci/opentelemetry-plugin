@@ -27,7 +27,7 @@ import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
 import io.jenkins.plugins.opentelemetry.queue.RemoteSpanAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
@@ -89,8 +89,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-        super.afterSdkInitialized(meter, loggerProvider, eventEmitter, tracer, configProperties);
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
+        super.afterSdkInitialized(meter, loggerProvider, eventLogger, tracer, configProperties);
 
         // CAUSE HANDLERS
         List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));

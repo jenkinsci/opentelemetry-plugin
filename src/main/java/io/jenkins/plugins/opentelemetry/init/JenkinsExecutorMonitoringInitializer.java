@@ -10,7 +10,7 @@ import hudson.model.LoadStatistics;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
@@ -25,7 +25,7 @@ import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.*;
 public class JenkinsExecutorMonitoringInitializer implements OtelComponent {
 
     @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
 
         final ObservableLongMeasurement availableExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_AVAILABLE).setUnit("1").setDescription("Available executors").ofLongs().buildObserver();
         final ObservableLongMeasurement busyExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_BUSY).setUnit("1").setDescription("Busy executors").ofLongs().buildObserver();

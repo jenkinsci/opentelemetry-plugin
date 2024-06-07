@@ -115,11 +115,12 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
             StringWriter panesAsStringWriter = new StringWriter();
             Json.createWriter(panesAsStringWriter).writeObject(panesAsJson);
 
+            // starttime and endtime are of type java.time.Instant
             String panes = URLEncoder
                 .encode(panesAsStringWriter.toString(), StandardCharsets.UTF_8)
                 .replace(START, "${").replace(END, "}")
-                .replace("--start_time--", "${" + GrafanaBackend.TemplateBindings.START_TIME + ".minusSeconds(600).atZone(java.util.TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()" + "}")
-                .replace("--end_time--", "${" + GrafanaBackend.TemplateBindings.END_TIME + ".plusSeconds(600).atZone(java.util.TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()" + "}");
+                .replace("--start_time--", "${" + GrafanaBackend.TemplateBindings.START_TIME + ".minus(1, java.time.temporal.ChronoUnit.DAYS).atZone(java.util.TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()" + "}")
+                .replace("--end_time--", "${" + GrafanaBackend.TemplateBindings.END_TIME + ".plus(1, java.time.temporal.ChronoUnit.DAYS).atZone(java.util.TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()" + "}");
 
 
             String urlTemplate = "${" + GrafanaBackend.TemplateBindings.GRAFANA_BASE_URL + "}/" +
