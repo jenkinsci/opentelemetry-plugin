@@ -158,6 +158,18 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.opentelemetry.contrib</groupId>
+            <artifactId>opentelemetry-gcp-resources</artifactId>
+            <version>${opentelemetry-contrib.version}</version>
+            <exclusions>
+                <exclusion>
+                    <!-- we get okhttp from org.jenkins-ci.plugins:jackson2-api -->
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-otlp</artifactId>
             <exclusions>
