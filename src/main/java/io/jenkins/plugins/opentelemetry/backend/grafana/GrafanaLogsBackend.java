@@ -56,7 +56,7 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
 
     private transient Template buildLogsVisualizationUrlGTemplate;
 
-    protected LokiOTelLogFormat lokiOTelLogFormat = LokiOTelLogFormat.LOKI_V2_JSON_OTEL_FORMAT;
+    protected LokiOTelLogFormat lokiOTelLogFormat;
 
     /**
      * Returns {@code null} if the backend is not capable of retrieving logs(ie the {@link NoGrafanaLogsBackend}
@@ -155,7 +155,7 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
 
     @NonNull
     public String getLokiOTelLogFormat() {
-        return Optional.ofNullable(lokiOTelLogFormat).map(Enum::name).orElse(LokiOTelLogFormat.LOKI_V2_JSON_OTEL_FORMAT.name());
+        return Optional.ofNullable(lokiOTelLogFormat).map(Enum::name).orElse(getDescriptor().getDefaultLokiOTelLogFormat());
     }
 
     @DataBoundSetter
@@ -178,5 +178,7 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
             }
             return items;
         }
+
+        public abstract String getDefaultLokiOTelLogFormat();
     }
 }

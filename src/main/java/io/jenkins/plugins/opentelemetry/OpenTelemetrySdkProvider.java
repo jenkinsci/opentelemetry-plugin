@@ -78,6 +78,11 @@ public class OpenTelemetrySdkProvider {
     }
 
     @NonNull
+    public OpenTelemetry getOpenTelemetry() {
+        return Preconditions.checkNotNull(openTelemetry);
+    }
+
+    @NonNull
     public Resource getResource() {
         return Preconditions.checkNotNull(resource);
     }

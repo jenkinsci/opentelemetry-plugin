@@ -23,6 +23,7 @@
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <opentelemetry.version>1.39.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.39.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry-instrumentation.version>2.4.0</opentelemetry-instrumentation.version>
         <opentelemetry-instrumentation-alpha.version>2.4.0-alpha</opentelemetry-instrumentation-alpha.version>
         <opentelemetry-contrib.version>1.36.0-alpha</opentelemetry-contrib.version>
         <opentelemetry-semconv>1.25.0-alpha</opentelemetry-semconv>
@@ -34,7 +35,8 @@
     <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
         Monitor Jenkins with dashboards and alerts on critical health metrics.
         Troubleshoot Jenkins problems using traces of job executions and HTTP requests.
-        Store pipeline build logs in an Observability backend like Elastic to improve Jenkins reliability and scalability while improving the traceability of builds.</description>
+        Store pipeline build logs in an Observability backend like Elastic or Grafana/Loki
+        to improve Jenkins reliability and scalability while improving the traceability of builds.</description>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
 
     <dependencyManagement>
@@ -61,6 +63,20 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
+                <groupId>io.opentelemetry.instrumentation</groupId>
+                <artifactId>opentelemetry-instrumentation-bom</artifactId>
+                <version>${opentelemetry-instrumentation.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.opentelemetry.instrumentation</groupId>
+                <artifactId>opentelemetry-instrumentation-bom-alpha</artifactId>
+                <version>${opentelemetry-instrumentation-alpha.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>jakarta.json</groupId>
                 <artifactId>jakarta.json-api</artifactId>
                 <version>2.1.3</version>
@@ -69,6 +85,11 @@
                 <groupId>org.eclipse.parsson</groupId>
                 <artifactId>parsson</artifactId>
                 <version>1.1.6</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jayway.jsonpath</groupId>
+                <artifactId>json-path</artifactId>
+                <version>2.9.0</version>
             </dependency>
             <dependency>
                 <groupId>io.prometheus</groupId>
@@ -125,19 +146,16 @@
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-resources</artifactId>
-            <version>${opentelemetry-instrumentation-alpha.version}</version>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-runtime-telemetry-java8</artifactId>
-            <version>${opentelemetry-instrumentation-alpha.version}</version>
         </dependency>
         <!--
         Requires JDK17, compiled for JDK17
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-runtime-telemetry-java17</artifactId>
-            <version>${opentelemetry-instrumentation-alpha.version}</version>
         </dependency>
         -->
         <dependency>
@@ -243,6 +261,14 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>apache-httpcomponents-client-4-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-apache-httpclient-4.3</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
