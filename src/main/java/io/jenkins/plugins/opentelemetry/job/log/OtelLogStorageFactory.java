@@ -13,6 +13,7 @@ import hudson.model.Queue;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
 import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
@@ -70,7 +71,14 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OtelCompo
 
                 logger.log(Level.FINEST, () -> "forBuild(" + run + ")");
 
-                return new OtelLogStorage(run, getOtelTraceService(), tracer);
+                MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
+                
+                if(monitoringAction != null){
+                    return new OtelLogStorage(run, getOtelTraceService(), tracer, monitoringAction);
+                } else{
+                    logger.log(Level.FINE, () -> "No MonitoringAction found for " + run);
+                    return null;
+                }
             } else {
                 return null;
             }
@@ -78,7 +86,6 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OtelCompo
             return new BrokenLogStorage(x);
         }
     }
-
     /**
      * Workaround dependency injection problem. @Inject doesn't work here
      */
