@@ -1,19 +1,23 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <table style="margin-top: 1em; margin-left:1em;">
-        <t:summary icon="icon-otel">
-            OpenTelemetry
-            <ul class="jenkins-!-padding-left-0">
-                <j:forEach items="${it.links}" var="link" varStatus="loop">
-                    <li style="list-style: none;">
-                        <span class="icon-lg">
-                            <l:icon class="${link.iconClass} icon-lg" />
-                        </span>
-                        <a class="jenkins-icon-adjacent" href="${link.url}" target="_blank" rel="noopener noreferrer">${link.label}</a>
-                    </li>
-                </j:forEach>
-            </ul>
-        </t:summary>
-    </table>
+    <j:if test="${!empty(it.links)}">
+        <table style="margin-top: 1em; margin-left:1em;">
+            <t:summary icon="icon-otel">
+                OpenTelemetry
+                <ul class="jenkins-!-padding-left-0">
+                    <j:forEach items="${it.links}" var="link" varStatus="loop">
+                        <li style="list-style: none;">
+                            <span class="icon-lg">
+                                <l:icon class="${link.iconClass} icon-lg"/>
+                            </span>
+                            <a class="jenkins-icon-adjacent" href="${link.url}" target="_blank"
+                               rel="noopener noreferrer">${link.label}
+                            </a>
+                        </li>
+                    </j:forEach>
+                </ul>
+            </t:summary>
+        </table>
+    </j:if>
 </j:jelly>

@@ -129,21 +129,26 @@ public class MonitoringAction extends AbstractMonitoringAction implements Action
 
     @NonNull
     public List<ObservabilityBackendLink> getLinks() {
-        List<ObservabilityBackend> tracingCapableBackends = JenkinsOpenTelemetryPluginConfiguration.get().getObservabilityBackends()
+        JenkinsOpenTelemetryPluginConfiguration pluginConfiguration = JenkinsOpenTelemetryPluginConfiguration.get();
+        List<ObservabilityBackend> tracingCapableBackends = pluginConfiguration.getObservabilityBackends()
             .stream()
             .filter(backend -> backend.getTraceVisualisationUrlTemplate() != null)
             .collect(Collectors.toList());
 
         if (tracingCapableBackends.isEmpty()) {
+            if (isPluginConfigured(pluginConfiguration)) {
+                return Collections.emptyList();
+            }
+
             return Collections.singletonList(new ObservabilityBackendLink(
                 "Please define an OpenTelemetry Visualisation URL of pipelines in Jenkins configuration",
-                Jenkins.get().getRootUrl() + "/configure",
+                Jenkins.get().getRootUrl() + "manage/configure",
                 "icon-gear2",
                 null));
         }
         Map<String, Object> binding = new HashMap<>();
-        binding.put(ObservabilityBackend.TemplateBindings.SERVICE_NAME, Objects.requireNonNull(JenkinsOpenTelemetryPluginConfiguration.get().getServiceName()));
-        binding.put(ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE, JenkinsOpenTelemetryPluginConfiguration.get().getServiceNamespace());
+        binding.put(ObservabilityBackend.TemplateBindings.SERVICE_NAME, Objects.requireNonNull(pluginConfiguration.getServiceName()));
+        binding.put(ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE, pluginConfiguration.getServiceNamespace());
         binding.put(ObservabilityBackend.TemplateBindings.ROOT_SPAN_NAME, this.rootSpanName == null ? null : OtelUtils.urlEncode(this.rootSpanName));
         binding.put(ObservabilityBackend.TemplateBindings.TRACE_ID, this.getTraceId());
         binding.put(ObservabilityBackend.TemplateBindings.SPAN_ID, this.getSpanId());
@@ -156,6 +161,13 @@ public class MonitoringAction extends AbstractMonitoringAction implements Action
                 backend.getIconPath(),
                 backend.getEnvVariableName())
         ).collect(Collectors.toList());
+    }
+
+    private static boolean isPluginConfigured(JenkinsOpenTelemetryPluginConfiguration pluginConfiguration) {
+        return pluginConfiguration
+            .toOpenTelemetryConfiguration()
+            .toOpenTelemetryProperties()
+            .get("otel.exporter.otlp.endpoint") == null;
     }
 
     public static class ObservabilityBackendLink {
