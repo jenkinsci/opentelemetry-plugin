@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
+import io.jenkins.plugins.opentelemetry.job.log.LogLine;
 import io.opentelemetry.api.OpenTelemetry;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -31,25 +32,25 @@ public class LokiBuildLogsLineIteratorTest {
 
         InputStream lokiLogsQueryResponseStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("io/jenkins/plugins/opentelemetry/backend/grafana/loki_query_response.json");
         assertNotNull(lokiLogsQueryResponseStream);
+        LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters = new LokiGetJenkinsBuildLogsQueryParametersBuilder()
+            .setJobFullName("my-war/master").setRunNumber(384)
+            .setTraceId("69a627b7bc02241b6029bed20f4ff8d8")
+            .setStartTime(pipelineStartTime.minusSeconds(600))
+            .setEndTime(pipelineStartTime.plusSeconds(600))
+            .setServiceName("jenkins")
+            .setServiceNamespace("jenkins")
+            .build();
         try (LokiBuildLogsLineIterator lokiBuildLogsLineIterator = new LokiBuildLogsLineIterator(
-            "my-war/master",
-            384,
-            "69a627b7bc02241b6029bed20f4ff8d8",
-            Optional.empty(),
-            pipelineStartTime.minusSeconds(600),
-            Optional.of(pipelineStartTime.plusSeconds(600)),
-            "jenkins",
-             Optional.of("jenkins"),
-            httpClient,
+            lokiQueryParameters, httpClient,
             new BasicHttpContext(),
             "http://localhost:3100",
             Optional.of(new UsernamePasswordCredentials("jenkins", "jenkins")),
             Optional.empty(),
             OpenTelemetry.noop().getTracer("io.jenkins")
         )) {
-            Iterator<String> logLines = lokiBuildLogsLineIterator.loadLogLines(lokiLogsQueryResponseStream);
+            Iterator<LogLine<Long>> logLines = lokiBuildLogsLineIterator.loadLogLines(lokiLogsQueryResponseStream);
             while (logLines.hasNext()) {
-                String logLine = logLines.next();
+                LogLine<Long> logLine = logLines.next();
                 System.out.println(logLine);
             }
         } catch (Exception e) {

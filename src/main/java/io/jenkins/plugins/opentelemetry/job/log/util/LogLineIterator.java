@@ -5,6 +5,13 @@
 
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+import io.jenkins.plugins.opentelemetry.job.RunFlowNodeIdentifier;
+import io.jenkins.plugins.opentelemetry.job.log.LogLine;
+import org.kohsuke.stapler.Stapler;
+import org.kohsuke.stapler.StaplerRequest;
+
+import javax.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -12,44 +19,32 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.servlet.http.HttpSession;
+public interface LogLineIterator <Id> extends Iterator<LogLine<Id>> {
+    void skipLines(Id toLogLineId);
 
-import org.kohsuke.stapler.Stapler;
-import org.kohsuke.stapler.StaplerRequest;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
-import io.jenkins.plugins.opentelemetry.job.RunFlowNodeIdentifier;
-
-/**
- * @deprecated use {@link io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator} instead
- */
-@Deprecated
-public interface LineIterator extends Iterator<String> {
-    void skipLines(long skip);
-
-    interface LineBytesToLineNumberConverter {
+    interface LogLineBytesToLogLineIdMapper<Id> {
         /**
          * @return {@code null} if unknown
          */
         @Nullable
-        Long getLogLineFromLogBytes(long bytes);
+        Id getLogLineIdFromLogBytes(long bytes);
 
-        void putLogBytesToLogLine(long bytes, long line);
-
+        void putLogBytesToLogLineId(long bytes, Id timestampInNanos);
     }
 
     /**
      * Converter gets garbage collected when the HTTP session expires
      */
-    class JenkinsHttpSessionLineBytesToLineNumberConverter implements LineBytesToLineNumberConverter {
-        private final static Logger logger = Logger.getLogger(JenkinsHttpSessionLineBytesToLineNumberConverter.class.getName());
+    class JenkinsHttpSessionLineBytesToLogLineIdMapper<Id> implements LogLineBytesToLogLineIdMapper<Id> {
+        private final static Logger logger = Logger.getLogger(JenkinsHttpSessionLineBytesToLogLineIdMapper.class.getName());
 
         public static final String HTTP_SESSION_KEY = "JenkinsHttpSessionLineBytesToLineNumberConverter";
         final String jobFullName;
         final int runNumber;
+        @Nullable
         final String flowNodeId;
 
-        public JenkinsHttpSessionLineBytesToLineNumberConverter(String jobFullName, int runNumber, String flowNodeId) {
+        public JenkinsHttpSessionLineBytesToLogLineIdMapper(String jobFullName, int runNumber, @Nullable String flowNodeId) {
             this.jobFullName = jobFullName;
             this.runNumber = runNumber;
             this.flowNodeId = flowNodeId;
@@ -57,7 +52,7 @@ public interface LineIterator extends Iterator<String> {
 
         @Nullable
         @Override
-        public Long getLogLineFromLogBytes(long bytes) {
+        public Id getLogLineIdFromLogBytes(long bytes) {
             RunFlowNodeIdentifier contextKey = new RunFlowNodeIdentifier(jobFullName, runNumber, flowNodeId);
             return Optional
                 .ofNullable(getContext().get(contextKey))
@@ -67,12 +62,12 @@ public interface LineIterator extends Iterator<String> {
         }
 
         @Override
-        public void putLogBytesToLogLine(long bytes, long line) {
+        public void putLogBytesToLogLineId(long bytes, Id logLineId) {
             RunFlowNodeIdentifier contextKey = new RunFlowNodeIdentifier(jobFullName, runNumber, flowNodeId);
-            getContext().computeIfAbsent(contextKey, runFlowNodeIdentifier -> new HashMap<>()).put(bytes, line);
+            getContext().computeIfAbsent(contextKey, runFlowNodeIdentifier -> new HashMap<>()).put(bytes, logLineId);
         }
 
-        Map<RunFlowNodeIdentifier, Map<Long, Long>> getContext() {
+        Map<RunFlowNodeIdentifier, Map<Long, Id>> getContext() {
             StaplerRequest currentRequest = Stapler.getCurrentRequest();
             if (currentRequest == null) {
                 // happens when reading logs is not tied to a web request
@@ -82,7 +77,7 @@ public interface LineIterator extends Iterator<String> {
             }
             HttpSession session = currentRequest.getSession();
             synchronized (session) {
-                Map<RunFlowNodeIdentifier, Map<Long, Long>> context = (Map<RunFlowNodeIdentifier, Map<Long, Long>>) session.getAttribute(HTTP_SESSION_KEY);
+                Map<RunFlowNodeIdentifier, Map<Long, Id>> context = (Map<RunFlowNodeIdentifier, Map<Long, Id>>) session.getAttribute(HTTP_SESSION_KEY);
                 if (context == null) {
                     context = new HashMap<>();
                     session.setAttribute(HTTP_SESSION_KEY, context);

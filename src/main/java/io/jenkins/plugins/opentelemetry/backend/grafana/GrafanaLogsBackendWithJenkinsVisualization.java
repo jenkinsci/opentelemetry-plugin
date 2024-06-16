@@ -70,7 +70,6 @@ public class GrafanaLogsBackendWithJenkinsVisualization extends GrafanaLogsBacke
     @MustBeClosed
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
         if (StringUtils.isBlank(lokiUrl)) {
-            logger.warning(MSG_LOKI_URL_IS_BLANK);
             throw new IllegalStateException(MSG_LOKI_URL_IS_BLANK);
         }
         OpenTelemetry openTelemetry = OpenTelemetrySdkProvider.get().getOpenTelemetry();

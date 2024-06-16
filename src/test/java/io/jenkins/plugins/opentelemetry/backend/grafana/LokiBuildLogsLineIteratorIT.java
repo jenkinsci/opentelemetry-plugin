@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
+import io.jenkins.plugins.opentelemetry.job.log.LogLine;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.internal.JavaVersionSpecific;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -41,16 +42,17 @@ public class LokiBuildLogsLineIteratorIT {
         Instant pipelineStartTime = Instant.ofEpochMilli(TimeUnit.MILLISECONDS.convert(1718111754515426000L, TimeUnit.NANOSECONDS));
 
 
+        LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters = new LokiGetJenkinsBuildLogsQueryParametersBuilder()
+            .setJobFullName("my-war/master")
+            .setRunNumber(384)
+            .setTraceId("69a627b7bc02241b6029bed20f4ff8d8")
+            .setStartTime(pipelineStartTime.minusSeconds(600))
+            .setEndTime(pipelineStartTime.plusSeconds(600))
+            .setServiceName("jenkins")
+            .setServiceNamespace("jenkins")
+            .build();
         try (LokiBuildLogsLineIterator lokiBuildLogsLineIterator = new LokiBuildLogsLineIterator(
-            "my-war/master",
-            384,
-            "69a627b7bc02241b6029bed20f4ff8d8",
-            Optional.empty(),
-             pipelineStartTime.minusSeconds(600),
-            Optional.of(pipelineStartTime.plusSeconds(600)),
-            "jenkins",
-             Optional.of("jenkins"),
-            httpClient,
+            lokiQueryParameters, httpClient,
             new BasicHttpContext(),
             lokiUrl,
             Optional.of(lokiCredentials),
@@ -58,8 +60,8 @@ public class LokiBuildLogsLineIteratorIT {
             OpenTelemetry.noop().getTracer("io.jenkins")
         )) {
             while (lokiBuildLogsLineIterator.hasNext()) {
-                String line = lokiBuildLogsLineIterator.next();
-                System.out.println(line);
+                LogLine<Long> line = lokiBuildLogsLineIterator.next();
+                System.out.println(line.getMessage());
             }
         }
     }

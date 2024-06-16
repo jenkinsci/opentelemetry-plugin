@@ -18,8 +18,8 @@ import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import io.jenkins.plugins.opentelemetry.job.log.util.InputStreamByteBuffer;
-import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
-import io.jenkins.plugins.opentelemetry.job.log.util.LineIteratorInputStream;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIteratorInputStream;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -50,6 +50,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
@@ -124,17 +125,23 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
 
         try (Scope scope = span.makeCurrent()) {
 
-            LineIterator logLines = new LokiBuildLogsLineIterator(
-                jobFullName, runNumber,
-                traceId, Optional.empty(),
-                startTime, Optional.ofNullable(endTime),
-                serviceName, serviceNamespace,
+            LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters = new LokiGetJenkinsBuildLogsQueryParametersBuilder()
+                .setJobFullName(jobFullName)
+                .setRunNumber(runNumber)
+                .setTraceId(traceId)
+                .setStartTime(startTime)
+                .setEndTime(endTime)
+                .setServiceName(serviceName)
+                .setServiceNamespace(serviceNamespace)
+                .build();
+            LogLineIterator<Long> logLines = new LokiBuildLogsLineIterator(
+                lokiQueryParameters,
                 httpClient, httpContext,
                 lokiUrl, lokiCredentials, lokiTenantId,
                 openTelemetry.getTracer("io.jenkins"));
 
-            LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter = new LineIterator.JenkinsHttpSessionLineBytesToLineNumberConverter(jobFullName, runNumber, null);
-            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, getTracer());
+            LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<Long> lineBytesToLineNumberConverter = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, null);
+            InputStream lineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, lineBytesToLineNumberConverter, getTracer());
             ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
 
             Map<String, Object> localBindings = Map.of(
@@ -166,7 +173,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
 
     @Nonnull
     @Override
-    public LogsQueryResult stepLog(@Nonnull String jobFullName, int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nonnull Instant startTime, @Nullable Instant endTime) throws IOException {
+    public LogsQueryResult stepLog(@Nonnull String jobFullName, int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nonnull Instant startTime, @Nullable Instant endTime) {
         SpanBuilder spanBuilder = getTracer().spanBuilder("LokiLogStorageRetriever.stepLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
@@ -177,18 +184,24 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
 
         try (Scope scope = span.makeCurrent()) {
 
-            LineIterator logLines = new LokiBuildLogsLineIterator(
-                jobFullName, runNumber,
-                traceId, Optional.of(flowNodeId),
-                startTime, Optional.ofNullable(endTime),
-                serviceName, serviceNamespace,
-                httpClient, httpContext,
+            LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters = new LokiGetJenkinsBuildLogsQueryParametersBuilder()
+                .setJobFullName(jobFullName)
+                .setRunNumber(runNumber)
+                .setTraceId(traceId)
+                .setFlowNodeId(flowNodeId)
+                .setStartTime(startTime)
+                .setEndTime(endTime)
+                .setServiceName(serviceName)
+                .setServiceNamespace(serviceNamespace)
+                .build();
+            LogLineIterator<Long> logLines = new LokiBuildLogsLineIterator(
+                lokiQueryParameters, httpClient, httpContext,
                 lokiUrl, lokiCredentials, lokiTenantId,
                 openTelemetry.getTracer("io.jenkins"));
 
-            LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter = new LineIterator.JenkinsHttpSessionLineBytesToLineNumberConverter(jobFullName, runNumber, null);
-            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, getTracer());
-            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
+            LogLineIterator.LogLineBytesToLogLineIdMapper<Long> logLineBytesToLogLineIdMapper = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, null);
+            InputStream logLineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, logLineBytesToLogLineIdMapper, getTracer());
+            ByteBuffer byteBuffer = new InputStreamByteBuffer(logLineIteratorInputStream, getTracer());
 
             Map<String, Object> localBindings = Map.of(
                 ObservabilityBackend.TemplateBindings.TRACE_ID, traceId,
