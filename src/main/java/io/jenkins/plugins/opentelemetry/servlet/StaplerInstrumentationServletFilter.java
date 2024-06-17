@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,17 +47,19 @@ import java.util.HashSet;
 
 /**
  * Instrumentation of the Stapler MVC framework.
- *
  * TODO find a smarter way to instrument each HTTP request path. It should rely on instrumenting the Stapler framework
  * TODO adopt <a href="https://javadoc.jenkins.io/component/stapler/org/kohsuke/stapler/StaplerRequest.html#getAncestors()">StaplerRequest.html#getAncestors()</a>
  */
 public class StaplerInstrumentationServletFilter implements Filter {
     private final static Logger logger = Logger.getLogger(StaplerInstrumentationServletFilter.class.getName());
+    private final List<String> capturedRequestParameters;
     private final Tracer tracer;
+
 
     private static final Set<String> SKIP_PATHS = new HashSet<>(Arrays.asList("static", "adjuncts", "scripts", "plugin", "images", "sse-gateway"));
 
-    public StaplerInstrumentationServletFilter(Tracer tracer) {
+    public StaplerInstrumentationServletFilter(List<String> capturedRequestParameters, Tracer tracer) {
+        this.capturedRequestParameters = capturedRequestParameters;
         this.tracer = tracer;
     }
 
@@ -71,7 +74,6 @@ public class StaplerInstrumentationServletFilter implements Filter {
     }
 
     public void _doFilter(HttpServletRequest servletRequest, HttpServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-
         String pathInfo = servletRequest.getPathInfo();
         List<String> pathInfoTokens = Collections.list(new StringTokenizer(pathInfo, "/")).stream()
             .map(token -> (String) token)
@@ -95,7 +97,7 @@ public class StaplerInstrumentationServletFilter implements Filter {
             filterChain.doFilter(servletRequest, servletResponse);
             return;
         }
-        SpanBuilder spanBuilder;
+        final SpanBuilder spanBuilder;
         try {
             if (rootPath.equals("job")) {
                 // e.g /job/my-war/job/master/lastBuild/console
@@ -197,9 +199,9 @@ public class StaplerInstrumentationServletFilter implements Filter {
                 spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + pathInfo);
             }
         } catch (RuntimeException e) {
-            httpRoute = "/" + rootPath + "/*";
-            spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + pathInfo);
-            logger.log(Level.INFO, () -> "Exception processing URL " + pathInfo + ", default to httpRoute: '/" + rootPath + "/*': " + e);
+            logger.log(Level.INFO, () -> "Exception processing URL " + pathInfo + ", skip instrumentation with tracing: " + e);
+            filterChain.doFilter(servletRequest, servletResponse);
+            return;
         }
 
 
@@ -225,10 +227,12 @@ public class StaplerInstrumentationServletFilter implements Filter {
             .setAttribute(ThreadIncubatingAttributes.THREAD_ID, currentThread.getId())
             .setSpanKind(SpanKind.SERVER);
 
-        User user = User.current();
-        if (user != null) {
-            spanBuilder.setAttribute(EnduserIncubatingAttributes.ENDUSER_ID, user.getId());
-        }
+        Optional.ofNullable(User.current()).ifPresent(user -> spanBuilder.setAttribute(EnduserIncubatingAttributes.ENDUSER_ID, user.getId()));
+
+        capturedRequestParameters.forEach(
+            parameterName ->
+                Optional.ofNullable(servletRequest.getParameter(parameterName))
+                    .ifPresent(value -> spanBuilder.setAttribute("http.request.parameter." + parameterName, value)));
 
         Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
@@ -624,11 +628,13 @@ public class StaplerInstrumentationServletFilter implements Filter {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        return o != null && getClass() == o.getClass();
+        if (o == null || getClass() != o.getClass()) return false;
+        StaplerInstrumentationServletFilter that = (StaplerInstrumentationServletFilter) o;
+        return Objects.equals(capturedRequestParameters, that.capturedRequestParameters);
     }
 
     @Override
     public int hashCode() {
-        return StaplerInstrumentationServletFilter.class.hashCode();
+        return Objects.hashCode(capturedRequestParameters);
     }
 }

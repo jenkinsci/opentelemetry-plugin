@@ -20,6 +20,8 @@ import jenkins.YesNoMaybe;
 
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -52,7 +54,8 @@ public class ServletFilterInitializer implements OtelComponent {
         boolean jenkinsWebInstrumentationEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED)).orElse(true);
 
         if (jenkinsWebInstrumentationEnabled) {
-            staplerInstrumentationServletFilter = new StaplerInstrumentationServletFilter(tracer);
+            List<String> capturedRequestParameters = configProperties.getList(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS, Collections.emptyList());
+            staplerInstrumentationServletFilter = new StaplerInstrumentationServletFilter(capturedRequestParameters, tracer);
             addToPluginServletFilter(staplerInstrumentationServletFilter);
         } else {
             logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled");
