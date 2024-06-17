@@ -27,7 +27,7 @@
         <opentelemetry-contrib.version>1.36.0-alpha</opentelemetry-contrib.version>
         <opentelemetry-semconv>1.25.0-alpha</opentelemetry-semconv>
         <useBeta>true</useBeta>
-        <elasticstack.version>8.14.0</elasticstack.version>
+        <elasticstack.version>8.14.1</elasticstack.version>
         <error-prone.version>2.28.0</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
