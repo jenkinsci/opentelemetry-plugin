@@ -16,13 +16,13 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
@@ -42,7 +42,7 @@ public class MonitoringComputerListener extends ComputerListener implements Open
     private LongCounter failureAgentCounter;
 
     @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
         final Jenkins jenkins = Jenkins.get();
         Computer controllerComputer = jenkins.getComputer("");
         if (controllerComputer == null) {
@@ -141,8 +141,8 @@ public class MonitoringComputerListener extends ComputerListener implements Open
                 if (localHost.isLoopbackAddress()) {
                     // we have a problem, we want another network interface
                 }
-                attributes.put(ResourceAttributes.HOST_NAME.getKey(), localHost.getHostName());
-                attributes.put("host.ip", localHost.getHostAddress());
+                attributes.put(HostIncubatingAttributes.HOST_NAME.getKey(), localHost.getHostName());
+                attributes.put(HostIncubatingAttributes.HOST_IP.getKey(), localHost.getHostAddress());
             } catch (IOException e) {
                 // as this code will go through Jenkins remoting, test isLoggable before transferring data
                 if (LOGGER.isLoggable(Level.FINER)) {

@@ -15,8 +15,8 @@ import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.events.EventEmitterProvider;
-import io.opentelemetry.api.events.GlobalEventEmitterProvider;
+import io.opentelemetry.api.incubator.events.EventLoggerProvider;
+import io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider;
 import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleCounterBuilder;
@@ -48,7 +48,7 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.CompletableResultCode;
-import io.opentelemetry.sdk.logs.internal.SdkEventEmitterProvider;
+import io.opentelemetry.sdk.logs.internal.SdkEventLoggerProvider;
 import io.opentelemetry.sdk.resources.Resource;
 
 import javax.annotation.Nonnull;
@@ -72,7 +72,7 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
     protected transient Resource resource;
     protected transient ConfigProperties config;
     protected transient OpenTelemetry openTelemetry;
-    protected transient EventEmitterProvider eventEmitterProvider;
+    protected transient EventLoggerProvider eventLoggerProvider;
 
     /**
      * Reference on all the instantiated {@link AutoCloseable} instrument in order to properly close them before
@@ -90,12 +90,12 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
             LOGGER.log(Level.FINE, "initializeOtlp");
             configure(openTelemetryProperties, openTelemetryResource);
 
-            this.eventEmitterProvider = SdkEventEmitterProvider.create(((OpenTelemetrySdk) this.openTelemetry).getSdkLoggerProvider());
+            this.eventLoggerProvider = SdkEventLoggerProvider.create(((OpenTelemetrySdk) this.openTelemetry).getSdkLoggerProvider());
 
             GlobalOpenTelemetry.resetForTest();
             GlobalOpenTelemetry.set(this);
-            GlobalEventEmitterProvider.resetForTest();
-            GlobalEventEmitterProvider.set(getEventEmitterProvider());
+            GlobalEventLoggerProvider.resetForTest();
+            GlobalEventLoggerProvider.set(getEventLoggerProvider());
             LOGGER.log(Level.FINE, "OpenTelemetry initialized as OTLP");
         } else { // NO-OP
             LOGGER.log(Level.FINE, "initializeNoOp");
@@ -106,8 +106,8 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
 
             GlobalOpenTelemetry.resetForTest(); // hack for testing in Intellij cause by DiskUsageMonitoringInitializer
             GlobalOpenTelemetry.set(OpenTelemetry.noop());
-            GlobalEventEmitterProvider.resetForTest();
-            GlobalEventEmitterProvider.set(EventEmitterProvider.noop());
+            GlobalEventLoggerProvider.resetForTest();
+            GlobalEventLoggerProvider.set(EventLoggerProvider.noop());
             LOGGER.log(Level.FINE, "OpenTelemetry initialized as NoOp");
         }
 
@@ -169,7 +169,7 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
             }
         }
         GlobalOpenTelemetry.resetForTest();
-        GlobalEventEmitterProvider.resetForTest();
+        GlobalEventLoggerProvider.resetForTest();
     }
 
     @Override
@@ -193,8 +193,8 @@ public abstract class AbstractReconfigurableOpenTelemetryWrapper extends Abstrac
     }
 
     @Override
-    protected EventEmitterProvider getEventEmitterProvider() {
-        return this.eventEmitterProvider;
+    protected EventLoggerProvider getEventLoggerProvider() {
+        return this.eventLoggerProvider;
     }
 
     @NonNull

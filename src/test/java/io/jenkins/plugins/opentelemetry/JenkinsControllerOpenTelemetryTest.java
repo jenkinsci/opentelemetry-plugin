@@ -7,7 +7,8 @@ package io.jenkins.plugins.opentelemetry;
 
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
+import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
@@ -62,10 +63,10 @@ public class JenkinsControllerOpenTelemetryTest {
         // resource.getAttributes().forEach((key, value)-> System.out.println(key + ": " + value));
 
         MatcherAssert.assertThat(
-            resource.getAttribute(ResourceAttributes.SERVICE_NAME),
+            resource.getAttribute(ServiceAttributes.SERVICE_NAME),
             CoreMatchers.is(expectedServiceName));
         MatcherAssert.assertThat(
-            resource.getAttribute(ResourceAttributes.SERVICE_NAMESPACE),
+            resource.getAttribute(ServiceIncubatingAttributes.SERVICE_NAMESPACE),
             CoreMatchers.is(expectedServiceNamespace));
         if (System.getenv("JENKINS_URL") == null && System.getProperty("jenkins.url") == null) {
             MatcherAssert.assertThat(
@@ -80,7 +81,7 @@ public class JenkinsControllerOpenTelemetryTest {
             resource.getAttribute(JenkinsOtelSemanticAttributes.JENKINS_VERSION),
             CoreMatchers.is("1.2.3"));
         MatcherAssert.assertThat(
-            resource.getAttribute(ResourceAttributes.SERVICE_VERSION),
+            resource.getAttribute(ServiceAttributes.SERVICE_VERSION),
             CoreMatchers.is("1.2.3"));
 
 

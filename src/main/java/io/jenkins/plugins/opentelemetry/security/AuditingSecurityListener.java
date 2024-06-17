@@ -13,13 +13,15 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
+import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.ClientAttributes;
+import io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.security.SecurityListener;
 import org.springframework.security.core.Authentication;
@@ -46,11 +48,11 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
     private LongCounter loginFailureCounter;
     private LongCounter loginCounter;
 
-    private EventEmitter eventEmitter;
+    private EventLogger eventLogger;
 
     @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-        this.eventEmitter = eventEmitter;
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
+        this.eventLogger = eventLogger;
 
         loginSuccessCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_SUCCESS)
@@ -92,7 +94,7 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         attributesBuilder
             .put(JenkinsOtelSemanticAttributes.EVENT_CATEGORY, JenkinsOtelSemanticAttributes.EventCategoryValues.AUTHENTICATION)
             .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.SUCCESS)
-            .put(SemanticAttributes.ENDUSER_ID, user.map(User::getId).orElse(username))
+            .put(EnduserIncubatingAttributes.ENDUSER_ID, user.map(User::getId).orElse(username))
         ;
 
         // Stapler.getCurrentRequest() returns null, it's not yet initialized
@@ -103,19 +105,18 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
             if (details instanceof WebAuthenticationDetails) {
                 WebAuthenticationDetails webAuthenticationDetails = (WebAuthenticationDetails) details;
                 attributesBuilder
-                    .put(SemanticAttributes.NET_SOCK_PEER_ADDR, webAuthenticationDetails.getRemoteAddress());
+                    .put(ClientAttributes.CLIENT_ADDRESS, webAuthenticationDetails.getRemoteAddress());
                 message += " from " + webAuthenticationDetails.getRemoteAddress();
             }
         }
         attributesBuilder.put("message", message);
 
-        eventEmitter.emit("user_login", attributesBuilder.build());
+        eventLogger.builder("user_login")
+            .setAttributes(attributesBuilder.build())
+            .setSeverity(Severity.INFO)
+            .emit();
     }
 
-    @Override
-    protected void userCreated(@NonNull String username) {
-        super.userCreated(username);
-    }
 
     @Override
     protected void failedToLogIn(@NonNull String username) {
@@ -127,23 +128,17 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         attributesBuilder
             .put(JenkinsOtelSemanticAttributes.EVENT_CATEGORY, JenkinsOtelSemanticAttributes.EventCategoryValues.AUTHENTICATION)
             .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.FAILURE)
-            .put(SemanticAttributes.ENDUSER_ID, username)
+            .put(EnduserIncubatingAttributes.ENDUSER_ID, username)
         ;
 
         // TODO find a solution to retrieve the remoteIpAddress
 
         attributesBuilder.put("message", message);
 
-        eventEmitter.emit("user_login", attributesBuilder.build());
+        eventLogger.builder("user_login")
+            .setAttributes(attributesBuilder.build())
+            .setSeverity(Severity.WARN)
+            .emit();
     }
 
-    @Override
-    protected void loggedOut(@NonNull String username) {
-        super.loggedOut(username);
-    }
-
-    @Override
-    public void beforeSdkShutdown() {
-
-    }
 }

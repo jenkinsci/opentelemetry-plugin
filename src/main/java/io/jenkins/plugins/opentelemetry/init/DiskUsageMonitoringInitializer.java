@@ -7,10 +7,11 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import com.cloudbees.simplediskusage.DiskItem;
 import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
@@ -18,7 +19,6 @@ import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -39,7 +39,7 @@ public class DiskUsageMonitoringInitializer implements OpenTelemetryLifecycleLis
     protected QuickDiskUsagePlugin quickDiskUsagePlugin;
 
     @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
             meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
                 .ofLongs()
                 .setDescription("Disk usage of first level folder in JENKINS_HOME.")

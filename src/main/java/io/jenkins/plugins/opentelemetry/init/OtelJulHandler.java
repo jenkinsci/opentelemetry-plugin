@@ -9,7 +9,7 @@ import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.logs.Severity;
@@ -17,13 +17,18 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.ExceptionAttributes;
+import io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes;
 import jenkins.YesNoMaybe;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
-import java.util.logging.*;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 /**
  * Inspired by https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v1.14.0/instrumentation/java-util-logging/javaagent/src/main/java/io/opentelemetry/javaagent/instrumentation/jul/JavaUtilLoggingHelper.java
@@ -99,19 +104,19 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
             // throwable
             Throwable throwable = logRecord.getThrown();
             if (throwable != null) {
-                attributes.put(SemanticAttributes.EXCEPTION_TYPE, throwable.getClass().getName());
-                attributes.put(SemanticAttributes.EXCEPTION_MESSAGE, throwable.getMessage());
+                attributes.put(ExceptionAttributes.EXCEPTION_TYPE, throwable.getClass().getName());
+                attributes.put(ExceptionAttributes.EXCEPTION_MESSAGE, throwable.getMessage());
                 StringWriter writer = new StringWriter();
                 throwable.printStackTrace(new PrintWriter(writer));
-                attributes.put(SemanticAttributes.EXCEPTION_STACKTRACE, writer.toString());
+                attributes.put(ExceptionAttributes.EXCEPTION_STACKTRACE, writer.toString());
             }
 
             if (captureExperimentalAttributes) {
                 Thread currentThread = Thread.currentThread();
-                attributes.put(SemanticAttributes.THREAD_NAME, currentThread.getName());
-                attributes.put(SemanticAttributes.THREAD_ID, currentThread.getId());
+                attributes.put(ThreadIncubatingAttributes.THREAD_NAME, currentThread.getName());
+                attributes.put(ThreadIncubatingAttributes.THREAD_ID, currentThread.getId());
             } else {
-                attributes.put(SemanticAttributes.THREAD_ID, logRecord.getThreadID());
+                attributes.put(ThreadIncubatingAttributes.THREAD_ID, logRecord.getThreadID());
             }
 
             logBuilder = logBuilder
@@ -166,7 +171,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
         this.loggerProvider = loggerProvider;
         this.captureExperimentalAttributes = configProperties.getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
         if (!initialized) {

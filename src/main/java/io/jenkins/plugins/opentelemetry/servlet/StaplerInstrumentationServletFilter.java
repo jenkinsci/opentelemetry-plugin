@@ -12,7 +12,13 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.ClientAttributes;
+import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.NetworkAttributes;
+import io.opentelemetry.semconv.ServerAttributes;
+import io.opentelemetry.semconv.UrlAttributes;
+import io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes;
 import org.apache.commons.lang.StringUtils;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -205,29 +211,29 @@ public class StaplerInstrumentationServletFilter implements Filter {
 
         Thread currentThread = Thread.currentThread();
         spanBuilder
-            .setAttribute(SemanticAttributes.HTTP_CLIENT_IP, servletRequest.getRemoteAddr())
-            .setAttribute(SemanticAttributes.HTTP_SCHEME, servletRequest.getScheme())
-            .setAttribute(SemanticAttributes.NET_HOST_NAME, servletRequest.getServerName())
-            .setAttribute(SemanticAttributes.NET_HOST_NAME, servletRequest.getServerName() + ":" + servletRequest.getServerPort())
-            .setAttribute(SemanticAttributes.HTTP_METHOD, servletRequest.getMethod())
-            .setAttribute(SemanticAttributes.HTTP_TARGET, httpTarget)
-            .setAttribute(SemanticAttributes.HTTP_ROUTE, httpRoute)
-            .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP)
-            .setAttribute(SemanticAttributes.NET_SOCK_PEER_ADDR, servletRequest.getRemoteAddr())
-            .setAttribute(SemanticAttributes.NET_SOCK_PEER_PORT, (long) servletRequest.getRemotePort())
-            .setAttribute(SemanticAttributes.THREAD_NAME, currentThread.getName())
-            .setAttribute(SemanticAttributes.THREAD_ID, currentThread.getId())
+            .setAttribute(ClientAttributes.CLIENT_ADDRESS, servletRequest.getRemoteAddr())
+            .setAttribute(UrlAttributes.URL_SCHEME, servletRequest.getScheme())
+            .setAttribute(ServerAttributes.SERVER_ADDRESS, servletRequest.getServerName())
+            .setAttribute(ServerAttributes.SERVER_PORT, (long) servletRequest.getServerPort())
+            .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, servletRequest.getMethod())
+            .setAttribute(UrlAttributes.URL_PATH, httpTarget)
+            .setAttribute(HttpAttributes.HTTP_ROUTE, httpRoute)
+            .setAttribute(NetworkAttributes.NETWORK_TRANSPORT, NetworkAttributes.NetworkTransportValues.TCP)
+            .setAttribute(ClientAttributes.CLIENT_ADDRESS, servletRequest.getRemoteAddr())
+            .setAttribute(ClientAttributes.CLIENT_PORT, (long) servletRequest.getRemotePort())
+            .setAttribute(ThreadIncubatingAttributes.THREAD_NAME, currentThread.getName())
+            .setAttribute(ThreadIncubatingAttributes.THREAD_ID, currentThread.getId())
             .setSpanKind(SpanKind.SERVER);
 
         User user = User.current();
         if (user != null) {
-            spanBuilder.setAttribute(SemanticAttributes.ENDUSER_ID, user.getId());
+            spanBuilder.setAttribute(EnduserIncubatingAttributes.ENDUSER_ID, user.getId());
         }
 
         Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
             filterChain.doFilter(servletRequest, servletResponse);
-            span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, servletResponse.getStatus());
+            span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, servletResponse.getStatus());
         } finally {
             span.end();
         }
@@ -437,7 +443,7 @@ public class StaplerInstrumentationServletFilter implements Filter {
         Iterator<String> pathInfoTokensIt = pathInfo.listIterator();
         String firstToken = pathInfo.get(0);
         if (!"job".equals(firstToken)) {
-            throw new IllegalArgumentException("Job URL.pathInfo doesn't start with '/job': " + pathInfo.stream().collect(Collectors.joining("/")));
+            throw new IllegalArgumentException("Job URL.pathInfo doesn't start with '/job': " + String.join("/", pathInfo));
         }
 
         List<String> jobName = new ArrayList<>(5);
@@ -521,9 +527,9 @@ public class StaplerInstrumentationServletFilter implements Filter {
 
     public static class ParsedJobUrl {
         public ParsedJobUrl(List<String> jobName, @Nullable Long runNumber, List<String> urlPattern) {
-            this(jobName.stream().collect(Collectors.joining("/")),
+            this(String.join("/", jobName),
                 runNumber,
-                "/" + urlPattern.stream().collect(Collectors.joining("/")));
+                "/" + String.join("/", urlPattern));
         }
 
         public ParsedJobUrl(@Nullable String jobName, @Nullable Long runNumber, String urlPattern) {

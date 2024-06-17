@@ -13,14 +13,15 @@ import hudson.ExtensionList;
 import io.jenkins.plugins.opentelemetry.opentelemetry.AbstractReconfigurableOpenTelemetryWrapper;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.events.EventEmitter;
-import io.opentelemetry.api.events.GlobalEventEmitterProvider;
+import io.opentelemetry.api.incubator.events.EventLogger;
+import io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 
 import javax.annotation.PreDestroy;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -38,12 +39,18 @@ public class JenkinsControllerOpenTelemetry extends AbstractReconfigurableOpenTe
      */
     public static final String DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS = ProcessResourceProvider.class.getName();
 
+    public final static AtomicInteger INSTANCE_COUNTER = new AtomicInteger(0);
+
     @NonNull
     private final transient ReconfigurableTracer defaultTracer = new ReconfigurableTracer();
     protected transient Meter defaultMeter;
-    protected transient EventEmitter defaultEventEmitter;
+    protected transient EventLogger defaultEventLogger;
 
     public JenkinsControllerOpenTelemetry() {
+        super();
+        if (INSTANCE_COUNTER.get() > 0) {
+            LOGGER.log(Level.WARNING, "More than one instance of JenkinsControllerOpenTelemetry created: " + INSTANCE_COUNTER.get());
+        }
     }
 
     @NonNull
@@ -96,17 +103,16 @@ public class JenkinsControllerOpenTelemetry extends AbstractReconfigurableOpenTe
             .meterBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
             .build();
-        this.defaultEventEmitter = GlobalEventEmitterProvider.get()
-            .eventEmitterBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
+        this.defaultEventLogger = GlobalEventLoggerProvider.get()
+            .eventLoggerBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
-            .setEventDomain("jenkins")
             .build();
 
         LOGGER.log(Level.FINER, () -> "Configure OpenTelemetryLifecycleListeners: " + ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream().sorted().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
         ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream()
             .sorted()
             .forEachOrdered(otelComponent -> {
-                otelComponent.afterSdkInitialized(defaultMeter, getOpenTelemetryDelegate().getLogsBridge(), defaultEventEmitter, defaultTracer, config);
+                otelComponent.afterSdkInitialized(defaultMeter, getOpenTelemetryDelegate().getLogsBridge(), defaultEventLogger, defaultTracer, config);
                 otelComponent.afterSdkInitialized(getOpenTelemetryDelegate(), config);
             });
     }

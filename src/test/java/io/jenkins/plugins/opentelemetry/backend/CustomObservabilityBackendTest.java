@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.backend;
 
 import groovy.text.GStringTemplateEngine;
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
@@ -22,8 +22,8 @@ public class CustomObservabilityBackendTest {
     public void testGetMetricsVisualizationUrl() {
         CustomObservabilityBackend backend = new CustomObservabilityBackend();
         backend.setMetricsVisualizationUrlTemplate("https://observability.Example.com/dashboards/jenkins?service.name=${resource['service.name']}");
-        MatcherAssert.assertThat("service.name", CoreMatchers.is(ResourceAttributes.SERVICE_NAME.getKey()));
-        Resource resource = Resource.builder().put(ResourceAttributes.SERVICE_NAME, "jenkins").build();
+        MatcherAssert.assertThat("service.name", CoreMatchers.is(ServiceAttributes.SERVICE_NAME.getKey()));
+        Resource resource = Resource.builder().put(ServiceAttributes.SERVICE_NAME, "jenkins").build();
 
         String actual = backend.getMetricsVisualizationUrl(resource);
         MatcherAssert.assertThat(actual, CoreMatchers.is("https://observability.Example.com/dashboards/jenkins?service.name=jenkins"));

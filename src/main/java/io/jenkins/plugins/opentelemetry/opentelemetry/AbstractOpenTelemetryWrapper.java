@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.events.EventEmitterProvider;
+import io.opentelemetry.api.incubator.events.EventLoggerProvider;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.MeterBuilder;
@@ -20,7 +20,7 @@ public abstract class AbstractOpenTelemetryWrapper implements OpenTelemetry {
 
     protected abstract OpenTelemetry getOpenTelemetryDelegate();
 
-    protected abstract EventEmitterProvider getEventEmitterProvider();
+    protected abstract EventLoggerProvider getEventLoggerProvider();
     
     @Override
     public TracerProvider getTracerProvider() {

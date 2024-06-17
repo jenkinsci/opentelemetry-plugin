@@ -93,6 +93,21 @@ src="./images/jenkins-pipeline-logs-elastic-kibana-role.png" />
 alt="Configuration - User creation in Kibana"
 src="./images/jenkins-pipeline-logs-elastic-kibana-user.png" />
 
+## Storing Jenkins Pipeline Logs in Loki
+
+To store pipeline logs in Loki,
+
+* Navigate to the OpenTelemetry section of Jenkins configuration screen,
+* In the "Visualization" section, add the "Grafana" backend
+* Set the Grafana URL
+* In the section "Pipeline logs storage in Loki", select the desired strategy:
+  * "Don't store logs in Loki" to continue storing logs exclusively in Jenkins
+  * "Store pipeline logs in Loki and mirror them in Jenkins" to store logs in Loki and also store them in the Jenkins 
+    home. Logs can be visualized from the Jenkins GUI retrieving them from the Jenkins home storage, and from Grafana retrieving them from Loki   
+  * "Store pipeline logs In Loki and visualize logs exclusively in Grafana (logs no longer visible through Jenkins 
+    screens)" to store logs exclusively in Loki. Pipeline logs are no longer visible through Jenkins screens, 
+    an hyperlink to Grafana is displayed in the Jenkins pipeline build console.
+
 
 ## FAQ
 
@@ -113,24 +128,23 @@ receivers:
 processors:
   batch:
 exporters:
-  otlp/elastic:
-    endpoint: "***.apm.***.gcp.cloud.es.io:443"
-    headers:
-      Authorization: "Bearer ****"
+  otlp/xyz:
+    endpoint: "otlp.example.com:4317"
+    #...
 service:
   pipelines:
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/elastic]
+      exporters: [otlp/xyz]
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/elastic]
+      exporters: [otlp/xyz]
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/elastic]
+      exporters: [otlp/xyz]
 ````
 
 For more details, se the OpenTelemetry Collector [configuration guide](https://opentelemetry.io/docs/collector/configuration/).
@@ -148,7 +162,7 @@ This means that the timestamp of log messages emitted on the Jenkins Agents does
 This clock adjustment is required to display in the right ascending order the log messages.
 Note that distributed traces don't require such a clock adjustment because all spans are emitted from the Jenkins Controller.
 
-### Can pipeline logs be stored in other backends than Elastic?
+### Can pipeline logs be stored in other backends than Elastic or Grafana?
 
 Yes any observability backend that support OpenTelemetry logs can be used.
 

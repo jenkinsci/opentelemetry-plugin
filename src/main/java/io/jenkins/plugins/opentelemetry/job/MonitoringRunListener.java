@@ -27,7 +27,7 @@ import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
 import io.jenkins.plugins.opentelemetry.queue.RemoteSpanAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.opentelemetry.api.events.EventEmitter;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
@@ -45,7 +45,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.ExceptionAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
@@ -89,8 +89,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
     }
 
     @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-        super.afterSdkInitialized(meter, loggerProvider, eventEmitter, tracer, configProperties);
+    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
+        super.afterSdkInitialized(meter, loggerProvider, eventLogger, tracer, configProperties);
 
         // CAUSE HANDLERS
         List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));
@@ -361,8 +361,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
                 if (Result.SUCCESS.equals(runResult)) {
                     parentSpan.setStatus(StatusCode.OK, runResult.toString());
                 } else if (Result.FAILURE.equals(runResult) || Result.UNSTABLE.equals(runResult)){
-                    parentSpan.setAttribute(SemanticAttributes.EXCEPTION_TYPE, "PIPELINE_" + runResult);
-                    parentSpan.setAttribute(SemanticAttributes.EXCEPTION_MESSAGE, "PIPELINE_" + runResult);
+                    parentSpan.setAttribute(ExceptionAttributes.EXCEPTION_TYPE, "PIPELINE_" + runResult);
+                    parentSpan.setAttribute(ExceptionAttributes.EXCEPTION_MESSAGE, "PIPELINE_" + runResult);
                     parentSpan.setStatus(StatusCode.ERROR, runResult.toString());
                 } else if (Result.ABORTED.equals(runResult) || Result.NOT_BUILT.equals(runResult)) {
                     parentSpan.setStatus(StatusCode.UNSET, runResult.toString());
