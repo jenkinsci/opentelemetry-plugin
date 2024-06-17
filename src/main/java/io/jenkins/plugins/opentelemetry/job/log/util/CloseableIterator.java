@@ -10,11 +10,14 @@ import java.io.InputStream;
 import java.util.Iterator;
 
 /**
+ * <p>
  * Useful when the {@link Iterator} is backed by an {@link InputStream} and the logic of the code dereferences the
  * InputStream, make the {@link Iterator} closeable.
- * <br/>
+ * </p>
+ * <p>
  * TODO verify that extending {@link AutoCloseable} instead of {@link Closeable} is a good decision? The rationale
  * is that it's more general.
+ * </p>
  */
 public class CloseableIterator<E> implements Iterator<E>, AutoCloseable {
     private final Iterator<E> delegate;
