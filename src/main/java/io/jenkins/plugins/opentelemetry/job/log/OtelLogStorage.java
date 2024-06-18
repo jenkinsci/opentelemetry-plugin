@@ -52,12 +52,9 @@ class OtelLogStorage implements LogStorage {
 
     final OtelTraceService otelTraceService;
 
-    public OtelLogStorage(@NonNull Run run, @NonNull OtelTraceService otelTraceService, @NonNull Tracer tracer) {
+    public OtelLogStorage(@NonNull Run run, @NonNull OtelTraceService otelTraceService, @NonNull Tracer tracer, @NonNull MonitoringAction monitoringAction) {
         this.run = run;
-        MonitoringAction monitoringAction = Optional
-            .ofNullable(run.getAction(MonitoringAction.class))
-            .orElseThrow(() ->  new IllegalStateException("No MonitoringAction found for " + run));
-
+        
         this.runTraceContext = new RunTraceContext(
             run.getParent().getFullName(),
             run.getNumber(),
