@@ -61,7 +61,16 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -178,7 +187,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return this;
     }
 
-
     @NonNull
     public OpenTelemetryConfiguration toOpenTelemetryConfiguration() {
         Properties properties = new Properties();
@@ -188,7 +196,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             LOGGER.log(Level.WARNING, "Exception parsing configuration properties", e);
         }
 
-        Map<String, String> configurationProperties = new HashMap();
+        Map<String, String> configurationProperties = new HashMap<>();
         getObservabilityBackends().forEach(backend -> configurationProperties.putAll(backend.getOtelConfigurationProperties()));
         configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_VERSION.getKey(), OtelUtils.getJenkinsVersion());
         configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_URL.getKey(), this.jenkinsLocationConfiguration.getUrl());
@@ -200,7 +208,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return new OpenTelemetryConfiguration(
             Optional.ofNullable(this.getEndpoint()),
             Optional.ofNullable(this.getTrustedCertificatesPem()),
-            Optional.ofNullable(this.getAuthentication()),
+            Optional.of(this.getAuthentication()),
             Optional.ofNullable(this.getExporterTimeoutMillis()),
             Optional.ofNullable(this.getExporterIntervalMillis()),
             Optional.ofNullable(this.getServiceName()),
@@ -210,13 +218,27 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
+     * Register reconfigurable {@link io.opentelemetry.api.OpenTelemetry}
+     * on {@link  io.opentelemetry.api.GlobalOpenTelemetry}
+     * and {@link io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableEventLoggerProvider}
+     * on {@link io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider}
+     * as early as possible in Jenkins lifecycle so any plugin invoking those Global setters will have the
+     * reconfigurable instance .
+     */
+    @Initializer(after = InitMilestone.EXTENSIONS_AUGMENTED, before = InitMilestone.SYSTEM_CONFIG_LOADED)
+    public void initializeOpenTelemetryAfterExtensionsAugmented() {
+        LOGGER.log(Level.INFO, "Initialize Jenkins OpenTelemetry Plugin with a NoOp implementation...");
+        jenkinsControllerOpenTelemetry.configure(Collections.emptyMap(), Resource.empty());
+    }
+
+    /**
      * Initialize the Otel SDK, must happen after the plugin has been configured by the standard config and by JCasC
      * JCasC configuration happens during `SYSTEM_CONFIG_ADAPTED` (see `io.jenkins.plugins.casc.ConfigurationAsCode#init()`)
      */
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_ADAPTED, before = InitMilestone.JOB_LOADED)
     @SuppressWarnings("MustBeClosedChecker")
     public void initializeOpenTelemetry() {
-        LOGGER.log(Level.FINE, "Initialize Jenkins OpenTelemetry Plugin...");
+        LOGGER.log(Level.INFO, "Initialize Jenkins OpenTelemetry Plugin...");
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
@@ -559,7 +581,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @NonNull
     @MustBeClosed
-    @SuppressWarnings("MustBeClosedChecker") // false positive invoking backend.getLogStorageRetriever(templateBindingsProvider)
+    @SuppressWarnings("MustBeClosedChecker")
+    // false positive invoking backend.getLogStorageRetriever(templateBindingsProvider)
     private LogStorageRetriever resolveLogStorageRetriever() {
         LogStorageRetriever logStorageRetriever = null;
 
