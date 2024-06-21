@@ -14,7 +14,7 @@ import hudson.model.BuildListener;
 import hudson.model.BuildStepListener;
 import hudson.tasks.BuildStep;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.incubator.events.EventLogger;
@@ -38,7 +38,7 @@ import static com.google.common.base.Verify.verifyNotNull;
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES)
-public class MonitoringBuildStepListener extends BuildStepListener implements OtelComponent {
+public class MonitoringBuildStepListener extends BuildStepListener implements OpenTelemetryLifecycleListener {
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 

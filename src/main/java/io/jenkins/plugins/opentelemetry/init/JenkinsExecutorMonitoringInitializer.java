@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
 import hudson.model.LoadStatistics;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.incubator.events.EventLogger;
@@ -22,7 +22,7 @@ import jenkins.model.Jenkins;
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.*;
 
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class JenkinsExecutorMonitoringInitializer implements OtelComponent {
+public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecycleListener {
 
     @Override
     public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {

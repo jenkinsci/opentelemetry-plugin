@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import com.google.common.base.Preconditions;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.incubator.events.EventLogger;
@@ -39,7 +39,7 @@ import static io.jenkins.plugins.opentelemetry.semconv.GitHubSemanticAttributes.
  * field of the {@link Connector} class because we have not found any public API to observe the state of this GitHub client.
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class GitHubClientMonitoring implements OtelComponent {
+public class GitHubClientMonitoring implements OpenTelemetryLifecycleListener {
     private final static Logger logger = Logger.getLogger(GitHubClientMonitoring.class.getName());
 
     private final Field gitHub_clientField;

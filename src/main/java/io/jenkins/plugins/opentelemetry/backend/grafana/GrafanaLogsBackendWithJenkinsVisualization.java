@@ -16,7 +16,7 @@ import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.GrafanaBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
@@ -72,7 +72,8 @@ public class GrafanaLogsBackendWithJenkinsVisualization extends GrafanaLogsBacke
         if (StringUtils.isBlank(lokiUrl)) {
             throw new IllegalStateException(MSG_LOKI_URL_IS_BLANK);
         }
-        OpenTelemetry openTelemetry = OpenTelemetrySdkProvider.get().getOpenTelemetry();
+        // TODO shall we inject this through @Inject?
+        OpenTelemetry openTelemetry = JenkinsControllerOpenTelemetry.get();
 
         String serviceName = templateBindingsProvider.getBindings().get(ObservabilityBackend.TemplateBindings.SERVICE_NAME).toString();
         Optional<String> serviceNamespace = Optional.ofNullable(templateBindingsProvider.getBindings().get(ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE)).map(Object::toString);
@@ -216,7 +217,7 @@ public class GrafanaLogsBackendWithJenkinsVisualization extends GrafanaLogsBacke
             if (lokiUrlValidation.kind != FormValidation.Kind.OK) {
                 return lokiUrlValidation;
             }
-            OpenTelemetry openTelemetry = OpenTelemetrySdkProvider.get().getOpenTelemetry();
+            OpenTelemetry openTelemetry = JenkinsControllerOpenTelemetry.get();
             try (LokiLogStorageRetriever lokiLogStorageRetriever = new LokiLogStorageRetriever(
                 lokiUrl,
                 disableSslVerifications,

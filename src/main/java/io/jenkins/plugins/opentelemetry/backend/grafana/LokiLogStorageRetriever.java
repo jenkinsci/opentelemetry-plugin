@@ -10,7 +10,7 @@ import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import groovy.text.Template;
 import hudson.util.FormValidation;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.GrafanaBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
@@ -268,7 +268,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
 
     private Tracer getTracer() {
         if (_tracer == null) {
-            _tracer = OpenTelemetrySdkProvider.get().getTracer();
+            _tracer = JenkinsControllerOpenTelemetry.get().getDefaultTracer();
         }
         return _tracer;
     }

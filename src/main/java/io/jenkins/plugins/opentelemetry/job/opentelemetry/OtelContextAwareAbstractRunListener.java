@@ -13,7 +13,7 @@ import hudson.model.Environment;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  * {@link RunListener} that setups the OpenTelemetry {@link io.opentelemetry.context.Context}
  * with the current {@link Span}.
  */
-public abstract class OtelContextAwareAbstractRunListener extends RunListener<Run> implements OtelComponent {
+public abstract class OtelContextAwareAbstractRunListener extends RunListener<Run> implements OpenTelemetryLifecycleListener {
 
     private final static Logger LOGGER = Logger.getLogger(OtelContextAwareAbstractRunListener.class.getName());
 

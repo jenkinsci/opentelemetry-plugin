@@ -8,8 +8,8 @@ package io.jenkins.plugins.opentelemetry.queue;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.incubator.events.EventLogger;
@@ -33,7 +33,7 @@ import java.util.logging.Logger;
  * Monitor the Jenkins Build queue
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringQueueListener extends QueueListener implements OtelComponent {
+public class MonitoringQueueListener extends QueueListener implements OpenTelemetryLifecycleListener {
 
     private final static Logger LOGGER = Logger.getLogger(MonitoringQueueListener.class.getName());
 
@@ -110,6 +110,6 @@ public class MonitoringQueueListener extends QueueListener implements OtelCompon
     }
 
     private boolean isRemoteSpanEnabled() {
-        return OpenTelemetrySdkProvider.get().getConfig().getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED,false);
+        return JenkinsControllerOpenTelemetry.get().getConfig().getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED,false);
     }
 }

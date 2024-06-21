@@ -9,7 +9,7 @@ import com.cloudbees.simplediskusage.DiskItem;
 import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
@@ -28,7 +28,7 @@ import java.util.logging.Logger;
  * Capture disk usage metrics relying on the {@link QuickDiskUsagePlugin}
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class DiskUsageMonitoringInitializer implements OtelComponent {
+public class DiskUsageMonitoringInitializer implements OpenTelemetryLifecycleListener {
 
     private final static Logger LOGGER = Logger.getLogger(DiskUsageMonitoringInitializer.class.getName());
 
