@@ -11,13 +11,22 @@ import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.incubator.events.EventLoggerBuilder;
 import io.opentelemetry.api.incubator.events.EventLoggerProvider;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class ReconfigurableEventLoggerProvider implements EventLoggerProvider {
+/**
+ * <p>
+ * A {@link EventLoggerProvider} that allows to reconfigure the {@link EventLogger}s.
+ * </p>
+ * <p>
+ * We need reconfigurability because Jenkins supports changing the configuration of the OpenTelemetry params at runtime.
+ * All instantiated eventLoggers are reconfigured when the configuration changes, when
+ * {@link ReconfigurableEventLoggerProvider#setDelegate(EventLoggerProvider)} is invoked.
+ * </p>
+ */
+class ReconfigurableEventLoggerProvider implements EventLoggerProvider {
 
     private final ConcurrentMap<InstrumentationScope, ReconfigurableEventLogger> eventLoggers = new ConcurrentHashMap<>();
     private EventLoggerProvider delegate = EventLoggerProvider.noop();
@@ -40,11 +49,6 @@ public class ReconfigurableEventLoggerProvider implements EventLoggerProvider {
             Optional.ofNullable(key.instrumentationScopeVersion).ifPresent(eventLoggerBuilder::setInstrumentationVersion);
             reconfigurableEventLogger.delegateEventLogger = eventLoggerBuilder.build();
         });
-    }
-
-    @VisibleForTesting
-    protected Map<InstrumentationScope, ReconfigurableEventLogger> getEventLoggers() {
-        return eventLoggers;
     }
 
     @VisibleForTesting

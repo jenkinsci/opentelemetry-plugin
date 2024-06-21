@@ -9,7 +9,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
-public class InstrumentationScope {
+/**
+ * <a href="https://opentelemetry.io/docs/concepts/instrumentation-scope/">OpenTelemetry instrumentation scope</a>,
+ * data structured used by the {@link ReconfigurableOpenTelemetry} implementation
+ */
+class InstrumentationScope {
     @Nonnull
     final String instrumentationScopeName;
     @Nullable
