@@ -12,6 +12,9 @@ import io.opentelemetry.sdk.trace.ReadableSpan;
 
 import java.util.Map;
 
+/**
+ * Action to decorate {@link hudson.model.Job} steps to hold references to {@link Span}s
+ */
 public interface OtelMonitoringAction extends Action {
 
     Map<String, String> getW3cTraceContext();

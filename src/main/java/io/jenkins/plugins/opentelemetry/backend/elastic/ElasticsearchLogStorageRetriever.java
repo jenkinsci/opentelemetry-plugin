@@ -21,7 +21,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import groovy.text.Template;
 import hudson.util.FormValidation;
-import io.jenkins.plugins.opentelemetry.OpenTelemetrySdkProvider;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
@@ -378,7 +378,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
     private Tracer getTracer() {
         if (_tracer == null) {
-            _tracer = OpenTelemetrySdkProvider.get().getTracer();
+            _tracer = JenkinsControllerOpenTelemetry.get().getDefaultTracer();
         }
         return _tracer;
     }

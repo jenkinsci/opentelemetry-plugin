@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.security;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.User;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
@@ -40,7 +40,7 @@ import java.util.logging.Logger;
  * within a trace.
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class AuditingSecurityListener extends SecurityListener implements OtelComponent {
+public class AuditingSecurityListener extends SecurityListener implements OpenTelemetryLifecycleListener {
 
     private final static Logger LOGGER = Logger.getLogger(AuditingSecurityListener.class.getName());
 

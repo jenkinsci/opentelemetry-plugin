@@ -6,13 +6,30 @@
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.logs.LoggerProvider;
-import io.opentelemetry.api.metrics.*;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerBuilder;
-import io.opentelemetry.api.trace.TracerProvider;
-import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.api.metrics.BatchCallback;
+import io.opentelemetry.api.metrics.DoubleCounter;
+import io.opentelemetry.api.metrics.DoubleCounterBuilder;
+import io.opentelemetry.api.metrics.DoubleGaugeBuilder;
+import io.opentelemetry.api.metrics.DoubleHistogramBuilder;
+import io.opentelemetry.api.metrics.DoubleUpDownCounter;
+import io.opentelemetry.api.metrics.DoubleUpDownCounterBuilder;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongCounterBuilder;
+import io.opentelemetry.api.metrics.LongGaugeBuilder;
+import io.opentelemetry.api.metrics.LongUpDownCounter;
+import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.metrics.MeterBuilder;
+import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.api.metrics.ObservableDoubleCounter;
+import io.opentelemetry.api.metrics.ObservableDoubleGauge;
+import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
+import io.opentelemetry.api.metrics.ObservableDoubleUpDownCounter;
+import io.opentelemetry.api.metrics.ObservableLongCounter;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
+import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
+import io.opentelemetry.api.metrics.ObservableMeasurement;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -21,28 +38,38 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Holds a reference on all the instantiated {@link AutoCloseable} instrument in order to properly close them before
- * reconfigurations (eg {@link ObservableLongUpDownCounter}, {@link ObservableLongCounter}...).
- */
-public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
+public class CloseableMeterProvider implements MeterProvider, Closeable {
+    private final static Logger LOGGER = Logger.getLogger(CloseableMeterProvider.class.getName());
 
-    private final static Logger LOGGER = Logger.getLogger(ClosingOpenTelemetry.class.getName());
+    /**
+     * Reference on all the instantiated {@link AutoCloseable} instrument in order to properly close them before
+     * reconfigurations (eg {@link ObservableLongUpDownCounter}, {@link ObservableLongCounter}...).
+     */
+    final List<AutoCloseable> closeables = new ArrayList<>();
 
-    public static ClosingOpenTelemetry noop() {
-        return new ClosingOpenTelemetry(OpenTelemetry.noop());
+    final MeterProvider delegate;
+
+    public CloseableMeterProvider(MeterProvider delegate) {
+        this.delegate = delegate;
     }
 
-    final OpenTelemetry delegate;
+    @Override
+    public Meter get(String instrumentationScopeName) {
+        return new CloseableMeter(delegate.get(instrumentationScopeName));
+    }
 
-    final List<AutoCloseable> closeables = new ArrayList<>();
+    @Override
+    public MeterBuilder meterBuilder(String instrumentationScopeName) {
+        return new CloseableMeterBuilder(delegate.meterBuilder(instrumentationScopeName));
+    }
 
     @Override
     public void close() {
+        LOGGER.log(Level.FINE, () -> "Close " + closeables.size() + " instruments");
+        LOGGER.log(Level.FINEST, () -> "Close " + closeables);
         List<AutoCloseable> instruments = new ArrayList<>(this.closeables);
         this.closeables.clear(); // reset the list of instruments for reuse
-        LOGGER.log(Level.FINE, () -> "Close " + instruments.size() + " instruments");
-        LOGGER.log(Level.FINEST, () -> "Close " + instruments);
+
         for (AutoCloseable instrument : instruments) {
             try {
                 instrument.close();
@@ -53,77 +80,10 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         }
     }
 
-    public ClosingOpenTelemetry(OpenTelemetry delegate) {
-        this.delegate = delegate;
-    }
-
-    @Override
-    public TracerProvider getTracerProvider() {
-        return delegate.getTracerProvider();
-    }
-
-    @Override
-    public Tracer getTracer(String instrumentationScopeName) {
-        return delegate.getTracer(instrumentationScopeName);
-    }
-
-    @Override
-    public Tracer getTracer(String instrumentationScopeName, String instrumentationScopeVersion) {
-        return delegate.getTracer(instrumentationScopeName, instrumentationScopeVersion);
-    }
-
-    @Override
-    public TracerBuilder tracerBuilder(String instrumentationScopeName) {
-        return delegate.tracerBuilder(instrumentationScopeName);
-    }
-
-    @Override
-    public MeterProvider getMeterProvider() {
-        return new ClosingMeterProvider(delegate.getMeterProvider());
-    }
-
-    @Override
-    public Meter getMeter(String instrumentationScopeName) {
-        return new ClosingMeter(delegate.getMeter(instrumentationScopeName));
-    }
-
-    @Override
-    public LoggerProvider getLogsBridge() {
-        return delegate.getLogsBridge();
-    }
-
-    @Override
-    public MeterBuilder meterBuilder(String instrumentationScopeName) {
-        return new ClosingMeterBuilder(delegate.meterBuilder(instrumentationScopeName));
-    }
-
-    @Override
-    public ContextPropagators getPropagators() {
-        return delegate.getPropagators();
-    }
-
-    class ClosingMeterProvider implements MeterProvider {
-        final MeterProvider delegate;
-
-        public ClosingMeterProvider(MeterProvider delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public Meter get(String instrumentationScopeName) {
-            return new ClosingMeter(delegate.get(instrumentationScopeName));
-        }
-
-        @Override
-        public MeterBuilder meterBuilder(String instrumentationScopeName) {
-            return new ClosingMeterBuilder(delegate.meterBuilder(instrumentationScopeName));
-        }
-    }
-
-    class ClosingMeterBuilder implements MeterBuilder {
+    class CloseableMeterBuilder implements MeterBuilder {
         final MeterBuilder delegate;
 
-        ClosingMeterBuilder(MeterBuilder delegate) {
+        CloseableMeterBuilder(MeterBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -143,25 +103,25 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
 
         @Override
         public Meter build() {
-            return new ClosingMeter(delegate.build());
+            return new CloseableMeter(delegate.build());
         }
     }
 
-    class ClosingMeter implements Meter {
+    class CloseableMeter implements Meter {
         private final Meter delegate;
 
-        ClosingMeter(Meter delegate) {
+        CloseableMeter(Meter delegate) {
             this.delegate = delegate;
         }
 
         @Override
         public LongCounterBuilder counterBuilder(String name) {
-            return new ClosingLongCounterBuilder(delegate.counterBuilder(name));
+            return new CloseableLongCounterBuilder(delegate.counterBuilder(name));
         }
 
         @Override
         public LongUpDownCounterBuilder upDownCounterBuilder(String name) {
-            return new ClosingLongUpDownCounterBuilder(delegate.upDownCounterBuilder(name));
+            return new CloseableLongUpDownCounterBuilder(delegate.upDownCounterBuilder(name));
         }
 
         @Override
@@ -171,7 +131,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
 
         @Override
         public DoubleGaugeBuilder gaugeBuilder(String name) {
-            return new ClosingDoubleGaugeBuilder(delegate.gaugeBuilder(name));
+            return new CloseableDoubleGaugeBuilder(delegate.gaugeBuilder(name));
         }
 
         @Override
@@ -182,10 +142,10 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         }
     }
 
-    class ClosingLongCounterBuilder implements LongCounterBuilder {
+    class CloseableLongCounterBuilder implements LongCounterBuilder {
         final LongCounterBuilder delegate;
 
-        ClosingLongCounterBuilder(LongCounterBuilder delegate) {
+        CloseableLongCounterBuilder(LongCounterBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -205,7 +165,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
 
         @Override
         public DoubleCounterBuilder ofDoubles() {
-            return new ClosingDoubleCounterBuilder(delegate.ofDoubles());
+            return new CloseableDoubleCounterBuilder(delegate.ofDoubles());
         }
 
         @Override
@@ -226,7 +186,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         }
     }
 
-    class ClosingLongUpDownCounterBuilder implements LongUpDownCounterBuilder {
+    class CloseableLongUpDownCounterBuilder implements LongUpDownCounterBuilder {
         @Override
         @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
         public LongUpDownCounterBuilder setDescription(String description) {
@@ -243,7 +203,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
 
         @Override
         public DoubleUpDownCounterBuilder ofDoubles() {
-            return new ClosingDoubleUpDownCounterBuilder(delegate.ofDoubles());
+            return new CloseableDoubleUpDownCounterBuilder(delegate.ofDoubles());
         }
 
         @Override
@@ -265,16 +225,16 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
 
         final LongUpDownCounterBuilder delegate;
 
-        ClosingLongUpDownCounterBuilder(LongUpDownCounterBuilder delegate) {
+        CloseableLongUpDownCounterBuilder(LongUpDownCounterBuilder delegate) {
             this.delegate = delegate;
         }
     }
 
 
-    class ClosingDoubleUpDownCounterBuilder implements DoubleUpDownCounterBuilder {
+    class CloseableDoubleUpDownCounterBuilder implements DoubleUpDownCounterBuilder {
         final DoubleUpDownCounterBuilder delegate;
 
-        ClosingDoubleUpDownCounterBuilder(DoubleUpDownCounterBuilder delegate) {
+        CloseableDoubleUpDownCounterBuilder(DoubleUpDownCounterBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -310,10 +270,10 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         }
     }
 
-    class ClosingDoubleGaugeBuilder implements DoubleGaugeBuilder {
+    class CloseableDoubleGaugeBuilder implements DoubleGaugeBuilder {
         final DoubleGaugeBuilder delegate;
 
-        ClosingDoubleGaugeBuilder(DoubleGaugeBuilder delegate) {
+        CloseableDoubleGaugeBuilder(DoubleGaugeBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -333,7 +293,7 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
 
         @Override
         public LongGaugeBuilder ofLongs() {
-            return new ClosingLongGaugeBuilder(delegate.ofLongs());
+            return new CloseableLongGaugeBuilder(delegate.ofLongs());
         }
 
         @Override
@@ -349,10 +309,10 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         }
     }
 
-    class ClosingLongGaugeBuilder implements LongGaugeBuilder {
+    class CloseableLongGaugeBuilder implements LongGaugeBuilder {
         final LongGaugeBuilder delegate;
 
-        ClosingLongGaugeBuilder(LongGaugeBuilder delegate) {
+        CloseableLongGaugeBuilder(LongGaugeBuilder delegate) {
             this.delegate = delegate;
         }
 
@@ -383,10 +343,10 @@ public class ClosingOpenTelemetry implements OpenTelemetry, Closeable {
         }
     }
 
-    class ClosingDoubleCounterBuilder implements DoubleCounterBuilder {
+    class CloseableDoubleCounterBuilder implements DoubleCounterBuilder {
         final DoubleCounterBuilder delegate;
 
-        ClosingDoubleCounterBuilder(DoubleCounterBuilder delegate) {
+        CloseableDoubleCounterBuilder(DoubleCounterBuilder delegate) {
             this.delegate = delegate;
         }
 
