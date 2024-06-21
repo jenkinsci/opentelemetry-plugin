@@ -10,14 +10,23 @@ import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.Logger;
 import io.opentelemetry.api.logs.LoggerBuilder;
 import io.opentelemetry.api.logs.LoggerProvider;
-import io.opentelemetry.api.trace.TracerBuilder;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class ReconfigurableLoggerProvider implements LoggerProvider {
+/**
+ * <p>
+ * A {@link LoggerProvider} that allows to reconfigure the {@link Logger}s.
+ * </p>
+ * <p>
+ * We need reconfigurability because Jenkins supports changing the configuration of the OpenTelemetry params at runtime.
+ * All instantiated loggers are reconfigured when the configuration changes, when
+ * {@link ReconfigurableLoggerProvider#setDelegate(LoggerProvider)} is invoked.
+ * </p>
+ */
+class ReconfigurableLoggerProvider implements LoggerProvider {
     private LoggerProvider delegate;
 
     private final ConcurrentMap<InstrumentationScope, ReconfigurableLogger> loggers = new ConcurrentHashMap<>();

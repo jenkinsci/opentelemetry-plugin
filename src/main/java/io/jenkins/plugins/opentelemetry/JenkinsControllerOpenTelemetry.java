@@ -14,7 +14,6 @@ import io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableOpenTelemetr
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.resources.ProcessResourceProvider;
@@ -23,7 +22,6 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import javax.annotation.PreDestroy;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -31,8 +29,6 @@ import java.util.stream.Collectors;
  */
 @Extension
 public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry implements OpenTelemetry {
-
-    private static final Logger LOGGER = Logger.getLogger(JenkinsControllerOpenTelemetry.class.getName());
 
     /**
      * See {@code OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS}
@@ -49,7 +45,7 @@ public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry 
     public JenkinsControllerOpenTelemetry() {
         super();
         if (INSTANCE_COUNTER.get() > 0) {
-            LOGGER.log(Level.WARNING, "More than one instance of JenkinsControllerOpenTelemetry created: " + INSTANCE_COUNTER.get());
+            logger.log(Level.WARNING, "More than one instance of JenkinsControllerOpenTelemetry created: " + INSTANCE_COUNTER.get());
         }
 
         String opentelemetryPluginVersion = OtelUtils.getOpentelemetryPluginVersion();
@@ -72,12 +68,12 @@ public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry 
     }
 
     public boolean isLogsEnabled() {
-        String otelLogsExporter = config.getString("otel.logs.exporter");
+        String otelLogsExporter = getConfig().getString("otel.logs.exporter");
         return otelLogsExporter != null && !otelLogsExporter.equals("none");
     }
 
     public boolean isOtelLogsMirrorToDisk() {
-        String otelLogsExporter = config.getString("otel.logs.mirror_to_disk");
+        String otelLogsExporter = getConfig().getString("otel.logs.mirror_to_disk");
         return otelLogsExporter != null && otelLogsExporter.equals("true");
     }
 
@@ -112,12 +108,12 @@ public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry 
             .setInstrumentationVersion(opentelemetryPluginVersion)
             .build();
 
-        LOGGER.log(Level.FINER, () -> "Configure OpenTelemetryLifecycleListeners: " + ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream().sorted().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
+        logger.log(Level.FINER, () -> "Configure OpenTelemetryLifecycleListeners: " + ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream().sorted().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
         ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream()
             .sorted()
             .forEachOrdered(otelComponent -> {
-                otelComponent.afterSdkInitialized(defaultMeter, getOpenTelemetryDelegate().getLogsBridge(), defaultEventLogger, defaultTracer, config);
-                otelComponent.afterSdkInitialized(getOpenTelemetryDelegate(), config);
+                otelComponent.afterSdkInitialized(defaultMeter, getOpenTelemetryDelegate().getLogsBridge(), defaultEventLogger, defaultTracer, getConfig());
+                otelComponent.afterSdkInitialized(getOpenTelemetryDelegate(), getConfig());
             });
     }
 

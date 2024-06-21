@@ -218,16 +218,18 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
-     * Register reconfigurable {@link io.opentelemetry.api.OpenTelemetry}
+     * Register {@link io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableOpenTelemetry}
      * on {@link  io.opentelemetry.api.GlobalOpenTelemetry}
      * and {@link io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableEventLoggerProvider}
      * on {@link io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider}
-     * as early as possible in Jenkins lifecycle so any plugin invoking those Global setters will have the
+     * as early as possible in Jenkins lifecycle so any plugin invoking those Global getters will have the
      * reconfigurable instance .
+     *
+     * TODO can this be refactored into an annotation on the JenkinsControllerOpenTelemetry to force its early instantiation?
      */
     @Initializer(after = InitMilestone.EXTENSIONS_AUGMENTED, before = InitMilestone.SYSTEM_CONFIG_LOADED)
     public void initializeOpenTelemetryAfterExtensionsAugmented() {
-        LOGGER.log(Level.INFO, "Initialize Jenkins OpenTelemetry Plugin with a NoOp implementation...");
+        LOGGER.log(Level.FINE, "Initialize Jenkins OpenTelemetry Plugin with a NoOp implementation...");
         jenkinsControllerOpenTelemetry.configure(Collections.emptyMap(), Resource.empty());
     }
 
@@ -238,7 +240,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_ADAPTED, before = InitMilestone.JOB_LOADED)
     @SuppressWarnings("MustBeClosedChecker")
     public void initializeOpenTelemetry() {
-        LOGGER.log(Level.INFO, "Initialize Jenkins OpenTelemetry Plugin...");
+        LOGGER.log(Level.FINE, "Initialize Jenkins OpenTelemetry Plugin...");
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
@@ -646,9 +648,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * (such as query string or fragment).
      * A scheme of https indicates a secure connection.
      * </p>
-     *
-     * @param endpoint
-     * @return
      */
     public FormValidation doCheckEndpoint(@QueryParameter String endpoint) {
         if (endpoint == null || endpoint.isEmpty()) {

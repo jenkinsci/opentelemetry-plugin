@@ -38,7 +38,11 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class CloseableMeterProvider implements MeterProvider, Closeable {
+/**
+ * A {@link MeterProvider} that can be closed before the underlying {@link io.opentelemetry.sdk.OpenTelemetrySdk}
+ * is shut down.
+ */
+class CloseableMeterProvider implements MeterProvider, Closeable {
     private final static Logger LOGGER = Logger.getLogger(CloseableMeterProvider.class.getName());
 
     /**
