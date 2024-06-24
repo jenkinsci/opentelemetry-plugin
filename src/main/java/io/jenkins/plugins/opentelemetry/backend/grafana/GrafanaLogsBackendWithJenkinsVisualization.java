@@ -30,6 +30,7 @@ import org.apache.http.auth.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+ import org.kohsuke.stapler.verb.POST;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -192,7 +193,10 @@ public class GrafanaLogsBackendWithJenkinsVisualization extends GrafanaLogsBacke
 
         @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT",
             justification = "We don't care about the return value, we just want to check that the credentials are valid")
+        @POST
         public FormValidation doCheckLokiCredentialsId(Item context, @QueryParameter String lokiCredentialsId) {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
                 || context != null && !context.hasPermission(context.CONFIGURE)) {
                 return FormValidation.ok();
@@ -210,9 +214,12 @@ public class GrafanaLogsBackendWithJenkinsVisualization extends GrafanaLogsBacke
             return FormValidation.ok();
         }
 
+        @POST
         public FormValidation doValidate(@QueryParameter String lokiUrl,
                                          @QueryParameter boolean disableSslVerifications, @QueryParameter String lokiCredentialsId,
                                          @QueryParameter String lokiTenantId) {
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+
             FormValidation lokiUrlValidation = doCheckLokiUrl(lokiUrl);
             if (lokiUrlValidation.kind != FormValidation.Kind.OK) {
                 return lokiUrlValidation;
