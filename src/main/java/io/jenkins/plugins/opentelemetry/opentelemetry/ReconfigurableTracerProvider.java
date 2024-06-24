@@ -17,7 +17,17 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class ReconfigurableTracerProvider implements TracerProvider {
+/**
+ * <p>
+ * A {@link TracerProvider} that allows to reconfigure the {@link Tracer}s.
+ * </p>
+ * <p>
+ * We need reconfigurability because Jenkins supports changing the configuration of the OpenTelemetry params at runtime.
+ * All instantiated tracers are reconfigured when the configuration changes, when
+ * {@link ReconfigurableTracerProvider#setDelegate(TracerProvider)} is invoked.
+ * </p>
+ */
+class ReconfigurableTracerProvider implements TracerProvider {
 
     private TracerProvider delegate;
 

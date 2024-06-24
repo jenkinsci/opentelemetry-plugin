@@ -14,6 +14,7 @@ import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.incubator.events.EventLoggerProvider;
 import io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider;
 import io.opentelemetry.api.logs.LoggerProvider;
@@ -41,18 +42,30 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Reconfigurable {@link OpenTelemetry}
+ * <p>
+ * Reconfigurable {@link EventLoggerProvider} that allows to reconfigure the {@link Tracer}s,
+ * {@link io.opentelemetry.api.logs.Logger}s, and {@link EventLogger}s.
+ * </p>
+ * <p>
+ *     IMPORTANT: {@link Meter}s are not yet seamlessly reconfigurable yet.
+ *     Please use {@link OpenTelemetryLifecycleListener} to handle the reconfiguration of {@link Meter}s for the moment.
+ * </p>
+ * <p>
+ * We need reconfigurability because Jenkins supports changing the configuration of the OpenTelemetry params at runtime.
+ * All instantiated tracers, loggers, and eventLoggers are reconfigured when the configuration changes, when
+ * {@link ReconfigurableOpenTelemetry#configure(Map, Resource)} is invoked.
+ * </p>
  */
 public class ReconfigurableOpenTelemetry implements OpenTelemetry, Closeable {
 
-    private final Logger LOGGER = Logger.getLogger(ReconfigurableOpenTelemetry.class.getName());
-    protected transient Resource resource;
-    protected transient ConfigProperties config;
-    protected transient OpenTelemetry openTelemetryImpl = OpenTelemetry.noop();
-    protected transient CloseableMeterProvider meterProviderImpl = new CloseableMeterProvider(MeterProvider.noop());
-    protected final transient ReconfigurableTracerProvider traceProviderImpl = new ReconfigurableTracerProvider();
-    protected final transient ReconfigurableEventLoggerProvider eventLoggerProviderImpl = new ReconfigurableEventLoggerProvider();
-    protected final transient ReconfigurableLoggerProvider loggerProviderImpl = new ReconfigurableLoggerProvider();
+    protected final Logger logger = Logger.getLogger(getClass().getName());
+    Resource resource;
+    ConfigProperties config;
+    OpenTelemetry openTelemetryImpl = OpenTelemetry.noop();
+    CloseableMeterProvider meterProviderImpl = new CloseableMeterProvider(MeterProvider.noop());
+    final ReconfigurableTracerProvider traceProviderImpl = new ReconfigurableTracerProvider();
+    final ReconfigurableEventLoggerProvider eventLoggerProviderImpl = new ReconfigurableEventLoggerProvider();
+    final ReconfigurableLoggerProvider loggerProviderImpl = new ReconfigurableLoggerProvider();
 
     /**
      * Initialize as NoOp
@@ -61,15 +74,15 @@ public class ReconfigurableOpenTelemetry implements OpenTelemetry, Closeable {
         try {
             GlobalOpenTelemetry.set(this);
         } catch (IllegalStateException e) {
-            LOGGER.log(Level.WARNING, "GlobalOpenTelemetry already set", e);
+            logger.log(Level.WARNING, "GlobalOpenTelemetry already set", e);
         }
         try {
             GlobalEventLoggerProvider.set(eventLoggerProviderImpl);
         } catch (IllegalStateException e) {
-            LOGGER.log(Level.WARNING, "GlobalEventLoggerProvider already set", e);
+            logger.log(Level.WARNING, "GlobalEventLoggerProvider already set", e);
         }
 
-        LOGGER.log(Level.FINE, () -> "Initialize " +
+        logger.log(Level.FINE, () -> "Initialize " +
             "GlobalOpenTelemetry with instance " + Optional.of(GlobalOpenTelemetry.get()).map(ot -> ot + "@" + System.identityHashCode(ot)) + "and " +
             "GlobalEventLoggerProvide with instance " + Optional.of(GlobalEventLoggerProvider.get()).map(elp -> elp + "@" + System.identityHashCode(elp)));
     }
@@ -81,7 +94,7 @@ public class ReconfigurableOpenTelemetry implements OpenTelemetry, Closeable {
             openTelemetryProperties.containsKey("otel.metrics.exporter") ||
             openTelemetryProperties.containsKey("otel.logs.exporter")) {
 
-            LOGGER.log(Level.FINE, "initializeOtlp");
+            logger.log(Level.FINE, "initializeOtlp");
 
             // OPENTELEMETRY SDK
             OpenTelemetrySdk openTelemetrySdk = AutoConfiguredOpenTelemetrySdk
@@ -118,7 +131,7 @@ public class ReconfigurableOpenTelemetry implements OpenTelemetry, Closeable {
             // EVENT LOGGER PROVIDER
             eventLoggerProviderImpl.setDelegate(SdkEventLoggerProvider.create(openTelemetrySdk.getSdkLoggerProvider()));
 
-            LOGGER.log(Level.INFO, () -> "OpenTelemetry initialized: " + OtelUtils.prettyPrintOtelSdkConfig(this.config, this.resource));
+            logger.log(Level.INFO, () -> "OpenTelemetry initialized: " + OtelUtils.prettyPrintOtelSdkConfig(this.config, this.resource));
 
         } else { // NO-OP
 
@@ -130,7 +143,7 @@ public class ReconfigurableOpenTelemetry implements OpenTelemetry, Closeable {
             this.loggerProviderImpl.setDelegate(LoggerProvider.noop());
             this.eventLoggerProviderImpl.setDelegate(EventLoggerProvider.noop());
 
-            LOGGER.log(Level.INFO, "OpenTelemetry initialized as NoOp");
+            logger.log(Level.INFO, "OpenTelemetry initialized as NoOp");
         }
 
         postOpenTelemetrySdkConfiguration();
@@ -138,21 +151,21 @@ public class ReconfigurableOpenTelemetry implements OpenTelemetry, Closeable {
 
     @Override
     public void close() {
-        LOGGER.log(Level.FINE, "Shutdown...");
+        logger.log(Level.FINE, "Shutdown...");
 
         // METER PROVIDER
         meterProviderImpl.close();
 
         // OTEL LIFECYCLE LISTENERS
-        LOGGER.log(Level.FINE, () -> "Shutdown Otel SDK on components: " + ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream().sorted().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
+        logger.log(Level.FINE, () -> "Shutdown Otel SDK on components: " + ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream().sorted().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
         ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream().sorted().forEachOrdered(OpenTelemetryLifecycleListener::beforeSdkShutdown);
 
         // OTEL SDK
         if (this.openTelemetryImpl instanceof OpenTelemetrySdk) {
-            LOGGER.log(Level.FINE, () -> "Shutdown OTel SDK...");
+            logger.log(Level.FINE, () -> "Shutdown OTel SDK...");
             CompletableResultCode shutdown = ((OpenTelemetrySdk) this.openTelemetryImpl).shutdown();
             if (!shutdown.join(1, TimeUnit.SECONDS).isSuccess()) {
-                LOGGER.log(Level.WARNING, "Failure to shutdown OTel SDK");
+                logger.log(Level.WARNING, "Failure to shutdown OTel SDK");
             }
         }
         GlobalOpenTelemetry.resetForTest();

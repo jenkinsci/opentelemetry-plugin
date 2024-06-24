@@ -48,7 +48,9 @@ public class ServletFilterInitializer implements OpenTelemetryLifecycleListener 
             traceContextServletFilter = new TraceContextServletFilter();
             addToPluginServletFilter(traceContextServletFilter);
         } else {
-            logger.log(Level.INFO, () -> "Jenkins Remote Span disabled");
+            logger.log(Level.INFO, () -> "Jenkins trace context propagation disabled on inbound HTTP requests (eg. build triggers). " +
+                "To enable it, set the property " +
+                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED + " to true.");
         }
         // TODO support live reload of the config flag
         boolean jenkinsWebInstrumentationEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED)).orElse(true);
@@ -58,7 +60,8 @@ public class ServletFilterInitializer implements OpenTelemetryLifecycleListener 
             staplerInstrumentationServletFilter = new StaplerInstrumentationServletFilter(capturedRequestParameters, tracer);
             addToPluginServletFilter(staplerInstrumentationServletFilter);
         } else {
-            logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled");
+            logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled. To enable it, set the property " +
+                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED + " to true.");
         }
 
 
