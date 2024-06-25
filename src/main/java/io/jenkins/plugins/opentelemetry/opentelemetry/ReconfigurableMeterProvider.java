@@ -31,10 +31,13 @@ import io.opentelemetry.api.metrics.ObservableMeasurement;
 import io.opentelemetry.context.Context;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
 /**
@@ -47,9 +50,12 @@ import java.util.function.Consumer;
  * {@link ReconfigurableMeterProvider#setDelegate(MeterProvider)} is invoked.
  * </p>
  */
+@ThreadSafe
 class ReconfigurableMeterProvider implements MeterProvider {
 
     private MeterProvider delegate;
+
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private final ConcurrentMap<InstrumentationScope, ReconfigurableMeter> meters = new ConcurrentHashMap<>();
 
@@ -63,61 +69,98 @@ class ReconfigurableMeterProvider implements MeterProvider {
 
     @Override
     public synchronized Meter get(String instrumentationScopeName) {
-        return meters.computeIfAbsent(
-            new InstrumentationScope(instrumentationScopeName),
-            instrumentationScope -> new ReconfigurableMeter(delegate.get(instrumentationScope.instrumentationScopeName)));
+        lock.readLock().lock();
+        try {
+            return meters.computeIfAbsent(
+                new InstrumentationScope(instrumentationScopeName),
+                instrumentationScope -> new ReconfigurableMeter(delegate.get(instrumentationScope.instrumentationScopeName), lock));
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     public synchronized void setDelegate(MeterProvider delegate) {
-        this.delegate = delegate;
-        meters.forEach((instrumentationScope, reconfigurableMeter) -> {
-            MeterBuilder meterBuilder = delegate.meterBuilder(instrumentationScope.instrumentationScopeName);
-            Optional.ofNullable(instrumentationScope.instrumentationScopeVersion).ifPresent(meterBuilder::setInstrumentationVersion);
-            Optional.ofNullable(instrumentationScope.schemaUrl).ifPresent(meterBuilder::setSchemaUrl);
-            reconfigurableMeter.setDelegate(meterBuilder.build());
-        });
+        lock.writeLock().lock();
+        try {
+            this.delegate = delegate;
+            meters.forEach((instrumentationScope, reconfigurableMeter) -> {
+                MeterBuilder meterBuilder = delegate.meterBuilder(instrumentationScope.instrumentationScopeName);
+                Optional.ofNullable(instrumentationScope.instrumentationScopeVersion).ifPresent(meterBuilder::setInstrumentationVersion);
+                Optional.ofNullable(instrumentationScope.schemaUrl).ifPresent(meterBuilder::setSchemaUrl);
+                reconfigurableMeter.setDelegate(meterBuilder.build());
+            });
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     @Override
     public MeterBuilder meterBuilder(String instrumentationScopeName) {
-        return new ReconfigurableMeterBuilder(delegate.meterBuilder(instrumentationScopeName), instrumentationScopeName);
+        lock.readLock().lock();
+        try {
+            return new ReconfigurableMeterBuilder(delegate.meterBuilder(instrumentationScopeName), instrumentationScopeName, lock);
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
-    public synchronized MeterProvider getDelegate() {
-        return delegate;
+    public MeterProvider getDelegate() {
+        lock.readLock().lock();
+        try {
+            return delegate;
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
 
     @VisibleForTesting
     protected class ReconfigurableMeterBuilder implements MeterBuilder {
+        final ReadWriteLock lock;
         MeterBuilder delegate;
         String instrumentationScopeName;
         String schemaUrl;
         String instrumentationScopeVersion;
 
-        public ReconfigurableMeterBuilder(MeterBuilder delegate, String instrumentationScopeName) {
+        public ReconfigurableMeterBuilder(MeterBuilder delegate, String instrumentationScopeName, ReadWriteLock lock) {
             this.delegate = Objects.requireNonNull(delegate);
             this.instrumentationScopeName = Objects.requireNonNull(instrumentationScopeName);
+            this.lock = lock;
         }
 
         @Override
         public MeterBuilder setSchemaUrl(String schemaUrl) {
-            delegate.setSchemaUrl(schemaUrl);
-            this.schemaUrl = schemaUrl;
-            return this;
+            lock.readLock().lock();
+            try {
+                delegate.setSchemaUrl(schemaUrl);
+                this.schemaUrl = schemaUrl;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public MeterBuilder setInstrumentationVersion(String instrumentationScopeVersion) {
-            delegate.setInstrumentationVersion(instrumentationScopeVersion);
-            this.instrumentationScopeVersion = instrumentationScopeVersion;
-            return this;
+            lock.readLock().lock();
+            try {
+                delegate.setInstrumentationVersion(instrumentationScopeVersion);
+                this.instrumentationScopeVersion = instrumentationScopeVersion;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public Meter build() {
-            InstrumentationScope instrumentationScope = new InstrumentationScope(instrumentationScopeName, schemaUrl, instrumentationScopeVersion);
-            return meters.computeIfAbsent(instrumentationScope, k -> new ReconfigurableMeter(delegate.build()));
+            lock.readLock().lock();
+            try {
+                InstrumentationScope instrumentationScope = new InstrumentationScope(instrumentationScopeName, schemaUrl, instrumentationScopeVersion);
+                return meters.computeIfAbsent(instrumentationScope, k -> new ReconfigurableMeter(delegate.build(), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
@@ -206,8 +249,10 @@ class ReconfigurableMeterProvider implements MeterProvider {
         }
     }
 
+    @ThreadSafe
     @VisibleForTesting
-    protected class ReconfigurableMeter implements Meter {
+    protected static class ReconfigurableMeter implements Meter {
+        final ReadWriteLock lock;
         Meter delegate;
         // long counters
         final ConcurrentMap<InstrumentKey, ReconfigurableLongCounter> longCounters = new ConcurrentHashMap<>();
@@ -225,20 +270,27 @@ class ReconfigurableMeterProvider implements MeterProvider {
         final ConcurrentMap<ObservableDoubleMeasurementCallbackKey, ReconfigurableObservableDoubleGauge> observableDoubleGauges = new ConcurrentHashMap<>();
         final ConcurrentMap<InstrumentKey, ReconfigurableObservableDoubleMeasurement> observableDoubleGaugeMeasurements = new ConcurrentHashMap<>();
 
-        public ReconfigurableMeter(Meter delegate) {
+        public ReconfigurableMeter(Meter delegate, ReadWriteLock lock) {
             this.delegate = delegate;
+            this.lock = lock;
         }
 
         @Override
         public BatchCallback batchCallback(Runnable callback, ObservableMeasurement observableMeasurement, ObservableMeasurement... additionalMeasurements) {
-            return Meter.super.batchCallback(callback, observableMeasurement, additionalMeasurements);
+            throw new UnsupportedOperationException("Not implemented");
         }
 
         @Override
         public DoubleGaugeBuilder gaugeBuilder(String name) {
-            return new ReconfigurableDoubleGaugeBuilder(delegate.gaugeBuilder(name), name,
-                doubleGauges, observableDoubleGauges, observableDoubleGaugeMeasurements,
-                longGauges, observableLongGauges, observableLongGaugeMeasurements);
+            lock.readLock().lock();
+            try {
+                return new ReconfigurableDoubleGaugeBuilder(delegate.gaugeBuilder(name), name,
+                    doubleGauges, observableDoubleGauges, observableDoubleGaugeMeasurements,
+                    longGauges, observableLongGauges, observableLongGaugeMeasurements,
+                    lock);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
@@ -253,114 +305,151 @@ class ReconfigurableMeterProvider implements MeterProvider {
 
         @Override
         public LongCounterBuilder counterBuilder(String name) {
-            return new ReconfigurableLongCounterBuilder(delegate.counterBuilder(name), name, longCounters, doubleCounters, observableLongCounters, observableLongCounterMeasurements);
+            lock.readLock().lock();
+            try {
+                return new ReconfigurableLongCounterBuilder(delegate.counterBuilder(name), name, longCounters, doubleCounters, observableLongCounters, observableLongCounterMeasurements, lock);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         public synchronized void setDelegate(Meter delegate) {
-            this.delegate = delegate;
-            // Long counters
-            this.longCounters.forEach((counterKey, reconfigurableLongCounter) -> {
-                LongCounterBuilder longCounterBuilder = delegate.counterBuilder(counterKey.name);
-                Optional.ofNullable(counterKey.description).ifPresent(longCounterBuilder::setDescription);
-                Optional.ofNullable(counterKey.unit).ifPresent(longCounterBuilder::setUnit);
-                reconfigurableLongCounter.setDelegate(longCounterBuilder.build());
-            });
-            this.observableLongCounters.forEach((callbackKey, reconfigurableObservableLongCounter) -> {
-                LongCounterBuilder longCounterBuilder = delegate.counterBuilder(callbackKey.name);
-                Optional.ofNullable(callbackKey.description).ifPresent(longCounterBuilder::setDescription);
-                Optional.ofNullable(callbackKey.unit).ifPresent(longCounterBuilder::setUnit);
-                reconfigurableObservableLongCounter.setDelegate(longCounterBuilder.buildWithCallback(callbackKey.callback));
-            });
-            this.observableLongCounterMeasurements.forEach((counterKey, reconfigurableObservableLongMeasurement) -> {
-                LongCounterBuilder longCounterBuilder = delegate.counterBuilder(counterKey.name);
-                Optional.ofNullable(counterKey.description).ifPresent(longCounterBuilder::setDescription);
-                Optional.ofNullable(counterKey.unit).ifPresent(longCounterBuilder::setUnit);
-                reconfigurableObservableLongMeasurement.setDelegate(longCounterBuilder.buildObserver());
-            });
+            lock.writeLock().lock();
+            try {
+                this.delegate = delegate;
+                // Long counters
+                this.longCounters.forEach((counterKey, reconfigurableLongCounter) -> {
+                    LongCounterBuilder longCounterBuilder = delegate.counterBuilder(counterKey.name);
+                    Optional.ofNullable(counterKey.description).ifPresent(longCounterBuilder::setDescription);
+                    Optional.ofNullable(counterKey.unit).ifPresent(longCounterBuilder::setUnit);
+                    reconfigurableLongCounter.setDelegate(longCounterBuilder.build());
+                });
+                this.observableLongCounters.forEach((callbackKey, reconfigurableObservableLongCounter) -> {
+                    LongCounterBuilder longCounterBuilder = delegate.counterBuilder(callbackKey.name);
+                    Optional.ofNullable(callbackKey.description).ifPresent(longCounterBuilder::setDescription);
+                    Optional.ofNullable(callbackKey.unit).ifPresent(longCounterBuilder::setUnit);
+                    reconfigurableObservableLongCounter.setDelegate(longCounterBuilder.buildWithCallback(callbackKey.callback));
+                });
+                this.observableLongCounterMeasurements.forEach((counterKey, reconfigurableObservableLongMeasurement) -> {
+                    LongCounterBuilder longCounterBuilder = delegate.counterBuilder(counterKey.name);
+                    Optional.ofNullable(counterKey.description).ifPresent(longCounterBuilder::setDescription);
+                    Optional.ofNullable(counterKey.unit).ifPresent(longCounterBuilder::setUnit);
+                    reconfigurableObservableLongMeasurement.setDelegate(longCounterBuilder.buildObserver());
+                });
 
-            // Double counters
-            this.doubleCounters.forEach((counterKey, reconfigurableDoubleCounter) -> {
-                DoubleCounterBuilder doubleCounterBuilder = delegate.counterBuilder(counterKey.name).ofDoubles();
-                Optional.ofNullable(counterKey.description).ifPresent(doubleCounterBuilder::setDescription);
-                Optional.ofNullable(counterKey.unit).ifPresent(doubleCounterBuilder::setUnit);
-                reconfigurableDoubleCounter.setDelegate(doubleCounterBuilder.build());
-            });
+                // Double counters
+                this.doubleCounters.forEach((counterKey, reconfigurableDoubleCounter) -> {
+                    DoubleCounterBuilder doubleCounterBuilder = delegate.counterBuilder(counterKey.name).ofDoubles();
+                    Optional.ofNullable(counterKey.description).ifPresent(doubleCounterBuilder::setDescription);
+                    Optional.ofNullable(counterKey.unit).ifPresent(doubleCounterBuilder::setUnit);
+                    reconfigurableDoubleCounter.setDelegate(doubleCounterBuilder.build());
+                });
 
-            // Double gauges
-            this.doubleGauges.forEach((counterKey, reconfigurableDoubleGauge) -> {
-                DoubleGaugeBuilder doubleGaugeBuilder = delegate.gaugeBuilder(counterKey.name);
-                Optional.ofNullable(counterKey.description).ifPresent(doubleGaugeBuilder::setDescription);
-                Optional.ofNullable(counterKey.unit).ifPresent(doubleGaugeBuilder::setUnit);
-                reconfigurableDoubleGauge.setDelegate(doubleGaugeBuilder.build());
-            });
-            this.observableDoubleGauges.forEach((callbackKey, reconfigurableObservableDoubleGauge) -> {
-                DoubleGaugeBuilder doubleGaugeBuilder = delegate.gaugeBuilder(callbackKey.name);
-                Optional.ofNullable(callbackKey.description).ifPresent(doubleGaugeBuilder::setDescription);
-                Optional.ofNullable(callbackKey.unit).ifPresent(doubleGaugeBuilder::setUnit);
-                reconfigurableObservableDoubleGauge.setDelegate(doubleGaugeBuilder.buildWithCallback(callbackKey.callback));
-            });
-            this.observableDoubleGaugeMeasurements.forEach((counterKey, reconfigurableObservableDoubleMeasurement) -> {
-                DoubleGaugeBuilder doubleGaugeBuilder = delegate.gaugeBuilder(counterKey.name);
-                Optional.ofNullable(counterKey.description).ifPresent(doubleGaugeBuilder::setDescription);
-                Optional.ofNullable(counterKey.unit).ifPresent(doubleGaugeBuilder::setUnit);
-                reconfigurableObservableDoubleMeasurement.setDelegate(doubleGaugeBuilder.buildObserver());
-            });
+                // Double gauges
+                this.doubleGauges.forEach((counterKey, reconfigurableDoubleGauge) -> {
+                    DoubleGaugeBuilder doubleGaugeBuilder = delegate.gaugeBuilder(counterKey.name);
+                    Optional.ofNullable(counterKey.description).ifPresent(doubleGaugeBuilder::setDescription);
+                    Optional.ofNullable(counterKey.unit).ifPresent(doubleGaugeBuilder::setUnit);
+                    reconfigurableDoubleGauge.setDelegate(doubleGaugeBuilder.build());
+                });
+                this.observableDoubleGauges.forEach((callbackKey, reconfigurableObservableDoubleGauge) -> {
+                    DoubleGaugeBuilder doubleGaugeBuilder = delegate.gaugeBuilder(callbackKey.name);
+                    Optional.ofNullable(callbackKey.description).ifPresent(doubleGaugeBuilder::setDescription);
+                    Optional.ofNullable(callbackKey.unit).ifPresent(doubleGaugeBuilder::setUnit);
+                    reconfigurableObservableDoubleGauge.setDelegate(doubleGaugeBuilder.buildWithCallback(callbackKey.callback));
+                });
+                this.observableDoubleGaugeMeasurements.forEach((counterKey, reconfigurableObservableDoubleMeasurement) -> {
+                    DoubleGaugeBuilder doubleGaugeBuilder = delegate.gaugeBuilder(counterKey.name);
+                    Optional.ofNullable(counterKey.description).ifPresent(doubleGaugeBuilder::setDescription);
+                    Optional.ofNullable(counterKey.unit).ifPresent(doubleGaugeBuilder::setUnit);
+                    reconfigurableObservableDoubleMeasurement.setDelegate(doubleGaugeBuilder.buildObserver());
+                });
 
-            // Long gauges
-            this.longGauges.forEach((counterKey, reconfigurableLongGauge) -> {
-                LongGaugeBuilder longGaugeBuilder = delegate.gaugeBuilder(counterKey.name).ofLongs();
-                Optional.ofNullable(counterKey.description).ifPresent(longGaugeBuilder::setDescription);
-                Optional.ofNullable(counterKey.unit).ifPresent(longGaugeBuilder::setUnit);
-                reconfigurableLongGauge.setDelegate(longGaugeBuilder.build());
-            });
-            this.observableLongGauges.forEach((callbackKey, reconfigurableObservableLongGauge) -> {
-                LongGaugeBuilder longGaugeBuilder = delegate.gaugeBuilder(callbackKey.name).ofLongs();
-                Optional.ofNullable(callbackKey.description).ifPresent(longGaugeBuilder::setDescription);
-                Optional.ofNullable(callbackKey.unit).ifPresent(longGaugeBuilder::setUnit);
-                reconfigurableObservableLongGauge.setDelegate(longGaugeBuilder.buildWithCallback(callbackKey.callback));
-            });
-            this.observableLongGaugeMeasurements.forEach((counterKey, reconfigurableObservableLongMeasurement) -> {
-                LongGaugeBuilder longGaugeBuilder = delegate.gaugeBuilder(counterKey.name).ofLongs();
-                Optional.ofNullable(counterKey.description).ifPresent(longGaugeBuilder::setDescription);
-                Optional.ofNullable(counterKey.unit).ifPresent(longGaugeBuilder::setUnit);
-                reconfigurableObservableLongMeasurement.setDelegate(longGaugeBuilder.buildObserver());
-            });
-
+                // Long gauges
+                this.longGauges.forEach((counterKey, reconfigurableLongGauge) -> {
+                    LongGaugeBuilder longGaugeBuilder = delegate.gaugeBuilder(counterKey.name).ofLongs();
+                    Optional.ofNullable(counterKey.description).ifPresent(longGaugeBuilder::setDescription);
+                    Optional.ofNullable(counterKey.unit).ifPresent(longGaugeBuilder::setUnit);
+                    reconfigurableLongGauge.setDelegate(longGaugeBuilder.build());
+                });
+                this.observableLongGauges.forEach((callbackKey, reconfigurableObservableLongGauge) -> {
+                    LongGaugeBuilder longGaugeBuilder = delegate.gaugeBuilder(callbackKey.name).ofLongs();
+                    Optional.ofNullable(callbackKey.description).ifPresent(longGaugeBuilder::setDescription);
+                    Optional.ofNullable(callbackKey.unit).ifPresent(longGaugeBuilder::setUnit);
+                    reconfigurableObservableLongGauge.setDelegate(longGaugeBuilder.buildWithCallback(callbackKey.callback));
+                });
+                this.observableLongGaugeMeasurements.forEach((counterKey, reconfigurableObservableLongMeasurement) -> {
+                    LongGaugeBuilder longGaugeBuilder = delegate.gaugeBuilder(counterKey.name).ofLongs();
+                    Optional.ofNullable(counterKey.description).ifPresent(longGaugeBuilder::setDescription);
+                    Optional.ofNullable(counterKey.unit).ifPresent(longGaugeBuilder::setUnit);
+                    reconfigurableObservableLongMeasurement.setDelegate(longGaugeBuilder.buildObserver());
+                });
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
 
         public synchronized Meter getDelegate() {
-            return delegate;
+            lock.readLock().lock();
+            try {
+                return delegate;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
     @VisibleForTesting
     protected static class ReconfigurableObservableLongMeasurement implements ObservableLongMeasurement {
+        final ReadWriteLock lock;
         private ObservableLongMeasurement delegate;
 
-        ReconfigurableObservableLongMeasurement(ObservableLongMeasurement delegate) {
+        ReconfigurableObservableLongMeasurement(ObservableLongMeasurement delegate, ReadWriteLock lock) {
             this.delegate = delegate;
+            this.lock = lock;
         }
 
         @Override
         public void record(long value) {
-            delegate.record(value);
+            lock.readLock().lock();
+            try {
+                delegate.record(value);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void record(long value, Attributes attributes) {
-            delegate.record(value, attributes);
+            lock.readLock().lock();
+            try {
+                delegate.record(value, attributes);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         public ObservableLongMeasurement getDelegate() {
-            return delegate;
+            lock.readLock().lock();
+            try {
+                return delegate;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         public void setDelegate(ObservableLongMeasurement delegate) {
-            this.delegate = delegate;
+            lock.writeLock().lock();
+            try {
+                this.delegate = delegate;
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
     }
 
     static class ReconfigurableLongCounterBuilder implements LongCounterBuilder {
+        final ReadWriteLock lock;
         LongCounterBuilder delegate;
         final ConcurrentMap<InstrumentKey, ReconfigurableLongCounter> longCounters;
         final ConcurrentMap<InstrumentKey, ReconfigurableDoubleCounter> doubleCounters;
@@ -376,138 +465,228 @@ class ReconfigurableMeterProvider implements MeterProvider {
                                          ConcurrentMap<InstrumentKey, ReconfigurableLongCounter> longCounters,
                                          ConcurrentMap<InstrumentKey, ReconfigurableDoubleCounter> doubleCounters,
                                          ConcurrentMap<ObservableLongMeasurementCallbackKey, ReconfigurableObservableLongCounter> observableLongCounters,
-                                         ConcurrentMap<InstrumentKey, ReconfigurableObservableLongMeasurement> observableLongMeasurements) {
+                                         ConcurrentMap<InstrumentKey, ReconfigurableObservableLongMeasurement> observableLongMeasurements,
+                                         ReadWriteLock lock) {
             this.delegate = delegate;
             this.name = name;
             this.longCounters = longCounters;
             this.doubleCounters = doubleCounters;
             this.observableLongCounters = observableLongCounters;
             this.observableLongMeasurements = observableLongMeasurements;
+
+            this.lock = lock;
         }
 
         @Override
         public LongCounterBuilder setDescription(String description) {
-            delegate.setDescription(description);
-            this.description = description;
-            return this;
+            lock.readLock().lock();
+            try {
+                delegate.setDescription(description);
+                this.description = description;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public LongCounterBuilder setUnit(String unit) {
-            delegate.setUnit(unit);
-            this.unit = unit;
-            return this;
+            lock.readLock().lock();
+            try {
+                delegate.setUnit(unit);
+                this.unit = unit;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public DoubleCounterBuilder ofDoubles() {
-            ReconfigurableDoubleCounterBuilder reconfigurableDoubleCounterBuilder = new ReconfigurableDoubleCounterBuilder(delegate.ofDoubles(), name, doubleCounters);
-            Optional.ofNullable(description).ifPresent(reconfigurableDoubleCounterBuilder::setDescription);
-            Optional.ofNullable(unit).ifPresent(reconfigurableDoubleCounterBuilder::setUnit);
-            return reconfigurableDoubleCounterBuilder;
+            lock.readLock().lock();
+            try {
+                ReconfigurableDoubleCounterBuilder reconfigurableDoubleCounterBuilder = new ReconfigurableDoubleCounterBuilder(delegate.ofDoubles(), name, doubleCounters, lock);
+                Optional.ofNullable(description).ifPresent(reconfigurableDoubleCounterBuilder::setDescription);
+                Optional.ofNullable(unit).ifPresent(reconfigurableDoubleCounterBuilder::setUnit);
+                return reconfigurableDoubleCounterBuilder;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public LongCounter build() {
-            InstrumentKey counterKey = new InstrumentKey(name, description, unit);
-            return longCounters.computeIfAbsent(counterKey, k -> new ReconfigurableLongCounter(delegate.build()));
+            lock.readLock().lock();
+            try {
+                InstrumentKey counterKey = new InstrumentKey(name, description, unit);
+                return longCounters.computeIfAbsent(counterKey, k -> new ReconfigurableLongCounter(delegate.build(), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public ObservableLongCounter buildWithCallback(Consumer<ObservableLongMeasurement> callback) {
-            ObservableLongMeasurementCallbackKey key = new ObservableLongMeasurementCallbackKey(name, description, unit, callback);
-            return this.observableLongCounters.computeIfAbsent(key, k -> new ReconfigurableObservableLongCounter(delegate.buildWithCallback(callback)));
+            lock.readLock().lock();
+            try {
+                ObservableLongMeasurementCallbackKey key = new ObservableLongMeasurementCallbackKey(name, description, unit, callback);
+                return this.observableLongCounters.computeIfAbsent(key, k -> new ReconfigurableObservableLongCounter(delegate.buildWithCallback(callback), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public ObservableLongMeasurement buildObserver() {
-            InstrumentKey counterKey = new InstrumentKey(name, description, unit);
-            return this.observableLongMeasurements.computeIfAbsent(counterKey, k -> new ReconfigurableObservableLongMeasurement(delegate.buildObserver()));
+            lock.readLock().lock();
+            try {
+                InstrumentKey counterKey = new InstrumentKey(name, description, unit);
+                return this.observableLongMeasurements.computeIfAbsent(counterKey, k -> new ReconfigurableObservableLongMeasurement(delegate.buildObserver(), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
     @VisibleForTesting
+    @ThreadSafe
     protected static class ReconfigurableLongCounter implements LongCounter {
+        final ReadWriteLock lock;
         private LongCounter delegate;
 
-        ReconfigurableLongCounter(LongCounter delegate) {
+        ReconfigurableLongCounter(LongCounter delegate, ReadWriteLock lock) {
             this.delegate = delegate;
+            this.lock = lock;
         }
 
         @Override
         public void add(long increment) {
-            delegate.add(increment);
+            lock.readLock().lock();
+            try {
+                delegate.add(increment);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void add(long value, Attributes attributes) {
-            delegate.add(value, attributes);
+            lock.readLock().lock();
+            try {
+                delegate.add(value, attributes);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void add(long value, Attributes attributes, Context context) {
-            delegate.add(value, attributes, context);
+            lock.readLock().lock();
+            try {
+                delegate.add(value, attributes, context);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         public void setDelegate(LongCounter delegate) {
-            this.delegate = delegate;
+            lock.writeLock().lock();
+            try {
+                this.delegate = delegate;
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
 
         public LongCounter getDelegate() {
-            return delegate;
+            lock.readLock().lock();
+            try {
+                return delegate;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
     @VisibleForTesting
     protected static class ReconfigurableObservableLongCounter implements ObservableLongCounter {
+        final ReadWriteLock lock;
         ObservableLongCounter delegate;
 
-        ReconfigurableObservableLongCounter(ObservableLongCounter delegate) {
+        ReconfigurableObservableLongCounter(ObservableLongCounter delegate, ReadWriteLock lock) {
             this.delegate = delegate;
+            this.lock = lock;
         }
 
         public void setDelegate(ObservableLongCounter delegate) {
-            this.delegate = delegate;
+            lock.writeLock().lock();
+            try {
+                this.delegate = delegate;
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
 
         @Override
         public void close() {
-            delegate.close();
+            lock.readLock().lock();
+            try {
+                delegate.close();
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
     }
 
     static class ReconfigurableDoubleCounterBuilder implements DoubleCounterBuilder {
+        final ReadWriteLock lock;
         DoubleCounterBuilder delegate;
         final ConcurrentMap<InstrumentKey, ReconfigurableDoubleCounter> doubleCounters;
         final String name;
         String description;
         String unit;
 
-        ReconfigurableDoubleCounterBuilder(DoubleCounterBuilder delegate, String name, ConcurrentMap<InstrumentKey, ReconfigurableDoubleCounter> doubleCounters) {
+        ReconfigurableDoubleCounterBuilder(DoubleCounterBuilder delegate, String name, ConcurrentMap<InstrumentKey, ReconfigurableDoubleCounter> doubleCounters, ReadWriteLock lock) {
             this.delegate = delegate;
             this.name = name;
             this.doubleCounters = doubleCounters;
+            this.lock = lock;
         }
 
         @Override
         public DoubleCounterBuilder setDescription(String description) {
-            delegate.setDescription(description);
-            this.description = description;
-            return this;
+            lock.readLock().lock();
+            try {
+                delegate.setDescription(description);
+                this.description = description;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public DoubleCounterBuilder setUnit(String unit) {
-            delegate.setUnit(unit);
-            this.unit = unit;
-            return this;
+            lock.readLock().lock();
+            try {
+                delegate.setUnit(unit);
+                this.unit = unit;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public DoubleCounter build() {
-            InstrumentKey counterKey = new InstrumentKey(name, description, unit);
-            return doubleCounters.computeIfAbsent(counterKey, k -> new ReconfigurableDoubleCounter(delegate.build()));
+            lock.readLock().lock();
+            try {
+                InstrumentKey counterKey = new InstrumentKey(name, description, unit);
+                return doubleCounters.computeIfAbsent(counterKey, k -> new ReconfigurableDoubleCounter(delegate.build(), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
@@ -522,39 +701,68 @@ class ReconfigurableMeterProvider implements MeterProvider {
     }
 
     @VisibleForTesting
+    @ThreadSafe
     protected static class ReconfigurableDoubleCounter implements DoubleCounter {
+        final ReadWriteLock lock;
         private DoubleCounter delegate;
 
-        ReconfigurableDoubleCounter(DoubleCounter delegate) {
+        ReconfigurableDoubleCounter(DoubleCounter delegate, ReadWriteLock lock) {
             this.delegate = delegate;
+            this.lock = lock;
         }
 
         @Override
         public void add(double increment) {
-            delegate.add(increment);
+            lock.readLock().lock();
+            try {
+                delegate.add(increment);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void add(double value, Attributes attributes) {
-            delegate.add(value, attributes);
+            lock.readLock().lock();
+            try {
+                delegate.add(value, attributes);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void add(double value, Attributes attributes, Context context) {
-            delegate.add(value, attributes, context);
+            lock.readLock().lock();
+            try {
+                delegate.add(value, attributes, context);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         public void setDelegate(DoubleCounter delegate) {
-            this.delegate = delegate;
+            lock.writeLock().lock();
+            try {
+                this.delegate = delegate;
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
 
         public DoubleCounter getDelegate() {
-            return delegate;
+            lock.readLock().lock();
+            try {
+                return delegate;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
 
     static class ReconfigurableDoubleGaugeBuilder implements DoubleGaugeBuilder {
+        final ReadWriteLock lock;
         DoubleGaugeBuilder delegate;
         final ConcurrentMap<InstrumentKey, ReconfigurableDoubleGauge> doubleGauges;
         final ConcurrentMap<ObservableDoubleMeasurementCallbackKey, ReconfigurableObservableDoubleGauge> observableDoubleGauges;
@@ -562,7 +770,6 @@ class ReconfigurableMeterProvider implements MeterProvider {
         final ConcurrentMap<InstrumentKey, ReconfigurableLongGauge> longGauges;
         final ConcurrentMap<ObservableLongMeasurementCallbackKey, ReconfigurableObservableLongGauge> observableLongGauges;
         final ConcurrentMap<InstrumentKey, ReconfigurableObservableLongMeasurement> observableLongMeasurements;
-
 
         final String name;
         String description;
@@ -572,7 +779,8 @@ class ReconfigurableMeterProvider implements MeterProvider {
             DoubleGaugeBuilder delegate, String name, ConcurrentMap<InstrumentKey,
             ReconfigurableDoubleGauge> doubleGauges,
             ConcurrentMap<ObservableDoubleMeasurementCallbackKey, ReconfigurableObservableDoubleGauge> observableDoubleGauges, ConcurrentMap<InstrumentKey, ReconfigurableObservableDoubleMeasurement> observableDoubleMeasurements, ConcurrentMap<InstrumentKey, ReconfigurableLongGauge> longGauges, ConcurrentMap<ObservableLongMeasurementCallbackKey, ReconfigurableObservableLongGauge> observableLongGauges,
-            ConcurrentMap<InstrumentKey, ReconfigurableObservableLongMeasurement> observableLongMeasurements) {
+            ConcurrentMap<InstrumentKey, ReconfigurableObservableLongMeasurement> observableLongMeasurements,
+            ReadWriteLock lock) {
 
             this.delegate = delegate;
             this.name = name;
@@ -582,51 +790,84 @@ class ReconfigurableMeterProvider implements MeterProvider {
             this.observableLongGauges = observableLongGauges;
             this.observableLongMeasurements = observableLongMeasurements;
             this.longGauges = longGauges;
+
+            this.lock = lock;
         }
 
         @Override
         public DoubleGaugeBuilder setDescription(String description) {
-            delegate.setDescription(description);
-            this.description = description;
-            return this;
+            lock.readLock().lock();
+            try {
+                delegate.setDescription(description);
+                this.description = description;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public DoubleGaugeBuilder setUnit(String unit) {
+            lock.readLock().lock();
+            try {
             delegate.setUnit(unit);
             this.unit = unit;
             return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public LongGaugeBuilder ofLongs() {
-            ReconfigurableLongGaugeBuilder reconfigurableLongCounterBuilder = new ReconfigurableLongGaugeBuilder(delegate.ofLongs(), name, longGauges, observableLongGauges, observableLongMeasurements);
+            lock.readLock().lock();
+            try {
+            ReconfigurableLongGaugeBuilder reconfigurableLongCounterBuilder = new ReconfigurableLongGaugeBuilder(delegate.ofLongs(), name, longGauges, observableLongGauges, observableLongMeasurements, lock);
             Optional.ofNullable(description).ifPresent(reconfigurableLongCounterBuilder::setDescription);
             Optional.ofNullable(unit).ifPresent(reconfigurableLongCounterBuilder::setUnit);
             return reconfigurableLongCounterBuilder;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public DoubleGauge build() {
+            lock.readLock().lock();
+            try {
             InstrumentKey gaugeKey = new InstrumentKey(name, description, unit);
-            return doubleGauges.computeIfAbsent(gaugeKey, k -> new ReconfigurableDoubleGauge(delegate.build()));
+            return doubleGauges.computeIfAbsent(gaugeKey, k -> new ReconfigurableDoubleGauge(delegate.build(), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public ObservableDoubleGauge buildWithCallback(Consumer<ObservableDoubleMeasurement> callback) {
+            lock.readLock().lock();
+            try {
             ObservableDoubleMeasurementCallbackKey key = new ObservableDoubleMeasurementCallbackKey(name, description, unit, callback);
-            return this.observableDoubleGauges.computeIfAbsent(key, k -> new ReconfigurableObservableDoubleGauge(delegate.buildWithCallback(callback)));
+            return this.observableDoubleGauges.computeIfAbsent(key, k -> new ReconfigurableObservableDoubleGauge(delegate.buildWithCallback(callback), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public ObservableDoubleMeasurement buildObserver() {
+            lock.readLock().lock();
+            try {
             InstrumentKey gaugeKey = new InstrumentKey(name, description, unit);
-            return this.observableDoubleMeasurements.computeIfAbsent(gaugeKey, k -> new ReconfigurableObservableDoubleMeasurement(delegate.buildObserver()));
+            return this.observableDoubleMeasurements.computeIfAbsent(gaugeKey, k -> new ReconfigurableObservableDoubleMeasurement(delegate.buildObserver(), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
     }
 
     static class ReconfigurableLongGaugeBuilder implements LongGaugeBuilder {
+        final ReadWriteLock lock;
         LongGaugeBuilder delegate;
         final ConcurrentMap<InstrumentKey, ReconfigurableLongGauge> longGauges;
         final ConcurrentMap<ObservableLongMeasurementCallbackKey, ReconfigurableObservableLongGauge> observableLongGauges;
@@ -640,171 +881,301 @@ class ReconfigurableMeterProvider implements MeterProvider {
         ReconfigurableLongGaugeBuilder(LongGaugeBuilder delegate, String name,
                                        ConcurrentMap<InstrumentKey, ReconfigurableLongGauge> longGauges,
                                        ConcurrentMap<ObservableLongMeasurementCallbackKey, ReconfigurableObservableLongGauge> observableLongGauges,
-                                       ConcurrentMap<InstrumentKey, ReconfigurableObservableLongMeasurement> observableLongMeasurements) {
+                                       ConcurrentMap<InstrumentKey, ReconfigurableObservableLongMeasurement> observableLongMeasurements,
+                                       ReadWriteLock lock) {
             this.delegate = delegate;
             this.name = name;
             this.longGauges = longGauges;
             this.observableLongGauges = observableLongGauges;
             this.observableLongMeasurements = observableLongMeasurements;
+
+            this.lock = lock;
         }
 
         @Override
         public LongGaugeBuilder setDescription(String description) {
-            delegate.setDescription(description);
-            this.description = description;
-            return this;
+            lock.readLock().lock();
+            try {
+                delegate.setDescription(description);
+                this.description = description;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public LongGaugeBuilder setUnit(String unit) {
-            delegate.setUnit(unit);
-            this.unit = unit;
-            return this;
+            lock.readLock().lock();
+            try {
+                delegate.setUnit(unit);
+                this.unit = unit;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public LongGauge build() {
-            InstrumentKey counterKey = new InstrumentKey(name, description, unit);
-            return longGauges.computeIfAbsent(counterKey, k -> new ReconfigurableLongGauge(delegate.build()));
+            lock.readLock().lock();
+            try {
+                InstrumentKey counterKey = new InstrumentKey(name, description, unit);
+                return longGauges.computeIfAbsent(counterKey, k -> new ReconfigurableLongGauge(delegate.build(), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public ObservableLongGauge buildWithCallback(Consumer<ObservableLongMeasurement> callback) {
-            ObservableLongMeasurementCallbackKey key = new ObservableLongMeasurementCallbackKey(name, description, unit, callback);
-            return this.observableLongGauges.computeIfAbsent(key, k -> new ReconfigurableObservableLongGauge(delegate.buildWithCallback(callback)));
+            lock.readLock().lock();
+            try {
+                ObservableLongMeasurementCallbackKey key = new ObservableLongMeasurementCallbackKey(name, description, unit, callback);
+                return this.observableLongGauges.computeIfAbsent(key, k -> new ReconfigurableObservableLongGauge(delegate.buildWithCallback(callback), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public ObservableLongMeasurement buildObserver() {
-            InstrumentKey counterKey = new InstrumentKey(name, description, unit);
-            return this.observableLongMeasurements.computeIfAbsent(counterKey, k -> new ReconfigurableObservableLongMeasurement(delegate.buildObserver()));
+            lock.readLock().lock();
+            try {
+                InstrumentKey counterKey = new InstrumentKey(name, description, unit);
+                return this.observableLongMeasurements.computeIfAbsent(counterKey, k -> new ReconfigurableObservableLongMeasurement(delegate.buildObserver(), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
     @VisibleForTesting
+    @ThreadSafe
     protected static class ReconfigurableLongGauge implements LongGauge {
+        final ReadWriteLock lock;
         private LongGauge delegate;
 
-        ReconfigurableLongGauge(LongGauge delegate) {
+        ReconfigurableLongGauge(LongGauge delegate, ReadWriteLock lock) {
             this.delegate = delegate;
+            this.lock = lock;
         }
 
         @Override
         public void set(long value) {
-            delegate.set(value);
+            lock.readLock().lock();
+            try {
+                delegate.set(value);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void set(long value, Attributes attributes) {
-            delegate.set(value, attributes);
+            lock.readLock().lock();
+            try {
+                delegate.set(value, attributes);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void set(long value, Attributes attributes, Context context) {
-            delegate.set(value, attributes, context);
+            lock.readLock().lock();
+            try {
+                delegate.set(value, attributes, context);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         public void setDelegate(LongGauge delegate) {
-            this.delegate = delegate;
+            lock.writeLock().lock();
+            try {
+                this.delegate = delegate;
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
 
         public LongGauge getDelegate() {
-            return delegate;
+            lock.readLock().lock();
+            try {
+                return delegate;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
     @VisibleForTesting
     protected static class ReconfigurableObservableLongGauge implements ObservableLongGauge {
+        final ReadWriteLock lock;
         ObservableLongGauge delegate;
 
-        ReconfigurableObservableLongGauge(ObservableLongGauge delegate) {
+        ReconfigurableObservableLongGauge(ObservableLongGauge delegate, ReadWriteLock lock) {
             this.delegate = delegate;
+            this.lock = lock;
         }
 
         public void setDelegate(ObservableLongGauge delegate) {
-            this.delegate = delegate;
+            lock.writeLock().lock();
+            try {
+                this.delegate = delegate;
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
 
         @Override
         public void close() {
-            delegate.close();
+            lock.readLock().lock();
+            try {
+                delegate.close();
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
     @VisibleForTesting
+    @ThreadSafe
     protected static class ReconfigurableDoubleGauge implements DoubleGauge {
+        final ReadWriteLock lock;
         private DoubleGauge delegate;
 
-        ReconfigurableDoubleGauge(DoubleGauge delegate) {
+        ReconfigurableDoubleGauge(DoubleGauge delegate, ReadWriteLock lock) {
             this.delegate = delegate;
+            this.lock = lock;
         }
 
         @Override
         public void set(double value) {
-            delegate.set(value);
+            lock.readLock().lock();
+            try {
+                delegate.set(value);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void set(double value, Attributes attributes) {
-            delegate.set(value, attributes);
+            lock.readLock().lock();
+            try {
+                delegate.set(value, attributes);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void set(double value, Attributes attributes, Context context) {
-            delegate.set(value, attributes, context);
+            lock.readLock().lock();
+            try {
+                delegate.set(value, attributes, context);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         public void setDelegate(DoubleGauge delegate) {
-            this.delegate = delegate;
+            lock.writeLock().lock();
+            try {
+                this.delegate = delegate;
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
 
         public DoubleGauge getDelegate() {
-            return delegate;
+            lock.readLock().lock();
+            try {
+                return delegate;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
     @VisibleForTesting
     protected static class ReconfigurableObservableDoubleGauge implements ObservableDoubleGauge {
+        final ReadWriteLock lock;
         ObservableDoubleGauge delegate;
 
-        ReconfigurableObservableDoubleGauge(ObservableDoubleGauge delegate) {
+        ReconfigurableObservableDoubleGauge(ObservableDoubleGauge delegate, ReadWriteLock lock) {
             this.delegate = delegate;
+            this.lock = lock;
         }
 
         public void setDelegate(ObservableDoubleGauge delegate) {
-            this.delegate = delegate;
+            lock.writeLock().lock();
+            try {
+                this.delegate = delegate;
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
 
         @Override
         public void close() {
-            delegate.close();
+            lock.readLock().lock();
+            try {
+                delegate.close();
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
     @VisibleForTesting
     protected static class ReconfigurableObservableDoubleMeasurement implements ObservableDoubleMeasurement {
+        final ReadWriteLock lock;
         private ObservableDoubleMeasurement delegate;
 
-        ReconfigurableObservableDoubleMeasurement(ObservableDoubleMeasurement delegate) {
+        ReconfigurableObservableDoubleMeasurement(ObservableDoubleMeasurement delegate, ReadWriteLock lock) {
             this.delegate = delegate;
+            this.lock = lock;
         }
 
         @Override
         public void record(double value) {
-            delegate.record(value);
+            lock.readLock().lock();
+            try {
+                delegate.record(value);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         @Override
         public void record(double value, Attributes attributes) {
-            delegate.record(value, attributes);
+            lock.readLock().lock();
+            try {
+                delegate.record(value, attributes);
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         public ObservableDoubleMeasurement getDelegate() {
-            return delegate;
+            lock.readLock().lock();
+            try {
+                return delegate;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
 
         public void setDelegate(ObservableDoubleMeasurement delegate) {
-            this.delegate = delegate;
+            lock.writeLock().lock();
+            try {
+                this.delegate = delegate;
+            } finally {
+                lock.writeLock().unlock();
+            }
         }
     }
 }
