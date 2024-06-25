@@ -31,6 +31,7 @@ import io.opentelemetry.api.metrics.ObservableMeasurement;
 import io.opentelemetry.context.Context;
 
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Objects;
 import java.util.Optional;
@@ -53,6 +54,7 @@ import java.util.function.Consumer;
 @ThreadSafe
 class ReconfigurableMeterProvider implements MeterProvider {
 
+    @GuardedBy("lock")
     private MeterProvider delegate;
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -68,7 +70,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
     }
 
     @Override
-    public synchronized Meter get(String instrumentationScopeName) {
+    public Meter get(String instrumentationScopeName) {
         lock.readLock().lock();
         try {
             return meters.computeIfAbsent(
@@ -79,7 +81,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
         }
     }
 
-    public synchronized void setDelegate(MeterProvider delegate) {
+    public void setDelegate(MeterProvider delegate) {
         lock.writeLock().lock();
         try {
             this.delegate = delegate;
@@ -253,6 +255,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
     @VisibleForTesting
     protected static class ReconfigurableMeter implements Meter {
         final ReadWriteLock lock;
+        @GuardedBy("lock")
         Meter delegate;
         // long counters
         final ConcurrentMap<InstrumentKey, ReconfigurableLongCounter> longCounters = new ConcurrentHashMap<>();
@@ -313,7 +316,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
             }
         }
 
-        public synchronized void setDelegate(Meter delegate) {
+        public void setDelegate(Meter delegate) {
             lock.writeLock().lock();
             try {
                 this.delegate = delegate;
@@ -552,6 +555,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
     @ThreadSafe
     protected static class ReconfigurableLongCounter implements LongCounter {
         final ReadWriteLock lock;
+        @GuardedBy("lock")
         private LongCounter delegate;
 
         ReconfigurableLongCounter(LongCounter delegate, ReadWriteLock lock) {
@@ -704,6 +708,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
     @ThreadSafe
     protected static class ReconfigurableDoubleCounter implements DoubleCounter {
         final ReadWriteLock lock;
+        @GuardedBy("lock")
         private DoubleCounter delegate;
 
         ReconfigurableDoubleCounter(DoubleCounter delegate, ReadWriteLock lock) {
@@ -954,6 +959,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
     @ThreadSafe
     protected static class ReconfigurableLongGauge implements LongGauge {
         final ReadWriteLock lock;
+        @GuardedBy("lock")
         private LongGauge delegate;
 
         ReconfigurableLongGauge(LongGauge delegate, ReadWriteLock lock) {
@@ -1044,6 +1050,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
     @ThreadSafe
     protected static class ReconfigurableDoubleGauge implements DoubleGauge {
         final ReadWriteLock lock;
+        @GuardedBy("lock")
         private DoubleGauge delegate;
 
         ReconfigurableDoubleGauge(DoubleGauge delegate, ReadWriteLock lock) {
