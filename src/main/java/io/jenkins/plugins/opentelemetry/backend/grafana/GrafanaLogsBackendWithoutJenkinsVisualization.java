@@ -75,6 +75,11 @@ public class GrafanaLogsBackendWithoutJenkinsVisualization extends GrafanaLogsBa
             return GrafanaBackend.DEFAULT_LOKI_DATA_SOURCE_IDENTIFIER;
         }
 
+        @Override
+        public String getDefaultLokiOTelLogFormat() {
+            return LokiOTelLogFormat.LOKI_V3_OTEL_FORMAT.name();
+        }
+
         @NonNull
         @Override
         public String getDisplayName() {

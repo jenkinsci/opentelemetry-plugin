@@ -56,6 +56,11 @@ public class GrafanaLogsBackendBackendWithLogMirroringInJenkins extends GrafanaL
 
     @Extension(ordinal = 100)
     public static class DescriptorImpl extends GrafanaLogsBackend.DescriptorImpl {
+        @Override
+        public String getDefaultLokiOTelLogFormat() {
+            return LokiOTelLogFormat.LOKI_V2_JSON_OTEL_FORMAT.name();
+        }
+
         @Nonnull
         @Override
         public String getDisplayName() {

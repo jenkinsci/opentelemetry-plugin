@@ -2,7 +2,7 @@
 <j:jelly xmlns:j="jelly:core"
          xmlns:f="/lib/form"
 >
-    <f:entry title="Grafana base URL" field="grafanaBaseUrl" description="e.g. 'https://example.grafana.net/'">
+    <f:entry title="Grafana base URL" field="grafanaBaseUrl" description="e.g. 'https://example.grafana.net/' or 'http://grafana.example.com:3000'">
         <f:textbox/>
     </f:entry>
     <f:entry title="Grafana metrics dashboard URL" field="grafanaMetricsDashboard" description="e.g. 'https://example.grafana.net/...'">
@@ -15,7 +15,6 @@
         <f:hetero-radio
             field="grafanaLogsBackend"
             descriptors="${grafanaLogsBackendDescriptors}"
-
         />
     </f:block>
 
@@ -38,8 +37,5 @@
         <f:entry title="Display Name" field="name" description="Name used in Jenkins GUI">
             <f:textbox default="${descriptor.displayName}"/>
         </f:entry>
-
-
-
     </f:advanced>
 </j:jelly>

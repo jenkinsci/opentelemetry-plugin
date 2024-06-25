@@ -12,7 +12,7 @@
     </i>
 
     <f:entry title="Loki OpenTelemetry logs format" field="lokiOTelLogFormat">
-        <f:select />
+        <f:select default="${descriptor.defaultLokiOTelLogFormat}"/>
     </f:entry>
     <f:entry title="Loki Datasource Identifier" field="grafanaLokiDatasourceIdentifier"
              description="Identifier of the Grafana Loki datasource in which the Jenkins pipeline build logs are stored.">

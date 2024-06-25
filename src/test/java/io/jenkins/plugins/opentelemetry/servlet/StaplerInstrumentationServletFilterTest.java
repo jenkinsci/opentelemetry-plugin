@@ -82,7 +82,7 @@ public class StaplerInstrumentationServletFilterTest {
             .filter(t -> !t.isEmpty())
             .collect(Collectors.toList());
 
-        StaplerInstrumentationServletFilter.ParsedJobUrl actual = new StaplerInstrumentationServletFilter(OpenTelemetry.noop().getTracer("test")).parseJobUrl(pathInfoTokens);
+        StaplerInstrumentationServletFilter.ParsedJobUrl actual = new StaplerInstrumentationServletFilter(Collections.emptyList(), OpenTelemetry.noop().getTracer("test")).parseJobUrl(pathInfoTokens);
         System.out.println(actual);
         Assert.assertEquals(expected, actual);
     }
@@ -237,7 +237,7 @@ public class StaplerInstrumentationServletFilterTest {
             .collect(Collectors.toList());
 
         try {
-            StaplerInstrumentationServletFilter.ParsedJobUrl actual = new StaplerInstrumentationServletFilter(OpenTelemetry.noop().getTracer("test")).parseBlueOceanRestPipelineUrl(pathInfoTokens);
+            StaplerInstrumentationServletFilter.ParsedJobUrl actual = new StaplerInstrumentationServletFilter(Collections.emptyList(), OpenTelemetry.noop().getTracer("test")).parseBlueOceanRestPipelineUrl(pathInfoTokens);
 
             System.out.println(actual);
             Assert.assertEquals(expected, actual);

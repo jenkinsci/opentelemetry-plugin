@@ -12,6 +12,8 @@ import io.opentelemetry.context.Scope;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,7 +32,7 @@ public class InputStreamByteBuffer extends ByteBuffer {
     @NonNull
     final InputStream in;
 
-    public InputStreamByteBuffer(InputStream in, Tracer tracer) {
+    public InputStreamByteBuffer(@Nonnull InputStream in, @Nonnull Tracer tracer) {
         this.in = in;
         this.tracer = tracer;
     }
@@ -63,9 +65,9 @@ public class InputStreamByteBuffer extends ByteBuffer {
     }
 
     /**
-     * Unsupported byt this readonly {@link ByteBuffer}
+     * Unsupported by this readonly {@link ByteBuffer}
      *
-     * @throws UnsupportedOperationException
+     * @throws UnsupportedOperationException always
      */
     @Override
     public synchronized void write(byte[] b, int off, int len) throws IOException {
@@ -73,9 +75,9 @@ public class InputStreamByteBuffer extends ByteBuffer {
     }
 
     /**
-     * Unsupported byt this readonly {@link ByteBuffer}
+     * Unsupported by this readonly {@link ByteBuffer}
      *
-     * @throws UnsupportedOperationException
+     * @throws UnsupportedOperationException always
      */
     @Override
     public synchronized void write(int b) throws IOException {
@@ -83,9 +85,9 @@ public class InputStreamByteBuffer extends ByteBuffer {
     }
 
     /**
-     * Unsupported byt this readonly {@link ByteBuffer}
+     * Unsupported by this readonly {@link ByteBuffer}
      *
-     * @throws UnsupportedOperationException
+     * @throws UnsupportedOperationException always
      */
     @Override
     public synchronized void writeTo(OutputStream os) {
@@ -93,9 +95,9 @@ public class InputStreamByteBuffer extends ByteBuffer {
     }
 
     /**
-     * Unsupported byt this readonly {@link ByteBuffer}
+     * Unsupported by this readonly {@link ByteBuffer}
      *
-     * @throws UnsupportedOperationException
+     * @throws UnsupportedOperationException always
      */
     @Override
     public void write(@NonNull byte[] b) throws IOException {
@@ -103,9 +105,9 @@ public class InputStreamByteBuffer extends ByteBuffer {
     }
 
     /**
-     * Unsupported byt this readonly {@link ByteBuffer}
+     * Unsupported by this readonly {@link ByteBuffer}
      *
-     * @throws UnsupportedOperationException
+     * @throws UnsupportedOperationException always
      */
     @Override
     public void flush() throws IOException {
