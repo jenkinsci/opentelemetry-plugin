@@ -145,6 +145,10 @@ public final class JenkinsOtelSemanticAttributes {
 
     public static final String OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED = "otel.instrumentation.jenkins.web.enabled";
     public static final String OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED = "otel.instrumentation.jenkins.remote.span.enabled";
+    /**
+     * https://opentelemetry.io/docs/zero-code/java/agent/configuration/#capturing-servlet-request-parameters
+     */
+    public static final String OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS = "otel.instrumentation.servlet.experimental.capture-request-parameters";
 
 
     /**

@@ -11,7 +11,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.BuildListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
-import io.jenkins.plugins.opentelemetry.opentelemetry.common.OffsetClock;
+import io.jenkins.plugins.opentelemetry.opentelemetry.common.Clocks;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.sdk.common.Clock;
 import jenkins.util.JenkinsJVM;
@@ -60,7 +60,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
         this.runTraceContext = runTraceContext;
         this.otelConfigProperties = otelConfigProperties;
         this.otelResourceAttributes = otelResourceAttributes;
-        this.clock = Clock.getDefault();
+        this.clock = Clocks.monotonicClock();
         // Constructor must always be invoked on the Jenkins Controller.
         // Instantiation on the Jenkins Agents is done via deserialization.
         JenkinsJVM.checkJenkinsJVM();
@@ -173,7 +173,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
              */
             if (instantInNanosOnJenkinsControllerBeforeSerialization == 0) {
                 logger.log(Level.INFO, () -> "adjustClock: unexpected timeBeforeSerialization of 0ns, don't adjust the clock");
-                this.clock = Clock.getDefault();
+                this.clock = Clocks.monotonicClock();
             } else {
                 long instantInNanosOnJenkinsAgentAtDeserialization = Clock.getDefault().now();
                 long offsetInNanosOnJenkinsAgent = instantInNanosOnJenkinsControllerBeforeSerialization - instantInNanosOnJenkinsAgentAtDeserialization;
@@ -183,7 +183,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
                         "A negative offset of few milliseconds is expected due to the latency of the communication from the Jenkins Controller to the Jenkins Agent. " +
                         "Higher offsets indicate a synchronization gap of the system clocks between the Jenkins Controller that will be work arounded by the clock adjustment."
                 );
-                this.clock = OffsetClock.offsetClock(offsetInNanosOnJenkinsAgent);
+                this.clock = Clocks.monotonicOffsetClock(offsetInNanosOnJenkinsAgent);
             }
 
             // Setup OTel

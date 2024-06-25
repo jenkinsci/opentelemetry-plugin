@@ -1,0 +1,41 @@
+<?jelly escape-by-default='true'?>
+<!--
+  ~ Copyright The Original Author or Authors
+  ~ SPDX-License-Identifier: Apache-2.0
+  -->
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form"
+         xmlns:c="/lib/credentials"
+>
+    <i>
+        Pipeline logs are no longer stored in the Jenkins home, they are sent through OpenTelemetry to Loki and visible
+        in both Grafana and Jenkins.
+    </i>
+
+    <f:entry title="${%Loki URL}" field="lokiUrl" description="e.g. 'https://logs-prod-eu-west-123456.grafana.net' or 'https://loki.example.com:3100 '">
+        <f:textbox checkMethod="post"/>
+    </f:entry>
+    <f:entry title="${%Disable SSL verifications}" field="disableSslVerifications"
+             description="Not recommended in production">
+        <f:checkbox/>
+    </f:entry>
+    <f:entry title="${%Loki credentials}" field="lokiCredentialsId"
+             description="Optional. Credentials with read permission on Loki">
+        <c:select checkMethod="post"/>
+    </f:entry>
+    <f:entry title="${%Loki tenant Id}" field="lokiTenantId" description="Optional">
+        <f:textbox/>
+    </f:entry>
+
+    <f:validateButton title="${%Validate Loki configuration}" progress="Validating..." method="validate/"
+                      with="lokiUrl,disableSslVerifications,lokiCredentialsId"/>
+
+    <f:entry title="Loki OpenTelemetry logs format" field="lokiOTelLogFormat">
+        <f:select default="${descriptor.defaultLokiOTelLogFormat}" />
+    </f:entry>
+    <f:entry title="Loki Datasource Identifier" field="grafanaLokiDatasourceIdentifier"
+             description="Identifier of the Grafana Loki datasource in which the Jenkins pipeline build logs are stored.">
+        <f:textbox default="${descriptor.defaultLokiDataSourceIdentifier}"/>
+    </f:entry>
+
+</j:jelly>

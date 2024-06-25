@@ -5,12 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+import io.jenkins.plugins.opentelemetry.job.log.LogLine;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -21,26 +21,23 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * {@link InputStream} backend by a {@link LineIterator}
- *
- * @deprecated use {@link LogLineIterator} instead
+ * {@link InputStream} backed by a {@link LogLineIterator}
  */
-@Deprecated
-public class LineIteratorInputStream extends InputStream {
-    private final static Logger logger = Logger.getLogger(LineIteratorInputStream.class.getName());
+public class LogLineIteratorInputStream<Id> extends InputStream {
+    private final static Logger logger = Logger.getLogger(LogLineIteratorInputStream.class.getName());
 
-    private final LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter;
-    private final LineIterator lines;
+    private final LogLineIterator.LogLineBytesToLogLineIdMapper<Id> logLineBytesToLogLineIdConverter;
+    private final LogLineIterator<Id> logLines;
     final protected Tracer tracer;
 
     private int cursorOnCurrentLine;
     private byte[] currentLine;
-    private long readLines;
     private long readBytes;
+    private Id lastLogLineId;
 
-    public LineIteratorInputStream(LineIterator lines, LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter, Tracer tracer) {
-        this.lines = lines;
-        this.lineBytesToLineNumberConverter = lineBytesToLineNumberConverter;
+    public LogLineIteratorInputStream(LogLineIterator<Id> logLines, LogLineIterator.LogLineBytesToLogLineIdMapper<Id> logLineBytesToLogLineIdConverter, Tracer tracer) {
+        this.logLines = logLines;
+        this.logLineBytesToLogLineIdConverter = logLineBytesToLogLineIdConverter;
         this.tracer = tracer;
     }
 
@@ -50,7 +47,7 @@ public class LineIteratorInputStream extends InputStream {
             if (cursorOnCurrentLine != 0) {
                 throw new IllegalStateException("Current line is null but cursorOnCurrentLine!=0: " + cursorOnCurrentLine);
             }
-            currentLine = Optional.ofNullable(readLine()).map(line -> line + "\n").map(line -> line.getBytes(StandardCharsets.UTF_8)).orElse(null);
+            currentLine = Optional.ofNullable(readLine()).map(line -> (line.getMessage() + "\n").getBytes(StandardCharsets.UTF_8)).orElse(null);
             if (currentLine == null) {
                 return -1;
             }
@@ -71,10 +68,11 @@ public class LineIteratorInputStream extends InputStream {
      * Returns {@code null} if no more data available
      */
     @Nullable
-    String readLine() {
-        if (lines.hasNext()) {
-            readLines++;
-            return lines.next();
+    LogLine<Id> readLine() {
+        if (logLines.hasNext()) {
+            LogLine<Id> logLine = logLines.next();
+            lastLogLineId = logLine.getId();
+            return logLine;
         } else {
             return null;
         }
@@ -83,19 +81,20 @@ public class LineIteratorInputStream extends InputStream {
     @Override
     public long skip(long skipBytes) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
-        Span span = tracer.spanBuilder("LineIteratorInputStream.skip")
+        Span span = tracer.spanBuilder("LogLineIteratorInputStream.skip")
             .setAttribute("skipBytes", skipBytes)
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
-            Long skipLogLines = lineBytesToLineNumberConverter.getLogLineFromLogBytes(skipBytes);
-            if (skipLogLines == null) {
-                span.addEvent("Line Bytes to Line Number conversion not found");
-            } else {
-                span.setAttribute("skipLines", skipLogLines);
-                lines.skipLines(skipLogLines);
-                readBytes += skipBytes;
-                readLines += skipLogLines;
-            }
+            Optional<Id> logLineId = Optional.ofNullable(logLineBytesToLogLineIdConverter.getLogLineIdFromLogBytes(skipBytes));
+            logLineId.ifPresentOrElse(id -> {
+                    span.setAttribute("previousLastLogLineId", String.valueOf(this.lastLogLineId));
+                    span.setAttribute("lastLogLineId", String.valueOf(id));
+                    logLines.skipLines(id);
+                    readBytes += skipBytes;
+                    this.lastLogLineId = id;
+                },
+                () -> span.addEvent("LogLine Bytes to LogLine Id conversion not found")
+            );
             return skipBytes;
         } finally {
             span.end();
@@ -105,9 +104,9 @@ public class LineIteratorInputStream extends InputStream {
     @Override
     public int available() throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINER) ? this.tracer : TracerProvider.noop().get("noop");
-        Span span = tracer.spanBuilder("LineIteratorInputStream.available").startSpan();
+        Span span = tracer.spanBuilder("LogLineIteratorInputStream.available").startSpan();
         try (Scope scope = span.makeCurrent()) {
-            if (lines.hasNext()) {
+            if (logLines.hasNext()) {
                 return 1;
             } else {
                 return 0;
@@ -120,14 +119,14 @@ public class LineIteratorInputStream extends InputStream {
     @Override
     public void close() throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINER) ? this.tracer : TracerProvider.noop().get("noop");
-        Span span = tracer.spanBuilder("LineIteratorInputStream.close")
+        Span span = tracer.spanBuilder("LogLineIteratorInputStream.close")
             .setAttribute("readBytes", readBytes)
-            .setAttribute("readLines", readLines)
+            .setAttribute("lastLogLineId", String.valueOf(lastLogLineId))
             .startSpan();
         try (Scope scope = span.makeCurrent()) {
-            lineBytesToLineNumberConverter.putLogBytesToLogLine(readBytes, readLines);
-            if (lines instanceof Closeable) {
-                ((Closeable) lines).close();
+            logLineBytesToLogLineIdConverter.putLogBytesToLogLineId(readBytes, lastLogLineId);
+            if (logLines instanceof Closeable) {
+                ((Closeable) logLines).close();
             }
         } finally {
             span.end();

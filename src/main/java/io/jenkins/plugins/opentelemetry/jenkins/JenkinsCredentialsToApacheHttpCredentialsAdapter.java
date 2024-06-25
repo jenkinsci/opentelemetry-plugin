@@ -18,13 +18,24 @@ import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
+/**
+ * Adapter to convert Jenkins credentials to Apache HTTP credentials.
+ */
 public class JenkinsCredentialsToApacheHttpCredentialsAdapter implements Credentials {
     Supplier<String> jenkinsCredentialsIdProvider;
 
     UsernamePasswordCredentials jenkinsUsernamePasswordCredentials;
 
+    /**
+     * @deprecated use {@link JenkinsCredentialsToApacheHttpCredentialsAdapter#JenkinsCredentialsToApacheHttpCredentialsAdapter(String)} instead
+     */
+    @Deprecated
     public JenkinsCredentialsToApacheHttpCredentialsAdapter(Supplier<String> jenkinsCredentialsIdProvider) {
         this.jenkinsCredentialsIdProvider = jenkinsCredentialsIdProvider;
+    }
+
+    public JenkinsCredentialsToApacheHttpCredentialsAdapter(String jenkinsCredentialsId) {
+        this.jenkinsCredentialsIdProvider = () -> jenkinsCredentialsId;
     }
 
     @Override
