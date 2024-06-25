@@ -101,7 +101,14 @@ public class ReconfigurableMeterProviderTest {
         assertEquals(meterProviderImpl_1.id, jenkinsBuildDurationCounterImpl.meterProviderId);
 
         // Observable Double Counter
-        // TODO implement
+        ReconfigurableMeterProvider.ReconfigurableObservableDoubleCounter observableDoubleCounter = (ReconfigurableMeterProvider.ReconfigurableObservableDoubleCounter) jenkinsMeter.counterBuilder("observable.double.counter").ofDoubles().buildWithCallback(observableDoubleMeasurement -> observableDoubleMeasurement.record(random.nextDouble()));
+        ObservableDoubleCounterMock observableDoubleCounterImpl = (ObservableDoubleCounterMock) observableDoubleCounter.getDelegate();
+        assertEquals(meterProviderImpl_1.id, observableDoubleCounterImpl.meterProviderId);
+
+        // Observable Double Measurement
+        ReconfigurableMeterProvider.ReconfigurableObservableDoubleMeasurement observableDoubleMeasurement = (ReconfigurableMeterProvider.ReconfigurableObservableDoubleMeasurement) jenkinsMeter.counterBuilder("observable.double.measurement").ofDoubles().buildObserver();
+        ObservableDoubleMeasurementMock observableDoubleMeasurementImpl = (ObservableDoubleMeasurementMock) observableDoubleMeasurement.getDelegate();
+        assertEquals(meterProviderImpl_1.id, observableDoubleMeasurementImpl.meterProviderId);
 
         // #### GAUGE ####
 
@@ -111,7 +118,7 @@ public class ReconfigurableMeterProviderTest {
         assertEquals(meterProviderImpl_1.id, memoryLongGaugeImpl.meterProviderId);
 
         // Observable Double Gauge
-        ReconfigurableMeterProvider.ReconfigurableObservableDoubleGauge temperatureGauge = (ReconfigurableMeterProvider.ReconfigurableObservableDoubleGauge) jenkinsMeter.gaugeBuilder("temperature").buildWithCallback(observableDoubleMeasurement -> observableDoubleMeasurement.record(random.nextDouble()));
+        ReconfigurableMeterProvider.ReconfigurableObservableDoubleGauge temperatureGauge = (ReconfigurableMeterProvider.ReconfigurableObservableDoubleGauge) jenkinsMeter.gaugeBuilder("temperature").buildWithCallback(observableDoubleGaugeMeasurement -> observableDoubleGaugeMeasurement.record(random.nextDouble()));
         ObservableDoubleGaugeMock temperatureGaugeImpl = (ObservableDoubleGaugeMock) temperatureGauge.delegate;
         assertEquals(meterProviderImpl_1.id, temperatureGaugeImpl.meterProviderId);
 
@@ -119,6 +126,8 @@ public class ReconfigurableMeterProviderTest {
         ReconfigurableMeterProvider.ReconfigurableObservableDoubleMeasurement pressureMeasurement = (ReconfigurableMeterProvider.ReconfigurableObservableDoubleMeasurement) jenkinsMeter.gaugeBuilder("pressure").buildObserver();
         ObservableDoubleMeasurementMock pressureMeasurementImpl = (ObservableDoubleMeasurementMock) pressureMeasurement.getDelegate();
         assertEquals(meterProviderImpl_1.id, pressureMeasurementImpl.meterProviderId);
+
+
 
         // Long Gauge
         ReconfigurableMeterProvider.ReconfigurableLongGauge longGauge = (ReconfigurableMeterProvider.ReconfigurableLongGauge) jenkinsMeter.gaugeBuilder("long.gauge").ofLongs().build();
@@ -134,7 +143,6 @@ public class ReconfigurableMeterProviderTest {
         ReconfigurableMeterProvider.ReconfigurableObservableLongMeasurement observableLongGaugeMeasurement = (ReconfigurableMeterProvider.ReconfigurableObservableLongMeasurement) jenkinsMeter.gaugeBuilder("observable.long.measurement").ofLongs().buildObserver();
         ObservableLongMeasurementMock observableLongMeasurementImpl = (ObservableLongMeasurementMock) observableLongGaugeMeasurement.getDelegate();
         assertEquals(meterProviderImpl_1.id, observableLongMeasurementImpl.meterProviderId);
-
 
         // ############################################################################################################
         // CHANGE THE IMPLEMENTATION OF THE EVENT METER PROVIDER
@@ -161,33 +169,31 @@ public class ReconfigurableMeterProviderTest {
 
         // Long Counter
         assertEquals(meterProviderImpl_2.id, ((LongCounterMock) jenkinsBuildCounter.getDelegate()).meterProviderId);
-
         // Observable Long Counter
         assertEquals(meterProviderImpl_2.id, ((ObservableLongCounterMock) availableExecutorObservableCounter.delegate).meterProviderId);
-
         // Observable Long Measurement
         assertEquals(meterProviderImpl_2.id, ((ObservableLongMeasurementMock) busyExecutorObservableMeasurement.getDelegate()).meterProviderId);
 
         // Double Counter
         assertEquals(meterProviderImpl_2.id, ((DoubleCounterMock) jenkinsBuildDurationCounter.getDelegate()).meterProviderId);
+        // Observable Double Counter
+        assertEquals(meterProviderImpl_2.id, ((ObservableDoubleCounterMock) observableDoubleCounter.getDelegate()).meterProviderId);
+        // Observable Double Measurement
+        assertEquals(meterProviderImpl_2.id, ((ObservableDoubleMeasurementMock) observableDoubleMeasurement.getDelegate()).meterProviderId);
 
         // GAUGE
 
         // Double Gauge
         assertEquals(meterProviderImpl_2.id, ((DoubleGaugeMock) memoryUsedGauge.getDelegate()).meterProviderId);
-
         // Observable Double Gauge
         assertEquals(meterProviderImpl_2.id, ((ObservableDoubleGaugeMock) temperatureGauge.delegate).meterProviderId);
-
         // Observable Double Measurement
         assertEquals(meterProviderImpl_2.id, ((ObservableDoubleMeasurementMock) pressureMeasurement.getDelegate()).meterProviderId);
 
         // Long Gauge
         assertEquals(meterProviderImpl_2.id, ((LongGaugeMock) longGauge.getDelegate()).meterProviderId);
-
         // Observable Long Gauge
         assertEquals(meterProviderImpl_2.id, ((ObservableLongGaugeMock) observableLongGauge.delegate).meterProviderId);
-
         // Observable Long Measurement
         assertEquals(meterProviderImpl_2.id, ((ObservableLongMeasurementMock) observableLongGaugeMeasurement.getDelegate()).meterProviderId);
     }
@@ -379,17 +385,36 @@ public class ReconfigurableMeterProviderTest {
 
         @Override
         public ObservableDoubleCounter buildWithCallback(Consumer<ObservableDoubleMeasurement> callback) {
-            throw new UnsupportedOperationException();
+            return new ObservableDoubleCounterMock(meterId, meterProviderId);
         }
 
         @Override
         public ObservableDoubleMeasurement buildObserver() {
-            throw new UnsupportedOperationException();
+            return new ObservableDoubleMeasurementMock(meterId, meterProviderId);
         }
 
         @Override
         public DoubleCounter build() {
             return new ReconfigurableMeterProviderTest.DoubleCounterMock(meterId, meterProviderId);
+        }
+
+    }
+
+    static class ObservableDoubleCounterMock implements ObservableDoubleCounter {
+        static AtomicInteger ID_SOURCE = new AtomicInteger(0);
+        final String meterProviderId;
+        final String meterId;
+        final String id;
+
+        public ObservableDoubleCounterMock(String meterId, String meterProviderId) {
+            this.id = "ObservableDoubleCounterMock-" + ID_SOURCE.incrementAndGet();
+            this.meterId = meterId;
+            this.meterProviderId = meterProviderId;
+        }
+
+        @Override
+        public void close() {
+            ObservableDoubleCounter.super.close();
         }
     }
 
