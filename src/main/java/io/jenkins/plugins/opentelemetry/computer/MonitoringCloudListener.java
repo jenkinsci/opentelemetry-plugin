@@ -10,28 +10,32 @@ import hudson.Extension;
 import hudson.model.Node;
 import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.NodeProvisioner;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringCloudListener extends CloudProvisioningListener implements OpenTelemetryLifecycleListener {
+public class MonitoringCloudListener extends CloudProvisioningListener  {
     private final static Logger LOGGER = Logger.getLogger(MonitoringCloudListener.class.getName());
 
     private LongCounter failureCloudCounter;
     private LongCounter totalCloudCount;
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
+    @Inject
+    private JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+
+    @PostConstruct
+    public void postConstruct() {
+        Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller cloud agent provisioning...");
+
         failureCloudCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_FAILURE)
             .setDescription("Number of failed cloud agents when provisioning")
             .setUnit("1")
@@ -41,7 +45,6 @@ public class MonitoringCloudListener extends CloudProvisioningListener implement
             .setUnit("1")
             .build();
 
-        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins cloud agent provisioning...");
     }
 
     @Override
@@ -61,10 +64,5 @@ public class MonitoringCloudListener extends CloudProvisioningListener implement
     public void onComplete(NodeProvisioner.PlannedNode plannedNode, Node node) {
         totalCloudCount.add(1);
         LOGGER.log(Level.FINE, () -> "onComplete(" + plannedNode + ")");
-    }
-
-    @Override
-    public void beforeSdkShutdown() {
-
     }
 }

@@ -38,9 +38,11 @@ public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry 
     public final static AtomicInteger INSTANCE_COUNTER = new AtomicInteger(0);
 
     @NonNull
-    private final transient Tracer defaultTracer;
-    protected transient Meter defaultMeter;
-    protected final transient EventLogger defaultEventLogger;
+    private final  Tracer defaultTracer;
+    @NonNull
+    private final Meter defaultMeter;
+    @NonNull
+    private final EventLogger defaultEventLogger;
 
     public JenkinsControllerOpenTelemetry() {
         super();
@@ -60,11 +62,26 @@ public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry 
             .eventLoggerBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
             .build();
+
+        this.defaultMeter = getMeterProvider()
+            .meterBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
+            .setInstrumentationVersion(opentelemetryPluginVersion)
+            .build();
     }
 
     @NonNull
     public Tracer getDefaultTracer() {
         return defaultTracer;
+    }
+
+    @NonNull
+    public Meter getDefaultMeter() {
+        return defaultMeter;
+    }
+
+    @NonNull
+    public EventLogger getDefaultEventLogger() {
+        return defaultEventLogger;
     }
 
     public boolean isLogsEnabled() {
@@ -97,24 +114,6 @@ public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry 
         configure(
             configuration.toOpenTelemetryProperties(),
             configuration.toOpenTelemetryResource());
-    }
-
-    @Override
-    protected void postOpenTelemetrySdkConfiguration() {
-        String opentelemetryPluginVersion = OtelUtils.getOpentelemetryPluginVersion();
-
-        this.defaultMeter = getMeterProvider()
-            .meterBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
-            .setInstrumentationVersion(opentelemetryPluginVersion)
-            .build();
-
-        logger.log(Level.FINER, () -> "Configure OpenTelemetryLifecycleListeners: " + ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream().sorted().map(e -> e.getClass().getName()).collect(Collectors.joining(", ")));
-        ExtensionList.lookup(OpenTelemetryLifecycleListener.class).stream()
-            .sorted()
-            .forEachOrdered(otelComponent -> {
-                otelComponent.afterSdkInitialized(defaultMeter, getOpenTelemetryDelegate().getLogsBridge(), defaultEventLogger, defaultTracer, getConfig());
-                otelComponent.afterSdkInitialized(getOpenTelemetryDelegate(), getConfig());
-            });
     }
 
     static public JenkinsControllerOpenTelemetry get() {

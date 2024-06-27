@@ -12,18 +12,15 @@ import hudson.ExtensionList;
 import hudson.model.Queue;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
-import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
-import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorageFactory;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,7 +31,7 @@ import java.util.logging.Logger;
  * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/PipelineBridge.java
  */
 @Extension
-public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelemetryLifecycleListener {
+public final class OtelLogStorageFactory implements LogStorageFactory {
 
     private final static Logger logger = Logger.getLogger(OtelLogStorageFactory.class.getName());
 
@@ -43,6 +40,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
         System.setProperty("org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep.USE_WATCHING", "true");
     }
 
+    @Inject
     JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
     @Nullable
@@ -100,8 +98,8 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
         return otelTraceService;
     }
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
-        this.tracer = tracer;
+    @PostConstruct
+    public void postConstruct () {
+        this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
     }
 }

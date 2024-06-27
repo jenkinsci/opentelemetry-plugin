@@ -38,10 +38,7 @@ import io.opentelemetry.context.Context;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,7 +60,7 @@ import java.util.logging.Logger;
  */
 @ThreadSafe
 class ReconfigurableMeterProvider implements MeterProvider {
-    final Logger logger = Logger.getLogger(getClass().getName());
+    final static Logger logger = Logger.getLogger(ReconfigurableMeterProvider.class.getName());
 
     @GuardedBy("lock")
     private MeterProvider delegate;
@@ -305,13 +302,17 @@ class ReconfigurableMeterProvider implements MeterProvider {
             this.delegate = delegate;
             this.lock = lock;
         }
-        
+
         @Override
         public BatchCallback batchCallback(Runnable callback, ObservableMeasurement observableMeasurement, ObservableMeasurement... additionalMeasurements) {
             lock.readLock().lock();
+            // io.opentelemetry.sdk.metrics.SdkMeter.batchCallback require the original ObservableMeasurement
+            // see https://github.com/open-telemetry/opentelemetry-java/blob/v1.39.0/sdk/metrics/src/main/java/io/opentelemetry/sdk/metrics/SdkMeter.java#L130
             try {
                 BatchCallbackKey key = new BatchCallbackKey(callback, observableMeasurement, additionalMeasurements);
-                return this.batchCallbacks.computeIfAbsent(key, k -> new ReconfigurableBatchCallback(delegate.batchCallback(callback, observableMeasurement, additionalMeasurements), lock));
+                ObservableMeasurement originalObservableMeasurement = ((ReconfigurableObservableMeasurement<?>) observableMeasurement).getDelegate();
+                ObservableMeasurement[] originalAdditionalMeasurements = Arrays.stream(additionalMeasurements).map(additionalMeasurement -> ((ReconfigurableObservableMeasurement<? extends ObservableMeasurement>) additionalMeasurement).getDelegate()).toArray(ObservableMeasurement[]::new);
+                return this.batchCallbacks.computeIfAbsent(key, k -> new ReconfigurableBatchCallback(delegate.batchCallback(callback, originalObservableMeasurement, originalAdditionalMeasurements), lock));
             } finally {
                 lock.readLock().unlock();
             }
@@ -332,7 +333,8 @@ class ReconfigurableMeterProvider implements MeterProvider {
 
         @Override
         public DoubleHistogramBuilder histogramBuilder(String name) {
-            throw new UnsupportedOperationException("Not implemented");
+            logger.warning("Histograms are not yet reconfigurable. The histogram " + name + " will not be reconfigured. Please restart Jenkins to reconfigure histograms.");
+            return delegate.histogramBuilder(name);
         }
 
         @Override
@@ -486,7 +488,18 @@ class ReconfigurableMeterProvider implements MeterProvider {
 
                 // BATCH CALLBACKS
                 this.batchCallbacks.forEach((batchCallbackKey, reconfigurableBatchCallback) -> {
-                    reconfigurableBatchCallback.setDelegate(delegate.batchCallback(batchCallbackKey.callback, batchCallbackKey.observableMeasurement, batchCallbackKey.additionalObservableMeasurements));
+
+                    // close previous call back to prevent
+                    // "WARNING	i.o.s.internal.ThrottlingLogger#doLog: Instrument xyz has recorded multiple values for the same attributes: {...}"
+                    reconfigurableBatchCallback.close();
+
+                    // io.opentelemetry.sdk.metrics.SdkMeter.batchCallback require the original ObservableMeasurement
+                    // see https://github.com/open-telemetry/opentelemetry-java/blob/v1.39.0/sdk/metrics/src/main/java/io/opentelemetry/sdk/metrics/SdkMeter.java#L130
+
+                    ObservableMeasurement originalObservableMeasurement = ((ReconfigurableObservableMeasurement<?>) batchCallbackKey.observableMeasurement).getDelegate();
+                    ObservableMeasurement[] originalAdditionalMeasurements = Arrays.stream(batchCallbackKey.additionalObservableMeasurements).map(additionalMeasurement -> ((ReconfigurableObservableMeasurement<? extends ObservableMeasurement>) additionalMeasurement).getDelegate()).toArray(ObservableMeasurement[]::new);
+
+                    reconfigurableBatchCallback.setDelegate(delegate.batchCallback(batchCallbackKey.callback, originalObservableMeasurement, originalAdditionalMeasurements));
                 });
             } finally {
                 lock.writeLock().unlock();
@@ -504,7 +517,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
     }
 
     @VisibleForTesting
-    protected static class ReconfigurableObservableLongMeasurement implements ObservableLongMeasurement {
+    protected static class ReconfigurableObservableLongMeasurement implements ObservableLongMeasurement, ReconfigurableObservableMeasurement<ObservableLongMeasurement> {
         final ReadWriteLock lock;
         private ObservableLongMeasurement delegate;
 
@@ -533,6 +546,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
             }
         }
 
+        @Override
         public ObservableLongMeasurement getDelegate() {
             lock.readLock().lock();
             try {
@@ -542,6 +556,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
             }
         }
 
+        @Override
         public void setDelegate(ObservableLongMeasurement delegate) {
             lock.writeLock().lock();
             try {
@@ -1303,7 +1318,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
     }
 
     @VisibleForTesting
-    protected static class ReconfigurableObservableDoubleMeasurement implements ObservableDoubleMeasurement {
+    protected static class ReconfigurableObservableDoubleMeasurement implements ObservableDoubleMeasurement, ReconfigurableObservableMeasurement<ObservableDoubleMeasurement> {
         final ReadWriteLock lock;
         private ObservableDoubleMeasurement delegate;
 
@@ -1332,6 +1347,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
             }
         }
 
+        @Override
         public ObservableDoubleMeasurement getDelegate() {
             lock.readLock().lock();
             try {
@@ -1341,6 +1357,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
             }
         }
 
+        @Override
         public void setDelegate(ObservableDoubleMeasurement delegate) {
             lock.writeLock().lock();
             try {
@@ -1727,6 +1744,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
             }
         }
     }
+
     static class ReconfigurableBatchCallback implements BatchCallback {
         final ReadWriteLock lock;
         BatchCallback delegate;
@@ -1755,15 +1773,16 @@ class ReconfigurableMeterProvider implements MeterProvider {
             }
         }
     }
+
     static class BatchCallbackKey {
         final Runnable callback;
-        final ObservableMeasurement observableMeasurement; 
+        final ObservableMeasurement observableMeasurement;
         final ObservableMeasurement[] additionalObservableMeasurements;
-        
+
         public BatchCallbackKey(Runnable callback, ObservableMeasurement observableMeasurement, ObservableMeasurement... additionalObservableMeasurements) {
             this.callback = callback;
-            this.observableMeasurement= observableMeasurement;
-            this.additionalObservableMeasurements = additionalObservableMeasurements;
+            this.observableMeasurement = Objects.requireNonNull(observableMeasurement);
+            this.additionalObservableMeasurements = Objects.requireNonNull(additionalObservableMeasurements);
         }
 
         @Override
@@ -1778,5 +1797,11 @@ class ReconfigurableMeterProvider implements MeterProvider {
         public int hashCode() {
             return Objects.hash(callback, observableMeasurement, Arrays.hashCode(additionalObservableMeasurements));
         }
+    }
+
+    interface ReconfigurableObservableMeasurement<T extends ObservableMeasurement> extends ObservableMeasurement {
+        void setDelegate(T delegate);
+
+        T getDelegate();
     }
 }

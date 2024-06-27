@@ -14,9 +14,9 @@ import hudson.model.Computer;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
@@ -26,16 +26,12 @@ import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributeStep;
 import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributesStep;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
-import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.model.CauseOfInterruption;
@@ -77,7 +73,7 @@ import static com.google.common.base.Verify.verifyNotNull;
 
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener, StepListener, OpenTelemetryLifecycleListener {
+public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener, StepListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringPipelineListener.class.getName());
 
     private OtelTraceService otelTraceService;
@@ -90,8 +86,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
      */
     Set<String> statusUnsetCausesOfInterruption;
 
+    @Inject
+    protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+
     @PostConstruct
     public void postConstruct() {
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins pipeline executions...");
+        this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
+
         final JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration = JenkinsOpenTelemetryPluginConfiguration.get();
         this.ignoredSteps = new HashSet<>(Arrays.asList(jenkinsOpenTelemetryPluginConfiguration.getIgnoredSteps().split(",")));
         this.statusUnsetCausesOfInterruption = new HashSet<>(jenkinsOpenTelemetryPluginConfiguration.getStatusUnsetCausesOfInterruption());
@@ -458,14 +460,5 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         return "TracingPipelineListener{}";
     }
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
-        this.tracer = tracer;
-        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins pipeline executions...");
-    }
 
-    @Override
-    public void beforeSdkShutdown() {
-
-    }
 }

@@ -9,18 +9,16 @@ import com.cloudbees.simplediskusage.DiskItem;
 import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,25 +26,30 @@ import java.util.logging.Logger;
  * Capture disk usage metrics relying on the {@link QuickDiskUsagePlugin}
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class DiskUsageMonitoringInitializer implements OpenTelemetryLifecycleListener {
+public class DiskUsageMonitoringInitializer {
 
     private final static Logger LOGGER = Logger.getLogger(DiskUsageMonitoringInitializer.class.getName());
 
     /**
-     * Don't inject the `quickDiskUsagePlugin` using @{@link  Inject} because the injected instance is not the right once.
+     * Don't inject the `quickDiskUsagePlugin` using @{@link  Inject} because the injected instance is not the right one.
      * Lazy load it using {@link Jenkins#getPlugin(Class)}.
      */
     protected QuickDiskUsagePlugin quickDiskUsagePlugin;
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
-            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
-                .ofLongs()
-                .setDescription("Disk usage of first level folder in JENKINS_HOME.")
-                .setUnit("byte")
-                .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes()));
+    @Inject
+    protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
+    @PostConstruct
+    public void postConstruct() {
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage...");
+
+        Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
+        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
+            .ofLongs()
+            .setDescription("Disk usage of first level folder in JENKINS_HOME.")
+            .setUnit("byte")
+            .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes()));
+
     }
 
     private long calculateDiskUsageInBytes() {

@@ -29,18 +29,65 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.ExperimentalMemoryPools;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
+import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
+import org.junit.Test;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
+
+/*
+https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/testing-common/src/main/java/io/opentelemetry/instrumentation/testing/LibraryTestRunner.java#L87
+ */
 
 public class ReconfigurableMeterProviderTest {
 
     final static Random random = new Random();
+
+
+    @Test
+    public void testBatchCallback() throws Exception {
+        AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk1 = AutoConfiguredOpenTelemetrySdk.builder().addPropertiesSupplier(() -> Map.of("otel.metric.export.interval", "1000")).build();
+        OpenTelemetrySdk openTelemetrySdk1 = autoConfiguredOpenTelemetrySdk1.getOpenTelemetrySdk();
+        final ReconfigurableMeterProvider meterProvider = new ReconfigurableMeterProvider(openTelemetrySdk1.getMeterProvider());
+
+        ReconfigurableMeterProvider.ReconfigurableMeter reconfigurableJenkinsMeter = (ReconfigurableMeterProvider.ReconfigurableMeter) meterProvider
+            .meterBuilder("io.jenkins")
+            .setInstrumentationVersion("1.0.0")
+            .build();
+        final ObservableLongMeasurement observableLongMeasurement = reconfigurableJenkinsMeter.counterBuilder("jenkins.build.counter").buildObserver();
+
+        // see ExperimentalMemoryPools
+        BatchCallback batchCallback = reconfigurableJenkinsMeter.batchCallback(() -> {
+            int value = random.nextInt(5);
+            System.out.println("record " + value);
+            observableLongMeasurement.record(value);
+        }, observableLongMeasurement);
+
+
+        // RECONFIGURE
+        AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk2 = AutoConfiguredOpenTelemetrySdk.builder().addPropertiesSupplier(() -> Map.of("otel.metric.export.interval", "1000")).build();
+        OpenTelemetrySdk openTelemetrySdk2 = autoConfiguredOpenTelemetrySdk2.getOpenTelemetrySdk();
+        meterProvider.setDelegate(openTelemetrySdk2.getMeterProvider());
+
+        openTelemetrySdk1.shutdown();
+
+
+        System.out.println("sleeping 0s");
+        Thread.sleep(2_000);
+        openTelemetrySdk2.shutdown();
+
+
+    }
 
     @org.junit.Test
     public void test() {
@@ -126,7 +173,6 @@ public class ReconfigurableMeterProviderTest {
         ReconfigurableMeterProvider.ReconfigurableObservableDoubleMeasurement pressureMeasurement = (ReconfigurableMeterProvider.ReconfigurableObservableDoubleMeasurement) jenkinsMeter.gaugeBuilder("pressure").buildObserver();
         ObservableDoubleMeasurementMock pressureMeasurementImpl = (ObservableDoubleMeasurementMock) pressureMeasurement.getDelegate();
         assertEquals(meterProviderImpl_1.id, pressureMeasurementImpl.meterProviderId);
-
 
 
         // Long Gauge

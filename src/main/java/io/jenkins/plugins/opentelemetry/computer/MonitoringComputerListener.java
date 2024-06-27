@@ -11,22 +11,20 @@ import hudson.model.Computer;
 import hudson.model.TaskListener;
 import hudson.remoting.Channel;
 import hudson.slaves.ComputerListener;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -36,13 +34,18 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringComputerListener extends ComputerListener implements OpenTelemetryLifecycleListener {
+public class MonitoringComputerListener extends ComputerListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
     private LongCounter failureAgentCounter;
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
+    @Inject
+    protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+
+    @PostConstruct
+    public void postConstruct() {
+        Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
+
         final Jenkins jenkins = Jenkins.get();
         Computer controllerComputer = jenkins.getComputer("");
         if (controllerComputer == null) {
@@ -70,12 +73,12 @@ public class MonitoringComputerListener extends ComputerListener implements Open
             .setDescription("Number of offline agents")
             .setUnit("1")
             .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount()));
-            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
+        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
             .ofLongs()
             .setDescription("Number of online agents")
             .setUnit("1")
             .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount()));
-            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
+        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
             .ofLongs()
             .setDescription("Number of agents")
             .setUnit("1")

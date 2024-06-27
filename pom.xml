@@ -4,13 +4,14 @@
   ~ SPDX-License-Identifier: Apache-2.0
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
         <version>4.83</version>
-        <relativePath />
+        <relativePath/>
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>opentelemetry</artifactId>
@@ -34,7 +35,8 @@
         Monitor Jenkins with dashboards and alerts on critical health metrics.
         Troubleshoot Jenkins problems using traces of job executions and HTTP requests.
         Store pipeline build logs in an Observability backend like Elastic or Grafana/Loki
-        to improve Jenkins reliability and scalability while improving the traceability of builds.</description>
+        to improve Jenkins reliability and scalability while improving the traceability of builds.
+    </description>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
 
     <dependencyManagement>
@@ -138,6 +140,14 @@
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-instrumentation-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-instrumentation-api-incubator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-apache-dbcp-2.0</artifactId>
         </dependency>
 
         <dependency>
@@ -387,6 +397,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.opentelemetry.javaagent</groupId>
+            <artifactId>opentelemetry-testing-common</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ant</artifactId>
             <version>487.vd79d090d4ea_e</version>
@@ -511,10 +526,13 @@
                 <artifactId>maven-hpi-plugin</artifactId>
                 <configuration>
                     <loggers>
-                        <io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>INFO</io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>
+                        <io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>INFO
+                        </io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>
                         <io.jenkins.plugins.opentelemetry.job.log>INFO</io.jenkins.plugins.opentelemetry.job.log>
-                        <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
-                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
+                        <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>INFO
+                        </io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
+                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO
+                        </io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                     </loggers>
                 </configuration>
             </plugin>

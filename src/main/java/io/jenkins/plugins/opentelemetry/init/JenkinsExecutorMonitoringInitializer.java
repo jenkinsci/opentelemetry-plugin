@@ -7,26 +7,36 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
 import hudson.model.LoadStatistics;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.*;
 
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecycleListener {
+public class JenkinsExecutorMonitoringInitializer {
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
+    private final Logger logger = Logger.getLogger(JenkinsExecutorMonitoringInitializer.class.getName());
 
+    @Inject
+    JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+
+    @PostConstruct
+    public void postConstruct() {
+
+        logger.log(Level.FINE, () -> "Start monitoring Jenkins controller executor pool...");
+
+        Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
         final ObservableLongMeasurement availableExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_AVAILABLE).setUnit("1").setDescription("Available executors").ofLongs().buildObserver();
         final ObservableLongMeasurement busyExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_BUSY).setUnit("1").setDescription("Busy executors").ofLongs().buildObserver();
         final ObservableLongMeasurement idleExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_IDLE).setUnit("1").setDescription("Idle executors").ofLongs().buildObserver();

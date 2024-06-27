@@ -68,6 +68,9 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verifyNotNull;
 
+/**
+ * TODO support reconfiguration
+ */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
@@ -85,15 +88,11 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
     @PostConstruct
     public void postConstruct() {
-
-    }
-
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
-        super.afterSdkInitialized(meter, loggerProvider, eventLogger, tracer, configProperties);
+        Meter meter = getMeter();
+        ConfigProperties configProperties = getConfigProperties();
 
         // CAUSE HANDLERS
-        List<CauseHandler> causeHandlers = new ArrayList(ExtensionList.lookup(CauseHandler.class));
+        List<CauseHandler> causeHandlers = new ArrayList<>(ExtensionList.lookup(CauseHandler.class));
         causeHandlers.stream().forEach(causeHandler -> causeHandler.configure(configProperties));
         Collections.sort(causeHandlers);
         this.causeHandlers = causeHandlers;

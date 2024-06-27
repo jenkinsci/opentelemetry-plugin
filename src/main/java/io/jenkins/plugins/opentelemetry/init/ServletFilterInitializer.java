@@ -7,17 +7,16 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
 import hudson.util.PluginServletFilter;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.servlet.StaplerInstrumentationServletFilter;
 import io.jenkins.plugins.opentelemetry.servlet.TraceContextServletFilter;
-import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
-import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import java.util.Collections;
@@ -30,18 +29,24 @@ import java.util.logging.Logger;
  * TODO Register the {@link StaplerInstrumentationServletFilter} earlier in the chain of {@link Filter} of the Jenkins webapp,
  * register it before the {@link hudson.security.HudsonFilter} so that the {@link io.jenkins.plugins.opentelemetry.security.AuditingSecurityListener}
  * events can be associated to an HTTP trace.
+ * TODO support live reconfiguration
  */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class ServletFilterInitializer implements OpenTelemetryLifecycleListener {
+public class ServletFilterInitializer {
     private static final Logger logger = Logger.getLogger(ServletFilterInitializer.class.getName());
 
     StaplerInstrumentationServletFilter staplerInstrumentationServletFilter;
 
     TraceContextServletFilter traceContextServletFilter;
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
+    @Inject
+    JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
+    @PostConstruct
+    public void postConstruct() {
+
+        ConfigProperties configProperties = jenkinsControllerOpenTelemetry.getConfig();
+        Tracer tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
         boolean jenkinsRemoteSpanEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED)).orElse(false);
 
         if (jenkinsRemoteSpanEnabled) {
@@ -50,7 +55,7 @@ public class ServletFilterInitializer implements OpenTelemetryLifecycleListener 
         } else {
             logger.log(Level.INFO, () -> "Jenkins trace context propagation disabled on inbound HTTP requests (eg. build triggers). " +
                 "To enable it, set the property " +
-                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED + " to true.");
+                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED + " to true. Changing this configuration requires a Jenkins restart.");
         }
         // TODO support live reload of the config flag
         boolean jenkinsWebInstrumentationEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED)).orElse(true);
@@ -61,7 +66,7 @@ public class ServletFilterInitializer implements OpenTelemetryLifecycleListener 
             addToPluginServletFilter(staplerInstrumentationServletFilter);
         } else {
             logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled. To enable it, set the property " +
-                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED + " to true.");
+                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED + " to true. Changing this configuration requires a Jenkins restart.");
         }
 
 
@@ -80,13 +85,14 @@ public class ServletFilterInitializer implements OpenTelemetryLifecycleListener 
         }
     }
 
-    @Override
-    public void beforeSdkShutdown() {
-        try {
-            PluginServletFilter.removeFilter(staplerInstrumentationServletFilter);
-            PluginServletFilter.removeFilter(traceContextServletFilter);
-        } catch (ServletException e) {
-            logger.log(Level.INFO, "Exception removing OpenTelemetryServletFilter", e);
-        }
-    }
+    // TODO support reconfiguration
+//    @Override
+//    public void beforeSdkShutdown() {
+//        try {
+//            PluginServletFilter.removeFilter(staplerInstrumentationServletFilter);
+//            PluginServletFilter.removeFilter(traceContextServletFilter);
+//        } catch (ServletException e) {
+//            logger.log(Level.INFO, "Exception removing OpenTelemetryServletFilter", e);
+//        }
+//    }
 }
