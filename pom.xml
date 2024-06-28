@@ -44,7 +44,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.440.x</artifactId>
-                <version>3120.v4d898e1e9fc4</version>
+                <version>3143.v347db_7c6db_6e</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -141,15 +141,6 @@
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-instrumentation-api</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-instrumentation-api-incubator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-apache-dbcp-2.0</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk</artifactId>
@@ -394,11 +385,6 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-testing</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry.javaagent</groupId>
-            <artifactId>opentelemetry-testing-common</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

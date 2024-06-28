@@ -16,6 +16,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.instrumentation.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 
