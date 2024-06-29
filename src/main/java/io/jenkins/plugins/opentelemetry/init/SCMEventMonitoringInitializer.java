@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.Meter;
 import jenkins.YesNoMaybe;
@@ -22,7 +23,7 @@ import java.util.logging.Logger;
  * Capture SCM Events metrics
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class SCMEventMonitoringInitializer {
+public class SCMEventMonitoringInitializer implements OpenTelemetryLifecycleListener {
 
     private final static Logger logger = Logger.getLogger(SCMEventMonitoringInitializer.class.getName());
 

@@ -34,6 +34,8 @@ import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableLongUpDownCounter;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.sdk.common.InstrumentationScopeInfo;
+import io.opentelemetry.sdk.common.InstrumentationScopeInfoBuilder;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -67,7 +69,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private final ConcurrentMap<InstrumentationScope, ReconfigurableMeter> meters = new ConcurrentHashMap<>();
+    private final ConcurrentMap<InstrumentationScopeInfo, ReconfigurableMeter> meters = new ConcurrentHashMap<>();
 
     public ReconfigurableMeterProvider() {
         this(MeterProvider.noop());
@@ -82,8 +84,8 @@ class ReconfigurableMeterProvider implements MeterProvider {
         lock.readLock().lock();
         try {
             return meters.computeIfAbsent(
-                new InstrumentationScope(instrumentationScopeName),
-                instrumentationScope -> new ReconfigurableMeter(delegate.get(instrumentationScope.instrumentationScopeName), lock));
+                InstrumentationScopeInfo.create(instrumentationScopeName),
+                instrumentationScopeInfo -> new ReconfigurableMeter(delegate.get(instrumentationScopeInfo.getName()), lock));
         } finally {
             lock.readLock().unlock();
         }
@@ -93,10 +95,10 @@ class ReconfigurableMeterProvider implements MeterProvider {
         lock.writeLock().lock();
         try {
             this.delegate = delegate;
-            meters.forEach((instrumentationScope, reconfigurableMeter) -> {
-                MeterBuilder meterBuilder = delegate.meterBuilder(instrumentationScope.instrumentationScopeName);
-                Optional.ofNullable(instrumentationScope.instrumentationScopeVersion).ifPresent(meterBuilder::setInstrumentationVersion);
-                Optional.ofNullable(instrumentationScope.schemaUrl).ifPresent(meterBuilder::setSchemaUrl);
+            meters.forEach((instrumentationScopeInfo, reconfigurableMeter) -> {
+                MeterBuilder meterBuilder = delegate.meterBuilder(instrumentationScopeInfo.getName());
+                Optional.ofNullable(instrumentationScopeInfo.getVersion()).ifPresent(meterBuilder::setInstrumentationVersion);
+                Optional.ofNullable(instrumentationScopeInfo.getSchemaUrl()).ifPresent(meterBuilder::setSchemaUrl);
                 reconfigurableMeter.setDelegate(meterBuilder.build());
             });
         } finally {
@@ -126,14 +128,13 @@ class ReconfigurableMeterProvider implements MeterProvider {
     @VisibleForTesting
     protected class ReconfigurableMeterBuilder implements MeterBuilder {
         final ReadWriteLock lock;
-        MeterBuilder delegate;
-        String instrumentationScopeName;
-        String schemaUrl;
-        String instrumentationScopeVersion;
+        final MeterBuilder delegate;
+        final InstrumentationScopeInfoBuilder instrumentationScopeInfoBuilder;
+
 
         public ReconfigurableMeterBuilder(MeterBuilder delegate, String instrumentationScopeName, ReadWriteLock lock) {
             this.delegate = Objects.requireNonNull(delegate);
-            this.instrumentationScopeName = Objects.requireNonNull(instrumentationScopeName);
+            this.instrumentationScopeInfoBuilder = InstrumentationScopeInfo.builder(instrumentationScopeName);
             this.lock = lock;
         }
 
@@ -142,7 +143,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
             lock.readLock().lock();
             try {
                 delegate.setSchemaUrl(schemaUrl);
-                this.schemaUrl = schemaUrl;
+                this.instrumentationScopeInfoBuilder.setSchemaUrl(schemaUrl);
                 return this;
             } finally {
                 lock.readLock().unlock();
@@ -154,7 +155,7 @@ class ReconfigurableMeterProvider implements MeterProvider {
             lock.readLock().lock();
             try {
                 delegate.setInstrumentationVersion(instrumentationScopeVersion);
-                this.instrumentationScopeVersion = instrumentationScopeVersion;
+                this.instrumentationScopeInfoBuilder.setVersion(instrumentationScopeVersion);
                 return this;
             } finally {
                 lock.readLock().unlock();
@@ -165,8 +166,8 @@ class ReconfigurableMeterProvider implements MeterProvider {
         public Meter build() {
             lock.readLock().lock();
             try {
-                InstrumentationScope instrumentationScope = new InstrumentationScope(instrumentationScopeName, schemaUrl, instrumentationScopeVersion);
-                return meters.computeIfAbsent(instrumentationScope, k -> new ReconfigurableMeter(delegate.build(), lock));
+                InstrumentationScopeInfo instrumentationScopeInfo = this.instrumentationScopeInfoBuilder.build();
+                return meters.computeIfAbsent(instrumentationScopeInfo, k -> new ReconfigurableMeter(delegate.build(), lock));
             } finally {
                 lock.readLock().unlock();
             }
@@ -564,6 +565,13 @@ class ReconfigurableMeterProvider implements MeterProvider {
             } finally {
                 lock.writeLock().unlock();
             }
+        }
+
+        @Override
+        public String toString() {
+            return "ReconfigurableObservableLongMeasurement{" +
+                "delegate=" + delegate +
+                '}';
         }
     }
 

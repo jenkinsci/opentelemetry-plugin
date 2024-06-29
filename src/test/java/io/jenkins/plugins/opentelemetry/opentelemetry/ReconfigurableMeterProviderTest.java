@@ -33,6 +33,8 @@ import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.Experiment
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
+import io.opentelemetry.sdk.common.InstrumentationScopeInfo;
+import io.opentelemetry.sdk.common.InstrumentationScopeInfoBuilder;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
@@ -53,42 +55,6 @@ public class ReconfigurableMeterProviderTest {
 
     final static Random random = new Random();
 
-
-    @Test
-    public void testBatchCallback() throws Exception {
-        AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk1 = AutoConfiguredOpenTelemetrySdk.builder().addPropertiesSupplier(() -> Map.of("otel.metric.export.interval", "1000")).build();
-        OpenTelemetrySdk openTelemetrySdk1 = autoConfiguredOpenTelemetrySdk1.getOpenTelemetrySdk();
-        final ReconfigurableMeterProvider meterProvider = new ReconfigurableMeterProvider(openTelemetrySdk1.getMeterProvider());
-
-        ReconfigurableMeterProvider.ReconfigurableMeter reconfigurableJenkinsMeter = (ReconfigurableMeterProvider.ReconfigurableMeter) meterProvider
-            .meterBuilder("io.jenkins")
-            .setInstrumentationVersion("1.0.0")
-            .build();
-        final ObservableLongMeasurement observableLongMeasurement = reconfigurableJenkinsMeter.counterBuilder("jenkins.build.counter").buildObserver();
-
-        // see ExperimentalMemoryPools
-        BatchCallback batchCallback = reconfigurableJenkinsMeter.batchCallback(() -> {
-            int value = random.nextInt(5);
-            System.out.println("record " + value);
-            observableLongMeasurement.record(value);
-        }, observableLongMeasurement);
-
-
-        // RECONFIGURE
-        AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk2 = AutoConfiguredOpenTelemetrySdk.builder().addPropertiesSupplier(() -> Map.of("otel.metric.export.interval", "1000")).build();
-        OpenTelemetrySdk openTelemetrySdk2 = autoConfiguredOpenTelemetrySdk2.getOpenTelemetrySdk();
-        meterProvider.setDelegate(openTelemetrySdk2.getMeterProvider());
-
-        openTelemetrySdk1.shutdown();
-
-
-        System.out.println("sleeping 0s");
-        Thread.sleep(2_000);
-        openTelemetrySdk2.shutdown();
-
-
-    }
-
     @org.junit.Test
     public void test() {
         ReconfigurableMeterProvider meterProvider = new ReconfigurableMeterProvider();
@@ -102,9 +68,9 @@ public class ReconfigurableMeterProviderTest {
             .build();
 
         ReconfigurableMeterProviderTest.MeterMock jenkinsMeterImpl = (ReconfigurableMeterProviderTest.MeterMock) jenkinsMeter.delegate;
-        assertEquals("io.jenkins", jenkinsMeterImpl.instrumentationScopeName);
-        assertNull(jenkinsMeterImpl.schemaUrl);
-        assertEquals("1.0.0", jenkinsMeterImpl.instrumentationVersion);
+        assertEquals("io.jenkins", jenkinsMeterImpl.instrumentationScopeInfo.getName());
+        assertNull(jenkinsMeterImpl.instrumentationScopeInfo.getSchemaUrl());
+        assertEquals("1.0.0", jenkinsMeterImpl.instrumentationScopeInfo.getVersion());
         assertEquals(meterProviderImpl_1.id, jenkinsMeterImpl.meterProviderId);
 
 
@@ -113,9 +79,9 @@ public class ReconfigurableMeterProviderTest {
             .setSchemaUrl("https://myframework.io/")
             .build();
         ReconfigurableMeterProviderTest.MeterMock myFrameworkMeterImpl = (ReconfigurableMeterProviderTest.MeterMock) myFrameworkMeter.delegate;
-        assertEquals("io.myframework", myFrameworkMeterImpl.instrumentationScopeName);
-        assertEquals("https://myframework.io/", myFrameworkMeterImpl.schemaUrl);
-        assertNull(myFrameworkMeterImpl.instrumentationVersion);
+        assertEquals("io.myframework", myFrameworkMeterImpl.instrumentationScopeInfo.getName());
+        assertEquals("https://myframework.io/", myFrameworkMeterImpl.instrumentationScopeInfo.getSchemaUrl());
+        assertNull(myFrameworkMeterImpl.instrumentationScopeInfo.getVersion());
         assertEquals(meterProviderImpl_1.id, myFrameworkMeterImpl.meterProviderId);
 
         ReconfigurableMeterProvider.ReconfigurableMeter myFrameworkMeterShouldBeTheSameInstance = (ReconfigurableMeterProvider.ReconfigurableMeter) meterProvider
@@ -199,16 +165,16 @@ public class ReconfigurableMeterProviderTest {
 
         // VERIFY THE DELEGATE IMPL HAS CHANGED WHILE THE PARAMS REMAINS UNCHANGED
         ReconfigurableMeterProviderTest.MeterMock jenkinsMeterImpl_2 = (ReconfigurableMeterProviderTest.MeterMock) jenkinsMeter.delegate;
-        assertEquals("io.jenkins", jenkinsMeterImpl_2.instrumentationScopeName);
-        assertNull(jenkinsMeterImpl_2.schemaUrl);
-        assertEquals("1.0.0", jenkinsMeterImpl_2.instrumentationVersion);
+        assertEquals("io.jenkins", jenkinsMeterImpl_2.instrumentationScopeInfo.getName());
+        assertNull(jenkinsMeterImpl_2.instrumentationScopeInfo.getSchemaUrl());
+        assertEquals("1.0.0", jenkinsMeterImpl_2.instrumentationScopeInfo.getVersion());
         assertEquals(meterProviderImpl_2.id, jenkinsMeterImpl_2.meterProviderId);
 
         ReconfigurableMeterProviderTest.MeterMock myFrameworkMeterImpl_2 = (ReconfigurableMeterProviderTest.MeterMock) myFrameworkMeter.delegate;
 
-        assertEquals("io.myframework", myFrameworkMeterImpl_2.instrumentationScopeName);
-        assertEquals("https://myframework.io/", myFrameworkMeterImpl_2.schemaUrl);
-        assertNull(myFrameworkMeterImpl_2.instrumentationVersion);
+        assertEquals("io.myframework", myFrameworkMeterImpl_2.instrumentationScopeInfo.getName());
+        assertEquals("https://myframework.io/", myFrameworkMeterImpl_2.instrumentationScopeInfo.getSchemaUrl());
+        assertNull(myFrameworkMeterImpl_2.instrumentationScopeInfo.getVersion());
         assertEquals(meterProviderImpl_2.id, myFrameworkMeterImpl_2.meterProviderId);
 
         // #### COUNTER ####
@@ -260,34 +226,21 @@ public class ReconfigurableMeterProviderTest {
 
         @Override
         public Meter get(String instrumentationScopeName) {
-            return new ReconfigurableMeterProviderTest.MeterMock(instrumentationScopeName, id);
+            return new ReconfigurableMeterProviderTest.MeterMock(InstrumentationScopeInfo.create(instrumentationScopeName), id);
         }
     }
 
     static class MeterMock implements Meter {
         static AtomicInteger ID_SOURCE = new AtomicInteger(0);
 
-        final String instrumentationScopeName;
+        final InstrumentationScopeInfo instrumentationScopeInfo;
         final String meterProviderId;
         final String id;
 
-        final String schemaUrl;
-        final String instrumentationVersion;
-
-        public MeterMock(String instrumentationScopeName, String meterProviderId) {
-            this(instrumentationScopeName, meterProviderId, null, null);
-        }
-
-        public MeterMock(String instrumentationScopeName, String instrumentationVersion, String meterProviderId) {
-            this(instrumentationScopeName, meterProviderId, null, instrumentationVersion);
-        }
-
-        public MeterMock(String instrumentationScopeName, String meterProviderId, @Nullable String schemaUrl, @Nullable String instrumentationVersion) {
+        public MeterMock(InstrumentationScopeInfo instrumentationScopeInfo, String meterProviderId) {
             this.id = "MeterMock-" + ID_SOURCE.incrementAndGet();
-            this.instrumentationScopeName = instrumentationScopeName;
+            this.instrumentationScopeInfo = instrumentationScopeInfo;
             this.meterProviderId = meterProviderId;
-            this.schemaUrl = schemaUrl;
-            this.instrumentationVersion = instrumentationVersion;
         }
 
         @Override
@@ -319,33 +272,32 @@ public class ReconfigurableMeterProviderTest {
     static class MeterBuilderMock implements MeterBuilder {
         static AtomicInteger ID_SOURCE = new AtomicInteger(0);
         final String id;
-        final String instrumentationScopeName;
+        final InstrumentationScopeInfoBuilder instrumentationScopeInfoBuilder;
         final String meterProviderId;
-        String schemaUrl;
-        String instrumentationVersion;
+
 
 
         public MeterBuilderMock(String instrumentationScopeName, String meterProviderId) {
             this.id = "MeterBuilderMock-" + ID_SOURCE.incrementAndGet();
-            this.instrumentationScopeName = instrumentationScopeName;
+            this.instrumentationScopeInfoBuilder = InstrumentationScopeInfo.builder(instrumentationScopeName);
             this.meterProviderId = meterProviderId;
         }
 
         @Override
         public MeterBuilder setSchemaUrl(String schemaUrl) {
-            this.schemaUrl = schemaUrl;
+            this.instrumentationScopeInfoBuilder.setSchemaUrl(schemaUrl);
             return this;
         }
 
         @Override
         public MeterBuilder setInstrumentationVersion(String instrumentationVersion) {
-            this.instrumentationVersion = instrumentationVersion;
+            this.instrumentationScopeInfoBuilder.setVersion(instrumentationVersion);
             return this;
         }
 
         @Override
         public Meter build() {
-            return new ReconfigurableMeterProviderTest.MeterMock(instrumentationScopeName, meterProviderId, schemaUrl, instrumentationVersion);
+            return new ReconfigurableMeterProviderTest.MeterMock(instrumentationScopeInfoBuilder.build(), meterProviderId);
         }
     }
 

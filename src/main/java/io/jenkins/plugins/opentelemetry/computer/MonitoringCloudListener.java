@@ -11,6 +11,7 @@ import hudson.model.Node;
 import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.NodeProvisioner;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
@@ -22,7 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringCloudListener extends CloudProvisioningListener  {
+public class MonitoringCloudListener extends CloudProvisioningListener implements OpenTelemetryLifecycleListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringCloudListener.class.getName());
 
     private LongCounter failureCloudCounter;

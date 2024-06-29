@@ -20,6 +20,7 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.User;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
@@ -27,8 +28,6 @@ import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
 import io.jenkins.plugins.opentelemetry.queue.RemoteSpanAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -39,7 +38,6 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.TraceFlags;
 import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.api.trace.TraceStateBuilder;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
@@ -72,7 +70,7 @@ import static com.google.common.base.Verify.verifyNotNull;
  * TODO support reconfiguration
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
+public class MonitoringRunListener extends OtelContextAwareAbstractRunListener implements OpenTelemetryLifecycleListener {
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
@@ -93,13 +91,13 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener {
 
         // CAUSE HANDLERS
         List<CauseHandler> causeHandlers = new ArrayList<>(ExtensionList.lookup(CauseHandler.class));
-        causeHandlers.stream().forEach(causeHandler -> causeHandler.configure(configProperties));
+        causeHandlers.forEach(causeHandler -> causeHandler.configure(configProperties));
         Collections.sort(causeHandlers);
         this.causeHandlers = causeHandlers;
 
         // RUN HANDLERS
         List<RunHandler> runHandlers = new ArrayList<>(ExtensionList.lookup(RunHandler.class));
-        runHandlers.stream().forEach(runHandler -> runHandler.configure(configProperties));
+        runHandlers.forEach(runHandler -> runHandler.configure(configProperties));
         Collections.sort(runHandlers);
         this.runHandlers = runHandlers;
 

@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry.init;
 import hudson.Extension;
 import hudson.util.PluginServletFilter;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.servlet.StaplerInstrumentationServletFilter;
 import io.jenkins.plugins.opentelemetry.servlet.TraceContextServletFilter;
@@ -32,7 +33,7 @@ import java.util.logging.Logger;
  * TODO support live reconfiguration
  */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class ServletFilterInitializer {
+public class ServletFilterInitializer implements OpenTelemetryLifecycleListener {
     private static final Logger logger = Logger.getLogger(ServletFilterInitializer.class.getName());
 
     StaplerInstrumentationServletFilter staplerInstrumentationServletFilter;

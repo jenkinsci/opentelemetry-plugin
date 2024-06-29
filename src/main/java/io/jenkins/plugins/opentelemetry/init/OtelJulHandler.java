@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.logs.LogRecordBuilder;
@@ -32,7 +33,7 @@ import java.util.logging.Logger;
  * Inspired by https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v1.14.0/instrumentation/java-util-logging/javaagent/src/main/java/io/opentelemetry/javaagent/instrumentation/jul/JavaUtilLoggingHelper.java
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true, ordinal = Integer.MAX_VALUE - 10 /* very high but OTel Config should happen before*/)
-public class OtelJulHandler extends Handler {
+public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleListener {
 
     private final static Logger logger = Logger.getLogger(OtelJulHandler.class.getName());
 
@@ -175,6 +176,14 @@ public class OtelJulHandler extends Handler {
         this.captureExperimentalAttributes = jenkinsControllerOpenTelemetry.getConfig().getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
         Logger.getLogger("").addHandler(this);
         logger.log(Level.FINE, "Otel java.util.logging bridge initialized");
+    }
+
+    /**
+     * Hooking Otel logs is the first thing to initialize
+     */
+    @Override
+    public int ordinal() {
+        return Integer.MIN_VALUE;
     }
 
     // this is just needed for calling formatMessage in abstract super class

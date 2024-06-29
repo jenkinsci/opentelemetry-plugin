@@ -16,14 +16,12 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.instrumentation.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 
 import javax.annotation.PreDestroy;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 /**
  * {@link OpenTelemetry} instance intended to live on the Jenkins Controller.
@@ -39,7 +37,7 @@ public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry 
     public final static AtomicInteger INSTANCE_COUNTER = new AtomicInteger(0);
 
     @NonNull
-    private final  Tracer defaultTracer;
+    private final Tracer defaultTracer;
     @NonNull
     private final Meter defaultMeter;
     @NonNull
@@ -115,6 +113,11 @@ public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry 
         configure(
             configuration.toOpenTelemetryProperties(),
             configuration.toOpenTelemetryResource());
+    }
+
+    @Override
+    protected void postOpenTelemetrySdkConfiguration() {
+        ExtensionList.lookup(OpenTelemetryLifecycleListener.class).forEach(l -> l.afterConfiguration(getConfig()));
     }
 
     static public JenkinsControllerOpenTelemetry get() {

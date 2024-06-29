@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry.init;
 import hudson.Extension;
 import hudson.model.LoadStatistics;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
@@ -24,12 +25,16 @@ import java.util.logging.Logger;
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.*;
 
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class JenkinsExecutorMonitoringInitializer {
+public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecycleListener {
 
-    private final Logger logger = Logger.getLogger(JenkinsExecutorMonitoringInitializer.class.getName());
+    private static final Logger logger = Logger.getLogger(JenkinsExecutorMonitoringInitializer.class.getName());
 
     @Inject
     JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+
+    public JenkinsExecutorMonitoringInitializer() {
+        logger.log(Level.FINE, () -> "JenkinsExecutorMonitoringInitializer constructor");
+    }
 
     @PostConstruct
     public void postConstruct() {
@@ -44,8 +49,11 @@ public class JenkinsExecutorMonitoringInitializer {
         final ObservableLongMeasurement connectingExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_CONNECTING).setUnit("1").setDescription("Connecting executors").ofLongs().buildObserver();
         final ObservableLongMeasurement definedExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_DEFINED).setUnit("1").setDescription("Defined executors").ofLongs().buildObserver();
         final ObservableLongMeasurement queueLength = meter.gaugeBuilder(JENKINS_EXECUTOR_QUEUE).setUnit("1").setDescription("Defined executors").ofLongs().buildObserver();
+        logger.log(Level.FINER, () -> "Metrics: " + availableExecutors + ", " + busyExecutors + ", " + idleExecutors + ", " + onlineExecutors + ", " + connectingExecutors + ", " + definedExecutors + ", " + queueLength);
 
         meter.batchCallback(() -> {
+            logger.log(Level.FINE, () -> "Recording Jenkins controller executor pool metrics...");
+            logger.log(Level.FINER, () -> "Metrics: " + availableExecutors + ", " + busyExecutors + ", " + idleExecutors + ", " + onlineExecutors + ", " + connectingExecutors + ", " + definedExecutors + ", " + queueLength);
             Jenkins jenkins = Jenkins.get();
             jenkins.getLabels().forEach(label -> {
                 LoadStatistics.LoadStatisticsSnapshot loadStatisticsSnapshot = label.loadStatistics.computeSnapshot();

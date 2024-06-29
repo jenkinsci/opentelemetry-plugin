@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.opentelemetry.instrumentation.runtimemetrics.java8.Classes;
 import io.opentelemetry.instrumentation.runtimemetrics.java8.Cpu;
 import io.opentelemetry.instrumentation.runtimemetrics.java8.GarbageCollector;
@@ -26,7 +27,7 @@ import java.util.logging.Logger;
  * TODO support reconfiguration of <code>otel.instrumentation.runtime-metrics.enabled=false</code>
  */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class JvmMonitoringInitializer  {
+public class JvmMonitoringInitializer implements OpenTelemetryLifecycleListener {
 
     private final static Logger LOGGER = Logger.getLogger(JvmMonitoringInitializer.class.getName());
 

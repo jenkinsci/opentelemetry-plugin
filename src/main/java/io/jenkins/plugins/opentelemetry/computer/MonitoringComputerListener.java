@@ -13,6 +13,7 @@ import hudson.remoting.Channel;
 import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.AttributeKey;
@@ -34,7 +35,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringComputerListener extends ComputerListener {
+public class MonitoringComputerListener extends ComputerListener implements OpenTelemetryLifecycleListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
     private LongCounter failureAgentCounter;
