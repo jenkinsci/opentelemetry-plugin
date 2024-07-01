@@ -6,7 +6,10 @@
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.incubator.metrics.ExtendedDoubleHistogramBuilder;
+import io.opentelemetry.api.incubator.metrics.ExtendedLongHistogramBuilder;
 import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleCounterBuilder;
@@ -185,11 +188,18 @@ class ReconfigurableMeterProvider implements MeterProvider {
         final String description;
         @Nullable
         final String unit;
+        @Nullable
+        final List<AttributeKey<?>> attributes;
 
-        public InstrumentKey(String name, @Nullable String description, @Nullable String unit) {
+        public InstrumentKey(String name, @Nullable String description, @Nullable String unit, @Nullable List<AttributeKey<?>> attributes) {
             this.name = name;
             this.description = description;
             this.unit = unit;
+            this.attributes = attributes;
+        }
+
+        public InstrumentKey(String name, @Nullable String description, @Nullable String unit) {
+            this(name, description, unit, null);
         }
 
         @Override
@@ -197,14 +207,39 @@ class ReconfigurableMeterProvider implements MeterProvider {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             InstrumentKey that = (InstrumentKey) o;
-            return Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(unit, that.unit);
+            return Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(unit, that.unit) && Objects.equals(attributes, that.attributes);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, description, unit);
+            return Objects.hash(name, description, unit, attributes);
         }
     }
+
+    static class HistogramKey<T extends Number> extends InstrumentKey {
+        @Nullable
+        final List<T> bucketBoundaries;
+
+        public HistogramKey(String name, @Nullable String description, @Nullable String unit, @Nullable List<AttributeKey<?>> attributes, @Nullable List<T> bucketBoundaries) {
+            super(name, description, unit, attributes);
+            this.bucketBoundaries = bucketBoundaries;
+        }
+
+        @Override
+        public boolean equals(@Nullable Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            HistogramKey<?> that = (HistogramKey<?>) o;
+            return Objects.equals(bucketBoundaries, that.bucketBoundaries);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), bucketBoundaries);
+        }
+    }
+
 
     static class ObservableLongMeasurementCallbackKey {
         final String name;
@@ -303,9 +338,9 @@ class ReconfigurableMeterProvider implements MeterProvider {
 
         // HISTOGRAMS
         // Long histograms
-        final ConcurrentMap<InstrumentKey, ReconfigurableLongHistogram> longHistograms = new ConcurrentHashMap<>();
+        final ConcurrentMap<HistogramKey<Long>, ReconfigurableLongHistogram> longHistograms = new ConcurrentHashMap<>();
         // Double histograms
-        final ConcurrentMap<InstrumentKey, ReconfigurableDoubleHistogram> doubleHistograms = new ConcurrentHashMap<>();
+        final ConcurrentMap<HistogramKey<Double>, ReconfigurableDoubleHistogram> doubleHistograms = new ConcurrentHashMap<>();
 
         // BATCH CALLBACKS
         final ConcurrentMap<BatchCallbackKey, ReconfigurableBatchCallback> batchCallbacks = new ConcurrentHashMap<>();
@@ -347,7 +382,13 @@ class ReconfigurableMeterProvider implements MeterProvider {
         public DoubleHistogramBuilder histogramBuilder(String name) {
             lock.readLock().lock();
             try {
-                return new ReconfigurableDoubleHistogramBuilder(delegate.histogramBuilder(name), name, doubleHistograms, longHistograms, lock);
+                DoubleHistogramBuilder doubleHistogramBuilder = delegate.histogramBuilder(name);
+                if (doubleHistogramBuilder instanceof ExtendedDoubleHistogramBuilder) {
+                    ExtendedDoubleHistogramBuilder histogramBuilder = (ExtendedDoubleHistogramBuilder) doubleHistogramBuilder;
+                    return new ReconfigurableDoubleHistogramBuilder(histogramBuilder, name, doubleHistograms, longHistograms, lock);
+                } else {
+                    return new ReconfigurableDoubleHistogramBuilder(doubleHistogramBuilder, name, doubleHistograms, longHistograms, lock);
+                }
             } finally {
                 lock.readLock().unlock();
             }
@@ -522,11 +563,15 @@ class ReconfigurableMeterProvider implements MeterProvider {
 
                 // HISTOGRAMS
                 // Long histograms
-                this.longHistograms.forEach((counterKey, reconfigurableLongHistogram) -> {
-                    LongHistogramBuilder longHistogramBuilder = delegate.histogramBuilder(counterKey.name).ofLongs();
-                    Optional.ofNullable(counterKey.description).ifPresent(longHistogramBuilder::setDescription);
-                    Optional.ofNullable(counterKey.unit).ifPresent(longHistogramBuilder::setUnit);
-                    logger.log(Level.FINE, () -> "Reconfiguring long histogram " + counterKey.name);
+                this.longHistograms.forEach((histogramKey, reconfigurableLongHistogram) -> {
+                    LongHistogramBuilder longHistogramBuilder = delegate.histogramBuilder(histogramKey.name).ofLongs();
+                    Optional.ofNullable(histogramKey.description).ifPresent(longHistogramBuilder::setDescription);
+                    Optional.ofNullable(histogramKey.unit).ifPresent(longHistogramBuilder::setUnit);
+                    Optional.ofNullable(histogramKey.bucketBoundaries).ifPresent(longHistogramBuilder::setExplicitBucketBoundariesAdvice);
+                    if (longHistogramBuilder instanceof ExtendedLongHistogramBuilder) {
+                        Optional.ofNullable(histogramKey.attributes).ifPresent(((ExtendedLongHistogramBuilder) longHistogramBuilder)::setAttributesAdvice);
+                    }
+                    logger.log(Level.FINE, () -> "Reconfiguring long histogram " + histogramKey.name);
                     reconfigurableLongHistogram.setDelegate(longHistogramBuilder.build());
                 });
                 // Double histograms
@@ -534,6 +579,10 @@ class ReconfigurableMeterProvider implements MeterProvider {
                     DoubleHistogramBuilder doubleHistogramBuilder = delegate.histogramBuilder(counterKey.name);
                     Optional.ofNullable(counterKey.description).ifPresent(doubleHistogramBuilder::setDescription);
                     Optional.ofNullable(counterKey.unit).ifPresent(doubleHistogramBuilder::setUnit);
+                    Optional.ofNullable(counterKey.bucketBoundaries).ifPresent(doubleHistogramBuilder::setExplicitBucketBoundariesAdvice);
+                    if (doubleHistogramBuilder instanceof ExtendedDoubleHistogramBuilder) {
+                        Optional.ofNullable(counterKey.attributes).ifPresent(((ExtendedDoubleHistogramBuilder) doubleHistogramBuilder)::setAttributesAdvice);
+                    }
                     logger.log(Level.FINE, () -> "Reconfiguring double histogram " + counterKey.name);
                     reconfigurableDoubleHistogram.setDelegate(doubleHistogramBuilder.build());
                 });
@@ -1859,20 +1908,22 @@ class ReconfigurableMeterProvider implements MeterProvider {
         }
     }
 
-    static class ReconfigurableDoubleHistogramBuilder implements DoubleHistogramBuilder {
+    static class ReconfigurableDoubleHistogramBuilder implements ExtendedDoubleHistogramBuilder {
         final ReadWriteLock lock;
         DoubleHistogramBuilder delegate;
-        final ConcurrentMap<InstrumentKey, ReconfigurableDoubleHistogram> doubleHistograms;
-        final ConcurrentMap<InstrumentKey, ReconfigurableLongHistogram> longHistograms;
+        final ConcurrentMap<HistogramKey<Double>, ReconfigurableDoubleHistogram> doubleHistograms;
+        final ConcurrentMap<HistogramKey<Long>, ReconfigurableLongHistogram> longHistograms;
 
         final String name;
         String description;
         String unit;
+        List<AttributeKey<?>> attributes;
+        List<Double> bucketBoundaries;
 
         ReconfigurableDoubleHistogramBuilder(
-            DoubleHistogramBuilder delegate, String name, ConcurrentMap<InstrumentKey,
-            ReconfigurableDoubleHistogram> doubleHistograms,
-            ConcurrentMap<InstrumentKey, ReconfigurableLongHistogram> longHistograms,
+            DoubleHistogramBuilder delegate, String name,
+            ConcurrentMap<HistogramKey<Double>, ReconfigurableDoubleHistogram> doubleHistograms,
+            ConcurrentMap<HistogramKey<Long>, ReconfigurableLongHistogram> longHistograms,
             ReadWriteLock lock) {
 
             this.delegate = delegate;
@@ -1908,12 +1959,29 @@ class ReconfigurableMeterProvider implements MeterProvider {
         }
 
         @Override
+        public ExtendedDoubleHistogramBuilder setAttributesAdvice(List<AttributeKey<?>> attributes) {
+            lock.readLock().lock();
+            try {
+                if (delegate instanceof ExtendedDoubleHistogramBuilder) {
+                    ((ExtendedDoubleHistogramBuilder) delegate).setAttributesAdvice(attributes);
+                }
+                this.attributes = attributes;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
+        }
+
+        @Override
         public LongHistogramBuilder ofLongs() {
             lock.readLock().lock();
             try {
                 ReconfigurableLongHistogramBuilder reconfigurableLongCounterBuilder = new ReconfigurableLongHistogramBuilder(delegate.ofLongs(), name, longHistograms, lock);
                 Optional.ofNullable(description).ifPresent(reconfigurableLongCounterBuilder::setDescription);
                 Optional.ofNullable(unit).ifPresent(reconfigurableLongCounterBuilder::setUnit);
+                if (reconfigurableLongCounterBuilder.delegate instanceof ExtendedLongHistogramBuilder) {
+                    Optional.ofNullable(attributes).ifPresent(((ExtendedLongHistogramBuilder) reconfigurableLongCounterBuilder.delegate)::setAttributesAdvice);
+                }
                 return reconfigurableLongCounterBuilder;
             } finally {
                 lock.readLock().unlock();
@@ -1924,8 +1992,8 @@ class ReconfigurableMeterProvider implements MeterProvider {
         public DoubleHistogram build() {
             lock.readLock().lock();
             try {
-                InstrumentKey gaugeKey = new InstrumentKey(name, description, unit);
-                return doubleHistograms.computeIfAbsent(gaugeKey, k -> new ReconfigurableDoubleHistogram(delegate.build(), lock));
+                HistogramKey<Double> doubleHistogramKey = new HistogramKey<>(name, description, unit, attributes, bucketBoundaries);
+                return doubleHistograms.computeIfAbsent(doubleHistogramKey, k -> new ReconfigurableDoubleHistogram(delegate.build(), lock));
             } finally {
                 lock.readLock().unlock();
             }
@@ -1933,7 +2001,14 @@ class ReconfigurableMeterProvider implements MeterProvider {
 
         @Override
         public DoubleHistogramBuilder setExplicitBucketBoundariesAdvice(List<Double> bucketBoundaries) {
-            throw new UnsupportedOperationException("Not implemented");
+            lock.readLock().lock();
+            try {
+                delegate.setExplicitBucketBoundariesAdvice(bucketBoundaries);
+                this.bucketBoundaries = bucketBoundaries;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
         }
     }
 
@@ -1998,18 +2073,20 @@ class ReconfigurableMeterProvider implements MeterProvider {
         }
     }
 
-    static class ReconfigurableLongHistogramBuilder implements LongHistogramBuilder {
+    static class ReconfigurableLongHistogramBuilder implements ExtendedLongHistogramBuilder {
         final ReadWriteLock lock;
         LongHistogramBuilder delegate;
-        final ConcurrentMap<InstrumentKey, ReconfigurableLongHistogram> longHistograms;
+        final ConcurrentMap<HistogramKey<Long>, ReconfigurableLongHistogram> longHistograms;
 
         final String name;
         String description;
         String unit;
+        List<Long> bucketBoundaries;
+        List<AttributeKey<?>> attributes;
 
 
         ReconfigurableLongHistogramBuilder(LongHistogramBuilder delegate, String name,
-                                           ConcurrentMap<InstrumentKey, ReconfigurableLongHistogram> longHistograms,
+                                           ConcurrentMap<HistogramKey<Long>, ReconfigurableLongHistogram> longHistograms,
                                            ReadWriteLock lock) {
             this.delegate = delegate;
             this.name = name;
@@ -2043,20 +2120,43 @@ class ReconfigurableMeterProvider implements MeterProvider {
         }
 
         @Override
-        public LongHistogram build() {
+        public ExtendedLongHistogramBuilder setAttributesAdvice(List<AttributeKey<?>> attributes) {
             lock.readLock().lock();
             try {
-                InstrumentKey counterKey = new InstrumentKey(name, description, unit);
-                return longHistograms.computeIfAbsent(counterKey, k -> new ReconfigurableLongHistogram(delegate.build(), lock));
+                if (delegate instanceof ExtendedLongHistogramBuilder) {
+                    ((ExtendedLongHistogramBuilder) delegate).setAttributesAdvice(attributes);
+                }
+                this.attributes = attributes;
+                return this;
+            } finally {
+                lock.readLock().unlock();
+            }
+        }
+
+
+        @Override
+        public LongHistogramBuilder setExplicitBucketBoundariesAdvice(List<Long> bucketBoundaries) {
+            lock.readLock().lock();
+            try {
+                delegate.setExplicitBucketBoundariesAdvice(bucketBoundaries);
+                this.bucketBoundaries = bucketBoundaries;
+                return this;
             } finally {
                 lock.readLock().unlock();
             }
         }
 
         @Override
-        public LongHistogramBuilder setExplicitBucketBoundariesAdvice(List<Long> bucketBoundaries) {
-            throw new UnsupportedOperationException("Not implemented");
+        public LongHistogram build() {
+            lock.readLock().lock();
+            try {
+                HistogramKey<Long> longHistogramKey = new HistogramKey<>(name, description, unit, attributes, bucketBoundaries);
+                return longHistograms.computeIfAbsent(longHistogramKey, k -> new ReconfigurableLongHistogram(delegate.build(), lock));
+            } finally {
+                lock.readLock().unlock();
+            }
         }
+
     }
 
     @VisibleForTesting

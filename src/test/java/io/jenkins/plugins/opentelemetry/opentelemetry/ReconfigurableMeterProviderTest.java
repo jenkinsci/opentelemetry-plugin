@@ -6,17 +6,23 @@
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.incubator.metrics.ExtendedDoubleHistogramBuilder;
+import io.opentelemetry.api.incubator.metrics.ExtendedLongHistogramBuilder;
 import io.opentelemetry.api.metrics.BatchCallback;
 import io.opentelemetry.api.metrics.DoubleCounter;
 import io.opentelemetry.api.metrics.DoubleCounterBuilder;
 import io.opentelemetry.api.metrics.DoubleGauge;
 import io.opentelemetry.api.metrics.DoubleGaugeBuilder;
+import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.DoubleHistogramBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongCounterBuilder;
 import io.opentelemetry.api.metrics.LongGauge;
 import io.opentelemetry.api.metrics.LongGaugeBuilder;
+import io.opentelemetry.api.metrics.LongHistogram;
+import io.opentelemetry.api.metrics.LongHistogramBuilder;
 import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.MeterBuilder;
@@ -29,26 +35,19 @@ import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.ExperimentalMemoryPools;
-import io.opentelemetry.sdk.OpenTelemetrySdk;
-import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
-import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.common.InstrumentationScopeInfo;
 import io.opentelemetry.sdk.common.InstrumentationScopeInfoBuilder;
-import org.junit.Test;
 
-import javax.annotation.Nullable;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
 
 /*
-https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/testing-common/src/main/java/io/opentelemetry/instrumentation/testing/LibraryTestRunner.java#L87
+ * https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/testing-common/src/main/java/io/opentelemetry/instrumentation/testing/LibraryTestRunner.java#L87
  */
 
 public class ReconfigurableMeterProviderTest {
@@ -156,6 +155,16 @@ public class ReconfigurableMeterProviderTest {
         ObservableLongMeasurementMock observableLongMeasurementImpl = (ObservableLongMeasurementMock) observableLongGaugeMeasurement.getDelegate();
         assertEquals(meterProviderImpl_1.id, observableLongMeasurementImpl.meterProviderId);
 
+        // Double histogram
+        ReconfigurableMeterProvider.ReconfigurableDoubleHistogram doubleHistogram = (ReconfigurableMeterProvider.ReconfigurableDoubleHistogram) jenkinsMeter.histogramBuilder("double.histogram").build();
+        DoubleHistogramMock doubleHistogramImpl = (DoubleHistogramMock) doubleHistogram.getDelegate();
+        assertEquals(meterProviderImpl_1.id, doubleHistogramImpl.meterProviderId);
+
+        // Long histogram
+        ReconfigurableMeterProvider.ReconfigurableLongHistogram longHistogram = (ReconfigurableMeterProvider.ReconfigurableLongHistogram) jenkinsMeter.histogramBuilder("long.histogram").ofLongs().build();
+        LongHistogramMock longHistogramImpl = (LongHistogramMock) longHistogram.getDelegate();
+        assertEquals(meterProviderImpl_1.id, longHistogramImpl.meterProviderId);
+
         // ############################################################################################################
         // CHANGE THE IMPLEMENTATION OF THE EVENT METER PROVIDER
         ReconfigurableMeterProviderTest.MeterProviderMock meterProviderImpl_2 = new ReconfigurableMeterProviderTest.MeterProviderMock();
@@ -208,6 +217,13 @@ public class ReconfigurableMeterProviderTest {
         assertEquals(meterProviderImpl_2.id, ((ObservableLongGaugeMock) observableLongGauge.delegate).meterProviderId);
         // Observable Long Measurement
         assertEquals(meterProviderImpl_2.id, ((ObservableLongMeasurementMock) observableLongGaugeMeasurement.getDelegate()).meterProviderId);
+
+        // HISTOGRAM
+        // Double histogram
+        assertEquals(meterProviderImpl_2.id, ((DoubleHistogramMock) doubleHistogram.getDelegate()).meterProviderId);
+        // Long histogram
+        assertEquals(meterProviderImpl_2.id, ((LongHistogramMock) longHistogram.getDelegate()).meterProviderId);
+
     }
 
 
@@ -255,7 +271,7 @@ public class ReconfigurableMeterProviderTest {
 
         @Override
         public DoubleHistogramBuilder histogramBuilder(String name) {
-            throw new UnsupportedOperationException();
+            return new DoubleHistogramBuilderMock(id, meterProviderId);
         }
 
         @Override
@@ -667,6 +683,153 @@ public class ReconfigurableMeterProviderTest {
 
         @Override
         public void set(double value, Attributes attributes, Context context) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    static class DoubleHistogramBuilderMock implements ExtendedDoubleHistogramBuilder {
+        final String meterId;
+        final String meterProviderId;
+        String description;
+        String unit;
+        List<AttributeKey<?>> attributes;
+        List<Double> bucketBoundaries;
+
+        public DoubleHistogramBuilderMock(String meterId, String meterProviderId) {
+            this.meterId = meterId;
+            this.meterProviderId = meterProviderId;
+        }
+
+        @Override
+        public DoubleHistogramBuilder setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        @Override
+        public DoubleHistogramBuilder setUnit(String unit) {
+            this.unit = unit;
+            return this;
+        }
+
+        @Override
+        public ExtendedDoubleHistogramBuilder setAttributesAdvice(List<AttributeKey<?>> attributes) {
+            this.attributes = attributes;
+            return this;
+        }
+
+        @Override
+        public DoubleHistogramBuilder setExplicitBucketBoundariesAdvice(List<Double> bucketBoundaries) {
+            this.bucketBoundaries = bucketBoundaries;
+            return this;
+        }
+
+        @Override
+        public LongHistogramBuilder ofLongs() {
+            return new LongHistogramBuilderMock(meterId, meterProviderId);
+        }
+
+        @Override
+        public DoubleHistogram build() {
+            return new DoubleHistogramMock(meterId, meterProviderId);
+        }
+    }
+
+    static class DoubleHistogramMock implements DoubleHistogram {
+        static AtomicInteger ID_SOURCE = new AtomicInteger(0);
+        final String meterProviderId;
+        final String meterId;
+        final String id;
+
+        public DoubleHistogramMock(String meterId, String meterProviderId) {
+            this.id = "DoubleHistogramMock-" + ID_SOURCE.incrementAndGet();
+            this.meterId = meterId;
+            this.meterProviderId = meterProviderId;
+        }
+
+        @Override
+        public void record(double value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void record(double value, Attributes attributes) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void record(double value, Attributes attributes, Context context) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    static class LongHistogramBuilderMock implements ExtendedLongHistogramBuilder {
+        final String meterId;
+        final String meterProviderId;
+        String description;
+        String unit;
+        List<AttributeKey<?>> attributes;
+        List<Long> bucketBoundaries;
+
+        public LongHistogramBuilderMock(String meterId, String meterProviderId) {
+            this.meterId = meterId;
+            this.meterProviderId = meterProviderId;
+        }
+
+        @Override
+        public ExtendedLongHistogramBuilder setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        @Override
+        public ExtendedLongHistogramBuilder setUnit(String unit) {
+            this.unit = unit;
+            return this;
+        }
+
+        @Override
+        public ExtendedLongHistogramBuilder setAttributesAdvice(List<AttributeKey<?>> attributes) {
+            this.attributes = attributes;
+            return this;
+        }
+
+        @Override
+        public ExtendedLongHistogramBuilder setExplicitBucketBoundariesAdvice(List<Long> bucketBoundaries) {
+            this.bucketBoundaries = bucketBoundaries;
+            return this;
+        }
+
+        @Override
+        public LongHistogram build() {
+            return new LongHistogramMock(meterId, meterProviderId);
+        }
+    }
+
+    static class LongHistogramMock implements LongHistogram {
+        static AtomicInteger ID_SOURCE = new AtomicInteger(0);
+        final String meterProviderId;
+        final String meterId;
+        final String id;
+
+        public LongHistogramMock(String meterId, String meterProviderId) {
+            this.id = "LongHistogramMock-" + ID_SOURCE.incrementAndGet();
+            this.meterId = meterId;
+            this.meterProviderId = meterProviderId;
+        }
+
+        @Override
+        public void record(long value) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void record(long value, Attributes attributes) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void record(long value, Attributes attributes, Context context) {
             throw new UnsupportedOperationException();
         }
     }

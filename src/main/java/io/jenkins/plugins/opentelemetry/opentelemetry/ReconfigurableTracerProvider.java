@@ -74,7 +74,6 @@ class ReconfigurableTracerProvider implements TracerProvider {
         return delegate;
     }
 
-
     @VisibleForTesting
     protected class ReconfigurableTracerBuilder implements TracerBuilder {
         TracerBuilder delegate;
