@@ -86,6 +86,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
     @PostConstruct
     public void postConstruct() {
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins build executions...");
         Meter meter = getMeter();
         ConfigProperties configProperties = getConfigProperties();
 
@@ -139,7 +140,6 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
                         .setUnit("1")
                         .build();
 
-        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins build executions...");
     }
 
     @NonNull
