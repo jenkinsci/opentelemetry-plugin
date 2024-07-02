@@ -13,20 +13,16 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.BuildStepListener;
 import hudson.tasks.BuildStep;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
-import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
 import javax.inject.Inject;
@@ -38,7 +34,7 @@ import static com.google.common.base.Verify.verifyNotNull;
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES)
-public class MonitoringBuildStepListener extends BuildStepListener implements OpenTelemetryLifecycleListener {
+public class MonitoringBuildStepListener extends BuildStepListener  {
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
@@ -121,7 +117,7 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Op
 
     @NonNull
     public Tracer getTracer() {
-        return Objects.requireNonNull(tracer, "Null Tracer, #afterSdkInitialized has not bee invoked on listener.");
+        return Objects.requireNonNull(tracer, "Null Tracer, #postConstruct has not bee invoked on listener.");
     }
 
     @Override
@@ -129,13 +125,8 @@ public class MonitoringBuildStepListener extends BuildStepListener implements Op
         return "MonitoringBuildStepListener{}";
     }
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
-        this.tracer = Objects.requireNonNull(tracer, "Provided tracer is null");
-    }
-
-    @Override
-    public void beforeSdkShutdown() {
-
+    @Inject
+    public void setTracer(JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
+        this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
     }
 }

@@ -195,6 +195,9 @@ public class BaseIntegrationTest {
             System.out.println(tree);
         }
 
+        if (index < 0 || index >= trees.size()) {
+            throw new IllegalArgumentException("No span found for index=" + index + ", trees.size()=" + trees.size());
+        }
         return trees.get(index);
     }
 
