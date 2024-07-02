@@ -1,6 +1,6 @@
 # Jenkins OpenTelemetry Plugin
 
-[![Build Status](https://ci.jenkins.io/job/Plugins/job/opentelemetry-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/opentelemetry-plugin/job/master/)
+[![Build Status](https://ci.jenkins.io/job/Plugins/job/opentelemetry-plugin/job/main/badge/icon)](https://ci.jenkins.io/job/Plugins/job/opentelemetry-plugin/job/main/)
 [![Contributors](https://img.shields.io/github/contributors/jenkinsci/opentelemetry-plugin.svg)](https://github.com/jenkinsci/opentelemetry-plugin/graphs/contributors)
 [![Jenkins Plugin](https://img.shields.io/jenkins/plugin/v/opentelemetry.svg)](https://plugins.jenkins.io/opentelemetry)
 [![GitHub release](https://img.shields.io/github/release/jenkinsci/opentelemetry-plugin.svg?label=changelog)](https://github.com/jenkinsci/opentelemetry-plugin/releases/latest)
