@@ -7,22 +7,15 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
 import hudson.util.PluginServletFilter;
-import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.servlet.StaplerInstrumentationServletFilter;
 import io.jenkins.plugins.opentelemetry.servlet.TraceContextServletFilter;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,47 +23,21 @@ import java.util.logging.Logger;
  * TODO Register the {@link StaplerInstrumentationServletFilter} earlier in the chain of {@link Filter} of the Jenkins webapp,
  * register it before the {@link hudson.security.HudsonFilter} so that the {@link io.jenkins.plugins.opentelemetry.security.AuditingSecurityListener}
  * events can be associated to an HTTP trace.
- * TODO support live reconfiguration
  */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
 public class ServletFilterInitializer implements OpenTelemetryLifecycleListener {
     private static final Logger logger = Logger.getLogger(ServletFilterInitializer.class.getName());
 
-    StaplerInstrumentationServletFilter staplerInstrumentationServletFilter;
-
+    @Inject
     TraceContextServletFilter traceContextServletFilter;
 
     @Inject
-    JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    StaplerInstrumentationServletFilter staplerInstrumentationServletFilter;
 
     @PostConstruct
     public void postConstruct() {
-
-        ConfigProperties configProperties = jenkinsControllerOpenTelemetry.getConfig();
-        Tracer tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
-        boolean jenkinsRemoteSpanEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED)).orElse(false);
-
-        if (jenkinsRemoteSpanEnabled) {
-            traceContextServletFilter = new TraceContextServletFilter();
-            addToPluginServletFilter(traceContextServletFilter);
-        } else {
-            logger.log(Level.INFO, () -> "Jenkins trace context propagation disabled on inbound HTTP requests (eg. build triggers). " +
-                "To enable it, set the property " +
-                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED + " to true. Changing this configuration requires a Jenkins restart.");
-        }
-        // TODO support live reload of the config flag
-        boolean jenkinsWebInstrumentationEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED)).orElse(true);
-
-        if (jenkinsWebInstrumentationEnabled) {
-            List<String> capturedRequestParameters = configProperties.getList(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS, Collections.emptyList());
-            staplerInstrumentationServletFilter = new StaplerInstrumentationServletFilter(capturedRequestParameters, tracer);
-            addToPluginServletFilter(staplerInstrumentationServletFilter);
-        } else {
-            logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled. To enable it, set the property " +
-                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED + " to true. Changing this configuration requires a Jenkins restart.");
-        }
-
-
+        addToPluginServletFilter(traceContextServletFilter);
+        addToPluginServletFilter(staplerInstrumentationServletFilter);
     }
 
     private void addToPluginServletFilter(Filter filter) {
@@ -86,14 +53,4 @@ public class ServletFilterInitializer implements OpenTelemetryLifecycleListener 
         }
     }
 
-    // TODO support reconfiguration
-//    @Override
-//    public void beforeSdkShutdown() {
-//        try {
-//            PluginServletFilter.removeFilter(staplerInstrumentationServletFilter);
-//            PluginServletFilter.removeFilter(traceContextServletFilter);
-//        } catch (ServletException e) {
-//            logger.log(Level.INFO, "Exception removing OpenTelemetryServletFilter", e);
-//        }
-//    }
 }

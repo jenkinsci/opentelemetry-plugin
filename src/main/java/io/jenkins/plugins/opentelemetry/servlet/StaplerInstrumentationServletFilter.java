@@ -5,13 +5,17 @@
 
 package io.jenkins.plugins.opentelemetry.servlet;
 
+import hudson.Extension;
 import hudson.model.User;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.ClientAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
 import io.opentelemetry.semconv.NetworkAttributes;
@@ -22,6 +26,8 @@ import io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes;
 import org.apache.commons.lang.StringUtils;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -39,6 +45,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringTokenizer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -47,26 +54,32 @@ import java.util.HashSet;
 
 /**
  * Instrumentation of the Stapler MVC framework.
+ * Must be a {@link Filter}  rather than a {@link jenkins.util.HttpServletFilter} because it must wrap the invocation of the {@link FilterChain} to create a {@link Span}.
  * TODO find a smarter way to instrument each HTTP request path. It should rely on instrumenting the Stapler framework
  * TODO adopt <a href="https://javadoc.jenkins.io/component/stapler/org/kohsuke/stapler/StaplerRequest.html#getAncestors()">StaplerRequest.html#getAncestors()</a>
  */
-public class StaplerInstrumentationServletFilter implements Filter {
-    private final static Logger logger = Logger.getLogger(StaplerInstrumentationServletFilter.class.getName());
-    private final List<String> capturedRequestParameters;
-    private final Tracer tracer;
-
-
+@Extension
+public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetryLifecycleListener {
     private static final Set<String> SKIP_PATHS = new HashSet<>(Arrays.asList("static", "adjuncts", "scripts", "plugin", "images", "sse-gateway"));
+    private final static Logger logger = Logger.getLogger(StaplerInstrumentationServletFilter.class.getName());
+    final AtomicBoolean enabled = new AtomicBoolean(false);
+    List<String> capturedRequestParameters;
+    Tracer tracer;
 
-    public StaplerInstrumentationServletFilter(List<String> capturedRequestParameters, Tracer tracer) {
-        this.capturedRequestParameters = capturedRequestParameters;
-        this.tracer = tracer;
+    @Override
+    public void afterConfiguration(ConfigProperties configProperties) {
+        enabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED, true));
+        if (!enabled.get()) {
+            logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled. To enable it, set the property " +
+                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED + " to true. Changing this configuration requires a Jenkins restart.");
+        }
+        capturedRequestParameters = configProperties.getList(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS, Collections.emptyList());
     }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
 
-        if (servletRequest instanceof HttpServletRequest) {
+        if (enabled.get() && servletRequest instanceof HttpServletRequest) {
             _doFilter((HttpServletRequest) servletRequest, (HttpServletResponse) servletResponse, filterChain);
         } else {
             filterChain.doFilter(servletRequest, servletResponse);
@@ -628,13 +641,15 @@ public class StaplerInstrumentationServletFilter implements Filter {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        StaplerInstrumentationServletFilter that = (StaplerInstrumentationServletFilter) o;
-        return Objects.equals(capturedRequestParameters, that.capturedRequestParameters);
+        return o != null && getClass() == o.getClass();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(capturedRequestParameters);
+        return Objects.hashCode(getClass());
+    }
+
+    @Inject void setJenkinsControllerOpenTelemetry(JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
+        this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
     }
 }

@@ -17,12 +17,14 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,7 +42,12 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
     private LongCounter timeInQueueInMillisCounter;
     @Inject
     private JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    private final AtomicBoolean traceContextPropagationEnabled = new AtomicBoolean(false);
 
+    @Override
+    public void afterConfiguration(ConfigProperties configProperties) {
+        traceContextPropagationEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED, false));
+    }
     @PostConstruct
     public void postConstruct() {
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins queue...");
@@ -99,7 +106,7 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
 
     @Override
     public void onEnterWaiting(Queue.WaitingItem wi) {
-        if (isRemoteSpanEnabled()) {
+        if (traceContextPropagationEnabled.get()) {
             Span span = Span.fromContextOrNull(Context.current());
             if (span != null && wi.getActions(RemoteSpanAction.class) != null) {
                 SpanContext spanContext = span.getSpanContext();
@@ -109,7 +116,5 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
         }
     }
 
-    private boolean isRemoteSpanEnabled() {
-        return JenkinsControllerOpenTelemetry.get().getConfig().getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED, false);
-    }
+
 }
