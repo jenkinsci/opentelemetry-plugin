@@ -4,6 +4,7 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.api.baggage.Baggage;
@@ -50,10 +51,8 @@ public class OtelEnvironmentContributorService {
             TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
             W3CBaggagePropagator.getInstance().inject(Context.current(), envs, setter);
         }
-        MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-        if (monitoringAction == null) {
-            LOGGER.log(Level.FINE, () -> "MonitoringAction NOT found on run " + run);
-        } else {
+        if (OtelUtils.hasOpentelemetryData(run)) {
+            MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
             // Add visualization link as environment variables to provide visualization links in notifications (to GitHub, slack messages...)
             for (MonitoringAction.ObservabilityBackendLink link : monitoringAction.getLinks()) {
                 // Default backend link got an empty environment variable.

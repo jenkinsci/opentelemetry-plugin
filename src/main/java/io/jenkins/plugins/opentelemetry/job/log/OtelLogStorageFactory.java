@@ -13,6 +13,7 @@ import hudson.model.Queue;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.incubator.events.EventLogger;
@@ -87,27 +88,14 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
         LogStorage ret = null;
         if (exec instanceof Run) {
             Run<?, ?> run = (Run<?, ?>) exec;
-            if(hasOpentelemetryData(run)){
-                logger.log(Level.FINEST, () -> "forBuild(" + run + ")");
+            if(OtelUtils.hasOpentelemetryData(run)){
+                logger.log(Level.FINEST, () -> "forExec(" + run + ")");
                 ret = new OtelLogStorage(run, getOtelTraceService(), tracer);
-            } else {
-                logger.log(Level.FINE, () -> "No Opentelemetry data for " + run);
             }
         } 
         return ret;
     }
-
-    /**
-     * Check if the run has Opentelemetry data
-     * To validate it search for the MonitoringAction in the build actions.
-     * @param run the Build
-     * @return true if the run has Opentelemetry data
-     */
-    private boolean hasOpentelemetryData(Run<?, ?> run){
-        MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-        return monitoringAction != null;
-    }
-
+    
     /**
      * Workaround dependency injection problem. @Inject doesn't work here
      */
