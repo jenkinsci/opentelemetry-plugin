@@ -13,6 +13,8 @@ import hudson.model.Queue;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LoggerProvider;
@@ -54,30 +56,46 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
         return ExtensionList.lookupSingleton(OtelLogStorageFactory.class);
     }
 
+    /**
+     * Create a LogStorage for a given FlowExecutionOwner
+     * @param owner the FlowExecutionOwner
+     * @return the LogStorage, null if no Opentelemetry data is found, or a BrokenLogStorage if an error occurs.
+     */
     @Nullable
     @Override
     public LogStorage forBuild(@NonNull final FlowExecutionOwner owner) {
+        LogStorage ret = null;
         if (!getJenkinsControllerOpenTelemetry().isLogsEnabled()) {
             logger.log(Level.FINE, () -> "OTel Logs disabled");
-            return null;
+            return ret;
         }
-
         try {
             Queue.Executable exec = owner.getExecutable();
-            if (exec instanceof Run) {
-                Run<?, ?> run = (Run<?, ?>) exec;
-
-                logger.log(Level.FINEST, () -> "forBuild(" + run + ")");
-
-                return new OtelLogStorage(run, getOtelTraceService(), tracer);
-            } else {
-                return null;
-            }
+            ret = forExec(exec);
         } catch (IOException x) {
-            return new BrokenLogStorage(x);
+            ret = new BrokenLogStorage(x);
         }
+        return ret;
     }
 
+    /**
+     * Create a LogStorage for a given Queve Executable
+     * @param exec the Queue Executable
+     * @return the LogStorage or null if no Opentelemetry data is found
+     */
+    @Nullable
+    private LogStorage forExec(@NonNull Queue.Executable exec){
+        LogStorage ret = null;
+        if (exec instanceof Run) {
+            Run<?, ?> run = (Run<?, ?>) exec;
+            if(OtelUtils.hasOpentelemetryData(run)){
+                logger.log(Level.FINEST, () -> "forExec(" + run + ")");
+                ret = new OtelLogStorage(run, getOtelTraceService(), tracer);
+            }
+        } 
+        return ret;
+    }
+    
     /**
      * Workaround dependency injection problem. @Inject doesn't work here
      */

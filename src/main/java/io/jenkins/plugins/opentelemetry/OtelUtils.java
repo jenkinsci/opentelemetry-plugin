@@ -5,7 +5,34 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.codec.net.URLCodec;
+import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
+
 import com.google.common.collect.Iterators;
+
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -13,6 +40,7 @@ import hudson.Plugin;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
 import hudson.util.VersionNumber;
+import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
@@ -30,28 +58,6 @@ import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 import jenkins.scm.api.mixin.TagSCMHead;
-import org.apache.commons.codec.net.URLCodec;
-import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
-
-import javax.servlet.http.HttpServletRequest;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.TreeMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class OtelUtils {
 
@@ -66,6 +72,8 @@ public class OtelUtils {
     public static final String TAG = "tag";
     public static final String JENKINS_CORE = "jenkins-core";
     public static final String UNKNOWN_VALUE = "#unknown";
+    private static final Logger logger = Logger.getLogger(OtelUtils.class.getName());
+
 
     @CheckForNull
     public static String getSystemPropertyOrEnvironmentVariable(String environmentVariableName) {
@@ -320,5 +328,20 @@ public class OtelUtils {
                 .map(c -> c.getHeader(key))
                 .orElse(null);
         }
+    }
+
+    /**
+     * Check if the run has Opentelemetry data
+     * To validate it search for the MonitoringAction in the build actions.
+     * @param run the Build
+     * @return true if the run has Opentelemetry data
+     */
+    public static boolean hasOpentelemetryData(Run<?, ?> run){
+        MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
+        boolean ret = monitoringAction != null;
+        if (!ret) {
+            logger.log(Level.FINE, () -> "No MonitoringAction found in " + run);
+        }
+        return ret;
     }
 }
