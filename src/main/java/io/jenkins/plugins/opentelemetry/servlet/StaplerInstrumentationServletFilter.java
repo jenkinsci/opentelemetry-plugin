@@ -71,7 +71,7 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
         enabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED, true));
         if (!enabled.get()) {
             logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled. To enable it, set the property " +
-                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED + " to true. Changing this configuration requires a Jenkins restart.");
+                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED + " to true.");
         }
         capturedRequestParameters = configProperties.getList(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS, Collections.emptyList());
     }

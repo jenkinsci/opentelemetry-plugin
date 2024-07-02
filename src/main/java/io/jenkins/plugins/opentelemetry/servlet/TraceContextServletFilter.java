@@ -75,9 +75,10 @@ public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycle
     public void afterConfiguration(ConfigProperties configProperties) {
         w3cTraceContextPropagationEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED, false));
 
-        logger.log(Level.INFO, () -> "Jenkins trace context propagation disabled on inbound HTTP requests (eg. build triggers). " +
-            "To enable it, set the property " +
-            JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED + " to true. Changing this configuration requires a Jenkins restart.");
+        if (!w3cTraceContextPropagationEnabled.get()) {
+            logger.log(Level.INFO, () -> "Jenkins trace context propagation disabled on inbound HTTP requests (eg. build triggers). " +
+                "To enable it, set the property " + JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED + " to true.");
+        }
     }
 
     @Override
