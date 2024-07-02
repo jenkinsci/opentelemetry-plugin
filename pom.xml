@@ -10,8 +10,8 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.83</version>
-        <relativePath/>
+        <version>4.84</version>
+        <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>opentelemetry</artifactId>
