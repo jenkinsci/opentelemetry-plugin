@@ -13,10 +13,8 @@ import hudson.model.Environment;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
-import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -31,21 +29,25 @@ import java.util.logging.Logger;
  * {@link RunListener} that setups the OpenTelemetry {@link io.opentelemetry.context.Context}
  * with the current {@link Span}.
  */
-public abstract class OtelContextAwareAbstractRunListener extends RunListener<Run> implements OpenTelemetryLifecycleListener {
+public abstract class OtelContextAwareAbstractRunListener extends RunListener<Run> {
 
     private final static Logger LOGGER = Logger.getLogger(OtelContextAwareAbstractRunListener.class.getName());
 
     private OtelTraceService otelTraceService;
     private Tracer tracer;
+    private Meter meter;
+    private ConfigProperties configProperties;
 
     @Inject
     public final void setOpenTelemetryTracerService(@NonNull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
     }
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
-        this.tracer = tracer;
+    @Inject
+    public final void setJenkinsControllerOpenTelemetry(@NonNull JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
+        this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
+        this.meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
+        this.configProperties = jenkinsControllerOpenTelemetry.getConfig();
     }
 
     @Override
@@ -125,4 +127,12 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         return tracer;
     }
 
+    @NonNull
+    public Meter getMeter() {
+        return meter;
+    }
+
+    public ConfigProperties getConfigProperties() {
+        return configProperties;
+    }
 }

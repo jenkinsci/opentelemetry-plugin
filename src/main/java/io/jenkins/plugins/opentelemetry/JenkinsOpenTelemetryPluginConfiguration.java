@@ -80,7 +80,7 @@ import java.util.stream.Collectors;
 import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
 import static io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend.ICONS_PREFIX;
 
-@Extension
+@Extension(ordinal = Integer.MAX_VALUE-1 /* initialize OTel ASAP, just after loading JenkinsControllerOpenTelemetry as GlobalOpenTelemetry */)
 @Symbol("openTelemetry")
 public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration {
     private final static Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());

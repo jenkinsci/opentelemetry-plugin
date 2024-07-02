@@ -9,6 +9,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -82,7 +83,7 @@ public class StaplerInstrumentationServletFilterTest {
             .filter(t -> !t.isEmpty())
             .collect(Collectors.toList());
 
-        StaplerInstrumentationServletFilter.ParsedJobUrl actual = new StaplerInstrumentationServletFilter(Collections.emptyList(), OpenTelemetry.noop().getTracer("test")).parseJobUrl(pathInfoTokens);
+        StaplerInstrumentationServletFilter.ParsedJobUrl actual = newStaplerInstrumentationServletFilter().parseJobUrl(pathInfoTokens);
         System.out.println(actual);
         Assert.assertEquals(expected, actual);
     }
@@ -237,12 +238,21 @@ public class StaplerInstrumentationServletFilterTest {
             .collect(Collectors.toList());
 
         try {
-            StaplerInstrumentationServletFilter.ParsedJobUrl actual = new StaplerInstrumentationServletFilter(Collections.emptyList(), OpenTelemetry.noop().getTracer("test")).parseBlueOceanRestPipelineUrl(pathInfoTokens);
+            StaplerInstrumentationServletFilter staplerInstrumentationServletFilter = newStaplerInstrumentationServletFilter();
+
+            StaplerInstrumentationServletFilter.ParsedJobUrl actual = staplerInstrumentationServletFilter.parseBlueOceanRestPipelineUrl(pathInfoTokens);
 
             System.out.println(actual);
             Assert.assertEquals(expected, actual);
         } catch (IndexOutOfBoundsException e) {
             throw new AssertionError("Exception parsing " + pathInfo + " - " + e.getMessage(), e);
         }
+    }
+
+    private static @Nonnull StaplerInstrumentationServletFilter newStaplerInstrumentationServletFilter() {
+        StaplerInstrumentationServletFilter staplerInstrumentationServletFilter = new StaplerInstrumentationServletFilter();
+        staplerInstrumentationServletFilter.tracer = OpenTelemetry.noop().getTracer("test");
+        staplerInstrumentationServletFilter.capturedRequestParameters = Collections.emptyList();
+        return staplerInstrumentationServletFilter;
     }
 }

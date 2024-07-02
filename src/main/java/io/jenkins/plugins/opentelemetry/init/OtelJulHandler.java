@@ -6,21 +6,20 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.logs.Severity;
-import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes;
 import jenkins.YesNoMaybe;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
@@ -33,25 +32,26 @@ import java.util.logging.Logger;
 /**
  * Inspired by https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v1.14.0/instrumentation/java-util-logging/javaagent/src/main/java/io/opentelemetry/javaagent/instrumentation/jul/JavaUtilLoggingHelper.java
  */
-@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
+@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true, ordinal = Integer.MAX_VALUE - 10 /* very high but OTel Config should happen before*/)
 public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleListener {
 
     private final static Logger logger = Logger.getLogger(OtelJulHandler.class.getName());
 
     private static final Formatter FORMATTER = new AccessibleFormatter();
 
-    private  boolean captureExperimentalAttributes;
+    private boolean captureExperimentalAttributes;
 
     private LoggerProvider loggerProvider;
 
-    private boolean initialized;
+    @Inject
+    protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
     public OtelJulHandler() {
         try {
             // protect against init errors. https://github.com/jenkinsci/opentelemetry-plugin/issues/622
             Context context = Context.current();
             logger.log(Level.FINER, () -> "OtelJulHandler initialization - context: " + context);
-        } catch (NoClassDefFoundError|RuntimeException e) {
+        } catch (NoClassDefFoundError | RuntimeException e) {
             logger.log(Level.WARNING, "Exception initializing OPenTelemetry SDK logging apis, disable OtelJulHandler");
             throw e;
         }
@@ -170,15 +170,12 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
 
     }
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
-        this.loggerProvider = loggerProvider;
-        this.captureExperimentalAttributes = configProperties.getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
-        if (!initialized) {
-            Logger.getLogger("").addHandler(this);
-            logger.log(Level.FINE, "Otel Logging initialized");
-            initialized = true;
-        }
+    @PostConstruct
+    public void postConstruct() {
+        this.loggerProvider = jenkinsControllerOpenTelemetry.getLogsBridge();
+        this.captureExperimentalAttributes = jenkinsControllerOpenTelemetry.getConfig().getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
+        Logger.getLogger("").addHandler(this);
+        logger.log(Level.FINE, "Otel java.util.logging bridge initialized");
     }
 
     /**

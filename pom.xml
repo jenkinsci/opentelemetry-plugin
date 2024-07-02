@@ -4,7 +4,8 @@
   ~ SPDX-License-Identifier: Apache-2.0
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
@@ -34,7 +35,8 @@
         Monitor Jenkins with dashboards and alerts on critical health metrics.
         Troubleshoot Jenkins problems using traces of job executions and HTTP requests.
         Store pipeline build logs in an Observability backend like Elastic or Grafana/Loki
-        to improve Jenkins reliability and scalability while improving the traceability of builds.</description>
+        to improve Jenkins reliability and scalability while improving the traceability of builds.
+    </description>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
 
     <dependencyManagement>
@@ -57,20 +59,6 @@
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-bom-alpha</artifactId>
                 <version>${opentelemetry.version}-alpha</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry.instrumentation</groupId>
-                <artifactId>opentelemetry-instrumentation-bom</artifactId>
-                <version>${opentelemetry-instrumentation.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.opentelemetry.instrumentation</groupId>
-                <artifactId>opentelemetry-instrumentation-bom-alpha</artifactId>
-                <version>${opentelemetry-instrumentation.version}-alpha</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -139,7 +127,6 @@
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-instrumentation-api</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk</artifactId>
@@ -515,6 +502,9 @@
                         <io.jenkins.plugins.opentelemetry.job.log>INFO</io.jenkins.plugins.opentelemetry.job.log>
                         <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
                         <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
+                        <io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>INFO</io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>
+                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
+                        <io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>INFO</io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>
                     </loggers>
                 </configuration>
             </plugin>

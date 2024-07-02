@@ -8,18 +8,16 @@ package io.jenkins.plugins.opentelemetry.security;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.User;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.incubator.events.EventLogger;
-import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.ClientAttributes;
 import io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes;
 import jenkins.YesNoMaybe;
@@ -30,6 +28,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,9 +50,14 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
 
     private EventLogger eventLogger;
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventLogger eventLogger, Tracer tracer, ConfigProperties configProperties) {
-        this.eventLogger = eventLogger;
+    private JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+
+    @PostConstruct
+    public void postConstruct() {
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller authentication events...");
+
+        this.eventLogger = jenkinsControllerOpenTelemetry.getDefaultEventLogger();
+        Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
 
         loginSuccessCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_SUCCESS)
@@ -71,7 +76,6 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
                 .setUnit("1")
                 .build();
 
-        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins authentication events...");
     }
 
     @Override
@@ -141,4 +145,8 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
             .emit();
     }
 
+    @Inject
+    public void setJenkinsControllerOpenTelemetry(JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
+        this.jenkinsControllerOpenTelemetry = jenkinsControllerOpenTelemetry;
+    }
 }
