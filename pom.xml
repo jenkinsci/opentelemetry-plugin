@@ -503,7 +503,7 @@
                         <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
                         <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                         <io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>INFO</io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>
-                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>FINER</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
+                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                         <io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>INFO</io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>
                     </loggers>
                 </configuration>
