@@ -26,7 +26,7 @@ import java.util.logging.Level;
 /**
  * {@link OpenTelemetry} instance intended to live on the Jenkins Controller.
  */
-@Extension
+@Extension(ordinal = Integer.MAX_VALUE)
 public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry implements OpenTelemetry {
 
     /**
