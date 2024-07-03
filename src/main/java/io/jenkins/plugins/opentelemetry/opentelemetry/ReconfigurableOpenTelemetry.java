@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
@@ -51,8 +50,8 @@ import java.util.logging.Logger;
 public class ReconfigurableOpenTelemetry implements OpenTelemetry, Closeable {
 
     protected final Logger logger = Logger.getLogger(getClass().getName());
-    Resource resource;
-    ConfigProperties config;
+    Resource resource = Resource.empty();
+    ConfigProperties config = ConfigPropertiesUtils.emptyConfig();
     OpenTelemetry openTelemetryImpl = OpenTelemetry.noop();
     final ReconfigurableMeterProvider meterProviderImpl = new ReconfigurableMeterProvider();
     final ReconfigurableTracerProvider traceProviderImpl = new ReconfigurableTracerProvider();
@@ -118,7 +117,7 @@ public class ReconfigurableOpenTelemetry implements OpenTelemetry, Closeable {
 
         } else { // NO-OP
 
-            this.resource = Resource.getDefault();
+            this.resource = Resource.empty();
             this.config = ConfigPropertiesUtils.emptyConfig();
             setOpenTelemetryImpl(OpenTelemetry.noop());
 
@@ -197,12 +196,12 @@ public class ReconfigurableOpenTelemetry implements OpenTelemetry, Closeable {
 
     @NonNull
     public Resource getResource() {
-        return Preconditions.checkNotNull(resource);
+        return resource;
     }
 
     @NonNull
     public ConfigProperties getConfig() {
-        return Preconditions.checkNotNull(config);
+        return config;
     }
 
     @Override
