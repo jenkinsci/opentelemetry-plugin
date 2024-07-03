@@ -208,7 +208,7 @@ java -Dio.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageR
 
 Since version 2.17.0, the Jenkins OpenTelemetry plugin supports remote trace context propagation when a build is triggered by Jenkins HTTP API calls. This feature is based on the [W3C Trace Context](https://www.w3.org/TR/trace-context/) standard.
 
-To enable this feature, set the system property `otel.instrumentation.jenkins.remote.span.enabled` to `true`.
+To enable this feature, set the property `otel.instrumentation.jenkins.remote.span.enabled` to `true`. The Jenkins OpenTelemetry properties can be set either through the plugin configuration screen ("Advanced / Configuration Properties" section) or as a JVM system property.
 
 ```shell
 java -Dotel.instrumentation.jenkins.remote.span.enabled=true -jar jenkins.war
