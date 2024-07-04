@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
 import hudson.util.PluginServletFilter;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.servlet.StaplerInstrumentationServletFilter;
 import io.jenkins.plugins.opentelemetry.servlet.TraceContextServletFilter;
 import jenkins.YesNoMaybe;

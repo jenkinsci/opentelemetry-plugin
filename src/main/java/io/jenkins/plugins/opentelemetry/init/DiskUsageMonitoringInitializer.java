@@ -10,7 +10,7 @@ import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.metrics.Meter;
 import jenkins.YesNoMaybe;

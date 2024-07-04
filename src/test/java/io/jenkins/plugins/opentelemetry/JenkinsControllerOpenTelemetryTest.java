@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.ServiceAttributes;
@@ -56,10 +58,12 @@ public class JenkinsControllerOpenTelemetryTest {
             Optional.empty(),
             configurationProperties);
 
+        ReconfigurableOpenTelemetry reconfigurableOpenTelemetry = new ReconfigurableOpenTelemetry();
         JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry = new JenkinsControllerOpenTelemetry();
+        jenkinsControllerOpenTelemetry.openTelemetry = reconfigurableOpenTelemetry;
         jenkinsControllerOpenTelemetry.initialize(openTelemetryConfiguration);
 
-        Resource resource = jenkinsControllerOpenTelemetry.getResource();
+        Resource resource = reconfigurableOpenTelemetry.getResource();
         // resource.getAttributes().forEach((key, value)-> System.out.println(key + ": " + value));
 
         MatcherAssert.assertThat(
@@ -85,6 +89,6 @@ public class JenkinsControllerOpenTelemetryTest {
             CoreMatchers.is("1.2.3"));
 
 
-        jenkinsControllerOpenTelemetry.shutdown();
+        reconfigurableOpenTelemetry.close();
     }
 }

@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.init;
 import hudson.Extension;
 import hudson.model.LoadStatistics;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;

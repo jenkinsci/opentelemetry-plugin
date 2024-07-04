@@ -6,8 +6,8 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.logs.LogRecordBuilder;
@@ -44,7 +44,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
     private LoggerProvider loggerProvider;
 
     @Inject
-    protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    protected ReconfigurableOpenTelemetry openTelemetry;
 
     public OtelJulHandler() {
         try {
@@ -172,8 +172,8 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
 
     @PostConstruct
     public void postConstruct() {
-        this.loggerProvider = jenkinsControllerOpenTelemetry.getLogsBridge();
-        this.captureExperimentalAttributes = jenkinsControllerOpenTelemetry.getConfig().getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
+        this.loggerProvider = openTelemetry.getLogsBridge();
+        this.captureExperimentalAttributes = openTelemetry.getConfig().getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
         Logger.getLogger("").addHandler(this);
         logger.log(Level.FINE, "Otel java.util.logging bridge initialized");
     }

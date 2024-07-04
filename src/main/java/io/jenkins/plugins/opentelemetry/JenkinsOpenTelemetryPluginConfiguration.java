@@ -20,6 +20,7 @@ import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.tasks.BuildStep;
 import hudson.util.FormValidation;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
@@ -128,7 +129,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private String disabledResourceProviders = JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
 
-    private transient JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    @Inject
+    private transient ReconfigurableOpenTelemetry openTelemetry;
 
     private transient LogStorageRetriever logStorageRetriever;
 
@@ -218,22 +220,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
-     * Register {@link io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableOpenTelemetry}
-     * on {@link  io.opentelemetry.api.GlobalOpenTelemetry}
-     * and {@link io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableEventLoggerProvider}
-     * on {@link io.opentelemetry.api.incubator.events.GlobalEventLoggerProvider}
-     * as early as possible in Jenkins lifecycle so any plugin invoking those Global getters will have the
-     * reconfigurable instance .
-     *
-     * TODO can this be refactored into an annotation on the JenkinsControllerOpenTelemetry to force its early instantiation?
-     */
-    @Initializer(after = InitMilestone.EXTENSIONS_AUGMENTED, before = InitMilestone.SYSTEM_CONFIG_LOADED)
-    public void initializeOpenTelemetryAfterExtensionsAugmented() {
-        LOGGER.log(Level.FINE, "Initialize Jenkins OpenTelemetry Plugin with a NoOp implementation...");
-        jenkinsControllerOpenTelemetry.configure(Collections.emptyMap(), Resource.empty());
-    }
-
-    /**
      * Initialize the Otel SDK, must happen after the plugin has been configured by the standard config and by JCasC
      * JCasC configuration happens during `SYSTEM_CONFIG_ADAPTED` (see `io.jenkins.plugins.casc.ConfigurationAsCode#init()`)
      */
@@ -245,7 +231,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
         } else {
-            jenkinsControllerOpenTelemetry.initialize(newOpenTelemetryConfiguration);
+            openTelemetry.configure(newOpenTelemetryConfiguration.toOpenTelemetryProperties(), newOpenTelemetryConfiguration.toOpenTelemetryResource());
             this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
         }
 
@@ -320,11 +306,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             observabilityBackends = new ArrayList<>();
         }
         return observabilityBackends;
-    }
-
-    @Inject
-    public void setJenkinsControllerOpenTelemetry(JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
-        this.jenkinsControllerOpenTelemetry = jenkinsControllerOpenTelemetry;
     }
 
     public Integer getExporterTimeoutMillis() {
@@ -535,10 +516,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @NonNull
     public Resource getResource() {
-        if (this.jenkinsControllerOpenTelemetry == null) {
+        if (this.openTelemetry == null) {
             return Resource.empty();
         } else {
-            return this.jenkinsControllerOpenTelemetry.getResource();
+            return this.openTelemetry.getResource();
         }
     }
 
@@ -555,10 +536,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     @NonNull
     public ConfigProperties getConfigProperties() {
-        if (this.jenkinsControllerOpenTelemetry == null) {
+        if (this.openTelemetry == null) {
             return ConfigPropertiesUtils.emptyConfig();
         } else {
-            return this.jenkinsControllerOpenTelemetry.getConfig();
+            return this.openTelemetry.getConfig();
         }
     }
 
@@ -588,7 +569,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     private LogStorageRetriever resolveLogStorageRetriever() {
         LogStorageRetriever logStorageRetriever = null;
 
-        Resource otelSdkResource = jenkinsControllerOpenTelemetry.getResource();
+        Resource otelSdkResource = openTelemetry.getResource();
         String serviceName = Objects.requireNonNull(otelSdkResource.getAttribute(ServiceAttributes.SERVICE_NAME), "service.name can't be null");
         String serviceNamespace = otelSdkResource.getAttribute(ServiceIncubatingAttributes.SERVICE_NAMESPACE);
 

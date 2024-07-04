@@ -5,12 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import groovy.text.Template;
 import hudson.util.FormValidation;
-import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.GrafanaBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
@@ -21,6 +19,7 @@ import io.jenkins.plugins.opentelemetry.job.log.util.InputStreamByteBuffer;
 import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
 import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIteratorInputStream;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -77,14 +76,14 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
     private final CloseableHttpClient httpClient;
     private final HttpContext httpContext;
     private final OpenTelemetry openTelemetry;
+    private final Tracer tracer;
 
     @MustBeClosed
     public LokiLogStorageRetriever(@Nonnull String lokiUrl, boolean disableSslVerifications,
                                    @Nonnull Optional<Credentials> lokiCredentials,
                                    @Nonnull Optional<String> lokiTenantId,
                                    @NonNull Template buildLogsVisualizationUrlTemplate, @NonNull TemplateBindingsProvider templateBindingsProvider,
-                                   @Nonnull String serviceName, @Nonnull Optional<String> serviceNamespace,
-                                   @Nonnull OpenTelemetry openTelemetry) {
+                                   @Nonnull String serviceName, @Nonnull Optional<String> serviceNamespace) {
         if (StringUtils.isBlank(lokiUrl)) {
             throw new IllegalArgumentException("Loki url cannot be blank");
         }
@@ -94,6 +93,9 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         this.lokiCredentials = lokiCredentials;
         this.lokiTenantId = lokiTenantId;
         this.httpContext = new BasicHttpContext();
+        this.openTelemetry = GlobalOpenTelemetry.get();
+        this.tracer = openTelemetry.getTracer(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
+
         HttpClientBuilder httpClientBuilder = ApacheHttpClientTelemetry.create(openTelemetry).newHttpClientBuilder();
         if (disableSslVerifications) {
             try {
@@ -110,13 +112,12 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
         this.templateBindingsProvider = templateBindingsProvider;
 
-        this.openTelemetry = openTelemetry;
     }
 
     @Nonnull
     @Override
     public LogsQueryResult overallLog(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nonnull Instant startTime, @Nullable Instant endTime) {
-        SpanBuilder spanBuilder = getTracer().spanBuilder("LokiLogStorageRetriever.overallLog")
+        SpanBuilder spanBuilder = tracer.spanBuilder("LokiLogStorageRetriever.overallLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
             .setAttribute("complete", complete);
@@ -138,11 +139,11 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
                 lokiQueryParameters,
                 httpClient, httpContext,
                 lokiUrl, lokiCredentials, lokiTenantId,
-                openTelemetry.getTracer("io.jenkins"));
+                openTelemetry.getTracer( JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME));
 
             LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<Long> lineBytesToLineNumberConverter = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, null);
-            InputStream lineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, lineBytesToLineNumberConverter, getTracer());
-            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
+            InputStream lineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, lineBytesToLineNumberConverter, tracer);
+            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, tracer);
 
             Map<String, Object> localBindings = Map.of(
                 ObservabilityBackend.TemplateBindings.TRACE_ID, traceId,
@@ -174,7 +175,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
     @Nonnull
     @Override
     public LogsQueryResult stepLog(@Nonnull String jobFullName, int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nonnull Instant startTime, @Nullable Instant endTime) {
-        SpanBuilder spanBuilder = getTracer().spanBuilder("LokiLogStorageRetriever.stepLog")
+        SpanBuilder spanBuilder = tracer.spanBuilder("LokiLogStorageRetriever.stepLog")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId)
@@ -200,8 +201,8 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
                 openTelemetry.getTracer("io.jenkins"));
 
             LogLineIterator.LogLineBytesToLogLineIdMapper<Long> logLineBytesToLogLineIdMapper = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, null);
-            InputStream logLineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, logLineBytesToLogLineIdMapper, getTracer());
-            ByteBuffer byteBuffer = new InputStreamByteBuffer(logLineIteratorInputStream, getTracer());
+            InputStream logLineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, logLineBytesToLogLineIdMapper, tracer);
+            ByteBuffer byteBuffer = new InputStreamByteBuffer(logLineIteratorInputStream, tracer);
 
             Map<String, Object> localBindings = Map.of(
                 ObservabilityBackend.TemplateBindings.TRACE_ID, traceId,
@@ -261,15 +262,5 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
     @Override
     public void close() throws IOException {
         this.httpClient.close();
-    }
-
-    @VisibleForTesting
-    Tracer _tracer;
-
-    private Tracer getTracer() {
-        if (_tracer == null) {
-            _tracer = JenkinsControllerOpenTelemetry.get().getDefaultTracer();
-        }
-        return _tracer;
     }
 }

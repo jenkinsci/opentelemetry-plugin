@@ -45,8 +45,7 @@ public class LokiLogStorageRetrieverIT {
             new GStringTemplateEngine().createTemplate("mock"),
             TemplateBindingsProvider.empty(),
             "jenkins",
-             Optional.of("jenkins"),
-            OpenTelemetry.noop()
+             Optional.of("jenkins")
         )) {
             List<FormValidation> formValidations = lokiLogStorageRetriever.checkLokiSetup();
             System.out.println(formValidations);

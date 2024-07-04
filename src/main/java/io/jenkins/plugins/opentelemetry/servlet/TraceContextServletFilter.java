@@ -2,9 +2,9 @@ package io.jenkins.plugins.opentelemetry.servlet;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
@@ -39,7 +39,7 @@ public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycle
     final AtomicBoolean w3cTraceContextPropagationEnabled = new AtomicBoolean(false);
 
     @Inject
-    JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    ReconfigurableOpenTelemetry openTelemetry;
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain) throws IOException, ServletException {
@@ -52,7 +52,7 @@ public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycle
 
     public void _doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
         if (w3cTraceContextPropagationEnabled.get() && isJenkinsRemoteBuildTriggerRequest(request)) {
-            Context context = jenkinsControllerOpenTelemetry
+            Context context = openTelemetry
                 .getPropagators()
                 .getTextMapPropagator()
                 .extract(Context.current(), request, new OtelUtils.HttpServletRequestTextMapGetter());

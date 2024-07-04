@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry;
 
 import hudson.Extension;
 import hudson.model.RootAction;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 
 import javax.inject.Inject;
@@ -22,7 +23,7 @@ public class OpenTelemetryRootAction implements RootAction {
     private static final Logger logger = Logger.getLogger(OpenTelemetryRootAction.class.getName());
 
     private JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
-    private JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    private ReconfigurableOpenTelemetry openTelemetry;
 
     public Optional<ObservabilityBackend> getFirstMetricsCapableObservabilityBackend() {
         final Optional<ObservabilityBackend> observabilityBackend = pluginConfiguration.getObservabilityBackends()
@@ -50,7 +51,7 @@ public class OpenTelemetryRootAction implements RootAction {
     public String getUrlName() {
         // TODO we could keep in cache this URL
         return getFirstMetricsCapableObservabilityBackend()
-            .map(backend -> backend.getMetricsVisualizationUrl(this.jenkinsControllerOpenTelemetry.getResource()))
+            .map(backend -> backend.getMetricsVisualizationUrl(this.openTelemetry.getResource()))
             .orElse(null);
     }
 
@@ -60,7 +61,7 @@ public class OpenTelemetryRootAction implements RootAction {
     }
 
     @Inject
-    public void setJenkinsControllerOpenTelemetry(JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
-        this.jenkinsControllerOpenTelemetry = jenkinsControllerOpenTelemetry;
+    public void setOpenTelemetry(ReconfigurableOpenTelemetry openTelemetry) {
+        this.openTelemetry = openTelemetry;
     }
 }
