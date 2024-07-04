@@ -26,6 +26,7 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.logs.internal.SdkEventLoggerProvider;
 import io.opentelemetry.sdk.resources.Resource;
 
 import java.io.Closeable;
@@ -132,7 +133,7 @@ public class ReconfigurableOpenTelemetry implements OpenTelemetry, Closeable {
         this.meterProviderImpl.setDelegate(openTelemetryImpl.getMeterProvider());
         this.traceProviderImpl.setDelegate(openTelemetryImpl.getTracerProvider());
         this.loggerProviderImpl.setDelegate(openTelemetryImpl.getLogsBridge());
-        this.eventLoggerProviderImpl.setDelegate(GlobalEventLoggerProvider.get());
+        this.eventLoggerProviderImpl.setDelegate(SdkEventLoggerProvider.create(openTelemetryImpl.getLogsBridge()));
     }
 
     @Override
