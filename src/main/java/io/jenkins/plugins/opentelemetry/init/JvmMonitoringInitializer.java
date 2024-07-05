@@ -14,6 +14,8 @@ import io.opentelemetry.instrumentation.runtimemetrics.java8.GarbageCollector;
 import io.opentelemetry.instrumentation.runtimemetrics.java8.MemoryPools;
 import io.opentelemetry.instrumentation.runtimemetrics.java8.Threads;
 import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.ExperimentalBufferPools;
+import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.ExperimentalCpu;
+import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.ExperimentalMemoryPools;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import jenkins.YesNoMaybe;
 
@@ -44,8 +46,9 @@ public class JvmMonitoringInitializer implements OpenTelemetryLifecycleListener 
         }
 
         LOGGER.log(Level.FINE, "Start monitoring Jenkins Controller JVM...");
-        // should we enable the experimental buffer pools instrumentation?
         ExperimentalBufferPools.registerObservers(jenkinsControllerOpenTelemetry);
+        ExperimentalCpu.registerObservers(jenkinsControllerOpenTelemetry);
+        ExperimentalMemoryPools.registerObservers(jenkinsControllerOpenTelemetry);
         Classes.registerObservers(jenkinsControllerOpenTelemetry);
         Cpu.registerObservers(jenkinsControllerOpenTelemetry);
         GarbageCollector.registerObservers(jenkinsControllerOpenTelemetry);
