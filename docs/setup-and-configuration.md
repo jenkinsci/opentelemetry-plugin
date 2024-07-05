@@ -112,7 +112,7 @@ Advanced configuration settings
 | otel.instrumentation.jenkins.job.dsl.collapse.job.name | Boolean, default `false` | When using Job DSL generated jobs, make the pipeline run root span name a low cardinality name using the name "Job from seed '${job.jobDslSeedJob.fullName}'" rather than using "${job.fullName}". Useful when the Job DSL plugin creates a lot of jobs |
 | otel.instrumentation.jenkins.job.matrix.expand.job.name | Boolean, default `false` | When using Matrix Projects, the name of the combination jobs is by default collapsed to "${matrix-job-name}/execution" rather than using the full name that is generated joining the axis values of the combination                                    |
 | otel.instrumentation.jenkins.web.enabled | Boolean, default `true`  | Since version 2.0.0. Disable the instrumentation of Jenkins web requests (ie the instrumentation of Jenkins Stapler)                                                                                                                                   |
-| otel.instrumentation.jenkins.remote.span.enabled | Boolean, default `false` | Since version 2.17.0. When enabled, trace context is propagated when build is trigged by Jenkins HTTP API calls                                                                                                                                        |                                                                                                 
+| otel.instrumentation.jenkins.remote.span.enabled | Boolean, default `false` | Since version 2.17.0. When enabled, trace context is propagated when build is trigged by Jenkins HTTP API calls https://www.w3.org/TR/trace-context/                                                                                                                                        |                                                                                                 
 
 ## Configuration as Code (JCasC) - Jenkins OpenTelemetry Plugin
 
@@ -202,4 +202,22 @@ The following command changes the keepalive interval to 10 seconds
 
 ```shell
 java -Dio.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever.keepAlive.interval=10000 -jar jenkins.war
+```
+
+## Remote Trace Context Propagation
+
+Since version 2.17.0, the Jenkins OpenTelemetry plugin supports remote trace context propagation when a build is triggered by Jenkins HTTP API calls. This feature is based on the [W3C Trace Context](https://www.w3.org/TR/trace-context/) standard.
+
+To enable this feature, set the property `otel.instrumentation.jenkins.remote.span.enabled` to `true`. The Jenkins OpenTelemetry properties can be set either through the plugin configuration screen ("Advanced / Configuration Properties" section) or as a JVM system property.
+
+```shell
+java -Dotel.instrumentation.jenkins.remote.span.enabled=true -jar jenkins.war
+```
+
+Then from your remote system, you can trigger a build using the Jenkins REST API and include the trace context headers in the request. The Jenkins OpenTelemetry plugin will propagate the trace context to the build.
+
+```shell
+curl -X POST http://jenkins.example.com/job/my-job/build \
+  -H "Jenkins-Crumb: 1234567890abcdef" \
+  -H "traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01" 
 ```
