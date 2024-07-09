@@ -11,6 +11,9 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 
+import hudson.ExtensionList;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.client.CredentialsProvider;
@@ -126,6 +129,11 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
     }
 
     public void configureElasticBackEnd() {
+        // initialize ReconfigurableOpenTelemetry and set it as GlobalOpenTelemetry instance
+        ReconfigurableOpenTelemetry reconfigurableOpenTelemetry = ExtensionList.lookupSingleton(ReconfigurableOpenTelemetry.class);
+        GlobalOpenTelemetry.resetForTest();
+        GlobalOpenTelemetry.set(reconfigurableOpenTelemetry);
+
         final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all()
                 .get(JenkinsOpenTelemetryPluginConfiguration.class);
         elasticBackendConfiguration = (ElasticBackend) configuration.getObservabilityBackends().get(0);
