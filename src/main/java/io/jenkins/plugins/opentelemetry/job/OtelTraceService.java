@@ -23,6 +23,7 @@ import io.jenkins.plugins.opentelemetry.job.action.RunPhaseMonitoringAction;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Scope;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
@@ -155,7 +156,7 @@ public class OtelTraceService {
         return ancestors;
     }
 
-    public void removePipelineStepSpan(@NonNull WorkflowRun run, @NonNull FlowNode flowNode, @NonNull Span span) {
+    public void removePipelineStepSpanAndCloseAssociatedScopes(@NonNull WorkflowRun run, @NonNull FlowNode flowNode, @NonNull Span span) {
         FlowNode startSpanNode;
         if (flowNode instanceof AtomNode) {
             startSpanNode = flowNode;
@@ -183,7 +184,7 @@ public class OtelTraceService {
             .filter(flowNodeMonitoringAction -> Objects.equals(flowNodeMonitoringAction.getSpanId(), span.getSpanContext().getSpanId()))
             .findFirst()
             .ifPresentOrElse(
-                FlowNodeMonitoringAction::purgeSpan,
+                FlowNodeMonitoringAction::purgeSpanAndCloseAssociatedScopes,
                 () -> {
                     String msg = "span not found to be purged: " + OtelUtils.toDebugString(span) +
                         " ending " + OtelUtils.toDebugString(startSpanNode) + " in " + run;
@@ -204,20 +205,20 @@ public class OtelTraceService {
             .reverse()
             .stream()
             .filter(buildStepMonitoringAction -> Objects.equals(buildStepMonitoringAction.getSpanId(), span.getSpanContext().getSpanId()))
-            .findFirst().ifPresentOrElse(BuildStepMonitoringAction::purgeSpan, () -> {
+            .findFirst().ifPresentOrElse(BuildStepMonitoringAction::purgeSpanAndCloseAssociatedScopes, () -> {
                 throw new IllegalStateException("span not found to be purged: " + span + " for " + buildStep);
             });
     }
 
     public void purgeRun(@NonNull Run run) {
-        run.getActions(OtelMonitoringAction.class).forEach(OtelMonitoringAction::purgeSpan);
+        run.getActions(OtelMonitoringAction.class).forEach(OtelMonitoringAction::purgeSpanAndCloseAssociatedScopes);
         // TODO verify we don't need this cleanup
         if (run instanceof WorkflowRun) {
             WorkflowRun workflowRun = (WorkflowRun) run;
             List<FlowNode> flowNodesHeads = Optional.ofNullable(workflowRun.getExecution()).map(FlowExecution::getCurrentHeads).orElse(Collections.emptyList());
             ForkScanner scanner = new ForkScanner();
             scanner.setup(flowNodesHeads);
-            StreamSupport.stream(scanner.spliterator(), false).forEach(flowNode -> flowNode.getActions(OtelMonitoringAction.class).forEach(OtelMonitoringAction::purgeSpan));
+            StreamSupport.stream(scanner.spliterator(), false).forEach(flowNode -> flowNode.getActions(OtelMonitoringAction.class).forEach(OtelMonitoringAction::purgeSpanAndCloseAssociatedScopes));
         }
     }
 
@@ -255,6 +256,14 @@ public class OtelTraceService {
     public void putSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
         flowNode.addAction(new FlowNodeMonitoringAction(span));
+
+        LOGGER.log(Level.FINE, () -> "putSpan(" + run.getFullDisplayName() + ", " +
+            OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
+    }
+
+    public void putSpanAndScopes(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode, List<Scope> scopes) {
+        // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
+        flowNode.addAction(new FlowNodeMonitoringAction(span, scopes));
 
         LOGGER.log(Level.FINE, () -> "putSpan(" + run.getFullDisplayName() + ", " +
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
