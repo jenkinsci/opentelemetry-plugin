@@ -524,10 +524,11 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         String pipelineScript =
             "node() {\n" +
-            "    stage('ze-stage1') {\n" +
-            "       echo message: 'hello'\n" +
-            "    }\n" +
-            "}";
+                "    stage('ze-stage1') {\n" +
+                "       echo message: 'hello'\n" +
+                "       spanContextPropagationSynchronousTestStep()\n" +
+                "    }\n" +
+                "}";
         jenkinsRule.createOnlineSlave();
 
         final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
@@ -538,8 +539,31 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        System.out.println(spans);
-
-
+        checkChainOfSpans(spans,"SpanContextPropagationTestStep.execution", "spanContextPropagationSynchronousTestStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
     }
+    @Test
+    public void testSpanContextPropagationSynchronousNonBlockingTestStep() throws Exception {
+        Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class).forEach(c -> System.out.println(c + " -> " +ExtensionList.lookup(c)));
+
+
+        String pipelineScript =
+            "node() {\n" +
+                "    stage('ze-stage1') {\n" +
+                "       echo message: 'hello'\n" +
+                "       spanContextPropagationSynchronousNonBlockingTestStep()\n" +
+                "    }\n" +
+                "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans,"SpanContextPropagationSynchronousNonBlockingTestStep.execution", "spanContextPropagationSynchronousNonBlockingTestStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+    }
+
 }

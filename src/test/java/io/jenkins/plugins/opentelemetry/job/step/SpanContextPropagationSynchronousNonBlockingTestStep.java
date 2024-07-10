@@ -15,23 +15,27 @@ import io.opentelemetry.context.Scope;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
-import org.jenkinsci.plugins.workflow.steps.SynchronousStepExecution;
+import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
+import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
 
-public class SpanContextPropagationSynchronousTestStep extends Step {
-    private final static Logger logger = Logger.getLogger(SpanContextPropagationSynchronousTestStep.class.getName());
+public class SpanContextPropagationSynchronousNonBlockingTestStep extends Step  implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    private final static Logger logger = Logger.getLogger(SpanContextPropagationSynchronousNonBlockingTestStep.class.getName());
     transient OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
     transient Tracer tracer = openTelemetry.getTracer("io.jenkins.opentelemetry.test");
 
 
     @DataBoundConstructor
-    public SpanContextPropagationSynchronousTestStep() {
+    public SpanContextPropagationSynchronousNonBlockingTestStep() {
     }
 
     @Override
@@ -48,17 +52,17 @@ public class SpanContextPropagationSynchronousTestStep extends Step {
 
         @Override
         public String getFunctionName() {
-            return "spanContextPropagationSynchronousTestStep";
+            return "spanContextPropagationSynchronousNonBlockingTestStep";
         }
 
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "spanContextPropagationSynchronousTestStep";
+            return "spanContextPropagationSynchronousNonBlockingTestStep";
         }
     }
 
-    private class StepExecution extends SynchronousStepExecution<Void> {
+    private class StepExecution extends SynchronousNonBlockingStepExecution<Void> {
         public StepExecution(StepContext context) {
             super(context);
         }
@@ -66,7 +70,7 @@ public class SpanContextPropagationSynchronousTestStep extends Step {
         @Override
         protected Void run() throws Exception {
 
-            Span span = tracer.spanBuilder("SpanContextPropagationTestStep.execution").startSpan();
+            Span span = tracer.spanBuilder("SpanContextPropagationSynchronousNonBlockingTestStep.execution").startSpan();
             try (Scope ctx = span.makeCurrent()) {
                 TaskListener taskListener = Objects.requireNonNull(getContext().get(TaskListener.class));
                 taskListener.getLogger().println(getClass().getName());
