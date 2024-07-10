@@ -14,17 +14,15 @@ DSL = '''pipeline {
     stage('prepare') {
       steps {
         sh (label: 'fetch opentelemetry-maven-extension',
-            script: 'curl -s https://repo.maven.apache.org/maven2/io/opentelemetry/contrib/opentelemetry-maven-extension/${OTEL_VERSION}/opentelemetry-maven-extension-${OTEL_VERSION}.jar > otel.jar')
+            script: 'curl -s https://repo.maven.apache.org/maven2/io/opentelemetry/contrib/opentelemetry-maven-extension/\${OTEL_VERSION}/opentelemetry-maven-extension-\${OTEL_VERSION}.jar > otel.jar')
       }
     }
     stage('compile') {
       steps {
         script {
-          docker.image('openjdk:8-jdk-alpine').inside('--network demos_jenkins') {
-            withEnv(["HOME=${env.WORKSPACE}"]) {
-              sh(label: 'mvn compile', script: './mvnw -B ${MAVEN_OPTS} clean compile')
+            withEnv(["HOME=\${env.WORKSPACE}"]) {
+              sh(label: 'mvn compile', script: './mvnw -B \${MAVEN_OPTS} clean compile')
             }
-          }
         }
 
       }
@@ -32,11 +30,9 @@ DSL = '''pipeline {
     stage('test') {
       steps {
         script {
-          docker.image('openjdk:8-jdk-alpine').inside('--network demos_jenkins') {
-            withEnv(["HOME=${env.WORKSPACE}"]) {
-              sh(label: 'mvn test', script: './mvnw -B ${MAVEN_OPTS} test')
+            withEnv(["HOME=\${env.WORKSPACE}"]) {
+              sh(label: 'mvn test', script: './mvnw -B \${MAVEN_OPTS} test')
             }
-          }
         }
       }
       post {
