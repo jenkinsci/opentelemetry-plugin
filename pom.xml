@@ -102,54 +102,73 @@
     </dependencyManagement>
     <dependencies>
         <dependency>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+            <version>1.39.0-11.vd6b_87589988f</version>
+        </dependency>
+        <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api</artifactId>
+            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api-incubator</artifactId>
+            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-context</artifactId>
+            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.semconv</groupId>
             <artifactId>opentelemetry-semconv</artifactId>
             <version>${opentelemetry-semconv.version}</version>
+            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.semconv</groupId>
             <artifactId>opentelemetry-semconv-incubating</artifactId>
             <version>${opentelemetry-semconv.version}</version>
+            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-instrumentation-api</artifactId>
+            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk-trace</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk-metrics</artifactId>
+            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-extension-autoconfigure-spi</artifactId>
+            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
+            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-extension-trace-propagators</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-apache-httpclient-4.3</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
@@ -195,30 +214,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-otlp</artifactId>
-            <exclusions>
-                <exclusion>
-                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
-                    <groupId>com.squareup.okhttp3</groupId>
-                    <artifactId>okhttp</artifactId>
-                </exclusion>
-                <exclusion>
-                    <!-- we get okhttp from io.jenkins.plugins:okhttp-api -->
-                    <groupId>com.squareup.okio</groupId>
-                    <artifactId>okio</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-prometheus</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-logging</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>jakarta.json</groupId>
@@ -229,10 +224,6 @@
             <artifactId>parsson</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient_httpserver</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>okhttp-api</artifactId>
@@ -273,10 +264,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>apache-httpcomponents-client-4-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-apache-httpclient-4.3</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -504,7 +491,7 @@
                         <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                         <io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>INFO</io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>
                         <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
-                        <io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>INFO</io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>
+                        <io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>FINE</io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>
                     </loggers>
                 </configuration>
             </plugin>

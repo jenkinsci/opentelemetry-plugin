@@ -14,6 +14,7 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -47,6 +48,10 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     public final void setJenkinsControllerOpenTelemetry(@NonNull JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
         this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
         this.meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
+    }
+
+    @Inject
+    public final void setOpenTelemetry(@NonNull ReconfigurableOpenTelemetry jenkinsControllerOpenTelemetry) {
         this.configProperties = jenkinsControllerOpenTelemetry.getConfig();
     }
 

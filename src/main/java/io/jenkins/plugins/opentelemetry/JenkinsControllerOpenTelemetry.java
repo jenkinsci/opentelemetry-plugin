@@ -6,11 +6,11 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.ExtensionList;
-import io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableOpenTelemetry;
+import hudson.ExtensionPoint;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.incubator.events.EventLogger;
@@ -19,15 +19,16 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 
-import javax.annotation.PreDestroy;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 /**
  * {@link OpenTelemetry} instance intended to live on the Jenkins Controller.
  */
 @Extension(ordinal = Integer.MAX_VALUE)
-public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry implements OpenTelemetry {
+public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
 
     /**
      * See {@code OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS}
@@ -36,33 +37,34 @@ public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry 
 
     public final static AtomicInteger INSTANCE_COUNTER = new AtomicInteger(0);
 
-    @NonNull
-    private final Tracer defaultTracer;
-    @NonNull
-    private final Meter defaultMeter;
-    @NonNull
-    private final EventLogger defaultEventLogger;
+    @VisibleForTesting
+    @Inject
+    protected ReconfigurableOpenTelemetry openTelemetry;
+
+    private Tracer defaultTracer;
+    private Meter defaultMeter;
+    private EventLogger defaultEventLogger;
 
     public JenkinsControllerOpenTelemetry() {
         super();
-        if (INSTANCE_COUNTER.get() > 0) {
-            logger.log(Level.WARNING, "More than one instance of JenkinsControllerOpenTelemetry created: " + INSTANCE_COUNTER.get());
-        }
+    }
 
+    @PostConstruct
+    public void postConstruct() {
         String opentelemetryPluginVersion = OtelUtils.getOpentelemetryPluginVersion();
 
         this.defaultTracer =
-            getTracerProvider()
+            this.openTelemetry
                 .tracerBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
                 .setInstrumentationVersion(opentelemetryPluginVersion)
                 .build();
 
-        this.defaultEventLogger = getEventLoggerProvider()
+        this.defaultEventLogger = openTelemetry
             .eventLoggerBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
             .build();
 
-        this.defaultMeter = getMeterProvider()
+        this.defaultMeter = openTelemetry
             .meterBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
             .build();
@@ -84,40 +86,26 @@ public class JenkinsControllerOpenTelemetry extends ReconfigurableOpenTelemetry 
     }
 
     public boolean isLogsEnabled() {
-        String otelLogsExporter = getConfig().getString("otel.logs.exporter");
+        String otelLogsExporter = openTelemetry.getConfig().getString("otel.logs.exporter");
         return otelLogsExporter != null && !otelLogsExporter.equals("none");
     }
 
     public boolean isOtelLogsMirrorToDisk() {
-        String otelLogsExporter = getConfig().getString("otel.logs.mirror_to_disk");
+        String otelLogsExporter = openTelemetry.getConfig().getString("otel.logs.mirror_to_disk");
         return otelLogsExporter != null && otelLogsExporter.equals("true");
     }
 
     @VisibleForTesting
     @NonNull
+    @Deprecated
     protected OpenTelemetrySdk getOpenTelemetrySdk() {
-        Preconditions.checkNotNull(getOpenTelemetryDelegate());
-        if (getOpenTelemetryDelegate() instanceof OpenTelemetrySdk) {
-            return (OpenTelemetrySdk) getOpenTelemetryDelegate();
-        } else {
-            throw new IllegalStateException("OpenTelemetry initialized as NoOp");
-        }
-    }
-
-    @PreDestroy
-    public void shutdown() {
-        super.close();
+        return (OpenTelemetrySdk) Optional.ofNullable(openTelemetry).map(ReconfigurableOpenTelemetry::getImplementation).orElseThrow(() -> new IllegalStateException("OpenTelemetry not initialized"));
     }
 
     public void initialize(@NonNull OpenTelemetryConfiguration configuration) {
-        configure(
+        openTelemetry.configure(
             configuration.toOpenTelemetryProperties(),
             configuration.toOpenTelemetryResource());
-    }
-
-    @Override
-    protected void postOpenTelemetrySdkConfiguration() {
-        ExtensionList.lookup(OpenTelemetryLifecycleListener.class).forEach(l -> l.afterConfiguration(getConfig()));
     }
 
     static public JenkinsControllerOpenTelemetry get() {

@@ -7,8 +7,8 @@ package io.jenkins.plugins.opentelemetry.servlet;
 
 import hudson.Extension;
 import hudson.model.User;
-import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -69,10 +69,10 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
         enabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED, true));
-        if (!enabled.get()) {
-            logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled. To enable it, set the property " +
-                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED + " to true.");
-        }
+
+        logger.log(Level.FINE, () -> "Jenkins Web instrumentation enabled: " + enabled.get() + ". To change config, use the property " +
+            JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED + ".");
+
         capturedRequestParameters = configProperties.getList(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS, Collections.emptyList());
     }
 
@@ -649,7 +649,8 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
         return Objects.hashCode(getClass());
     }
 
-    @Inject void setJenkinsControllerOpenTelemetry(JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
-        this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
+    @Inject
+    public void setTracer(ReconfigurableOpenTelemetry openTelemetry) {
+        this.tracer = openTelemetry.getTracer("io.jenkins.stapler");
     }
 }

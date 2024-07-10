@@ -4,6 +4,7 @@ import hudson.ExtensionList;
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
@@ -36,6 +37,7 @@ public class OtelLocaLogMirroringTest {
     @ClassRule
     public static JenkinsRule jenkinsRule = new JenkinsRule();
 
+    static ReconfigurableOpenTelemetry openTelemetry;
     static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
     static WorkflowJob pipeline;
@@ -55,12 +57,13 @@ public class OtelLocaLogMirroringTest {
         ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries = jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
         verify(jenkinsOpenTelemetries.size() == 1, "Number of jenkinsControllerOpenTelemetrys: %s", jenkinsOpenTelemetries.size());
 
+        openTelemetry = ExtensionList.lookup(ReconfigurableOpenTelemetry.class).get(0);
         jenkinsControllerOpenTelemetry = jenkinsOpenTelemetries.get(0);
         jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap()));
     }
     @AfterClass
-    public static void afterClass() {
-        jenkinsControllerOpenTelemetry.shutdown();
+    public static void afterClass() throws Exception {
+        ((AutoCloseable) openTelemetry).close();
         GlobalOpenTelemetry.resetForTest();
     }
 

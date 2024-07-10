@@ -16,21 +16,19 @@ import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.GrafanaBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.jenkins.CredentialsNotFoundException;
 import io.jenkins.plugins.opentelemetry.jenkins.JenkinsCredentialsToApacheHttpCredentialsAdapter;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import io.opentelemetry.api.OpenTelemetry;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.auth.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
- import org.kohsuke.stapler.verb.POST;
+import org.kohsuke.stapler.verb.POST;
 
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -73,8 +71,6 @@ public class GrafanaLogsBackendWithJenkinsVisualization extends GrafanaLogsBacke
         if (StringUtils.isBlank(lokiUrl)) {
             throw new IllegalStateException(MSG_LOKI_URL_IS_BLANK);
         }
-        // TODO shall we inject this through @Inject?
-        OpenTelemetry openTelemetry = JenkinsControllerOpenTelemetry.get();
 
         String serviceName = templateBindingsProvider.getBindings().get(ObservabilityBackend.TemplateBindings.SERVICE_NAME).toString();
         Optional<String> serviceNamespace = Optional.ofNullable(templateBindingsProvider.getBindings().get(ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE)).map(Object::toString);
@@ -86,8 +82,7 @@ public class GrafanaLogsBackendWithJenkinsVisualization extends GrafanaLogsBacke
             getBuildLogsVisualizationUrlTemplate(),
             TemplateBindingsProvider.compose(templateBindingsProvider, this.getBindings()),
             serviceName,
-            serviceNamespace,
-            openTelemetry);
+            serviceNamespace);
     }
 
     public String getLokiUrl() {
@@ -224,7 +219,6 @@ public class GrafanaLogsBackendWithJenkinsVisualization extends GrafanaLogsBacke
             if (lokiUrlValidation.kind != FormValidation.Kind.OK) {
                 return lokiUrlValidation;
             }
-            OpenTelemetry openTelemetry = JenkinsControllerOpenTelemetry.get();
             try (LokiLogStorageRetriever lokiLogStorageRetriever = new LokiLogStorageRetriever(
                 lokiUrl,
                 disableSslVerifications,
@@ -233,8 +227,7 @@ public class GrafanaLogsBackendWithJenkinsVisualization extends GrafanaLogsBacke
                 ObservabilityBackend.ERROR_TEMPLATE,
                 TemplateBindingsProvider.empty(),
                 "##not-needed-to-invoke-check-loki-setup##",
-                Optional.empty(),
-                openTelemetry)) {
+                Optional.empty())) {
                 return FormValidation.aggregate(lokiLogStorageRetriever.checkLokiSetup());
             } catch (NoSuchElementException e) {
                 return FormValidation.error("No credentials found for id '" + lokiCredentialsId + "'");
