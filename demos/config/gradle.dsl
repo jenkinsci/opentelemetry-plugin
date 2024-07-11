@@ -14,22 +14,18 @@ DSL = """pipeline {
     stage('build') {
       steps {
         script {
-          docker.image('openjdk:8-jdk-alpine').inside('--network demos_jenkins') {
             withEnv(["HOME=\${env.WORKSPACE}"]) {
-              sh(label: 'gradle build', script: './gradlew clean build')
+                sh(label: 'gradle build', script: './gradlew clean build')
             }
-          }
         }
       }
     }
     stage('test') {
       steps {
         script {
-          docker.image('openjdk:8-jdk-alpine').inside('--network demos_jenkins') {
             withEnv(["HOME=\${env.WORKSPACE}"]) {
               sh(label: 'gradle test', script: './gradlew clean test')
             }
-          }
         }
       }
     }
