@@ -34,6 +34,8 @@ credentials:
           scope: GLOBAL
           username: "jenkins_logs_user"
 unclassified:
+  location:
+    url: "http://jenkins:8080/"
   openTelemetry:
     authentication: "noAuthentication"
     endpoint: "http://otel-collector:4317"
@@ -53,3 +55,5 @@ jobs:
   - file: "/var/jenkins_home/config/maven.dsl"
   - file: "/var/jenkins_home/config/otel-cli.dsl"
   - file: "/var/jenkins_home/config/otel-cli-make.dsl"
+  - file: "/var/jenkins_home/config/import_dashboard.dsl"
+  - file: "/var/jenkins_home/config/pytest-otel.dsl"
