@@ -11,14 +11,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import hudson.ExtensionList;
+import io.jenkins.plugins.opentelemetry.job.step.SpanContextPropagationSynchronousTestStep;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.steps.EchoStep;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.jvnet.hudson.test.recipes.WithPlugin;
@@ -512,4 +516,54 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(failingBranchSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.ERROR));
         MatcherAssert.assertThat(failingBranchSpanData.getStatus().getDescription(), CoreMatchers.is("the failure that will cause the interruption of other branches"));
     }
+
+    @Test
+    public void testSpanContextPropagationSynchronousTestStep() throws Exception {
+        Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class).forEach(c -> System.out.println(c + " -> " +ExtensionList.lookup(c)));
+
+
+        String pipelineScript =
+            "node() {\n" +
+                "    stage('ze-stage1') {\n" +
+                "       echo message: 'hello'\n" +
+                "       spanContextPropagationSynchronousTestStep()\n" +
+                "    }\n" +
+                "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans,"SpanContextPropagationTestStep.execution", "spanContextPropagationSynchronousTestStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+    }
+    @Test
+    public void testSpanContextPropagationSynchronousNonBlockingTestStep() throws Exception {
+        Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class).forEach(c -> System.out.println(c + " -> " +ExtensionList.lookup(c)));
+
+
+        String pipelineScript =
+            "node() {\n" +
+                "    stage('ze-stage1') {\n" +
+                "       echo message: 'hello'\n" +
+                "       spanContextPropagationSynchronousNonBlockingTestStep()\n" +
+                "    }\n" +
+                "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans,"SpanContextPropagationSynchronousNonBlockingTestStep.execution", "spanContextPropagationSynchronousNonBlockingTestStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+    }
+
 }

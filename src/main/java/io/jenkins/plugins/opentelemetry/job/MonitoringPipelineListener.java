@@ -200,37 +200,36 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - don't create span for step '" + node.getDisplayFunctionName() + "'");
             return;
         }
-        try (Scope ignored = setupContext(run, node)) {
-            verifyNotNull(ignored, "%s - No span found for node %s", run, node);
+        Scope encapsulatingNodeScope = setupContext(run, node);
 
-            String principal = Objects.toString(node.getExecution().getAuthentication().getPrincipal(), "#null#");
-            LOGGER.log(Level.FINE, () -> node.getDisplayFunctionName() + " - principal: " + principal);
+        verifyNotNull(encapsulatingNodeScope, "%s - No span found for node %s", run, node);
 
-            StepHandler stepHandler = getStepHandlers().stream().filter(sh -> sh.canCreateSpanBuilder(node, run)).findFirst()
-                .orElseThrow((Supplier<RuntimeException>) () ->
-                    new IllegalStateException("No StepHandler found for node " + node.getClass() + " - " + node + " on " + run));
-            SpanBuilder spanBuilder = stepHandler.createSpanBuilder(node, run, getTracer());
+        String principal = Objects.toString(node.getExecution().getAuthentication().getPrincipal(), "#null#");
 
-            String stepType = getStepType(node, node.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NAME);
-            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, node);
+        StepHandler stepHandler = getStepHandlers().stream().filter(sh -> sh.canCreateSpanBuilder(node, run)).findFirst()
+            .orElseThrow((Supplier<RuntimeException>) () ->
+                new IllegalStateException("No StepHandler found for node " + node.getClass() + " - " + node + " on " + run));
+        SpanBuilder spanBuilder = stepHandler.createSpanBuilder(node, run, getTracer());
 
-            spanBuilder
-                    .setParent(Context.current()) // TODO can we remove this call?
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node, JenkinsOtelSemanticAttributes.STEP_NAME))
-                    .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+        String stepType = getStepType(node, node.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NAME);
+        JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, node);
 
-            Span atomicStepSpan = spanBuilder.startSpan();
-            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
-            try (Scope ignored2 = atomicStepSpan.makeCurrent()) {
-                stepHandler.afterSpanCreated(node, run);
-            }
-            getTracerService().putSpan(run, atomicStepSpan, node);
-        }
+        spanBuilder
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node, JenkinsOtelSemanticAttributes.STEP_NAME))
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+
+        Span atomicStepSpan = spanBuilder.startSpan();
+        LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
+        Scope atomicStepScope = atomicStepSpan.makeCurrent();
+        stepHandler.afterSpanCreated(node, run);
+
+        getTracerService().putSpanAndScopes(run, atomicStepSpan, node, Arrays.asList(encapsulatingNodeScope, atomicStepScope));
     }
+
 
     @Override
     public void onAfterAtomicStep(@NonNull StepAtomNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
@@ -371,7 +370,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             span.end();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - < " + node.getDisplayFunctionName() + " - end " + OtelUtils.toDebugString(span));
 
-            getTracerService().removePipelineStepSpan(run, node, span);
+            getTracerService().removePipelineStepSpanAndCloseAssociatedScopes(run, node, span);
         }
     }
 

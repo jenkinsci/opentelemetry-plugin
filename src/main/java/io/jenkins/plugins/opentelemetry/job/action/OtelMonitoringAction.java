@@ -22,7 +22,7 @@ public interface OtelMonitoringAction extends Action {
     @CheckForNull
     Span getSpan();
 
-    void purgeSpan();
+    void purgeSpanAndCloseAssociatedScopes();
 
     /**
      * @return {@code true} if the associated {@link Span} has ended
