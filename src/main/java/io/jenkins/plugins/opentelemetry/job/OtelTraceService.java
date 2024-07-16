@@ -156,6 +156,21 @@ public class OtelTraceService {
         return ancestors;
     }
 
+    public void closeCurrentScope(@NonNull Run run, @NonNull FlowNode flowNode) {
+        ImmutableList.copyOf(flowNode.getActions(OtelMonitoringAction.class))
+            .reverse()
+            .stream()
+            .findFirst()
+            .ifPresentOrElse(OtelMonitoringAction::closeAndPurgeAssociatedScope, () -> {
+                String msg = "scope to close not found: " + OtelUtils.toDebugString(flowNode) + " in " + run;
+                if (STRICT_MODE) {
+                    throw new IllegalStateException(msg);
+                } else {
+                    LOGGER.log(Level.WARNING, msg);
+                }
+            });
+    }
+
     public void removePipelineStepSpanAndCloseAssociatedScopes(@NonNull WorkflowRun run, @NonNull FlowNode flowNode, @NonNull Span span) {
         FlowNode startSpanNode;
         if (flowNode instanceof AtomNode) {
@@ -261,9 +276,9 @@ public class OtelTraceService {
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
     }
 
-    public void putSpanAndScopes(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode, List<Scope> scopes) {
+    public void putSpanAndScope(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode, Scope scope) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
-        flowNode.addAction(new FlowNodeMonitoringAction(span, scopes));
+        flowNode.addAction(new FlowNodeMonitoringAction(span, scope));
 
         LOGGER.log(Level.FINE, () -> "putSpan(" + run.getFullDisplayName() + ", " +
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");

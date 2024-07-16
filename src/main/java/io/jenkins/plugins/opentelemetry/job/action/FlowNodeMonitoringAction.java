@@ -8,8 +8,6 @@ package io.jenkins.plugins.opentelemetry.job.action;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
 
-import java.util.List;
-
 /**
  * Span reference associate with a {@link org.jenkinsci.plugins.workflow.graph.FlowNode}
  */
@@ -19,7 +17,7 @@ public class FlowNodeMonitoringAction extends AbstractInvisibleMonitoringAction 
         super(span);
     }
 
-    public FlowNodeMonitoringAction(Span span, List<Scope> scopes) {
-        super(span, scopes);
+    public FlowNodeMonitoringAction(Span span, Scope scope) {
+        super(span, scope);
     }
 }

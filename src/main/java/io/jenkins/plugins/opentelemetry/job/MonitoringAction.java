@@ -50,7 +50,7 @@ public class MonitoringAction extends AbstractMonitoringAction implements Action
     private transient Run run;
 
     public MonitoringAction(Span span) {
-        super(span, Collections.emptyList());
+        super(span, null);
         this.rootSpanName = super.getSpanName();
         this.rootContext = super.getW3cTraceContext();
     }

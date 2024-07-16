@@ -5,9 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry.job.action;
 
-import com.google.common.collect.ImmutableList;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.model.Action;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
@@ -18,7 +18,6 @@ import io.opentelemetry.sdk.trace.ReadableSpan;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -27,7 +26,7 @@ import java.util.logging.Logger;
 public abstract class AbstractMonitoringAction implements Action, OtelMonitoringAction {
     private final static Logger LOGGER = Logger.getLogger(AbstractMonitoringAction.class.getName());
 
-    transient SpanAndScopes spanAndScopes;
+    transient SpanAndScope spanAndScope;
 
 
     final String traceId;
@@ -37,20 +36,19 @@ public abstract class AbstractMonitoringAction implements Action, OtelMonitoring
 
     /**
      * @param span   span of this action
-     * @param scopes scope and underlying scopes associated with the span.
+     * @param scope scope and underlying scopes associated with the span.
      */
-    public AbstractMonitoringAction(Span span, List<Scope> scopes) {
-        this.spanAndScopes = new SpanAndScopes(span, scopes, Thread.currentThread().getName());
+    public AbstractMonitoringAction(@NonNull Span span, @Nullable Scope scope) {
+        this.spanAndScope = new SpanAndScope(span, scope, Thread.currentThread().getName());
         this.traceId = span.getSpanContext().getTraceId();
         this.spanId = span.getSpanContext().getSpanId();
         this.spanName = span instanceof ReadWriteSpan ? ((ReadWriteSpan) span).getName() : null; // when tracer is no-op, span is NOT a ReadWriteSpan
-        try (Scope scope = span.makeCurrent()) {
-            Map<String, String> w3cTraceContext = new HashMap<>();
-            W3CTraceContextPropagator.getInstance().inject(Context.current(), w3cTraceContext, (carrier, key, value) -> carrier.put(key, value));
-            this.w3cTraceContext = w3cTraceContext;
-        }
 
-        LOGGER.log(Level.FINE, () -> "Span " + getSpanName() + ", thread=" + spanAndScopes.scopeStartThreadName + " opened " + spanAndScopes.scopes.size() + " scopes");
+        Map<String, String> w3cTraceContext = new HashMap<>();
+        W3CTraceContextPropagator.getInstance().inject(Context.current().with(span), w3cTraceContext, (carrier, key, value) -> carrier.put(key, value));
+        this.w3cTraceContext = w3cTraceContext;
+
+        LOGGER.log(Level.FINE, () -> "Span " + getSpanName() + ", thread=" + spanAndScope.scopeStartThreadName + " opened " + spanAndScope.scope + " scopes");
     }
 
     public String getSpanName() {
@@ -65,7 +63,7 @@ public abstract class AbstractMonitoringAction implements Action, OtelMonitoring
     @Override
     @CheckForNull
     public Span getSpan() {
-        return spanAndScopes.span;
+        return spanAndScope.span;
     }
 
     public String getTraceId() {
@@ -78,13 +76,21 @@ public abstract class AbstractMonitoringAction implements Action, OtelMonitoring
 
     @Override
     public void purgeSpanAndCloseAssociatedScopes() {
-        LOGGER.log(Level.FINE, () -> "Purge span='" + spanName + "', spanId=" + spanId + ", traceId=" + traceId + ": " + spanAndScopes);
-        Optional.ofNullable(spanAndScopes)
-            .map(spanAndScopes -> spanAndScopes.scopes)
-            .map(ImmutableList::copyOf)
-            .map(ImmutableList::reverse)
-            .ifPresent(scopes -> scopes.forEach(Scope::close));
-        this.spanAndScopes = null;
+        LOGGER.log(Level.FINE, () -> "Purge span='" + spanName + "', spanId=" + spanId + ", traceId=" + traceId + ": " + spanAndScope);
+        Optional.ofNullable(spanAndScope)
+            .map(SpanAndScope::getScope)
+            .ifPresent(Scope::close);
+        this.spanAndScope = null;
+    }
+
+    @Override
+    public void closeAndPurgeAssociatedScope() {
+        LOGGER.log(Level.FINE, () -> "Close and purge scope for span='" + spanName + "', spanId=" + spanId + ", traceId=" + traceId + ": " + spanAndScope);
+        Optional
+            .ofNullable(spanAndScope)
+            .map(SpanAndScope::getScope)
+            .ifPresent(Scope::close);
+        this.spanAndScope = new SpanAndScope(Optional.ofNullable(spanAndScope).map(SpanAndScope::getSpan).orElse(Span.getInvalid()), null, "#null#");
     }
 
     @Override
@@ -100,7 +106,7 @@ public abstract class AbstractMonitoringAction implements Action, OtelMonitoring
     public boolean hasEnded() {
         return
             Optional
-                .ofNullable(spanAndScopes)
+                .ofNullable(spanAndScope)
                 .map(sac -> sac.span)
                 .filter(s -> s instanceof ReadableSpan)
                 .map(s -> (ReadableSpan) s)
@@ -109,21 +115,39 @@ public abstract class AbstractMonitoringAction implements Action, OtelMonitoring
     }
 
     /**
-     * Scopes associated with the span and the underlying scopes instantiated to create the span.
-     * Underlying scopes can be the scope of the underlying wrapping pipeline step (eg a `stage` step).
+     * Scope associated with the span and the underlying scopes instantiated to create the span.
      * Thread name when the scope was opened. Used for debugging, to identify potential leaks.
      */
-    static class SpanAndScopes {
+    static class SpanAndScope {
         @NonNull
         final Span span;
-        @NonNull
-        final List<Scope> scopes;
-        @NonNull
-        final String scopeStartThreadName;
+        @Nullable
+        final Scope scope;
+        @Nullable
+        String scopeStartThreadName;
 
-        public SpanAndScopes(@NonNull Span span, @NonNull List<Scope> scopes, @NonNull String scopeStartThreadName) {
+        public SpanAndScope(@NonNull Span span, @Nullable Scope scope, @NonNull String scopeStartThreadName) {
             this.span = span;
-            this.scopes = scopes;
+            this.scope = scope;
+            this.scopeStartThreadName = scopeStartThreadName;
+        }
+
+        @NonNull
+        public Span getSpan() {
+            return span;
+        }
+
+        @Nullable
+        public Scope getScope() {
+            return scope;
+        }
+
+        @Nullable
+        public String getScopeStartThreadName() {
+            return scopeStartThreadName;
+        }
+
+        public void setScopeStartThreadName(@Nullable String scopeStartThreadName) {
             this.scopeStartThreadName = scopeStartThreadName;
         }
 
@@ -131,7 +155,7 @@ public abstract class AbstractMonitoringAction implements Action, OtelMonitoring
         public String toString() {
             return "SpanAndScopes{" +
                 "span=" + span +
-                ", scopes=" + scopes.size() +
+                ", scope=" + scope +
                 ", scopeStartThreadName='" + scopeStartThreadName + '\'' +
                 '}';
         }
