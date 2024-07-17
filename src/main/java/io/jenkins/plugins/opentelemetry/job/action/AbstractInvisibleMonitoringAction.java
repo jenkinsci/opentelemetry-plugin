@@ -8,17 +8,14 @@ package io.jenkins.plugins.opentelemetry.job.action;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
 
-import java.util.Collections;
-import java.util.List;
-
 public abstract class AbstractInvisibleMonitoringAction extends AbstractMonitoringAction {
 
     public AbstractInvisibleMonitoringAction(Span span) {
-        super(span, Collections.emptyList());
+        super(span, null);
     }
 
-    public AbstractInvisibleMonitoringAction(Span span, List<Scope> scopes) {
-        super(span, scopes);
+    public AbstractInvisibleMonitoringAction(Span span, Scope scope) {
+        super(span, scope);
     }
 
     @Override

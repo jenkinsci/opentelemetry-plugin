@@ -19,7 +19,7 @@ public class FlowNodeMonitoringAction extends AbstractInvisibleMonitoringAction 
         super(span);
     }
 
-    public FlowNodeMonitoringAction(Span span, List<Scope> scopes) {
-        super(span, scopes);
+    public FlowNodeMonitoringAction(Span span, Scope scope) {
+        super(span, scope);
     }
 }

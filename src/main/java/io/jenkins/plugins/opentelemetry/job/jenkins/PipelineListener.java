@@ -14,6 +14,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
 
 public interface PipelineListener {
@@ -26,56 +27,78 @@ public interface PipelineListener {
     /**
      * Just before the pipeline starts
      */
-    void onStartPipeline(@NonNull FlowNode node, @NonNull WorkflowRun run);
+    default void onStartPipeline(@NonNull FlowNode node, @NonNull WorkflowRun run) {
+    }
 
     /**
-     * Just before the `node` step starts.
+     * Just before a `node(...) {...}` block step starts.
      */
-    void onStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run);
+    default void onStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run) {
+    }
 
     /**
-     * Just after the `node` step starts.
+     * Just after a `node(...) {...}` block step starts.
      */
-    void onAfterStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run);
+    default void onAfterStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run) {
+    }
 
     /**
-     * Just after the `node` step ends
+     * Just before the end of a `node(...) {...}` block ste.
      */
-    void onEndNodeStep(@NonNull StepEndNode nodeStepEndNode, @NonNull String nodeName, FlowNode nextNode, @NonNull WorkflowRun run);
+    default void onEndNodeStep(@NonNull StepEndNode nodeStepEndNode, @NonNull String nodeName, FlowNode nextNode, @NonNull WorkflowRun run) {
+    }
 
     /**
-     * Just before the `stage`step starts
+     * Just before a `stage(...) {...}` block step starts
      */
-    void onStartStageStep(@NonNull StepStartNode stepStartNode, @NonNull String stageName, @NonNull WorkflowRun run);
+    default void onStartStageStep(@NonNull StepStartNode stepStartNode, @NonNull String stageName, @NonNull WorkflowRun run) {
+    }
 
     /**
-     * Just after the `stage` step ends
+     * Just before the end of a `stage(...) {...}` block step
      */
-    void onEndStageStep(@NonNull StepEndNode stageStepEndNode, @NonNull String stageName, FlowNode nextNode, @NonNull WorkflowRun run);
+    default void onEndStageStep(@NonNull StepEndNode stageStepEndNode, @NonNull String stageName, FlowNode nextNode, @NonNull WorkflowRun run) {
+    }
 
     /**
-     * Just before the `parallel` branch starts
+     * Just before the `parallel {...}` branch block step starts
      */
-    void onStartParallelStepBranch(@NonNull StepStartNode stepStartNode, @NonNull String branchName, @NonNull WorkflowRun run);
+    default void onStartParallelStepBranch(@NonNull StepStartNode stepStartNode, @NonNull String branchName, @NonNull WorkflowRun run) {
+    }
 
     /**
      * Just before the `parallel` branch ends
      */
-    void onEndParallelStepBranch(@NonNull StepEndNode stepStepNode, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run);
+    default void onEndParallelStepBranch(@NonNull StepEndNode stepStepNode, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run) {
+    }
 
     /**
-     * Just before the atomic step starts
+     * Just before an atomic step starts (e.g. `sh`, `echo`, `sleep`, etc.)
      */
-    void onAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run);
+    default void onAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run) {
+    }
 
     /**
-     * Just after the atomic step
+     * Just after an atomic step (e.g. `sh`, `echo`, `sleep`, etc.)
      */
-    void onAfterAtomicStep(@NonNull StepAtomNode stepAtomNode, FlowNode nextNode, @NonNull WorkflowRun run);
+    default void onAfterAtomicStep(@NonNull StepAtomNode stepAtomNode, FlowNode nextNode, @NonNull WorkflowRun run) {
+    }
 
     /**
      * Just after the pipeline ends
      */
-    void onEndPipeline(@NonNull FlowNode node, @NonNull WorkflowRun run);
+    default void onEndPipeline(@NonNull FlowNode node, @NonNull WorkflowRun run) {
+    }
 
+    default void onOnOtherBlockStepStartNode(@NonNull StepStartNode node, @NonNull WorkflowRun run) {
+    }
+
+    default void onAfterOtherBlockStepStartNode(@NonNull StepStartNode node, @NonNull WorkflowRun run) {
+    }
+
+    default void onOtherBlockStepEndNode(@NonNull StepEndNode node, @NonNull WorkflowRun run) {
+    }
+
+    default void onAfterOtherBlockStepEndNode(@NonNull StepEndNode node, @NonNull WorkflowRun run) {
+    }
 }

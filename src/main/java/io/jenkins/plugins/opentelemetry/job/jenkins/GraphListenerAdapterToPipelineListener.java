@@ -67,6 +67,10 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
                 StepStartNode beginParallelBranch = endParallelBranchNode.getStartNode();
                 ThreadNameAction persistentAction = verifyNotNull(beginParallelBranch.getPersistentAction(ThreadNameAction.class), "Null ThreadNameAction on %s", beginParallelBranch);
                 fireOnAfterEndParallelStepBranch(endParallelBranchNode, persistentAction.getThreadName(), node, run);
+            } else if (previousNode instanceof StepStartNode) {
+                fireOnAfterOtherBlockStepStartNode((StepStartNode) previousNode, run);
+            } else if (previousNode instanceof StepEndNode) {
+                fireOnAfterOtherBlockStepEndNode((StepEndNode) previousNode, run);
             } else {
                 log(Level.FINE, () -> "Ignore previous node " + PipelineNodeUtil.getDetailedDebugString(previousNode));
             }
@@ -98,6 +102,10 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
             String label = Objects.toString(arguments.get("label"), null);
             fireOnAfterStartNodeStep((StepStartNode) node, label, run);
+        } else if (node instanceof StepStartNode) {
+            fireOnOtherBlockStepStartNode((StepStartNode) node, run);
+        } else if (node instanceof StepEndNode) {
+            fireOnOtherBlockStepEndNode((StepEndNode) node, run);
         } else {
             logFlowNodeDetails(node, run);
         }
@@ -115,6 +123,50 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             log(Level.FINE, () -> run.getFullDisplayName() + " - notifyOfNewStep - Process " + PipelineNodeUtil.getDetailedDebugString(flowNode) + " - computer[name: " + computerName + ", hostname: " + computerHostname + "," + computerActions + "]");
         } catch (IOException | InterruptedException | RuntimeException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void fireOnOtherBlockStepStartNode(@NonNull StepStartNode node, @NonNull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(Level.FINE, () -> "onStepStartNode(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onOnOtherBlockStepStartNode(node, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onStepStartNode` on " + pipelineListener);
+            }
+        }
+    }
+
+    private void fireOnAfterOtherBlockStepStartNode(@NonNull StepStartNode node, @NonNull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(Level.FINE, () -> "onAfterStepStartNode(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onAfterOtherBlockStepStartNode(node, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onAfterStepStartNode` on " + pipelineListener);
+            }
+        }
+    }
+
+    private void fireOnOtherBlockStepEndNode(@NonNull StepEndNode node, @NonNull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(Level.FINE, () -> "onAStepEndNode(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onOtherBlockStepEndNode(node, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onStepEndNode` on " + pipelineListener);
+            }
+        }
+    }
+
+    private void fireOnAfterOtherBlockStepEndNode(@NonNull StepEndNode node, @NonNull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(Level.FINE, () -> "onAfterStepEndNode(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onAfterOtherBlockStepEndNode(node, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onAfterStepEndNode` on " + pipelineListener);
+            }
         }
     }
 
@@ -144,7 +196,7 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         log(Level.FINE, () ->
         {
             String message = run.getFullDisplayName() + " - " +
-                    "before " + node.getDisplayFunctionName() + " // " + PipelineNodeUtil.getDisplayName(node) + ", ";
+                "before " + node.getDisplayFunctionName() + " // " + PipelineNodeUtil.getDisplayName(node) + ", ";
 
             if (node instanceof StepNode) {
                 StepNode stepNode = (StepNode) node;

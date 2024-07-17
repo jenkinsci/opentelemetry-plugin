@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry.job;
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableList;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.ExtensionList;
@@ -261,9 +262,9 @@ public class OtelTraceService {
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
     }
 
-    public void putSpanAndScopes(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode, List<Scope> scopes) {
+    public void putSpanAndScopes(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode, @Nullable Scope scope) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
-        flowNode.addAction(new FlowNodeMonitoringAction(span, scopes));
+        flowNode.addAction(new FlowNodeMonitoringAction(span, scope));
 
         LOGGER.log(Level.FINE, () -> "putSpan(" + run.getFullDisplayName() + ", " +
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
