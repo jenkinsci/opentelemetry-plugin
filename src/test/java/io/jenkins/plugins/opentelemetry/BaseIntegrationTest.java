@@ -144,7 +144,7 @@ public class BaseIntegrationTest {
             String expectedSpanName = expectedSpanNamesIt.next();
             actualNodeOptional = actualNodeOptional.get().getParent();
             final String actualSpanName = actualNodeOptional.get().getData().spanData.getName();
-            MatcherAssert.assertThat("Expected span '" + expectedSpanName + "' in chain of span" + expectedSpanNamesList + " not found, actual is '" + actualSpanName + "'", actualSpanName, CoreMatchers.is(expectedSpanName));
+            MatcherAssert.assertThat("Expected span '" + expectedSpanName + "' in chain of span" + expectedSpanNamesList + " not found, actual is '" + actualSpanName + "': \n" + spanTree, actualSpanName, CoreMatchers.is(expectedSpanName));
         }
     }
 
@@ -189,7 +189,7 @@ public class BaseIntegrationTest {
             final SpanData spanData2 = spanDataNode2.getData().spanData;
             return Objects.equals(spanData1.getSpanId(), spanData2.getParentSpanId());
         };
-        final List<Tree<SpanDataWrapper>> trees = Tree.of(spans.stream().map(span -> new SpanDataWrapper(span)).collect(Collectors.toList()), parentChildMatcher);
+        final List<Tree<SpanDataWrapper>> trees = Tree.of(spans.stream().map(SpanDataWrapper::new).collect(Collectors.toList()), parentChildMatcher);
         System.out.println("## TREE VIEW OF SPANS ## ");
         for (Tree<SpanDataWrapper> tree : trees) {
             System.out.println(tree);
@@ -298,7 +298,7 @@ public class BaseIntegrationTest {
 
             final Attributes attributes = spanData.getAttributes();
             if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE) != null) {
-                result += ", function: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE);
+                result += ", function/type: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE);
             }
             if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME) != null) {
                 result += ", name: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME);

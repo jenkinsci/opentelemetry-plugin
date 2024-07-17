@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.collect.Iterables;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
@@ -18,6 +19,7 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
+import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineNodeUtil;
 import io.jenkins.plugins.opentelemetry.job.step.SetSpanAttributesStep;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
 import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributeStep;
@@ -42,15 +44,21 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.StepListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graph.StepNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.pipelinegraphanalysis.GenericStatus;
 import org.jenkinsci.plugins.workflow.pipelinegraphanalysis.StatusAndTiming;
+import org.jenkinsci.plugins.workflow.steps.CatchErrorStep;
 import org.jenkinsci.plugins.workflow.steps.CoreStep;
+import org.jenkinsci.plugins.workflow.steps.EnvStep;
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
+import org.jenkinsci.plugins.workflow.support.steps.StageStep;
 
+import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
@@ -61,7 +69,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -260,9 +270,15 @@ public class MonitoringPipelineListener implements PipelineListener, StepListene
         return stepDescriptor.getDisplayName();
     }
 
-    private String getStepType(@NonNull FlowNode node, @Nullable StepDescriptor stepDescriptor, @NonNull String type) {
+    /**
+     * @param node
+     * @param stepDescriptor
+     * @param defaultType    default ype if the passed stepDescriptor is {@code null}
+     * @return
+     */
+    private String getStepType(@NonNull FlowNode node, @Nullable StepDescriptor stepDescriptor, @NonNull String defaultType) {
         if (stepDescriptor == null) {
-            return type;
+            return defaultType;
         }
         UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
         if (describable != null) {
@@ -310,7 +326,113 @@ public class MonitoringPipelineListener implements PipelineListener, StepListene
         endCurrentSpan(node, run, parallelStatus);
     }
 
-    private void endCurrentSpan(FlowNode node, WorkflowRun run, GenericStatus status) {
+    @Override
+    public void onOnOtherBlockStepStartNode(@Nonnull StepStartNode node, @Nonnull WorkflowRun run) {
+        if (isSkipBlockStepNode(node)) {
+            return;
+        }
+        Span encapsulatingSpan = this.otelTraceService.getSpan(run, node);
+
+        String stepType = getStepType(node, node.getDescriptor(), "block-step");
+        JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, node);
+
+        Span atomicStepSpan = getTracer().spanBuilder(stepType)
+            .setParent(Context.current().with(encapsulatingSpan))
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, "descriptor.class=" + node.getDescriptor().getClass() + ", descriptor.functionName=" + node.getDescriptor().getFunctionName() + ", stepStartNode.isBody=" + node.isBody())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stepType)
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+            .startSpan();
+        LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - >b lock step(" + stepType + ") - begin " + OtelUtils.toDebugString(atomicStepSpan));
+
+        getTracerService().putSpan(run, atomicStepSpan, node);
+    }
+
+    boolean isSkipBlockStepNode(@NonNull StepStartNode node) {
+
+        // FIXME why isn't this implementation working?
+        Predicate<? super StepDescriptor> isIgnoredBlockStepPredicate = (Predicate<StepDescriptor>) stepDescriptor -> stepDescriptor instanceof StageStep.DescriptorImpl ||
+            stepDescriptor instanceof EnvStep.DescriptorImpl ||
+            stepDescriptor instanceof ExecutorStep.DescriptorImpl;
+        boolean isSkippedBlockStep = Optional
+            .ofNullable(node)
+            .filter(Predicate.not(StepStartNode::isBody))
+            .map(StepStartNode::getDescriptor)
+            .filter(isIgnoredBlockStepPredicate)
+            .isPresent();
+        final boolean isSkippedBlockStep2;
+        if (node.isBody()) {
+            isSkippedBlockStep2 = true;
+        } else {
+            StepDescriptor stepDescriptor = node.getDescriptor();
+            isSkippedBlockStep2 = stepDescriptor instanceof StageStep.DescriptorImpl ||
+                stepDescriptor instanceof EnvStep.DescriptorImpl ||
+                stepDescriptor instanceof ExecutorStep.DescriptorImpl ||
+                stepDescriptor instanceof WithSpanAttributesStep.DescriptorImpl ||
+                stepDescriptor instanceof WithSpanAttributeStep.DescriptorImpl ||
+                stepDescriptor instanceof CatchErrorStep.DescriptorImpl;
+        }
+        if (isSkippedBlockStep != isSkippedBlockStep2) {
+            LOGGER.log(Level.FINE, () -> "isSkipBlockStepNode(" + node.getId() + "): " + isSkippedBlockStep + " != " + isSkippedBlockStep2);
+        }
+        LOGGER.log(Level.FINE, () -> "Ignore block step " + Optional.ofNullable(node)
+            .map(ssn -> "node.stepName=" + ssn.getStepName() +
+                ", node.id=" + ssn.getId() +
+                ", node.isBody=" + ssn.isBody() +
+                ", descriptor.functionName=" + ssn.getDescriptor().getFunctionName() +
+                ", descriptor.class=" + ssn.getDescriptor().getClass())
+            .orElse("null") + " - " + isSkippedBlockStep);
+        return isSkippedBlockStep2;
+    }
+
+    @Override
+    public void onAfterOtherBlockStepStartNode(@NonNull StepStartNode node, @NonNull WorkflowRun run) {
+        if (isSkipBlockStepNode(node)) {
+            return;
+        }
+        debug(node, run, "onAfterOtherBlockStepStartNode");
+    }
+
+    @Override
+    public void onOtherBlockStepEndNode(@NonNull StepEndNode node, @NonNull WorkflowRun run) {
+        if (isSkipBlockStepNode(node.getStartNode())) {
+            return;
+        }
+        debug(node, run, "onOtherBlockStepEndNode");
+    }
+
+    @Override
+    public void onAfterOtherBlockStepEndNode(@NonNull StepEndNode node, @NonNull WorkflowRun run) {
+        if (isSkipBlockStepNode(node.getStartNode())) {
+            return;
+        }
+        debug(node, run, "onAfterOtherBlockStepEndNode");
+        StepStartNode parallelStartNode = node.getStartNode();
+        FlowNode nextNode = null; // FIXME get next node
+        GenericStatus parallelStatus = StatusAndTiming.computeChunkStatus2(run, null, parallelStartNode, node, nextNode);
+        endCurrentSpan(node, run, parallelStatus);
+    }
+
+    private static void debug(@Nonnull FlowNode node, @Nonnull WorkflowRun run, String type) {
+        LOGGER.log(Level.INFO, () ->
+        {
+
+            String message = run.getFullDisplayName() + " - " + type + " - " +
+                node.getDisplayFunctionName() + " // " + PipelineNodeUtil.getDisplayName(node) + ", ";
+
+            if (node instanceof StepNode && ((StepNode) node).getDescriptor() != null) {
+                StepDescriptor descriptor = ((StepNode) node).getDescriptor();
+                message += "descriptor (class:" + descriptor.getClass().getName() + ", " + descriptor.getFunctionName() + "), ";
+            }
+            message += node.getAllActions().stream().map(action -> Objects.toString(action.getDisplayName(), action.getClass().toString())).collect(Collectors.joining(", "));
+            message += ", node.parent: " + Iterables.getFirst(node.getParents(), null);
+            message += ", thread: " + Thread.currentThread().getName();
+            return message;
+        });
+    }
+
+    private void endCurrentSpan(@NonNull FlowNode node, @NonNull WorkflowRun run, @Nullable GenericStatus status) {
         Span span = getTracerService().getSpan(run, node);
 
         ErrorAction errorAction = node.getError();

@@ -27,6 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -35,10 +36,29 @@ import java.util.stream.Collectors;
 public class PipelineNodeUtil {
     private final static Logger LOGGER = Logger.getLogger(PipelineNodeUtil.class.getName());
 
+
+    public static boolean isStartStage(FlowNode node) {
+
+        boolean result = Optional
+            .ofNullable(node)
+            .filter(n -> n instanceof StepStartNode)
+            .map(n -> (StepStartNode) n)
+            .map(StepStartNode::getDescriptor)
+            .filter(descriptor -> descriptor instanceof StageStep.DescriptorImpl)
+            .map(descriptor -> node.getAction(LabelAction.class))
+            .isPresent();
+        boolean resultOld = isStartStageOld(node);
+
+        if (result != resultOld) {
+            throw new IllegalStateException("isStartStage: " + result + " != " + resultOld + " - " + getDetailedDebugString(node));
+        }
+        return resultOld;
+    }
+
     /**
      * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
      */
-    public static boolean isStartStage(FlowNode node) {
+    public static boolean isStartStageOld(FlowNode node) {
         // logic below coming {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil#isStage(FlowNode)} from don't work for us
         // return node != null && (node.getAction(StageAction.class) != null && !isSyntheticStage(node))
         //        || (node.getAction(LabelAction.class) != null && node.getAction(ThreadNameAction.class) == null));
@@ -56,6 +76,7 @@ public class PipelineNodeUtil {
         }
         return node.getAction(LabelAction.class) != null;
     }
+
 
     /**
      * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}

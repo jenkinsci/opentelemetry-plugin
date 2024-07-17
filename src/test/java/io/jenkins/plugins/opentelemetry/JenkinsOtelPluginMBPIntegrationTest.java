@@ -69,7 +69,7 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
         checkChainOfSpans(spans, "Stage: Declarative: Checkout SCM", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();

@@ -572,7 +572,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
             "node() {\n" +
                 "    stage('ze-stage1') {\n" +
                 "       spanContextPropagationTestBlockStep() {\n" +
-                "          echo message: 'hello'\n" +
+                "          spanContextPropagationSynchronousNonBlockingTestStep()\n" +
                 "       }\n" +
                 "    }\n" +
                 "}";
@@ -586,7 +586,6 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        System.out.println(spans);
-        checkChainOfSpans(spans,"spanContextPropagationTestBlockStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans,"spanContextPropagationSynchronousNonBlockingTestStep", "spanContextPropagationTestBlockStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
     }
 }
