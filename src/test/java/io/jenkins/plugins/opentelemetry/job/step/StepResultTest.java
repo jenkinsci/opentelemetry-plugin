@@ -45,7 +45,7 @@ public class StepResultTest extends BaseIntegrationTest {
             "    stage('skipped') {\n" +
             "        org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional('skipped');\n" +
             "    }\n" +
-            "    stage('timeout') {\n" +
+            "    stage('timeout-stage') {\n" +
             "        timeout(time: 1, unit: 'MILLISECONDS') {\n" +
             "            xsh (label: 'sleep', script: 'sleep 1')\n" +
             "        }\n" +
@@ -68,7 +68,7 @@ public class StepResultTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "parallel-first", "Parallel branch: first", "Stage: parallel", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "parallel-second", "Parallel branch: second", "Stage: parallel", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Stage: skipped", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "Stage: timeout", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Stage: timeout-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
         // Note: pipeline root span is not a step/stage, so it does not get a JenkinsOtelSemanticAttributes.JENKINS_STEP_RESULT attribute (just like it doesn't get any JenkinsOtelSemanticAttributes at all at the moment)

@@ -326,11 +326,18 @@ public class MonitoringPipelineListener implements PipelineListener, StepListene
         endCurrentSpan(node, run, parallelStatus);
     }
 
+    static boolean oldBehaviour = false;
+
     @Override
     public void onOnOtherBlockStepStartNode(@Nonnull StepStartNode node, @Nonnull WorkflowRun run) {
+        debug(node, run, "onOnOtherBlockStepStartNode");
         if (isSkipBlockStepNode(node)) {
             return;
         }
+        if (oldBehaviour) {
+            return;
+        }
+
         Span encapsulatingSpan = this.otelTraceService.getSpan(run, node);
 
         String stepType = getStepType(node, node.getDescriptor(), "block-step");
@@ -338,7 +345,7 @@ public class MonitoringPipelineListener implements PipelineListener, StepListene
 
         Span atomicStepSpan = getTracer().spanBuilder(stepType)
             .setParent(Context.current().with(encapsulatingSpan))
-            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, "descriptor.class=" + node.getDescriptor().getClass() + ", descriptor.functionName=" + node.getDescriptor().getFunctionName() + ", stepStartNode.isBody=" + node.isBody())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stepType)
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
@@ -350,7 +357,6 @@ public class MonitoringPipelineListener implements PipelineListener, StepListene
     }
 
     boolean isSkipBlockStepNode(@NonNull StepStartNode node) {
-
         // FIXME why isn't this implementation working?
         Predicate<? super StepDescriptor> isIgnoredBlockStepPredicate = (Predicate<StepDescriptor>) stepDescriptor -> stepDescriptor instanceof StageStep.DescriptorImpl ||
             stepDescriptor instanceof EnvStep.DescriptorImpl ||
@@ -382,7 +388,7 @@ public class MonitoringPipelineListener implements PipelineListener, StepListene
                 ", node.isBody=" + ssn.isBody() +
                 ", descriptor.functionName=" + ssn.getDescriptor().getFunctionName() +
                 ", descriptor.class=" + ssn.getDescriptor().getClass())
-            .orElse("null") + " - " + isSkippedBlockStep);
+            .orElse("null") + " - " + isSkippedBlockStep2);
         return isSkippedBlockStep2;
     }
 
@@ -404,10 +410,13 @@ public class MonitoringPipelineListener implements PipelineListener, StepListene
 
     @Override
     public void onAfterOtherBlockStepEndNode(@NonNull StepEndNode node, @NonNull WorkflowRun run) {
+        debug(node, run, "onAfterOtherBlockStepEndNode");
         if (isSkipBlockStepNode(node.getStartNode())) {
             return;
         }
-        debug(node, run, "onAfterOtherBlockStepEndNode");
+        if (oldBehaviour) {
+            return;
+        }
         StepStartNode parallelStartNode = node.getStartNode();
         FlowNode nextNode = null; // FIXME get next node
         GenericStatus parallelStatus = StatusAndTiming.computeChunkStatus2(run, null, parallelStartNode, node, nextNode);

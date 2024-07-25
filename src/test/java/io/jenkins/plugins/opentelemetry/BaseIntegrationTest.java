@@ -144,7 +144,7 @@ public class BaseIntegrationTest {
             String expectedSpanName = expectedSpanNamesIt.next();
             actualNodeOptional = actualNodeOptional.get().getParent();
             final String actualSpanName = actualNodeOptional.get().getData().spanData.getName();
-            MatcherAssert.assertThat("Expected span '" + expectedSpanName + "' in chain of span" + expectedSpanNamesList + " not found, actual is '" + actualSpanName + "': \n" + spanTree, actualSpanName, CoreMatchers.is(expectedSpanName));
+            MatcherAssert.assertThat("Expected span '" + expectedSpanName + "' in chain of span" + expectedSpanNamesList + " not found, actual is '" + actualSpanName, actualSpanName, CoreMatchers.is(expectedSpanName));
         }
     }
 

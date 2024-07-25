@@ -58,14 +58,14 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         // BEFORE
 
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-                "node() {\n" +
-                "    stage('ze-stage1') {\n" +
-                "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
-                "    }\n" +
-                "    stage('ze-stage2') {\n" +
-                "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
-                "    }\n" +
-                "}";
+            "node() {\n" +
+            "    stage('ze-stage1') {\n" +
+            "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
+            "    }\n" +
+            "    stage('ze-stage2') {\n" +
+            "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
+            "    }\n" +
+            "}";
         jenkinsRule.createOnlineSlave();
 
         final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
@@ -128,16 +128,16 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
             // TODO test on windows
         } else {
             String pipelineScript = "node() {\n" +
-                    "    stage('ze-stage1') {\n" +
-                    "       sh '''\n" +
-                    "if [ -z $TRACEPARENT ]\n" +
-                    "then\n" +
-                    "   echo TRACEPARENT NOT FOUND\n" +
-                    "   exit 1\n" +
-                    "fi\n" +
-                    "'''\n" +
-                    "    }\n" +
-                    "}";
+                "    stage('ze-stage1') {\n" +
+                "       sh '''\n" +
+                "if [ -z $TRACEPARENT ]\n" +
+                "then\n" +
+                "   echo TRACEPARENT NOT FOUND\n" +
+                "   exit 1\n" +
+                "fi\n" +
+                "'''\n" +
+                "    }\n" +
+                "}";
             jenkinsRule.createOnlineSlave();
 
             WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-trace-environment-variables-injected-in-shell-steps-" + jobNameSuffix.incrementAndGet());
@@ -152,17 +152,17 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testPipelineWithNodeSteps() throws Exception {
         String pipelineScript = "pipeline {\n" +
-                "  agent none\n" +
-                "  stages {\n" +
-                "    stage('foo') {\n" +
-                "      steps {\n" +
-                "        node('linux') { \n" +
-                "          echo 'hello world' \n" +
-                "        }\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}";
+            "  agent none\n" +
+            "  stages {\n" +
+            "    stage('foo') {\n" +
+            "      steps {\n" +
+            "        node('linux') { \n" +
+            "          echo 'hello world' \n" +
+            "        }\n" +
+            "      }\n" +
+            "    }\n" +
+            "  }\n" +
+            "}";
 
         final Node agent = jenkinsRule.createOnlineSlave();
         agent.setLabelString("linux");
@@ -205,15 +205,15 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     public void testPipelineWithSkippedSteps() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-                "node() {\n" +
-                "    stage('ze-stage1') {\n" +
-                "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
-                "       echo 'ze-echo-step' \n" +
-                "    }\n" +
-                "    stage('ze-stage2') {\n" +
-                "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
-                "    }\n" +
-                "}";
+            "node() {\n" +
+            "    stage('ze-stage1') {\n" +
+            "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
+            "       echo 'ze-echo-step' \n" +
+            "    }\n" +
+            "    stage('ze-stage2') {\n" +
+            "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
+            "    }\n" +
+            "}";
 
         jenkinsRule.createOnlineSlave();
 
@@ -240,17 +240,17 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testPipelineWithWrappingStep() throws Exception {
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-                "node() {\n" +
-                "    stage('ze-stage1') {\n" +
-                "       withEnv(['MY_VARIABLE=MY_VALUE']) {\n" +
-                "          xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
-                "       }\n" +
-                "       xsh 'echo ze-echo' \n" +
-                "    }\n" +
-                "    stage('ze-stage2') {\n" +
-                "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
-                "    }\n" +
-                "}";
+            "node() {\n" +
+            "    stage('ze-stage1') {\n" +
+            "       withEnv(['MY_VARIABLE=MY_VALUE']) {\n" +
+            "          xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
+            "       }\n" +
+            "       xsh 'echo ze-echo' \n" +
+            "    }\n" +
+            "    stage('ze-stage2') {\n" +
+            "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
+            "    }\n" +
+            "}";
         jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-wrapping-step-" + jobNameSuffix.incrementAndGet());
@@ -273,15 +273,15 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testPipelineWithError() throws Exception {
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-                "node() {\n" +
-                "    stage('ze-stage1') {\n" +
-                "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
-                "    }\n" +
-                "    stage('ze-stage2') {\n" +
-                "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
-                "       error 'ze-pipeline-error' \n" +
-                "    }\n" +
-                "}";
+            "node() {\n" +
+            "    stage('ze-stage1') {\n" +
+            "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n" +
+            "    }\n" +
+            "    stage('ze-stage2') {\n" +
+            "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n" +
+            "       error 'ze-pipeline-error' \n" +
+            "    }\n" +
+            "}";
         jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-error-" + jobNameSuffix.incrementAndGet());
@@ -338,17 +338,17 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     public void testPipelineWithParallelStep() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-                "node() {\n" +
-                "    stage('ze-parallel-stage') {\n" +
-                "        parallel parallelBranch1: {\n" +
-                "            xsh (label: 'shell-1', script: 'echo this-is-the-parallel-branch-1')\n" +
-                "        } ,parallelBranch2: {\n" +
-                "            xsh (label: 'shell-2', script: 'echo this-is-the-parallel-branch-2')\n" +
-                "        } ,parallelBranch3: {\n" +
-                "            xsh (label: 'shell-3', script: 'echo this-is-the-parallel-branch-3')\n" +
-                "        }\n" +
-                "    }\n" +
-                "}";
+            "node() {\n" +
+            "    stage('ze-parallel-stage') {\n" +
+            "        parallel parallelBranch1: {\n" +
+            "            xsh (label: 'shell-1', script: 'echo this-is-the-parallel-branch-1')\n" +
+            "        } ,parallelBranch2: {\n" +
+            "            xsh (label: 'shell-2', script: 'echo this-is-the-parallel-branch-2')\n" +
+            "        } ,parallelBranch3: {\n" +
+            "            xsh (label: 'shell-3', script: 'echo this-is-the-parallel-branch-3')\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
         jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-pipeline-with-parallel-step" + jobNameSuffix.incrementAndGet());
@@ -405,10 +405,10 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     private void assertGitCredentials(String jobName, String globalCredentialId, String gitUserName) throws Exception {
         String pipelineScript = "node() {\n" +
-                "  stage('foo') {\n" +
-                "    git credentialsId: '" + globalCredentialId + "', url: 'https://github.com/octocat/Hello-World' \n" +
-                "  }\n" +
-                "}";
+            "  stage('foo') {\n" +
+            "    git credentialsId: '" + globalCredentialId + "', url: 'https://github.com/octocat/Hello-World' \n" +
+            "  }\n" +
+            "}";
         jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
@@ -519,7 +519,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testSpanContextPropagationSynchronousTestStep() throws Exception {
-        Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class).forEach(c -> System.out.println(c + " -> " +ExtensionList.lookup(c)));
+        Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class).forEach(c -> System.out.println(c + " -> " + ExtensionList.lookup(c)));
 
         String pipelineScript =
             "node() {\n" +
@@ -538,11 +538,12 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans,"SpanContextPropagationTestStep.execution", "spanContextPropagationSynchronousTestStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "SpanContextPropagationTestStep.execution", "spanContextPropagationSynchronousTestStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
     }
+
     @Test
     public void testSpanContextPropagationSynchronousNonBlockingTestStep() throws Exception {
-        Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class).forEach(c -> System.out.println(c + " -> " +ExtensionList.lookup(c)));
+        Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class).forEach(c -> System.out.println(c + " -> " + ExtensionList.lookup(c)));
 
 
         String pipelineScript =
@@ -562,20 +563,25 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans,"SpanContextPropagationSynchronousNonBlockingTestStep.execution", "spanContextPropagationSynchronousNonBlockingTestStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "SpanContextPropagationSynchronousNonBlockingTestStep.execution", "spanContextPropagationSynchronousNonBlockingTestStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
     }
 
     @Test
     public void testSpanContextPropagationTestBlockStep() throws Exception {
 
-        String pipelineScript =
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
             "node() {\n" +
-                "    stage('ze-stage1') {\n" +
-                "       spanContextPropagationTestBlockStep() {\n" +
-                "          spanContextPropagationSynchronousNonBlockingTestStep()\n" +
-                "       }\n" +
-                "    }\n" +
-                "}";
+            "    stage('ze-stage1') {\n" +
+            "       spanContextPropagationTestBlockStep() {\n" +
+            "          spanContextPropagationSynchronousNonBlockingTestStep()\n" +
+            "       }\n" +
+            "    }\n" +
+            "    stage('timeout-stage') {\n" +
+            "        timeout(time: 1, unit: 'SECONDS') {\n" +
+            "            xsh (label: 'sleep', script: 'sleep 1')\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
         jenkinsRule.createOnlineSlave();
 
         final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
@@ -586,6 +592,33 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans,"spanContextPropagationSynchronousNonBlockingTestStep", "spanContextPropagationTestBlockStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "SpanContextPropagationSynchronousNonBlockingTestStep.execution", "spanContextPropagationSynchronousNonBlockingTestStep", "spanContextPropagationTestBlockStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "sleep", "timeout", "Stage: timeout-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
     }
+
+    @Test
+    public void testPipelineWithFailure() throws Exception {
+
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
+            "node() {\n" +
+            "    stage('timeout-stage') {\n" +
+            "        timeout(time: 1, unit: 'NANOSECONDS') {\n" +
+            "            xsh (label: 'sleep', script: 'sleep 1')\n" +
+            "        }\n" +
+            "    }\n" +
+            "}";
+        jenkinsRule.createOnlineSlave();
+
+        final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.ABORTED, pipeline.scheduleBuild2(0));
+
+        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+
+        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        checkChainOfSpans(spans, "echo", "timeout", "Stage: timeout-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+    }
+
+
 }
