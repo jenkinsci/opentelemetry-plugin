@@ -23,7 +23,6 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,8 +41,6 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
     protected final static Logger LOGGER = Logger.getLogger(OtelLogSenderBuildListener.class.getName());
     final RunTraceContext runTraceContext;
 
-    final Map<String, String> otelConfigProperties;
-    final Map<String, String> otelResourceAttributes;
     /**
      * Timestamps of the logs emitted by the Jenkins Agents must be chronologically ordered with the timestamps of
      * the logs & traces emitted on the Jenkins controller even if the system clock are not perfectly synchronized
@@ -57,10 +54,8 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
     @CheckForNull
     transient PrintStream logger;
 
-    public OtelLogSenderBuildListener(@NonNull RunTraceContext runTraceContext, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
+    public OtelLogSenderBuildListener(@NonNull RunTraceContext runTraceContext) {
         this.runTraceContext = runTraceContext;
-        this.otelConfigProperties = otelConfigProperties;
-        this.otelResourceAttributes = otelResourceAttributes;
         this.clock = Clocks.monotonicClock();
         // Constructor must always be invoked on the Jenkins Controller.
         // Instantiation on the Jenkins Agents is done via deserialization.
@@ -96,8 +91,8 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
 
         private final static Logger logger = Logger.getLogger(OtelLogSenderBuildListenerOnController.class.getName());
 
-        public OtelLogSenderBuildListenerOnController(@NonNull RunTraceContext runTraceContext, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
-            super(runTraceContext, otelConfigProperties, otelResourceAttributes);
+        public OtelLogSenderBuildListenerOnController(@NonNull RunTraceContext runTraceContext) {
+            super(runTraceContext);
             logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnController()");
             JenkinsJVM.checkJenkinsJVM();
         }
@@ -118,7 +113,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
         private Object writeReplace() throws IOException {
             logger.log(Level.FINEST, () -> "writeReplace()");
             JenkinsJVM.checkJenkinsJVM();
-            return new OtelLogSenderBuildListenerOnAgent(runTraceContext, otelConfigProperties, otelResourceAttributes);
+            return new OtelLogSenderBuildListenerOnAgent(runTraceContext);
         }
     }
 
@@ -141,8 +136,8 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
         /**
          * Intended to be exclusively called on the Jenkins Controller by {@link OtelLogSenderBuildListenerOnController#writeReplace()}.
          */
-        private OtelLogSenderBuildListenerOnAgent(@NonNull RunTraceContext runTraceContext, @NonNull Map<String, String> otelConfigProperties, @NonNull Map<String, String> otelResourceAttributes) {
-            super(runTraceContext, otelConfigProperties, otelResourceAttributes);
+        private OtelLogSenderBuildListenerOnAgent(@NonNull RunTraceContext runTraceContext) {
+            super(runTraceContext);
             logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnAgent()");
             JenkinsJVM.checkJenkinsJVM();
         }
@@ -186,15 +181,6 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
                 );
                 this.clock = Clocks.monotonicOffsetClock(offsetInNanosOnJenkinsAgent);
             }
-
-            // Setup OTel
-            GlobalOpenTelemetrySdk.configure(
-                otelConfigProperties,
-                otelResourceAttributes,
-                /* the JVM shutdown hook is too late to flush the Otel signals as the OTel classes have been unloaded */
-                false );
-            // TODO find the right lifecycle event to shutdown the Otel SDK on agent shutdown
-            // hudson.remoting.EngineListener doesn't seem to be the right event
             return this;
         }
 

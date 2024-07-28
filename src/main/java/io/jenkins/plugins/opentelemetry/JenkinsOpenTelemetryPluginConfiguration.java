@@ -175,7 +175,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         // stapler oddity, empty lists coming from the HTTP request are not set on bean by  `req.bindJSON(this, json)`
         this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
         this.endpoint = sanitizeOtlpEndpoint(this.endpoint);
-        initializeOpenTelemetry();
+        configureOpenTelemetrySdk();
         save();
         LOGGER.log(Level.FINE, "Configured");
         return true;
@@ -225,13 +225,16 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      */
     @Initializer(after = InitMilestone.SYSTEM_CONFIG_ADAPTED, before = InitMilestone.JOB_LOADED)
     @SuppressWarnings("MustBeClosedChecker")
-    public void initializeOpenTelemetry() {
-        LOGGER.log(Level.FINE, "Initialize Jenkins OpenTelemetry Plugin...");
+    public void configureOpenTelemetrySdk() {
+        LOGGER.log(Level.FINE, "Configure OpenTelemetry SDK...");
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
         } else {
-            openTelemetry.configure(newOpenTelemetryConfiguration.toOpenTelemetryProperties(), newOpenTelemetryConfiguration.toOpenTelemetryResource());
+            openTelemetry.configure(
+                newOpenTelemetryConfiguration.toOpenTelemetryProperties(),
+                newOpenTelemetryConfiguration.toOpenTelemetryResource(),
+                true);
             this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
         }
 
@@ -406,7 +409,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      */
     @NonNull
     public String getVisualisationObservabilityBackendsString() {
-        return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(d -> d.getDisplayName()).collect(Collectors.joining(", "));
+        return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(Descriptor::getDisplayName).collect(Collectors.joining(", "));
     }
 
     @NonNull
