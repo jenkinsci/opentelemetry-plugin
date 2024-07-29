@@ -22,13 +22,13 @@
         <changelist>999999-SNAPSHOT</changelist>
         <jenkins.version>2.440.3</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.39.0</opentelemetry.version>
-        <opentelemetry-instrumentation.version>2.5.0</opentelemetry-instrumentation.version>
+        <opentelemetry.version>1.40.0</opentelemetry.version>
+        <opentelemetry-instrumentation.version>2.6.0</opentelemetry-instrumentation.version>
         <opentelemetry-semconv.version>1.25.0-alpha</opentelemetry-semconv.version>
         <opentelemetry-contrib.version>1.36.0-alpha</opentelemetry-contrib.version>
         <useBeta>true</useBeta>
-        <elasticstack.version>8.14.2</elasticstack.version>
-        <error-prone.version>2.28.0</error-prone.version>
+        <elasticstack.version>8.14.3</elasticstack.version>
+        <error-prone.version>2.29.2</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
@@ -44,7 +44,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.440.x</artifactId>
-                <version>3193.v330d8248d39e</version>
+                <version>3208.vb_21177d4b_cd9</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -104,7 +104,7 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>opentelemetry-api</artifactId>
-            <version>1.39.0-11.vd6b_87589988f</version>
+            <version>1.40.0-23.v7da_9d4c543d3</version>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
@@ -457,7 +457,7 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>1.19.8</version>
+            <version>1.20.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -492,6 +492,7 @@
                         <io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>INFO</io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>
                         <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                         <io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>FINE</io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>
+                        <io.jenkins.plugins.opentelemetry.opentelemetry.resources.JenkinsResourceProvider>FINEST</io.jenkins.plugins.opentelemetry.opentelemetry.resources.JenkinsResourceProvider>
                     </loggers>
                 </configuration>
             </plugin>
