@@ -9,6 +9,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.remoting.DelegatingCallable;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -23,6 +24,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.remoting.RoleChecker;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,15 +39,28 @@ import java.util.logging.Logger;
 public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory extends FilePath.FileCallableWrapperFactory implements OpenTelemetryLifecycleListener {
     static final Logger LOGGER = Logger.getLogger(OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory.class.getName());
 
-    final AtomicBoolean remotingTracingEnabled = new AtomicBoolean(true);
+    final AtomicBoolean remotingTracingEnabled = new AtomicBoolean(false);
+    final AtomicBoolean buildAgentsInstrumentationEnabled = new AtomicBoolean(false);
 
     @Override
     public <T> DelegatingCallable<T, IOException> wrap(DelegatingCallable<T, IOException> callable) {
-        return new OTelDelegatingCallable<>(callable, remotingTracingEnabled.get());
+        if (buildAgentsInstrumentationEnabled.get()) {
+            return new OTelDelegatingCallable<>(callable, remotingTracingEnabled.get());
+        } else {
+            return callable;
+        }
+    }
+
+    @Inject
+    public void setJenkinsOpenTelemetryPluginConfiguration(JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration) {
+        ConfigProperties configProperties = jenkinsOpenTelemetryPluginConfiguration.getConfigProperties();
+        this.buildAgentsInstrumentationEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED, false));
+        this.remotingTracingEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTING_ENABLED, false));
     }
 
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
+        this.buildAgentsInstrumentationEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED, false));
         this.remotingTracingEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTING_ENABLED, false));
     }
 
