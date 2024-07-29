@@ -9,63 +9,60 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.remoting.DelegatingCallable;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerBuilder;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.remoting.RoleChecker;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Propagates trace context to Jenkins build agents
+ * Propagates trace context to Jenkins build agents and, if enabled, create a span on the jenkins agent side for the remoting call.
  */
 @Extension
-public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory extends FilePath.FileCallableWrapperFactory {
+public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory extends FilePath.FileCallableWrapperFactory implements OpenTelemetryLifecycleListener {
     static final Logger LOGGER = Logger.getLogger(OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory.class.getName());
 
-    Set<String> ignoredPackages = Set.of(
-        "hudson",
-        "org.jenkinsci.plugins.durabletask");
+    final AtomicBoolean remotingTracingEnabled = new AtomicBoolean(true);
 
     @Override
     public <T> DelegatingCallable<T, IOException> wrap(DelegatingCallable<T, IOException> callable) {
-        if (isIgnoredRemotingInvocation(callable)) {
-            return callable;
-        } else {
-            return new OTelDelegatingCallable<>(callable);
-        }
+        return new OTelDelegatingCallable<>(callable, remotingTracingEnabled.get());
     }
 
-    private <T> boolean isIgnoredRemotingInvocation(DelegatingCallable<T, IOException> callable) {
-        return ignoredPackages.contains(callable.getClass().getPackageName());
+    @Override
+    public void afterConfiguration(ConfigProperties configProperties) {
+        this.remotingTracingEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTING_ENABLED, false));
     }
 
     static class OTelDelegatingCallable<V, T extends Throwable> implements DelegatingCallable<V, T> {
         private static final long serialVersionUID = 1L;
         final DelegatingCallable<V, T> callable;
         final Map<String, String> w3cTraceContext;
+        final boolean remotingTracingEnabled;
 
-        public OTelDelegatingCallable(DelegatingCallable<V, T> callable) {
+        public OTelDelegatingCallable(DelegatingCallable<V, T> callable, boolean remotingTracingEnabled) {
             this.callable = callable;
-            w3cTraceContext = new HashMap<>();
+            this.w3cTraceContext = new HashMap<>();
             W3CTraceContextPropagator.getInstance().inject(Context.current(), w3cTraceContext, (carrier, key, value) -> {
                 assert carrier != null;
                 carrier.put(key, value);
             });
+            this.remotingTracingEnabled = remotingTracingEnabled;
             LOGGER.log(Level.FINER, () -> "Wrap " + callable + " to propagate trace context " + w3cTraceContext);
         }
 
@@ -95,13 +92,20 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
             });
             LOGGER.log(Level.FINER, () -> "Call " + callable + " with trace context " + w3cTraceContext);
             Span span;
-            if (LOGGER.isLoggable(Level.INFO)) { // FIXME log level
+            if (remotingTracingEnabled) {
+                String spanName;
+                String callableToString = callable.toString();
+                if ("hudson.FilePath$FileCallableWrapper".equals(callable.getClass().getName()) && StringUtils.contains(callableToString, "@")) {
+                    spanName = StringUtils.substringBefore(callableToString, "@");
+                } else {
+                    spanName = "Call";
+                }
                 span = GlobalOpenTelemetry
                     .getTracer(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
-                    .spanBuilder("Call")
+                    .spanBuilder(spanName)
                     .setParent(callerContext)
+                    .setAttribute("jenkins.remoting.callable", callableToString)
                     .setAttribute("jenkins.remoting.callable.class", callable.getClass().getName())
-                    .setAttribute("jenkins.remoting.callable", callable.toString())
                     .startSpan();
             } else {
                 span = Span.fromContext(callerContext);

@@ -26,7 +26,7 @@ public class OpenTelemetryConfigurerMasterToSlaveCallable extends MasterToSlaveC
     @Override
     public Object call() throws RuntimeException {
         logger.log(Level.FINER, () -> "Configure OpenTelemetry SDK with properties: " + otelSdkConfigurationProperties + ", resource:" + otelSdkResource);
-        GlobalOpenTelemetrySdk.configure(otelSdkConfigurationProperties, otelSdkResource, false);
+        GlobalOpenTelemetrySdk.configure(otelSdkConfigurationProperties, otelSdkResource, true);
         return null;
     }
 }
