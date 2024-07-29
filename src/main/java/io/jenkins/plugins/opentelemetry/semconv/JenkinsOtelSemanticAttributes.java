@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.semconv;
 
 import hudson.PluginWrapper;
 import hudson.model.Computer;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -18,7 +18,7 @@ import java.util.List;
  * @see io.opentelemetry.api.common.Attributes
  * @see io.opentelemetry.semconv.ServiceAttributes
  */
-public final class JenkinsOtelSemanticAttributes {
+public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
     public static final AttributeKey<String> CI_PIPELINE_TYPE = AttributeKey.stringKey("ci.pipeline.type");
     public static final AttributeKey<String> CI_PIPELINE_MULTIBRANCH_TYPE = AttributeKey.stringKey("ci.pipeline.multibranch.type");
     public static final AttributeKey<String> CI_PIPELINE_ID = AttributeKey.stringKey("ci.pipeline.id");
@@ -56,14 +56,6 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<Boolean> GIT_CLONE_SHALLOW = AttributeKey.booleanKey("git.clone.shallow");
 
     /**
-     * @see Jenkins#getRootUrl()
-     */
-    public static final AttributeKey<String> JENKINS_URL = AttributeKey.stringKey("jenkins.url");
-    /**
-     * @see OtelUtils#getJenkinsVersion()
-     */
-    public static final AttributeKey<String> JENKINS_VERSION = AttributeKey.stringKey("jenkins.version");
-    /**
      * @see StepDescriptor#getDisplayName()
      */
     public static final AttributeKey<String> JENKINS_STEP_NAME = AttributeKey.stringKey("jenkins.pipeline.step.name");
@@ -98,8 +90,6 @@ public final class JenkinsOtelSemanticAttributes {
     public static final AttributeKey<List<String>> JENKINS_STEP_INTERRUPTION_CAUSES = AttributeKey.stringArrayKey("jenkins.pipeline.step.interruption.causes");
 
     public static final AttributeKey<String> JENKINS_CREDENTIALS_ID = AttributeKey.stringKey("jenkins.credentials.id");
-
-    public static final String JENKINS = "jenkins";
 
     /**
      * As {@link Jenkins.MasterComputer#getName()} returns "", choose another name
