@@ -500,6 +500,7 @@
                         <io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>INFO</io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>
                         <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
                         <io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>FINE</io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>
+                        <io.jenkins.plugins.opentelemetry.opentelemetry.resources.JenkinsResourceProvider>FINEST</io.jenkins.plugins.opentelemetry.opentelemetry.resources.JenkinsResourceProvider>
                     </loggers>
                 </configuration>
             </plugin>
