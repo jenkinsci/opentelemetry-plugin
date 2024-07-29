@@ -114,7 +114,7 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>opentelemetry-api</artifactId>
-            <version>1.40.0-999999-SNAPSHOT</version>
+            <version>1.40.0-23.v7da_9d4c543d3</version>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
