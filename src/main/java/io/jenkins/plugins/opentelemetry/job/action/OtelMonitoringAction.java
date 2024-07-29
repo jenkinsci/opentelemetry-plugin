@@ -24,6 +24,8 @@ public interface OtelMonitoringAction extends Action {
 
     void purgeSpanAndCloseAssociatedScopes();
 
+    void closeAndPurgeAssociatedScope();
+
     /**
      * @return {@code true} if the associated {@link Span} has ended
      * @see ReadableSpan#hasEnded()

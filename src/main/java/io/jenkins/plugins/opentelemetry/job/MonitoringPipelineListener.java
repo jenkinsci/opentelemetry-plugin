@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -19,8 +20,8 @@ import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
+import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineNodeUtil;
 import io.jenkins.plugins.opentelemetry.job.step.SetSpanAttributesStep;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
 import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributeStep;
@@ -45,6 +46,7 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.StepListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.graph.StepNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.pipelinegraphanalysis.GenericStatus;
 import org.jenkinsci.plugins.workflow.pipelinegraphanalysis.StatusAndTiming;
@@ -54,6 +56,7 @@ import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
+import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.io.IOException;
@@ -64,6 +67,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -74,7 +78,7 @@ import static com.google.common.base.Verify.verifyNotNull;
 
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener, StepListener, OpenTelemetryLifecycleListener {
+public class MonitoringPipelineListener implements PipelineListener, StepListener, OpenTelemetryLifecycleListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringPipelineListener.class.getName());
 
     private OtelTraceService otelTraceService;
@@ -155,17 +159,17 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
             String spanStageName = "Stage: " + stageName;
 
-            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(),"stage");
+            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), "stage");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
             Span stageSpan = getTracer().spanBuilder(spanStageName)
-                    .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stageName)
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
-                    .startSpan();
+                .setParent(Context.current())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stageName)
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+                .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
             getTracerService().putSpan(run, stageSpan, stepStartNode);
@@ -194,17 +198,63 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         }
         return this.stepHandlers;
     }
+
     @Override
     public void onAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run) {
-        if (isIgnoredStep(node.getDescriptor())){
+        if (isIgnoredStep(node.getDescriptor())) {
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - don't create span for step '" + node.getDisplayFunctionName() + "'");
             return;
         }
-        Scope encapsulatingNodeScope = setupContext(run, node);
+        Span parentSpan = this.otelTraceService.getSpan(run, node);
 
-        verifyNotNull(encapsulatingNodeScope, "%s - No span found for node %s", run, node);
+        String principal = Optional.ofNullable(node.getExecution().getAuthentication().getPrincipal()).map(Object::toString).orElse("#null#");
+        String stepType = getStepType(node, node.getDescriptor(), JenkinsOtelSemanticAttributes.STEP_NAME);
+        JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, node);
 
-        String principal = Objects.toString(node.getExecution().getAuthentication().getPrincipal(), "#null#");
+        StepHandler stepHandler = getStepHandlers().stream().filter(sh -> sh.canCreateSpanBuilder(node, run)).findFirst()
+            .orElseThrow((Supplier<RuntimeException>) () ->
+                new IllegalStateException("No StepHandler found for node " + node.getClass() + " - " + node + " on " + run));
+        SpanBuilder spanBuilder = stepHandler.createSpanBuilder(node, run, getTracer());
+        spanBuilder
+            .setParent(Context.current().with(parentSpan))
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node, node, JenkinsOtelSemanticAttributes.STEP_NAME))
+            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+
+        Span atomicStepSpan = spanBuilder.startSpan();
+        LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
+        Scope atomicStepScope = atomicStepSpan.makeCurrent();
+        stepHandler.afterSpanCreated(node, run);
+
+        getTracerService().putSpanAndScope(run, atomicStepSpan, node, atomicStepScope);
+    }
+
+
+    @Override
+    public void onAfterAtomicStep(@NonNull StepAtomNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
+        if (isIgnoredStep(node.getDescriptor())) {
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - don't end span for step '" + node.getDisplayFunctionName() + "'");
+            return;
+        }
+        GenericStatus stageStatus = StatusAndTiming.computeChunkStatus2(run, null, node, node, nextNode);
+        endCurrentSpan(node, run, stageStatus);
+    }
+
+    @Override
+    public void onOnOtherBlockStepStartNode(@Nonnull StepStartNode node, @Nonnull WorkflowRun run) {
+        debug(node, run, "onOnOtherBlockStepStartNode");
+
+        if (isIgnoredStep(node.getDescriptor())) {
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - don't create span for step '" + node.getDisplayFunctionName() + "'");
+            return;
+        }
+        Span parentSpan = this.otelTraceService.getSpan(run, node);
+
+
+        String principal = Optional.ofNullable(node.getExecution().getAuthentication().getPrincipal()).map(Object::toString).orElse("#null#");
 
         StepHandler stepHandler = getStepHandlers().stream().filter(sh -> sh.canCreateSpanBuilder(node, run)).findFirst()
             .orElseThrow((Supplier<RuntimeException>) () ->
@@ -215,30 +265,56 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, node);
 
         spanBuilder
+            .setParent(Context.current().with(parentSpan))
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, node.getId())
-            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node, JenkinsOtelSemanticAttributes.STEP_NAME))
+            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, getStepName(node, node, JenkinsOtelSemanticAttributes.STEP_NAME))
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_USER, principal)
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
             .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
 
-        Span atomicStepSpan = spanBuilder.startSpan();
-        LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
-        Scope atomicStepScope = atomicStepSpan.makeCurrent();
-        stepHandler.afterSpanCreated(node, run);
-
-        getTracerService().putSpanAndScopes(run, atomicStepSpan, node, Arrays.asList(encapsulatingNodeScope, atomicStepScope));
+        Span blockStepSpan = spanBuilder.startSpan();
+        LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(blockStepSpan));
+        Scope blockStepSpanScope = blockStepSpan.makeCurrent();
+        getTracerService().putSpanAndScope(run, blockStepSpan, node, blockStepSpanScope);
+        debug(node, run, "onOnOtherBlockStepStartNode");
     }
 
-
     @Override
-    public void onAfterAtomicStep(@NonNull StepAtomNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
-        if (isIgnoredStep(node.getDescriptor())){
+    public void onAfterOtherBlockStepStartNode(@Nonnull StepStartNode node, @Nonnull WorkflowRun run) {
+        if (isIgnoredStep(node.getDescriptor())) {
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - don't end span for step '" + node.getDisplayFunctionName() + "'");
             return;
         }
-        GenericStatus stageStatus = StatusAndTiming.computeChunkStatus2(run, null, node, node, nextNode);
-        endCurrentSpan(node, run, stageStatus);
+        debug(node, run, "onAfterOtherBlockStepStartNode");
+        getTracerService().closeCurrentScope(run, node);
+    }
+
+    @Override
+    public void onOtherBlockStepEndNode(@Nonnull StepEndNode node, @Nonnull WorkflowRun run) {
+        debug(node, run, "onOtherBlockStepEndNode");
+    }
+
+    @Override
+    public void onAfterOtherBlockStepEndNode(@Nonnull StepEndNode node, @Nonnull WorkflowRun run) {
+        debug(node, run, "onAfterOtherBlockStepEndNode");
+
+    }
+
+
+    private static void debug(@Nonnull FlowNode node, @Nonnull WorkflowRun run, String type) {
+        LOGGER.log(Level.INFO, () ->
+        {
+            StepDescriptor descriptor = ((StepNode) node).getDescriptor();
+
+            String message = run.getFullDisplayName() + " - " + type + " - " +
+                node.getDisplayFunctionName() + " // " + PipelineNodeUtil.getDisplayName(node) + ", ";
+            message += "descriptor (class:" + descriptor.getClass().getName() + ", " + descriptor.getFunctionName() + "), ";
+            message += node.getAllActions().stream().map(action -> Objects.toString(action.getDisplayName(), action.getClass().toString())).collect(Collectors.joining(", "));
+            message += ", node.parent: " + Iterables.getFirst(node.getParents(), null);
+            message += ", thread: " + Thread.currentThread().getName();
+            return message;
+        });
     }
 
     private boolean isIgnoredStep(@Nullable StepDescriptor stepDescriptor) {
@@ -250,12 +326,15 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             || WithSpanAttributeStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
             || WithSpanAttributesStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
             || this.ignoredSteps.contains(stepFunctionName);
-        LOGGER.log(Level.FINER, ()-> "isIgnoreStep(" + stepDescriptor + "): " + ignoreStep);
+        LOGGER.log(Level.FINER, () -> "isIgnoreStep(" + stepDescriptor + "): " + ignoreStep);
         return ignoreStep;
     }
 
-    private String getStepName(@NonNull StepAtomNode node, @NonNull String name) {
-        StepDescriptor stepDescriptor = node.getDescriptor();
+    private String getStepName(@NonNull FlowNode node, @NonNull StepNode nodeAsStepNode,  @NonNull String name) {
+        if (nodeAsStepNode != node) {
+            throw new IllegalStateException("nodeAsStepNode is not the same as node");
+        }
+        StepDescriptor stepDescriptor = nodeAsStepNode.getDescriptor();
         if (stepDescriptor == null) {
             return name;
         }
@@ -284,7 +363,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         if (stepDescriptor instanceof CoreStep.DescriptorImpl) {
             Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
             if (arguments.get("delegate") instanceof UninstantiatedDescribable) {
-              return (UninstantiatedDescribable) arguments.get("delegate");
+                return (UninstantiatedDescribable) arguments.get("delegate");
             }
         }
         return null;
@@ -295,17 +374,17 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         try (Scope ignored = setupContext(run, stepStartNode)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
 
-            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(),"branch");
+            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), "branch");
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
             Span atomicStepSpan = getTracer().spanBuilder("Parallel branch: " + branchName)
-                    .setParent(Context.current())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, branchName)
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                    .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
-                    .startSpan();
+                .setParent(Context.current())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, branchName)
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+                .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > parallel branch(" + branchName + ") - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
             getTracerService().putSpan(run, atomicStepSpan, stepStartNode);
@@ -343,7 +422,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     String statusDescription = throwable.getClass().getSimpleName() + ": " + String.join(", ", causeDescriptions);
 
                     boolean suppressSpanStatusCodeError = false;
-                    for (CauseOfInterruption causeOfInterruption: causesOfInterruption) {
+                    for (CauseOfInterruption causeOfInterruption : causesOfInterruption) {
                         if (statusUnsetCausesOfInterruption.contains(causeOfInterruption.getClass().getName())) {
                             suppressSpanStatusCodeError = true;
                             break;
@@ -373,6 +452,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             getTracerService().removePipelineStepSpanAndCloseAssociatedScopes(run, node, span);
         }
     }
+
 
     @Override
     public void notifyOfNewStep(@NonNull Step step, @NonNull StepContext context) {
@@ -408,7 +488,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 setAttributesToSpan(currentSpan, otelChildAttributesAction);
             }
         } catch (IOException | InterruptedException | RuntimeException e) {
-            LOGGER.log(Level.WARNING,"Exception processing " + step + " - " + context, e);
+            LOGGER.log(Level.WARNING, "Exception processing " + step + " - " + context, e);
         }
     }
 
