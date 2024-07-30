@@ -10,7 +10,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.85</version>
+        <version>4.86</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -44,7 +44,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.440.x</artifactId>
-                <version>3208.vb_21177d4b_cd9</version>
+                <version>3221.ve8f7b_fdd149d</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -114,7 +114,7 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>opentelemetry-api</artifactId>
-            <version>1.40.0-23.v7da_9d4c543d3</version>
+            <version>1.40.0-24.v83ee9a_c6e8d9</version>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
