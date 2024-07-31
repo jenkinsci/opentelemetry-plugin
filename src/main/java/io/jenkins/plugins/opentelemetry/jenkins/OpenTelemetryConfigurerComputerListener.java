@@ -28,14 +28,19 @@ import jenkins.security.MasterToSlaveCallable;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -54,13 +59,21 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
     JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration;
 
     @Override
-    public void preOnline(Computer computer, Channel channel, FilePath root, TaskListener listener) throws InterruptedException {
+    public void preOnline(Computer computer, Channel channel, FilePath root, TaskListener listener) {
         if (buildAgentsInstrumentationEnabled.get()) {
             OpenTelemetryConfiguration openTelemetryConfiguration = jenkinsOpenTelemetryPluginConfiguration.toOpenTelemetryConfiguration();
             Map<String, String> otelSdkProperties = openTelemetryConfiguration.toOpenTelemetryProperties();
             Map<String, String> otelSdkResourceProperties = openTelemetryConfiguration.toOpenTelemetryResourceAsMap();
 
-            Future<Object> result = configureOpenTelemetrySdkOnComputer(computer, channel, otelSdkProperties, otelSdkResourceProperties);
+            try {
+                Object result = configureOpenTelemetrySdkOnComputer(computer, channel, otelSdkProperties, otelSdkResourceProperties).get();
+                logger.log(Level.FINE, () -> "Updated OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "' with result: " + result);
+            } catch (InterruptedException e) {
+                logger.log(Level.INFO, e, () -> "Failure to update OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "'");
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException e) {
+                logger.log(Level.INFO, e, () -> "Failure to update OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "'");
+            }
         }
     }
 
@@ -86,7 +99,9 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
             // build agent instrumentation remains disabled, don't do anything
             logger.log(Level.FINE, () -> "Build agent instrumentation remains disabled, no need to update OpenTelemetry configuration on jenkins build agents");
         } else {
-            Arrays.stream(Jenkins.get().getComputers()).forEach(computer -> {
+            Computer[] computers = Jenkins.get().getComputers();
+            List<Future<Object>> configureAgentResults = new ArrayList<>(computers.length);
+            Arrays.stream(computers).forEach(computer -> {
                 Node node = computer.getNode();
                 VirtualChannel channel = computer.getChannel();
 
@@ -98,12 +113,20 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
                     // skip Jenkins controller
                 } else if (channel == null) {
                     logger.log(Level.FINE, () -> "Failure to update OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "' as its channel is null, probably offline");
-
                 } else {
-                    Future<Object> result = configureOpenTelemetrySdkOnComputer(computer, channel, otelSdkProperties, otelSdkResourceProperties);
+                    configureAgentResults.add(configureOpenTelemetrySdkOnComputer(computer, channel, otelSdkProperties, otelSdkResourceProperties));
                 }
             });
+            configureAgentResults.forEach(result -> {
+                    try {
+                        result.get(10, TimeUnit.SECONDS);
+                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                        logger.log(Level.WARNING, e, () -> "Failure to update OpenTelemetry configuration for computer/build-agent");
+                    }
+                }
+            );
         }
+
     }
 
     /**
