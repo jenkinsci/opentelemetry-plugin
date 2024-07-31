@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -139,6 +140,7 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
             return channel.callAsync(callable);
         } catch (IOException | RuntimeException e) {
             logger.log(Level.INFO, e, () -> "Failure to update OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "'");
+            return CompletableFuture.completedFuture(e);
         }
     }
 
