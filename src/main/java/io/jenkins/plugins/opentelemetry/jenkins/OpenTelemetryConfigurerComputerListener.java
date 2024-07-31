@@ -16,12 +16,16 @@ import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.semconv.ServiceAttributes;
+import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Arrays;
@@ -29,12 +33,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * TODO make update of jenkins build agents an async process
+ * TODO handle async configuration results
  */
 @Extension(ordinal = Integer.MAX_VALUE)
 public class OpenTelemetryConfigurerComputerListener extends ComputerListener implements OpenTelemetryLifecycleListener {
@@ -46,19 +53,13 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
     JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration;
 
     @Override
-    public void preOnline(Computer c, Channel channel, FilePath root, TaskListener listener) throws InterruptedException {
+    public void preOnline(Computer computer, Channel channel, FilePath root, TaskListener listener) throws InterruptedException {
         if (buildAgentsInstrumentationEnabled.get()) {
-            try {
-                OpenTelemetryConfiguration openTelemetryConfiguration = jenkinsOpenTelemetryPluginConfiguration.toOpenTelemetryConfiguration();
+            OpenTelemetryConfiguration openTelemetryConfiguration = jenkinsOpenTelemetryPluginConfiguration.toOpenTelemetryConfiguration();
+            Map<String, String> otelSdkProperties = openTelemetryConfiguration.toOpenTelemetryProperties();
+            Map<String, String> otelSdkResourceProperties = openTelemetryConfiguration.toOpenTelemetryResourceAsMap();
 
-                Map<String, String> otelSdkProperties = openTelemetryConfiguration.toOpenTelemetryProperties();
-                Map<String, String> otelSdkResourceProperties = openTelemetryConfiguration.toOpenTelemetryResourceAsMap();
-                otelSdkResourceProperties.put(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey(), c.getName());
-                Object result = channel.call(new OpenTelemetryConfigurerMasterToSlaveCallable(otelSdkProperties, otelSdkResourceProperties));
-                logger.log(Level.FINE, () -> "OpenTelemetry configured on computer " + c.getName() + Optional.ofNullable(result).map(r -> ": " + r).orElse(""));
-            } catch (IOException | RuntimeException e) {
-                logger.log(Level.INFO, e, () -> "Failure to configure OpenTelemetry on computer " + c.getName());
-            }
+            Future<Object> result = configureOpenTelemetrySdkOnComputer(computer, channel, otelSdkProperties, otelSdkResourceProperties);
         }
     }
 
@@ -86,42 +87,58 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
         } else {
             Arrays.stream(Jenkins.get().getComputers()).forEach(computer -> {
                 Node node = computer.getNode();
+                VirtualChannel channel = computer.getChannel();
+
                 logger.log(Level.FINE, () ->
                     "Evaluate computer.name: '" + computer.getName() +
                         "', node: " + Optional.ofNullable(node).map(n -> n.getNodeName() + " / " + n.getClass().getName()));
 
                 if (node instanceof Jenkins) {
                     // skip Jenkins controller
-                } else if (computer.isOnline()) {
-                    VirtualChannel channel = computer.getChannel();
-                    if (channel == null) {
-                        logger.log(Level.FINE, () -> "Failure to update OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "' as its channel is null");
-                    } else {
-                        Map<String, String> buildAgentOtelSdkProperties;
-                        Map<String, String> buildAgentOtelSdkResourceProperties;
-                        if (this.buildAgentsInstrumentationEnabled.get()) {
-                            buildAgentOtelSdkProperties = new HashMap<>(otelSdkProperties);
-                            buildAgentOtelSdkResourceProperties = new HashMap<>(otelSdkResourceProperties);
-                            buildAgentOtelSdkResourceProperties.put(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
-                        } else {
-                            buildAgentOtelSdkProperties = Collections.emptyMap();
-                            buildAgentOtelSdkResourceProperties = Collections.emptyMap();
-                        }
-                        OpenTelemetryConfigurerMasterToSlaveCallable callable;
-                        callable = new OpenTelemetryConfigurerMasterToSlaveCallable(buildAgentOtelSdkProperties, buildAgentOtelSdkResourceProperties);
+                } else if (channel == null) {
+                    logger.log(Level.FINE, () -> "Failure to update OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "' as its channel is null, probably offline");
 
-                        try {
-                            logger.log(Level.FINE, () -> "Updating OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "'...");
-                            Object result = channel.call(callable);
-
-                        } catch (IOException | RuntimeException | InterruptedException e) {
-                            logger.log(Level.INFO, e, () -> "Failure to update OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "'");
-                        }
-                    }
                 } else {
-                    logger.log(Level.FINE, () -> "Failure to update OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "' as it is offline");
+                    Future<Object> result = configureOpenTelemetrySdkOnComputer(computer, channel, otelSdkProperties, otelSdkResourceProperties);
                 }
             });
+        }
+    }
+
+    /**
+     * @param channel pass the channel rather than using {@link Computer#getChannel()} to support {@link ComputerListener#preOnline(Computer, Channel, FilePath, TaskListener)} use cases
+     */
+    private Future<Object> configureOpenTelemetrySdkOnComputer(@Nonnull Computer computer, @Nonnull VirtualChannel channel, Map<String, String> otelSdkProperties, Map<String, String> otelSdkResourceProperties) {
+        Map<String, String> buildAgentOtelSdkProperties;
+        Map<String, String> buildAgentOtelSdkResourceProperties;
+        if (this.buildAgentsInstrumentationEnabled.get()) {
+            final Set<String> filteredResourceKeys = Set.of(
+                ServiceAttributes.SERVICE_NAME.getKey(),
+                ServiceIncubatingAttributes.SERVICE_INSTANCE_ID.getKey()
+            );
+            buildAgentOtelSdkProperties = new HashMap<>(otelSdkProperties);
+            buildAgentOtelSdkResourceProperties = new HashMap<>();
+            otelSdkResourceProperties
+                .entrySet()
+                .stream()
+                .filter(Predicate.not(entry -> filteredResourceKeys.contains(entry.getKey())))
+                .forEach(entry -> buildAgentOtelSdkResourceProperties.put(entry.getKey(), entry.getValue()));
+            String serviceName = Optional.ofNullable(otelSdkResourceProperties.get(ServiceAttributes.SERVICE_NAME.getKey())).orElse(JenkinsAttributes.JENKINS) + "-agent";
+            buildAgentOtelSdkResourceProperties.put(ServiceAttributes.SERVICE_NAME.getKey(), serviceName);
+            buildAgentOtelSdkResourceProperties.put(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
+            buildAgentOtelSdkResourceProperties.put(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
+        } else {
+            buildAgentOtelSdkProperties = Collections.emptyMap();
+            buildAgentOtelSdkResourceProperties = Collections.emptyMap();
+        }
+        OpenTelemetryConfigurerMasterToSlaveCallable callable;
+        callable = new OpenTelemetryConfigurerMasterToSlaveCallable(buildAgentOtelSdkProperties, buildAgentOtelSdkResourceProperties);
+
+        try {
+            logger.log(Level.FINE, () -> "Updating OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "'...");
+            return channel.callAsync(callable);
+        } catch (IOException | RuntimeException e) {
+            logger.log(Level.INFO, e, () -> "Failure to update OpenTelemetry configuration for computer/build-agent '" + computer.getName() + "'");
         }
     }
 

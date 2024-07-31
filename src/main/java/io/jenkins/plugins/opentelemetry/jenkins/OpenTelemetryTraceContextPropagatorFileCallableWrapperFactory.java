@@ -15,6 +15,8 @@ import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
@@ -119,6 +121,7 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
                     .getTracer(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
                     .spanBuilder(spanName)
                     .setParent(callerContext)
+                    .setSpanKind(SpanKind.SERVER)
                     .setAttribute("jenkins.remoting.callable", callableToString)
                     .setAttribute("jenkins.remoting.callable.class", callable.getClass().getName())
                     .startSpan();
@@ -129,6 +132,7 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
             try (Scope scope = span.makeCurrent()) {
                 return callable.call();
             } catch (Throwable t) {
+                span.setStatus(StatusCode.ERROR, t.getMessage());
                 span.recordException(t);
                 throw t;
             } finally {
