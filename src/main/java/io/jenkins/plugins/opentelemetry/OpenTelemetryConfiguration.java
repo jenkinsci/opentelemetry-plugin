@@ -167,6 +167,22 @@ public class OpenTelemetryConfiguration {
 
         return resourceBuilder.build();
     }
+    /**
+     * @see io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder#addResourceCustomizer(BiFunction)
+     */
+    @NonNull
+    public Map<String, String> toOpenTelemetryResourceAsMap() {
+        Map<String, String> resourceMap = new HashMap<>();
+        this.getServiceName().ifPresent(serviceName ->
+            resourceMap.put(ServiceAttributes.SERVICE_NAME.getKey(), serviceName));
+
+        this.getServiceNamespace().ifPresent(serviceNamespace ->
+            resourceMap.put(ServiceIncubatingAttributes.SERVICE_NAMESPACE.getKey(), serviceNamespace));
+
+        resourceMap.put(JenkinsOtelSemanticAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION.getKey(), OtelUtils.getOpentelemetryPluginVersion());
+
+        return resourceMap;
+    }
 
     @Override
     public boolean equals(Object o) {

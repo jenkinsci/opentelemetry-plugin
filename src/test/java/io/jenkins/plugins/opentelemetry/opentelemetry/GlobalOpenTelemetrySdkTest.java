@@ -5,11 +5,14 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
+import io.opentelemetry.api.logs.Logger;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.ServiceAttributes;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,19 +20,20 @@ import static org.junit.Assert.assertEquals;
 
 public class GlobalOpenTelemetrySdkTest {
 
+
     @Test
     public void testNotSdkConfigured() {
         try {
-            GlobalOpenTelemetrySdk.getOtelLogger();
-            GlobalOpenTelemetrySdk.getMeter();
-            GlobalOpenTelemetrySdk.getTracer();
+            ReconfigurableOpenTelemetry openTelemetry = GlobalOpenTelemetrySdk.get();
+            Logger otelLogger = GlobalOpenTelemetrySdk.getOtelLogger();
         } finally {
-            GlobalOpenTelemetrySdk.shutdown();
+            GlobalOpenTelemetrySdk.get().close();
         }
     }
 
     @Test
     public void testSdkSetConfigurationOnce() {
+        GlobalOpenTelemetrySdk.currentSdkConfiguration = new GlobalOpenTelemetrySdk.OtelSdkConfiguration(Collections.emptyMap(), Collections.emptyMap());
         try {
             Map<String, String> config = new HashMap<>();
             config.put("otel.traces.exporter", "none");
@@ -48,7 +52,7 @@ public class GlobalOpenTelemetrySdkTest {
             GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
             assertEquals("Configuration counter", configurationCountBefore + 1, GlobalOpenTelemetrySdk.configurationCounter.get());
         } finally {
-            GlobalOpenTelemetrySdk.shutdown();
+            GlobalOpenTelemetrySdk.get().close();
         }
     }
 
@@ -83,7 +87,7 @@ public class GlobalOpenTelemetrySdkTest {
                 assertEquals("Configuration counter", configurationCountBefore + 1, GlobalOpenTelemetrySdk.configurationCounter.get());
             }
         } finally {
-            GlobalOpenTelemetrySdk.shutdown();
+            GlobalOpenTelemetrySdk.get().close();
         }
     }
 
@@ -128,7 +132,7 @@ public class GlobalOpenTelemetrySdkTest {
                 assertEquals("Configuration counter", configurationCountBefore + 2, GlobalOpenTelemetrySdk.configurationCounter.get());
             }
         } finally {
-            GlobalOpenTelemetrySdk.shutdown();
+            GlobalOpenTelemetrySdk.get().close();
         }
     }
 
@@ -172,7 +176,7 @@ public class GlobalOpenTelemetrySdkTest {
                 assertEquals("Configuration counter", configurationCountBefore + 2, GlobalOpenTelemetrySdk.configurationCounter.get());
             }
         } finally {
-            GlobalOpenTelemetrySdk.shutdown();
+            GlobalOpenTelemetrySdk.get().close();
         }
     }
 }

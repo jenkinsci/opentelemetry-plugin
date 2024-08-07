@@ -144,7 +144,7 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
         elasticBackendConfiguration.setKibanaBaseUrl(getKibanaUrl());
         elasticStackConfiguration.setElasticsearchUrl(getEsUrl());
         // FIXME the configuration is not applied if you not save the configuration
-        configuration.initializeOpenTelemetry();
+        configuration.configureOpenTelemetrySdk();
         elasticsearchRetriever = configuration.getLogStorageRetriever();
     }
 
