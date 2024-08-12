@@ -363,7 +363,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ant</artifactId>
-            <version>487.vd79d090d4ea_e</version>
+            <version>511.v0a_a_1a_334f41b_</version>
             <scope>test</scope>
         </dependency>
         <dependency>
