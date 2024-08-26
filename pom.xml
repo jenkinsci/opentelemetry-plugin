@@ -44,7 +44,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-2.440.x</artifactId>
-                <version>3221.ve8f7b_fdd149d</version>
+                <version>3258.vcdcf15936a_fd</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -371,7 +371,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ant</artifactId>
-            <version>487.vd79d090d4ea_e</version>
+            <version>511.v0a_a_1a_334f41b_</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -465,7 +465,7 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>1.20.0</version>
+            <version>1.20.1</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
