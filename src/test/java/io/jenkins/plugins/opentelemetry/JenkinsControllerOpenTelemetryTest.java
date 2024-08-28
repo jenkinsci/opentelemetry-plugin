@@ -58,7 +58,7 @@ public class JenkinsControllerOpenTelemetryTest {
             Optional.empty(),
             configurationProperties);
 
-        ReconfigurableOpenTelemetry reconfigurableOpenTelemetry = new ReconfigurableOpenTelemetry();
+        ReconfigurableOpenTelemetry reconfigurableOpenTelemetry = ReconfigurableOpenTelemetry.get();
         JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry = new JenkinsControllerOpenTelemetry();
         jenkinsControllerOpenTelemetry.openTelemetry = reconfigurableOpenTelemetry;
         jenkinsControllerOpenTelemetry.initialize(openTelemetryConfiguration);

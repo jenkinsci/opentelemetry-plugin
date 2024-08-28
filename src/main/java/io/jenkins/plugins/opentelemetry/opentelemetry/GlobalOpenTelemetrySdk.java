@@ -30,8 +30,6 @@ import java.util.logging.Logger;
 /**
  * Global singleton similar to the {@link io.opentelemetry.api.GlobalOpenTelemetry} in order to also have a
  * static accessor to the {@link io.opentelemetry.sdk.logs.SdkLoggerProvider}
- * <p>
- * TODO handle reconfiguration
  */
 public final class GlobalOpenTelemetrySdk {
 
@@ -45,7 +43,7 @@ public final class GlobalOpenTelemetrySdk {
     static OtelSdkConfiguration currentSdkConfiguration = new OtelSdkConfiguration(Collections.emptyMap(), Collections.emptyMap());
 
     static {
-        openTelemetry = new ReconfigurableOpenTelemetry();
+        openTelemetry = ReconfigurableOpenTelemetry.get();
         otelLogger = openTelemetry
             .getLogsBridge()
             .loggerBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
@@ -75,8 +73,6 @@ public final class GlobalOpenTelemetrySdk {
      * Configure if configuration has changed
      */
     public static synchronized void configure(Map<String, String> configurationProperties, Map<String, String> resourceAttributes, boolean registerShutDownHook) {
-
-
         OtelSdkConfiguration newOtelSdkConfiguration = new OtelSdkConfiguration(configurationProperties, resourceAttributes);
         // VERIFY IF CONFIGURATION HAS CHANGED
         if (Objects.equals(newOtelSdkConfiguration, currentSdkConfiguration)) {
@@ -94,7 +90,7 @@ public final class GlobalOpenTelemetrySdk {
         resourceBuilder.putAll(new OsResourceProvider().createResource(configProperties));
         resourceAttributes
             .entrySet().stream()
-            .filter(Predicate.not(entry-> Objects.equals(ServiceIncubatingAttributes.SERVICE_INSTANCE_ID.getKey(),entry.getKey())))
+            .filter(Predicate.not(entry -> Objects.equals(ServiceIncubatingAttributes.SERVICE_INSTANCE_ID.getKey(), entry.getKey())))
             .forEach(entry -> resourceBuilder.put(entry.getKey(), entry.getValue()));
         Resource resource = resourceBuilder.build();
 

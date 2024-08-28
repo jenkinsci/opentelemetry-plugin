@@ -130,7 +130,7 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
 
     public void configureElasticBackEnd() {
         // initialize ReconfigurableOpenTelemetry and set it as GlobalOpenTelemetry instance
-        ReconfigurableOpenTelemetry reconfigurableOpenTelemetry = ExtensionList.lookupSingleton(ReconfigurableOpenTelemetry.class);
+        ReconfigurableOpenTelemetry reconfigurableOpenTelemetry = ReconfigurableOpenTelemetry.get();
         GlobalOpenTelemetry.resetForTest();
         GlobalOpenTelemetry.set(reconfigurableOpenTelemetry);
 

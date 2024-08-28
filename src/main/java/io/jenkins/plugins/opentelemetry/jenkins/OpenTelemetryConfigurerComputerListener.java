@@ -40,22 +40,29 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * TODO handle async configuration results
+ * <p>Instantiate and configure OpenTelemetry SDKs on the Jenkins build agents</p>
+ * <p>support TODO support disabling OTel SDKs on configuration change, after it has been enabled</p>
  */
 @Extension(ordinal = Integer.MAX_VALUE)
 public class OpenTelemetryConfigurerComputerListener extends ComputerListener implements OpenTelemetryLifecycleListener {
 
     private static final Logger logger = Logger.getLogger(OpenTelemetryConfigurerComputerListener.class.getName());
 
+    final AtomicBoolean buildAgentsInstrumentationEnabled = new AtomicBoolean(false);
+
     JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration;
 
     @Override
     public void preOnline(Computer computer, Channel channel, FilePath root, TaskListener listener) {
+        if (!buildAgentsInstrumentationEnabled.get()) {
+            return;
+        }
         OpenTelemetryConfiguration openTelemetryConfiguration = jenkinsOpenTelemetryPluginConfiguration.toOpenTelemetryConfiguration();
         Map<String, String> otelSdkProperties = openTelemetryConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelSdkResourceProperties = openTelemetryConfiguration.toOpenTelemetryResourceAsMap();
@@ -76,11 +83,24 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
         this.jenkinsOpenTelemetryPluginConfiguration = jenkinsOpenTelemetryPluginConfiguration;
     }
 
+    /**
+     * <p>
+     * Propagate config change to all the build agents.
+     * </p>
+     * <p>
+     * TODO only update build agent configuration if it has changed
+     * </p>
+     */
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
 
         // Update the configuration of the Jenkins build agents
         OpenTelemetryConfiguration openTelemetryConfiguration = jenkinsOpenTelemetryPluginConfiguration.toOpenTelemetryConfiguration();
+
+        this.buildAgentsInstrumentationEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED, false));
+        if (!buildAgentsInstrumentationEnabled.get()) {
+            return;
+        }
 
         Map<String, String> otelSdkProperties = openTelemetryConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelSdkResourceProperties = openTelemetryConfiguration.toOpenTelemetryResourceAsMap();
@@ -130,7 +150,7 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
             .stream()
             .filter(Predicate.not(entry -> filteredResourceKeys.contains(entry.getKey())))
             .forEach(entry -> buildAgentOtelSdkResourceProperties.put(entry.getKey(), entry.getValue()));
-        String serviceName = Optional.ofNullable(otelSdkResourceProperties.get(ServiceAttributes.SERVICE_NAME.getKey())).orElse(JenkinsAttributes.JENKINS) + "-agent";
+        String serviceName = Optional.ofNullable(otelSdkResourceProperties.get(ServiceAttributes.SERVICE_NAME.getKey())).orElse(JenkinsAttributes.JENKINS);// + "-agent";
         buildAgentOtelSdkResourceProperties.put(ServiceAttributes.SERVICE_NAME.getKey(), serviceName);
         buildAgentOtelSdkResourceProperties.put(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
         buildAgentOtelSdkResourceProperties.put(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
