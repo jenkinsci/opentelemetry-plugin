@@ -29,7 +29,7 @@
         <opentelemetry-contrib.version>1.37.0-alpha</opentelemetry-contrib.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.14.3</elasticstack.version>
-        <error-prone.version>2.29.2</error-prone.version>
+        <error-prone.version>2.30.0</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
@@ -95,7 +95,7 @@
             <dependency>
                 <groupId>org.eclipse.parsson</groupId>
                 <artifactId>parsson</artifactId>
-                <version>1.1.6</version>
+                <version>1.1.7</version>
             </dependency>
             <dependency>
                 <groupId>com.jayway.jsonpath</groupId>
