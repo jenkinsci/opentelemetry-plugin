@@ -97,7 +97,9 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
         // Update the configuration of the Jenkins build agents
         OpenTelemetryConfiguration openTelemetryConfiguration = jenkinsOpenTelemetryPluginConfiguration.toOpenTelemetryConfiguration();
 
-        this.buildAgentsInstrumentationEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED, false));
+        boolean otlpLogsEnabled = "otlp".equals(configProperties.getString("otel.logs.exporter")); // pipeline logs export to OTLP endpoint activated
+        boolean jenkinsAgentInstrumentationDisabled = "false".equalsIgnoreCase(configProperties.getString(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED));
+        this.buildAgentsInstrumentationEnabled.set(otlpLogsEnabled || !jenkinsAgentInstrumentationDisabled);
         if (!buildAgentsInstrumentationEnabled.get()) {
             return;
         }
@@ -150,6 +152,9 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
             .stream()
             .filter(Predicate.not(entry -> filteredResourceKeys.contains(entry.getKey())))
             .forEach(entry -> buildAgentOtelSdkResourceProperties.put(entry.getKey(), entry.getValue()));
+        // use the same service.name for the Jenkins build agent in order to not break visualization
+        // of pipeline logs stored externally (Loki, Elasticsearch...) as these visualization logics
+        // may query on the service name
         String serviceName = Optional.ofNullable(otelSdkResourceProperties.get(ServiceAttributes.SERVICE_NAME.getKey())).orElse(JenkinsAttributes.JENKINS);// + "-agent";
         buildAgentOtelSdkResourceProperties.put(ServiceAttributes.SERVICE_NAME.getKey(), serviceName);
         buildAgentOtelSdkResourceProperties.put(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
@@ -180,7 +185,7 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
 
         @Override
         public Object call() throws RuntimeException {
-            logger.log(Level.INFO, () -> "Configure OpenTelemetry SDK with properties: " + otelSdkConfigurationProperties + ", resource:" + otelSdkResource);
+            logger.log(Level.FINE, () -> "Configure OpenTelemetry SDK with properties: " + otelSdkConfigurationProperties + ", resource:" + otelSdkResource);
             GlobalOpenTelemetrySdk.configure(otelSdkConfigurationProperties, otelSdkResource, true);
             return null;
         }

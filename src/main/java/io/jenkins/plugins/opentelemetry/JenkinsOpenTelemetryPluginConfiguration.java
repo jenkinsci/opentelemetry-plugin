@@ -30,6 +30,7 @@ import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigProper
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigurationException;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.ServiceAttributes;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
@@ -175,8 +176,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         // stapler oddity, empty lists coming from the HTTP request are not set on bean by  `req.bindJSON(this, json)`
         this.observabilityBackends = req.bindJSONToList(ObservabilityBackend.class, json.get("observabilityBackends"));
         this.endpoint = sanitizeOtlpEndpoint(this.endpoint);
-        configureOpenTelemetrySdk();
-        save();
+        try {
+            configureOpenTelemetrySdk();
+            save();
+        } catch (ConfigurationException e) {
+            LOGGER.log(Level.WARNING, "Exception configuring OpenTelemetry SDK", e);
+            throw new FormException("Exception configuring OpenTelemetry SDK: " + e.getMessage(), e, "endpoint");
+        }
         LOGGER.log(Level.FINE, "Configured");
         return true;
     }
