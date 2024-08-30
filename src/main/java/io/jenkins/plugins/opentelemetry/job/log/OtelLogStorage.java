@@ -8,7 +8,6 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeBuildListener;
@@ -30,8 +29,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -72,12 +69,7 @@ class OtelLogStorage implements LogStorage {
     @NonNull
     @Override
     public BuildListener overallListener() throws IOException {
-        OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
-        Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
-        Map<String, String> otelResourceAttributes = new HashMap<>();
-        otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
-
-        OtelLogSenderBuildListener otelLogSenderBuildListener = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(runTraceContext, otelConfigurationProperties, otelResourceAttributes);
+        OtelLogSenderBuildListener otelLogSenderBuildListener = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(runTraceContext);
 
         BuildListener result;
         if (JenkinsControllerOpenTelemetry.get().isOtelLogsMirrorToDisk()) {
@@ -110,14 +102,9 @@ class OtelLogStorage implements LogStorage {
     @NonNull
     @Override
     public BuildListener nodeListener(@NonNull FlowNode flowNode) throws IOException {
-        OpenTelemetryConfiguration otelConfiguration = JenkinsOpenTelemetryPluginConfiguration.get().toOpenTelemetryConfiguration();
-        Map<String, String> otelConfigurationProperties = otelConfiguration.toOpenTelemetryProperties();
-        Map<String, String> otelResourceAttributes = new HashMap<>();
-        otelConfiguration.toOpenTelemetryResource().getAttributes().asMap().forEach((k, v) -> otelResourceAttributes.put(k.getKey(), v.toString()));
-
         Span span = otelTraceService.getSpan(run, flowNode);
         FlowNodeTraceContext flowNodeTraceContext = FlowNodeTraceContext.newFlowNodeTraceContext(run, flowNode, span);
-        OtelLogSenderBuildListener otelLogSenderBuildListener = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(flowNodeTraceContext, otelConfigurationProperties, otelResourceAttributes);
+        OtelLogSenderBuildListener otelLogSenderBuildListener = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(flowNodeTraceContext);
 
         BuildListener result;
         if (JenkinsControllerOpenTelemetry.get().isOtelLogsMirrorToDisk()) {

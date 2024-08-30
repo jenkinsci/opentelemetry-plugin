@@ -130,7 +130,7 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
 
     public void configureElasticBackEnd() {
         // initialize ReconfigurableOpenTelemetry and set it as GlobalOpenTelemetry instance
-        ReconfigurableOpenTelemetry reconfigurableOpenTelemetry = ExtensionList.lookupSingleton(ReconfigurableOpenTelemetry.class);
+        ReconfigurableOpenTelemetry reconfigurableOpenTelemetry = ReconfigurableOpenTelemetry.get();
         GlobalOpenTelemetry.resetForTest();
         GlobalOpenTelemetry.set(reconfigurableOpenTelemetry);
 
@@ -144,7 +144,7 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
         elasticBackendConfiguration.setKibanaBaseUrl(getKibanaUrl());
         elasticStackConfiguration.setElasticsearchUrl(getEsUrl());
         // FIXME the configuration is not applied if you not save the configuration
-        configuration.initializeOpenTelemetry();
+        configuration.configureOpenTelemetrySdk();
         elasticsearchRetriever = configuration.getLogStorageRetriever();
     }
 
