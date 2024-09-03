@@ -15,7 +15,12 @@ import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineAnnotationExtractor;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineAnnotationExtractorImpl;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineAnnotationExtractorNoOpNoImpl;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
@@ -54,6 +59,8 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
         return ExtensionList.lookupSingleton(OtelLogStorageFactory.class);
     }
 
+    private LogLineAnnotationExtractor logLineAnnotationExtractor;
+
     /**
      * Create a LogStorage for a given FlowExecutionOwner
      * @param owner the FlowExecutionOwner
@@ -88,12 +95,12 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
             Run<?, ?> run = (Run<?, ?>) exec;
             if(OtelUtils.hasOpentelemetryData(run)){
                 logger.log(Level.FINEST, () -> "forExec(" + run + ")");
-                ret = new OtelLogStorage(run, getOtelTraceService(), tracer);
+                ret = new OtelLogStorage(run, getOtelTraceService(), tracer, logLineAnnotationExtractor);
             }
-        } 
+        }
         return ret;
     }
-    
+
     /**
      * Workaround dependency injection problem. @Inject doesn't work here
      */
@@ -119,5 +126,10 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
     @PostConstruct
     public void postConstruct () {
         this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
+    }
+
+    @Override
+    public void afterConfiguration(ConfigProperties configProperties) {
+        this.logLineAnnotationExtractor = configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_LOG_EXTRACT_LOG_LINE_ANNOTATIONS, false) ? new LogLineAnnotationExtractorImpl() : new LogLineAnnotationExtractorNoOpNoImpl();
     }
 }

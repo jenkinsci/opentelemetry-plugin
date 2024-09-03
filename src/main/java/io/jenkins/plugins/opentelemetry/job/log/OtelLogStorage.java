@@ -10,6 +10,7 @@ import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineAnnotationExtractor;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeBuildListener;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeOutputStreamBuildListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -42,14 +43,15 @@ import java.util.logging.Logger;
 class OtelLogStorage implements LogStorage {
 
     private final static Logger logger = Logger.getLogger(OtelLogStorage.class.getName());
-    final Run run;
+    final Run<?, ?> run;
     final RunTraceContext runTraceContext;
     final String runFolderPath;
     final Tracer tracer;
+    final LogLineAnnotationExtractor logLineAnnotationExtractor;
 
     final OtelTraceService otelTraceService;
 
-    public OtelLogStorage(@NonNull Run run, @NonNull OtelTraceService otelTraceService, @NonNull Tracer tracer) {
+    public OtelLogStorage(@NonNull Run<?, ?> run, @NonNull OtelTraceService otelTraceService, @NonNull Tracer tracer, @NonNull LogLineAnnotationExtractor logLineAnnotationExtractor) {
         this.run = run;
         MonitoringAction monitoringAction = Optional
             .ofNullable(run.getAction(MonitoringAction.class))
@@ -64,12 +66,13 @@ class OtelLogStorage implements LogStorage {
         this.otelTraceService = otelTraceService;
         this.tracer = tracer;
         this.runFolderPath =  run.getRootDir().getPath();
+        this.logLineAnnotationExtractor = logLineAnnotationExtractor;
     }
 
     @NonNull
     @Override
     public BuildListener overallListener() throws IOException {
-        OtelLogSenderBuildListener otelLogSenderBuildListener = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(runTraceContext);
+        OtelLogSenderBuildListener otelLogSenderBuildListener = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(runTraceContext, logLineAnnotationExtractor);
 
         BuildListener result;
         if (JenkinsControllerOpenTelemetry.get().isOtelLogsMirrorToDisk()) {
@@ -104,7 +107,7 @@ class OtelLogStorage implements LogStorage {
     public BuildListener nodeListener(@NonNull FlowNode flowNode) throws IOException {
         Span span = otelTraceService.getSpan(run, flowNode);
         FlowNodeTraceContext flowNodeTraceContext = FlowNodeTraceContext.newFlowNodeTraceContext(run, flowNode, span);
-        OtelLogSenderBuildListener otelLogSenderBuildListener = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(flowNodeTraceContext);
+        OtelLogSenderBuildListener otelLogSenderBuildListener = new OtelLogSenderBuildListener.OtelLogSenderBuildListenerOnController(flowNodeTraceContext, logLineAnnotationExtractor);
 
         BuildListener result;
         if (JenkinsControllerOpenTelemetry.get().isOtelLogsMirrorToDisk()) {
@@ -203,7 +206,8 @@ class OtelLogStorage implements LogStorage {
     @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST", justification = "forBuild only accepts Run")
     @Deprecated
     @Override
-    public File getLogFile(FlowExecutionOwner.Executable build, boolean complete) {
+    @NonNull
+    public File getLogFile(@NonNull FlowExecutionOwner.Executable build, boolean complete) {
         logger.log(Level.FINE, "getLogFile(complete: " + complete + ")");
         Span span = tracer.spanBuilder("OtelLogStorage.getLogFile")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())

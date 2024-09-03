@@ -143,10 +143,17 @@ public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
      * Instrument Jenkins build agents
      */
     public static final String OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED = "otel.instrumentation.jenkins.agent.enabled";
+
     /**
      * https://opentelemetry.io/docs/zero-code/java/agent/configuration/#capturing-servlet-request-parameters
      */
     public static final String OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS = "otel.instrumentation.servlet.experimental.capture-request-parameters";
+
+    /**
+     * Boolean true or false
+     * @see io.jenkins.plugins.opentelemetry.job.log.util.LogLineAnnotationExtractor
+     */
+    public static final String OTEL_INSTRUMENTATION_JENKINS_LOG_EXTRACT_LOG_LINE_ANNOTATIONS = "otel.instrumentation.jenkins.log.extractLogLineAnnotations";
 
 
     /**

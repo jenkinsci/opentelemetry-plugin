@@ -2,6 +2,9 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.console.LineTransformationOutputStream;
+import io.jenkins.plugins.opentelemetry.job.log.util.TextAndAnnotations;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineAnnotationExtractor;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineAnnotationExtractorImpl;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -17,8 +20,6 @@ import java.util.logging.Logger;
 /**
  * Process the output stream and send it to OpenTelemetry.
  * TODO support Pipeline Step Context {@link Context} in addition to supporting run root context.
- * TODO should we implement a MonotonicallyIncreasedClock to ensure the logs messages are always well sorted? Will backends truncate nano seconds to just do millis and loose this monotonic nature ?
- * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/CloudWatchSender.java#L162
  */
 final class OtelLogOutputStream extends LineTransformationOutputStream {
     public static boolean ENABLE_LOG_FORMATTING = Boolean.parseBoolean(System.getProperty("pipeline.log.elastic.enable.log.formatting", "false"));
@@ -29,10 +30,15 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
 
     final io.opentelemetry.api.logs.Logger otelLogger;
     final Clock clock;
+    final LogLineAnnotationExtractor logLineAnnotationExtractor;
 
-    public OtelLogOutputStream(@NonNull RunTraceContext runTraceContext, @NonNull io.opentelemetry.api.logs.Logger otelLogger, @NonNull Clock clock) {
+    public OtelLogOutputStream(@NonNull RunTraceContext runTraceContext,
+                               @NonNull io.opentelemetry.api.logs.Logger otelLogger,
+                               @NonNull LogLineAnnotationExtractor logLineAnnotationExtractor,
+                               @NonNull Clock clock) {
         this.runTraceContext = runTraceContext;
         this.otelLogger = otelLogger;
+        this.logLineAnnotationExtractor = logLineAnnotationExtractor;
         this.clock = clock;
     }
 
@@ -41,14 +47,14 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
         if (len == 0) {
             return;
         }
-        ConsoleNotes.TextAndAnnotations textAndAnnotations = ConsoleNotes.parse(bytes, len);
-        String plainLogLine = textAndAnnotations.text;
+        TextAndAnnotations textAndAnnotations = logLineAnnotationExtractor.extractAnnotations(bytes, len);
+        String plainLogLine = textAndAnnotations.getText();
         if (plainLogLine == null || plainLogLine.isEmpty()) {
             LOGGER.log(Level.FINEST, () -> runTraceContext + " - skip empty log line");
         } else {
             AttributesBuilder attributesBuilder = Attributes.builder();
-            if (ENABLE_LOG_FORMATTING && textAndAnnotations.annotations != null) {
-                attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS, textAndAnnotations.annotations.toString());
+            if (ENABLE_LOG_FORMATTING && textAndAnnotations.getAnnotations() != null) {
+                attributesBuilder.put(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS, textAndAnnotations.getAnnotations().toString());
             }
             attributesBuilder.putAll(runTraceContext.toAttributes());
 

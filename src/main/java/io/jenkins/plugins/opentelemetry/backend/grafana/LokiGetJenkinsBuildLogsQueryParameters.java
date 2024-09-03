@@ -61,7 +61,7 @@ public class LokiGetJenkinsBuildLogsQueryParameters {
             META_DATA_CI_PIPELINE_RUN_NUMBER + "=" + runNumber);
         flowNodeId.ifPresent(flowNodeId -> logQl.append(", " + META_DATA_JENKINS_PIPELINE_STEP_ID + "=\"" + flowNodeId + "\""));
 
-        logQl.append(" | keep __line__");
+//        logQl.append(" | keep __line__");
 
         RequestBuilder lokiQueryRangeRequestBuilder = RequestBuilder
             .get()

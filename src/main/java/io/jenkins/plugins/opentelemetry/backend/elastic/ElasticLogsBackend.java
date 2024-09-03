@@ -8,11 +8,13 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import org.apache.commons.lang.StringUtils;
 
 import com.google.errorprone.annotations.MustBeClosed;
@@ -77,7 +79,10 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
     }
 
     public Map<String, String> getOtelConfigurationProperties() {
-        return Collections.singletonMap("otel.logs.exporter", "otlp");
+        Map<String, String> config = new HashMap<>();
+        config.put("otel.logs.exporter", "otlp");
+        config.put(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_LOG_EXTRACT_LOG_LINE_ANNOTATIONS, "true");
+        return config;
     }
 
     private String getKibanaSpaceIdentifier() {

@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package io.jenkins.plugins.opentelemetry.job.log;
+package io.jenkins.plugins.opentelemetry.job.log.util;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 
-public class ConsoleNotesTest {
+public class LogLineAnnotationExtractorImplTest {
     @Test
     public void test1() {
         String expectedMessage = "[Pipeline] }";
@@ -34,9 +34,9 @@ public class ConsoleNotesTest {
 
     private void verifyParsing(String expectedMessage, String data) {
         byte[] dataAsBytes = data.getBytes(StandardCharsets.UTF_8);
-        ConsoleNotes.TextAndAnnotations textAndAnnotations = ConsoleNotes.parse(dataAsBytes, dataAsBytes.length);
+        TextAndAnnotations textAndAnnotations = new LogLineAnnotationExtractorImpl().extractAnnotations(dataAsBytes, dataAsBytes.length);
         //attributes.asMap().forEach((k, v) -> System.out.println(k + ": " + v));
-        String actualMessage = textAndAnnotations.text;
+        String actualMessage = textAndAnnotations.getText();
         Assert.assertEquals(expectedMessage, actualMessage);
     }
 }

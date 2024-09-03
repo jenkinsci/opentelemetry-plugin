@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Iterators;
-import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineAnnotationExtractorImpl;
 import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.trace.Span;
@@ -32,6 +32,7 @@ import net.sf.json.JSONArray;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
@@ -285,7 +286,7 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
                     annotations = JSONArray.fromObject(annotationsAsText.asText());
                 }
             }
-            String formattedMessage = ConsoleNotes.readFormattedMessage(message, annotations);
+            String formattedMessage = new LogLineAnnotationExtractorImpl().recomposeLogLine(message, annotations);
             logger.log(Level.FINEST, () -> "Write: " + formattedMessage + " for document.id: " + hit.id());
             return formattedMessage;
         }

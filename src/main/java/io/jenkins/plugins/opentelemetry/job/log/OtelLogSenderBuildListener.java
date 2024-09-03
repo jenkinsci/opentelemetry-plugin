@@ -10,6 +10,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.BuildListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineAnnotationExtractor;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.common.Clocks;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -40,6 +41,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
 
     protected final static Logger LOGGER = Logger.getLogger(OtelLogSenderBuildListener.class.getName());
     final RunTraceContext runTraceContext;
+    final LogLineAnnotationExtractor logLineAnnotationExtractor;
 
     /**
      * Timestamps of the logs emitted by the Jenkins Agents must be chronologically ordered with the timestamps of
@@ -54,8 +56,9 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
     @CheckForNull
     transient PrintStream logger;
 
-    public OtelLogSenderBuildListener(@NonNull RunTraceContext runTraceContext) {
+    public OtelLogSenderBuildListener(@NonNull RunTraceContext runTraceContext, LogLineAnnotationExtractor logLineAnnotationExtractor) {
         this.runTraceContext = runTraceContext;
+        this.logLineAnnotationExtractor = logLineAnnotationExtractor;
         this.clock = Clocks.monotonicClock();
         // Constructor must always be invoked on the Jenkins Controller.
         // Instantiation on the Jenkins Agents is done via deserialization.
@@ -66,7 +69,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
     @Override
     public synchronized final OutputStream getOutputStream() {
         if (outputStream == null) {
-            outputStream = new OtelLogOutputStream(runTraceContext, getOtelLogger(), clock);
+            outputStream = new OtelLogOutputStream(runTraceContext, getOtelLogger(), logLineAnnotationExtractor, clock);
         }
         return outputStream;
     }
@@ -75,7 +78,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
     @Override
     public synchronized final PrintStream getLogger() {
         if (logger == null) {
-            logger = new PrintStream(new OtelLogOutputStream(runTraceContext, getOtelLogger(), clock), false, StandardCharsets.UTF_8);
+            logger = new PrintStream(new OtelLogOutputStream(runTraceContext, getOtelLogger(), logLineAnnotationExtractor, clock), false, StandardCharsets.UTF_8);
         }
         return logger;
     }
@@ -91,8 +94,8 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
 
         private final static Logger logger = Logger.getLogger(OtelLogSenderBuildListenerOnController.class.getName());
 
-        public OtelLogSenderBuildListenerOnController(@NonNull RunTraceContext runTraceContext) {
-            super(runTraceContext);
+        public OtelLogSenderBuildListenerOnController(@NonNull RunTraceContext runTraceContext, @NonNull LogLineAnnotationExtractor logLineAnnotationExtractor) {
+            super(runTraceContext, logLineAnnotationExtractor);
             logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnController()");
             JenkinsJVM.checkJenkinsJVM();
         }
@@ -113,7 +116,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
         private Object writeReplace() throws IOException {
             logger.log(Level.FINEST, () -> "writeReplace()");
             JenkinsJVM.checkJenkinsJVM();
-            return new OtelLogSenderBuildListenerOnAgent(runTraceContext);
+            return new OtelLogSenderBuildListenerOnAgent(runTraceContext, logLineAnnotationExtractor);
         }
     }
 
@@ -136,8 +139,8 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
         /**
          * Intended to be exclusively called on the Jenkins Controller by {@link OtelLogSenderBuildListenerOnController#writeReplace()}.
          */
-        private OtelLogSenderBuildListenerOnAgent(@NonNull RunTraceContext runTraceContext) {
-            super(runTraceContext);
+        private OtelLogSenderBuildListenerOnAgent(@NonNull RunTraceContext runTraceContext, @NonNull LogLineAnnotationExtractor logLineAnnotationExtractor) {
+            super(runTraceContext, logLineAnnotationExtractor);
             logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnAgent()");
             JenkinsJVM.checkJenkinsJVM();
         }
