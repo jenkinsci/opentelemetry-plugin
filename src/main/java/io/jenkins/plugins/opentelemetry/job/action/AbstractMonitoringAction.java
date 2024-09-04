@@ -27,8 +27,8 @@ import java.util.logging.Logger;
 public abstract class AbstractMonitoringAction implements Action, OtelMonitoringAction {
     private final static Logger LOGGER = Logger.getLogger(AbstractMonitoringAction.class.getName());
 
+    @CheckForNull
     transient SpanAndScopes spanAndScopes;
-
 
     final String traceId;
     final String spanId;
@@ -50,7 +50,7 @@ public abstract class AbstractMonitoringAction implements Action, OtelMonitoring
             this.w3cTraceContext = w3cTraceContext;
         }
 
-        LOGGER.log(Level.FINE, () -> "Span " + getSpanName() + ", thread=" + spanAndScopes.scopeStartThreadName + " opened " + spanAndScopes.scopes.size() + " scopes");
+        LOGGER.log(Level.FINE, () -> "Span " + getSpanName() + Optional.ofNullable(spanAndScopes).map(sas -> ", thread=" + sas.scopeStartThreadName + " opened " + sas.scopes.size() + " scopes").orElse(", null spanAndScopes") );
     }
 
     public String getSpanName() {
@@ -65,7 +65,7 @@ public abstract class AbstractMonitoringAction implements Action, OtelMonitoring
     @Override
     @CheckForNull
     public Span getSpan() {
-        return spanAndScopes.span;
+        return spanAndScopes == null ? null : spanAndScopes.span;
     }
 
     public String getTraceId() {
