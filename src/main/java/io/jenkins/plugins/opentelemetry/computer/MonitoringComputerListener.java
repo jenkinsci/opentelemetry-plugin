@@ -72,21 +72,21 @@ public class MonitoringComputerListener extends ComputerListener implements Open
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
             .ofLongs()
             .setDescription("Number of offline agents")
-            .setUnit("1")
+            .setUnit("{agents}")
             .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount()));
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
             .ofLongs()
             .setDescription("Number of online agents")
-            .setUnit("1")
+            .setUnit("{agents}")
             .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount()));
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
             .ofLongs()
             .setDescription("Number of agents")
-            .setUnit("1")
+            .setUnit("{agents}")
             .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount()));
         failureAgentCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
             .setDescription("Number of ComputerLauncher failures")
-            .setUnit("1")
+            .setUnit("{agents}")
             .build();
 
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins agents management...");

@@ -98,7 +98,7 @@ public class GitHubClientMonitoring implements OpenTelemetryLifecycleListener {
         meter.gaugeBuilder(GITHUB_API_RATE_LIMIT_REMAINING_REQUESTS)
             .ofLongs()
             .setDescription("GitHub Repository API rate limit remaining requests")
-            .setUnit("1")
+            .setUnit("{requests}")
             .buildWithCallback(gauge -> {
                 logger.log(Level.FINE, () -> "Collect GitHub client API rate limit metrics");
                 reverseLookup.keySet().forEach(gitHub -> {
