@@ -107,7 +107,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
         meter.gaugeBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
             .ofLongs()
             .setDescription("Gauge of active jobs")
-            .setUnit("1")
+            .setUnit("{jobs}")
             .buildWithCallback(valueObserver -> valueObserver.record(this.activeRunGauge.get()));
         runLaunchedCounter =
                 meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
