@@ -224,7 +224,7 @@ curl -X POST http://jenkins.example.com/job/my-job/build \
 
 ## Using the OpenTelemetry OTLP/HTTP rather than OTLP/GRPC protocol
 
-Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" section, add to the "Configuration Properties text area the following:
+Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" section, add to the "Configuration Properties" text area the following:
 
 ```
 otel.exporter.otlp.protocol=http/protobuf
