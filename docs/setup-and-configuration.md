@@ -221,3 +221,12 @@ curl -X POST http://jenkins.example.com/job/my-job/build \
   -H "Jenkins-Crumb: 1234567890abcdef" \
   -H "traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01" 
 ```
+
+## Using the OpenTelemetry OTLP/HTTP rather than OTLP/GRPC protocol
+
+Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" section, add to the "Configuration Properties" text area the following:
+
+```
+otel.exporter.otlp.protocol=http/protobuf
+```
+
