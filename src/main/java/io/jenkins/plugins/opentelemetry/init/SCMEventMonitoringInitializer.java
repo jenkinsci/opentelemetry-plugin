@@ -37,22 +37,22 @@ public class SCMEventMonitoringInitializer implements OpenTelemetryLifecycleList
         Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
         meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_SCM_EVENT_POOL_SIZE)
             .setDescription("Number of threads handling SCM Events")
-            .setUnit("1")
+            .setUnit("{events}")
             .buildWithCallback(valueObserver -> valueObserver.record(SCMEvent.getEventProcessingMetrics().getPoolSize()));
 
         meter.upDownCounterBuilder(JenkinsSemanticMetrics.JENKINS_SCM_EVENT_ACTIVE_THREADS)
             .setDescription("Number of threads actively handling SCM Events")
-            .setUnit("1")
+            .setUnit("{threads}")
             .buildWithCallback(valueObserver -> valueObserver.record(SCMEvent.getEventProcessingMetrics().getActiveThreads()));
 
         meter.upDownCounterBuilder(JenkinsSemanticMetrics.JENKINS_SCM_EVENT_QUEUED_TASKS)
             .setDescription("Number of queued SCM Event tasks")
-            .setUnit("1")
+            .setUnit("{tasks}")
             .buildWithCallback(valueObserver -> valueObserver.record(SCMEvent.getEventProcessingMetrics().getQueuedTasks()));
 
         meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_SCM_EVENT_COMPLETED_TASKS)
             .setDescription("Number of completed SCM Event tasks")
-            .setUnit("1")
+            .setUnit("{tasks}")
             .buildWithCallback(valueObserver -> valueObserver.record(SCMEvent.getEventProcessingMetrics().getCompletedTasks()));
 
     }

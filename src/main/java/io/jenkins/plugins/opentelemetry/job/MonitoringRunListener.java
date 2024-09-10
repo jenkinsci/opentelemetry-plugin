@@ -112,32 +112,32 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
         runLaunchedCounter =
                 meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
                         .setDescription("Job launched")
-                        .setUnit("1")
+                        .setUnit("{jobs}")
                         .build();
         runStartedCounter =
                 meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED)
                         .setDescription("Job started")
-                        .setUnit("1")
+                        .setUnit("{jobs}")
                         .build();
         runSuccessCounter =
                 meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_SUCCESS)
                     .setDescription("Job succeed")
-                    .setUnit("1")
+                    .setUnit("{jobs}")
                     .build();
         runFailedCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_FAILED)
                 .setDescription("Job failed")
-                .setUnit("1")
+                .setUnit("{jobs}")
                 .build();
         runAbortedCounter =
                     meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
                         .setDescription("Job aborted")
-                        .setUnit("1")
+                        .setUnit("{jobs}")
                         .build();
         runCompletedCounter =
                 meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED)
                         .setDescription("Job completed")
-                        .setUnit("1")
+                        .setUnit("{jobs}")
                         .build();
 
     }
