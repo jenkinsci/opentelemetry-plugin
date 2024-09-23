@@ -46,6 +46,16 @@ public class AbstractPipelineListener implements PipelineListener {
     }
 
     @Override
+    public void onStartWithNewSpanStep(@NonNull StepStartNode stepStartNode, @NonNull WorkflowRun run) {
+
+    }
+
+    @Override
+    public void onEndWithNewSpanStep(@NonNull StepEndNode nodeStepEndNode, FlowNode nextNode, @NonNull WorkflowRun run) {
+
+    }
+
+    @Override
     public void onAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run) {
 
     }

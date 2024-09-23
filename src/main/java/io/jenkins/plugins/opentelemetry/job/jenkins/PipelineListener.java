@@ -64,6 +64,16 @@ public interface PipelineListener {
     void onEndParallelStepBranch(@NonNull StepEndNode stepStepNode, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run);
 
     /**
+     * Just before the `withNewSpan` step starts
+     */
+    void onStartWithNewSpanStep(@NonNull StepStartNode stepStartNode, @NonNull WorkflowRun run);
+
+    /**
+     * Just before the `withNewSpan` step ends
+     */
+    void onEndWithNewSpanStep(@NonNull StepEndNode nodeStepEndNode, FlowNode nextNode, @NonNull WorkflowRun run);
+
+    /**
      * Just before the atomic step starts
      */
     void onAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run);

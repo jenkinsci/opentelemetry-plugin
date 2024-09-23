@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -22,6 +23,7 @@ import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
 import io.jenkins.plugins.opentelemetry.job.step.SetSpanAttributesStep;
+import io.jenkins.plugins.opentelemetry.job.step.SpanAttribute;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
 import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributeStep;
 import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributesStep;
@@ -267,6 +269,19 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         return stepDescriptor.getDisplayName();
     }
 
+    private String getStepName(@NonNull StepStartNode node, @NonNull String name) {
+        StepDescriptor stepDescriptor = node.getDescriptor();
+        if (stepDescriptor == null) {
+            return name;
+        }
+        UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
+        if (describable != null) {
+            Descriptor<? extends Describable> d = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
+            return d.getDisplayName();
+        }
+        return stepDescriptor.getDisplayName();
+    }
+
     private String getStepType(@NonNull FlowNode node, @Nullable StepDescriptor stepDescriptor, @NonNull String type) {
         if (stepDescriptor == null) {
             return type;
@@ -375,6 +390,66 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     }
 
     @Override
+    public void onStartWithNewSpanStep(@NonNull StepStartNode stepStartNode, @NonNull WorkflowRun run) {
+        try (Scope ignored = setupContext(run, stepStartNode)) {
+            verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
+
+            String stepName = getStepName(stepStartNode, "withNewSpan");
+            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), "step");
+            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
+
+            // Get the arguments.
+            final Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(stepStartNode);
+            // Argument 'label'.
+            final String spanLabelArgument = (String) arguments.getOrDefault("label", stepName);
+            final String spanLabel = Strings.isNullOrEmpty(spanLabelArgument) ? stepName : spanLabelArgument;
+            SpanBuilder spanBuilder = getTracer().spanBuilder(spanLabel)
+                                                .setParent(Context.current())
+                                                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE, stepType)
+                                                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                                                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME, stepName)
+                                                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                                                .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+
+            // Populate the attributes if any 'attributes' argument was passed to the 'withNewSpan' step.
+            try {
+                Object attributesObj = arguments.getOrDefault("attributes", Collections.emptyList());
+                if (attributesObj instanceof List<?>) {
+                    // Filter the list items and cast to SpanAttribute.
+                    List<SpanAttribute> attributes = ((List<?>) attributesObj).stream()
+                                                         .filter(item -> item instanceof SpanAttribute)
+                                                         .map(item -> (SpanAttribute) item)
+                                                         .collect(Collectors.toList());
+
+                    for (SpanAttribute attribute : attributes) {
+                        // Set the attributeType in case it's not there.
+                        attributes.forEach(SpanAttribute::setDefaultType);
+                        // attributeKey is null, call convert() to set the appropriate key value
+                        // and convert the attribute value.
+                        attribute.convert();
+                        spanBuilder.setAttribute(attribute.getAttributeKey(), attribute.getConvertedValue());
+                    }
+                } else {
+                    LOGGER.log(Level.WARNING, "Attributes are in an unexpected format: " + attributesObj.getClass().getSimpleName());
+                }
+            } catch (ClassCastException cce) {
+                LOGGER.log(Level.WARNING, run.getFullDisplayName() + " failure to gather the attributes for the 'withNewSpan' step.", cce);
+            }
+
+            Span newSpan = spanBuilder.startSpan();
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + stepStartNode.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(newSpan));
+            getTracerService().putSpan(run, newSpan, stepStartNode);
+        }
+    }
+
+    @Override
+    public void onEndWithNewSpanStep(@NonNull StepEndNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
+        StepStartNode nodeStartNode = node.getStartNode();
+        GenericStatus nodeStatus = StatusAndTiming.computeChunkStatus2(run, null, nodeStartNode, node, nextNode);
+        endCurrentSpan(node, run, nodeStatus);
+    }
+
+    @Override
     public void notifyOfNewStep(@NonNull Step step, @NonNull StepContext context) {
         try {
             WorkflowRun run = context.get(WorkflowRun.class);
@@ -416,6 +491,17 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         if (openTelemetryAttributesAction == null) {
             return;
         }
+
+        // If the list is empty, ignore this check.
+        if (!openTelemetryAttributesAction.spanIdAllowedListIsEmpty() &&
+            !openTelemetryAttributesAction.isSpanIdAllowed(span.getSpanContext().getSpanId())) {
+            // If the list isn't empty, then the attributes shouldn't be set on children spans.
+            // Attributes should only be set on Ids from the list.
+            // If there are Ids on the list but the provided Id isn't part of them,
+            // don't set attributes on the span.
+            return;
+        }
+
         if (!openTelemetryAttributesAction.isNotYetAppliedToSpan(span.getSpanContext().getSpanId())) {
             // Do not reapply attributes, if previously applied.
             // This is important for overriding of attributes to work in an intuitive manner.
