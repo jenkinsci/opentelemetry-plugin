@@ -141,7 +141,7 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
         if (setAttributesOnlyOnParent) {
             // If the flag is set to true, then only the current span will get the attributes.
             // This will prevent any children from inheriting the attributes of the parent span.
-            resultingAttributes.addSpanIdToAllowedList(currentSpanId);
+            resultingAttributes.addSpanIdToInheritanceAllowedList(currentSpanId);
         }
         return resultingAttributes;
     }

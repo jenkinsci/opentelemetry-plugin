@@ -233,7 +233,7 @@ public class MonitoringPipelineListenerTest {
             OpenTelemetryAttributesAction otelChildAttributesAction = new OpenTelemetryAttributesAction();
 
             for (String id : allowedIds) {
-                otelChildAttributesAction.addSpanIdToAllowedList(id);
+                otelChildAttributesAction.addSpanIdToInheritanceAllowedList(id);
             }
 
             otelChildAttributesAction.getAttributes().put(AttributeKey.stringKey("attribute.from.child.action.applied"), "true");

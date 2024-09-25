@@ -493,8 +493,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         }
 
         // If the list is empty, ignore this check.
-        if (!openTelemetryAttributesAction.spanIdAllowedListIsEmpty() &&
-            !openTelemetryAttributesAction.isSpanIdAllowed(span.getSpanContext().getSpanId())) {
+        if (!openTelemetryAttributesAction.inheritanceAllowedSpanIdListIsEmpty() &&
+            !openTelemetryAttributesAction.isSpanIdAllowedToInheritAttributes(span.getSpanContext().getSpanId())) {
             // If the list isn't empty, then the attributes shouldn't be set on children spans.
             // Attributes should only be set on Ids from the list.
             // If there are Ids on the list but the provided Id isn't part of them,

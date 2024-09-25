@@ -36,7 +36,7 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
     // If the list has any values, then only the spans on the list will get attributes.
     // If the list is empty, then there is no restriction.
     // Used to control attribute inheritance to children spans.
-    private transient List<String> allowedSpanIdList;
+    private transient List<String> inheritanceAllowedSpanIdList;
 
     @NonNull
     public Map<AttributeKey<?>, Object> getAttributes() {
@@ -58,25 +58,25 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
         return appliedToSpans.add(spanId);
     }
 
-    public void addSpanIdToAllowedList(String spanId) {
-        if (allowedSpanIdList == null) {
-            allowedSpanIdList = new ArrayList<>();
+    public void addSpanIdToInheritanceAllowedList(String spanId) {
+        if (inheritanceAllowedSpanIdList == null) {
+            inheritanceAllowedSpanIdList = new ArrayList<>();
         }
-        allowedSpanIdList.add(spanId);
+        inheritanceAllowedSpanIdList.add(spanId);
     }
 
-    public boolean spanIdAllowedListIsEmpty() {
-        if (allowedSpanIdList == null) {
+    public boolean inheritanceAllowedSpanIdListIsEmpty() {
+        if (inheritanceAllowedSpanIdList == null) {
             return true;
         }
-        return allowedSpanIdList.isEmpty();
+        return inheritanceAllowedSpanIdList.isEmpty();
     }
 
-    public boolean isSpanIdAllowed(String spanId) {
-        if (allowedSpanIdList == null) {
+    public boolean isSpanIdAllowedToInheritAttributes(String spanId) {
+        if (inheritanceAllowedSpanIdList == null) {
             return false;
         }
-        return allowedSpanIdList.contains(spanId);
+        return inheritanceAllowedSpanIdList.contains(spanId);
     }
 
     @Override
