@@ -74,7 +74,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
-    private AtomicInteger activeRun;
+    private AtomicInteger activeRunGauge;
     private List<CauseHandler> causeHandlers;
     private LongCounter runLaunchedCounter;
     private LongCounter runStartedCounter;
@@ -103,41 +103,41 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
         this.runHandlers = runHandlers;
 
         // METRICS
-        activeRun = new AtomicInteger();
-            meter.gaugeBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
-                .ofLongs()
-                .setDescription("Gauge of active jobs")
-                .setUnit("1")
-                .buildWithCallback(valueObserver -> this.activeRun.get());
+        activeRunGauge = new AtomicInteger();
+        meter.gaugeBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ACTIVE)
+            .ofLongs()
+            .setDescription("Gauge of active jobs")
+            .setUnit("{jobs}")
+            .buildWithCallback(valueObserver -> valueObserver.record(this.activeRunGauge.get()));
         runLaunchedCounter =
                 meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_LAUNCHED)
                         .setDescription("Job launched")
-                        .setUnit("1")
+                        .setUnit("{jobs}")
                         .build();
         runStartedCounter =
                 meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED)
                         .setDescription("Job started")
-                        .setUnit("1")
+                        .setUnit("{jobs}")
                         .build();
         runSuccessCounter =
                 meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_SUCCESS)
                     .setDescription("Job succeed")
-                    .setUnit("1")
+                    .setUnit("{jobs}")
                     .build();
         runFailedCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_FAILED)
                 .setDescription("Job failed")
-                .setUnit("1")
+                .setUnit("{jobs}")
                 .build();
         runAbortedCounter =
                     meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_ABORTED)
                         .setDescription("Job aborted")
-                        .setUnit("1")
+                        .setUnit("{jobs}")
                         .build();
         runCompletedCounter =
                 meter.counterBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_COMPLETED)
                         .setDescription("Job completed")
-                        .setUnit("1")
+                        .setUnit("{jobs}")
                         .build();
 
     }
@@ -156,7 +156,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
     public void _onInitialize(@NonNull Run run) {
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - onInitialize");
 
-        activeRun.incrementAndGet();
+        activeRunGauge.incrementAndGet();
 
         RunHandler runHandler = getRunHandlers().stream().filter(rh -> rh.canCreateSpanBuilder(run)).findFirst()
             .orElseThrow((Supplier<RuntimeException>) () -> new IllegalStateException("No RunHandler found for run " + run.getClass() + " - " + run));
@@ -396,7 +396,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
                 this.runAbortedCounter.add(1);
             }
         } finally {
-            activeRun.decrementAndGet();
+            activeRunGauge.decrementAndGet();
         }
     }
 

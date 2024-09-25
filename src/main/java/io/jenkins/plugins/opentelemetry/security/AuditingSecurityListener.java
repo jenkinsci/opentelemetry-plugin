@@ -62,18 +62,18 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         loginSuccessCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_SUCCESS)
                 .setDescription("Successful logins")
-                .setUnit("1")
+                .setUnit("${logins}")
                 .build();
         loginFailureCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_FAILURE)
                 .setDescription("Failing logins")
-                .setUnit("1")
+                .setUnit("${logins}")
                 .build();
 
         loginCounter =
             meter.counterBuilder(JenkinsSemanticMetrics.LOGIN)
                 .setDescription("Logins")
-                .setUnit("1")
+                .setUnit("${logins}")
                 .build();
 
     }

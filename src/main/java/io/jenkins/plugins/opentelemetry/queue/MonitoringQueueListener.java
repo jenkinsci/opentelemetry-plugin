@@ -57,7 +57,7 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_WAITING)
             .ofLongs()
             .setDescription("Number of tasks in the queue with the status 'waiting', 'buildable' or 'pending'")
-            .setUnit("1")
+            .setUnit("{tasks}")
             .buildWithCallback(valueObserver -> valueObserver.record((long)
                 Optional.ofNullable(Jenkins.getInstanceOrNull()).map(j -> j.getQueue()).
                     map(q -> q.getUnblockedItems().size()).orElse(0)));
@@ -65,20 +65,20 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BLOCKED)
             .ofLongs()
             .setDescription("Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked")
-            .setUnit("1")
+            .setUnit("{tasks}")
             .buildWithCallback(valueObserver -> valueObserver.record(this.blockedItemGauge.longValue()));
 
         meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BUILDABLE)
             .ofLongs()
             .setDescription("Number of tasks in the queue with the status 'buildable' or 'pending'")
-            .setUnit("1")
+            .setUnit("{tasks}")
             .buildWithCallback(valueObserver -> valueObserver.record((long)
                 Optional.ofNullable(Jenkins.getInstanceOrNull()).map(j -> j.getQueue()).
                     map(q -> q.countBuildableItems()).orElse(0)));
 
         leftItemCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_LEFT)
             .setDescription("Total count of tasks that have been processed")
-            .setUnit("1")
+            .setUnit("{tasks}")
             .build();
         timeInQueueInMillisCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_TIME_SPENT_MILLIS)
             .setDescription("Total time spent in queue by the tasks that have been processed")
