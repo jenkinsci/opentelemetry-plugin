@@ -72,16 +72,12 @@ public class MonitoringPipelineListenerTest {
 
     private static final StepContext stepContext = Mockito.mock(StepContext.class);
     private static final OtelTraceService otelTraceService = Mockito.mock(OtelTraceService.class);
-
-    private static MonitoringPipelineListener monitoringPipelineListener;
-    private static WorkflowRun workflowRun;
+    private static final WorkflowRun workflowRun = Mockito.mock(WorkflowRun.class);
 
     @BeforeClass
     public static void commonSetup() throws IOException, InterruptedException {
         // Jenkins must have been initialized.
         Assert.assertNotNull(Jenkins.getInstanceOrNull());
-
-        workflowRun = Mockito.mock(WorkflowRun.class);
 
         Mockito.when(stepContext.get(WorkflowRun.class)).thenReturn(workflowRun);
     }
@@ -91,7 +87,8 @@ public class MonitoringPipelineListenerTest {
 
         private static final String START_NODE_ROOT_SPAN_NAME = "root-span";
         private static final String WITH_NEW_SPAN_NAME = "with-new-span";
-        SpanBuilderMock spanBuilderMock = Mockito.spy(new SpanBuilderMock(WITH_NEW_SPAN_NAME));
+        private final SpanBuilderMock spanBuilderMock = Mockito.spy(new SpanBuilderMock(WITH_NEW_SPAN_NAME));
+        private MonitoringPipelineListener monitoringPipelineListener;
 
         @Parameterized.Parameter(0)
         public String attributeKeyName;
@@ -200,11 +197,14 @@ public class MonitoringPipelineListenerTest {
 
         private static final String TEST_SPAN_NAME = "test-span";
         private static final String SH_STEP_SPAN_NAME = "sh-span";
-        private static final FlowNode flowNode = Mockito.mock(FlowNode.class);
-        private static SpanMock testSpan;
+        private final FlowNode flowNode = Mockito.mock(FlowNode.class);
+        private final MonitoringPipelineListener monitoringPipelineListener = new MonitoringPipelineListener();
+        private SpanMock testSpan;
 
         @Before
         public void setup() throws IOException, InterruptedException {
+            monitoringPipelineListener.setOpenTelemetryTracerService(otelTraceService);
+
             testSpan = new SpanMock(TEST_SPAN_NAME);
             testSpan.setAttribute("caller.name", "testuser");
 
