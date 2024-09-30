@@ -153,7 +153,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
     }
 
     @Override
-    public void _onInitialize(@NonNull Run run) {
+    public void _onInitialize(@NonNull Run<?, ?> run) {
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - onInitialize");
 
         activeRunGauge.incrementAndGet();
@@ -232,14 +232,14 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
             });
 
         // CAUSES
-        List<String> causesDescriptions = ((List<Cause>) run.getCauses()).stream().map(c -> getCauseHandler(c).getStructuredDescription(c)).collect(Collectors.toList());
+        List<String> causesDescriptions = run.getCauses().stream().map(c -> getCauseHandler(c).getStructuredDescription(c)).collect(Collectors.toList());
         rootSpanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE, causesDescriptions);
 
-        Optional optCause = run.getCauses().stream().findFirst();
+        Optional<Cause> optCause = run.getCauses().stream().findFirst();
         optCause.ifPresent(cause -> {
                 if (cause instanceof Cause.UpstreamCause) {
                     Cause.UpstreamCause upstreamCause = (Cause.UpstreamCause) cause;
-                    Run upstreamRun = upstreamCause.getUpstreamRun();
+                    Run<?, ?> upstreamRun = upstreamCause.getUpstreamRun();
                     if (upstreamRun == null) {
                         // hudson.model.Cause.UpstreamCause.getUpstreamRun() can return null, probably if upstream job or build has been deleted.
                     } else {
@@ -299,7 +299,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
     }
 
     @Override
-    public void _onStarted(@NonNull Run run, @NonNull TaskListener listener) {
+    public void _onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span runSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
@@ -311,7 +311,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
     }
 
     @Override
-    public void _onCompleted(@NonNull Run run, @NonNull TaskListener listener) {
+    public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span finalizeSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(finalizeSpan));
@@ -323,7 +323,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
     @MustBeClosed
     @NonNull
-    protected Scope endPipelinePhaseSpan(@NonNull Run run) {
+    protected Scope endPipelinePhaseSpan(@NonNull Run<?, ?> run) {
         Span pipelinePhaseSpan = verifyNotNull(Span.current(), "No pipelinePhaseSpan found in context");
         pipelinePhaseSpan.end();
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - end " + OtelUtils.toDebugString(pipelinePhaseSpan));
@@ -334,7 +334,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
     }
 
     @Override
-    public void _onFinalized(@NonNull Run run) {
+    public void _onFinalized(@NonNull Run<?, ?> run) {
 
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span parentSpan = Span.current();
@@ -380,7 +380,6 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
             this.getTraceService().removeJobPhaseSpan(run, parentSpan);
 
             this.getTraceService().purgeRun(run);
-
 
             Result result = verifyNotNull(run.getResult(), "%s", run);
 
