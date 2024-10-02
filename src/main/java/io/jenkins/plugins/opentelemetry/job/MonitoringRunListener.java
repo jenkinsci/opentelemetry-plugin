@@ -435,6 +435,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
                 Attributes.of(
                     JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, pipelineId,
                     JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, result.toString(),
+                    // TODO do we need this `completed` dimension that we captured on spans? Can't this inferred from the `result` attribute ?
                     JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMPLETED, result.isCompleteBuild())
             );
         } finally {
