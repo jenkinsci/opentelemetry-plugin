@@ -117,6 +117,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
         activeRunGauge = new AtomicInteger();
 
         runDurationHistogram = meter.histogramBuilder("ci.pipeline.run.duration")
+        // TODO clarify histogram buckets.
             .setUnit("s")
             .build();
         runDurationHistogramAllowList = MATCH_ANYTHING; // allow all
