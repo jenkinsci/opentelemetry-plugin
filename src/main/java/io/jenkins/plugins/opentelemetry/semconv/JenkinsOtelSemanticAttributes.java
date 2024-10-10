@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.semconv;
 
 import hudson.PluginWrapper;
 import hudson.model.Computer;
+import hudson.model.Job;
 import io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import jenkins.model.Jenkins;
@@ -21,6 +22,9 @@ import java.util.List;
 public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
     public static final AttributeKey<String> CI_PIPELINE_TYPE = AttributeKey.stringKey("ci.pipeline.type");
     public static final AttributeKey<String> CI_PIPELINE_MULTIBRANCH_TYPE = AttributeKey.stringKey("ci.pipeline.multibranch.type");
+    /**
+     * @see Job#getFullName()
+     */
     public static final AttributeKey<String> CI_PIPELINE_ID = AttributeKey.stringKey("ci.pipeline.id");
     public static final AttributeKey<String> CI_PIPELINE_NAME = AttributeKey.stringKey("ci.pipeline.name");
     public static final AttributeKey<String> CI_PIPELINE_TEMPLATE_ID = AttributeKey.stringKey("ci.pipeline.template.id");
@@ -135,6 +139,8 @@ public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
 
     public static final String OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED = "otel.instrumentation.jenkins.web.enabled";
     public static final String OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED = "otel.instrumentation.jenkins.remote.span.enabled";
+    public static final String OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST = "otel.instrumentation.jenkins.run.metric.duration.allow_list";
+    public static final String OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST = "otel.instrumentation.jenkins.run.metric.duration.deny_list";
     /**
      * Instrument Jenkins Remoting from the Jenkins controller to Jenkins build agents
      */
