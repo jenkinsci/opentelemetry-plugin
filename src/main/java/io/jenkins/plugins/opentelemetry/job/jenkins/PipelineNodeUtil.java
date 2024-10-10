@@ -8,10 +8,12 @@ package io.jenkins.plugins.opentelemetry.job.jenkins;
 import com.google.common.collect.Iterables;
 import hudson.model.Action;
 import hudson.model.Queue;
+import io.jenkins.plugins.opentelemetry.job.step.WithNewSpanStep;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.pipeline.StageStatus;
 import org.jenkinsci.plugins.pipeline.SyntheticStage;
 import org.jenkinsci.plugins.workflow.actions.*;
+import org.jenkinsci.plugins.workflow.cps.actions.ArgumentsActionImpl;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.cps.steps.ParallelStep;
@@ -55,6 +57,21 @@ public class PipelineNodeUtil {
             return false;
         }
         return node.getAction(LabelAction.class) != null;
+    }
+
+    public static boolean isStartWithNewSpan(FlowNode node) {
+        if (node == null) {
+            return false;
+        }
+
+        if (!(node instanceof StepStartNode)) {
+            return false;
+        }
+        StepStartNode stepStartNode = (StepStartNode) node;
+        if (!(stepStartNode.getDescriptor() instanceof WithNewSpanStep.DescriptorImpl)) {
+            return false;
+        }
+        return node.getAction(ArgumentsActionImpl.class) != null;
     }
 
     /**
