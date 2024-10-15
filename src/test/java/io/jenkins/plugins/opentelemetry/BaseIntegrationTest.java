@@ -41,9 +41,12 @@ import org.junit.Rule;
 import org.jvnet.hudson.test.BuildWatcher;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -100,6 +103,15 @@ public class BaseIntegrationTest {
         LOGGER.log(Level.INFO, "Wait for jenkins to start...");
         jenkinsRule.waitUntilNoActivity();
         LOGGER.log(Level.INFO, "Jenkins started");
+
+        // Update all sites to reload available plugins.
+        jenkinsRule.jenkins.getUpdateCenter().updateAllSites();
+
+        // install() returns a Future for every plugin. Call get() on the Future so that this line blocks
+        // until the operation is finished and the future is available.
+        jenkinsRule.jenkins.getPluginManager().install(
+            Collections.singletonList("durable-task"), true).get(0).get();
+        Assert.assertNotNull(jenkinsRule.jenkins.getPluginManager().getPlugin("durable-task"));
 
         ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries = jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
         verify(jenkinsOpenTelemetries.size() == 1, "Number of jenkinsControllerOpenTelemetrys: %s", jenkinsOpenTelemetries.size());
@@ -251,6 +263,42 @@ public class BaseIntegrationTest {
 
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(pluginName));
         MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+    }
+
+    /**
+     * This method is used for testing that the correct spans and their children have been generated.
+     * It returns a map,
+     *      - key:    span name
+     *      - value:  list of children span names
+     */
+    protected Map<String, List<String>> getSpanMapWithChildrenFromTree(Tree<SpanDataWrapper> spansTree) {
+        Map<String, List<String>> spansTreeMap = new HashMap<>();
+        // Stream all the nodes.
+        spansTree.breadthFirstStreamNodes().forEach(node -> {
+            String parentSpanName = node.getData().spanData.getName();
+            List<String> childrenSpanNames = new ArrayList<>();
+
+            // Get the children and for each one, store the name.
+            node.getChildren().forEach(child -> childrenSpanNames.add(child.getData().spanData.getName()));
+
+            // Put the span and its children on the map.
+            spansTreeMap.put(parentSpanName, childrenSpanNames);
+        });
+        return spansTreeMap;
+    }
+
+    /**
+     * This method is used for testing a span's data like attributes.
+     * It returns a map,
+     *      - key:    span name
+     *      - value:  SpanData
+     */
+    protected Map<String, SpanData> getSpanDataMapFromTree(Tree<SpanDataWrapper> spansTree) {
+        Map<String, SpanData> spansTreeMap = new HashMap<>();
+        // Stream all the nodes.
+        spansTree.breadthFirstStreamNodes().forEach(node ->
+            spansTreeMap.put(node.getData().spanData.getName(), node.getData().spanData));
+        return spansTreeMap;
     }
 
     // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java

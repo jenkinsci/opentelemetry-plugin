@@ -1,7 +1,7 @@
 # Traces of Jobs and Pipeline Builds
 
 
-## Traces and Spans Attributes
+## Traces, Spans and Span Attributes
 
 The Jenkins OpenTelemetry integration collects comprehensive contextual attributes of the jobs and pipelines builds to: 
 * Provide build executions details in order to be an alternative to the Jenkins GUI if desired
@@ -57,6 +57,50 @@ pipeline {
     }
 }
 ````
+
+### Custom spans
+
+Custom spans can be defined using the `withNewSpan` step, which accepts the following parameters
+* `label`
+  * the label of the span
+  * the value is a `string`
+* `attributes`
+  * a list of attributes, defined the same way as in the `withSpanAttributes` step
+  * ```groovy
+    attributes: ([
+        spanAttribute(key: 'modules', value: '2'),
+        spanAttribute(key: 'command', value: 'mvn clean install')
+    ])
+    ```
+* `setAttributesOnlyOnParent`
+  * flag used to define whether to inherit the provided attributes to the children spans or not
+  * `true` by default, all user-defined attributes for a span are passed on to children spans
+  * the value is a boolean, `true` or `false`
+
+Example definitions:
+
+* All parameters provided
+    ```groovy
+    stage('build') {
+        withNewSpan(label: 'custom-build-span', attributes: ([
+            spanAttribute(key: 'modules', value: '2'),
+            spanAttribute(key: 'command', value: 'mvn clean install')
+        ]), setAttributesOnlyOnParent: true) {
+            sh './build-module1.sh'
+            sh './build-module2.sh'
+        }
+    }
+    ```
+
+* Only the `label` parameter is required, all others are optional.
+    ```groovy
+    stage('build') {
+        withNewSpan(label: 'custom-build-span') {
+            sh './build-module1.sh'
+            sh './build-module2.sh'
+        }
+    }
+    ```
 
 ### Pipeline, freestyle, and matrix project build spans
 
