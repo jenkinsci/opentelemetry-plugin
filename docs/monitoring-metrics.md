@@ -24,7 +24,21 @@ or APIs ([here](https://www.elastic.co/guide/en/kibana/current/dashboard-import-
 |------------------------------------------------|----------------------------------|
 | <img alt="Jenkins Health Dashboard with Elastic Kibana" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/kibana_jenkins_overview_dashboard.png" /> | <img alt="Jenkins Agent Provisioning Health Dashboard with Elastic Kibana" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/kibana_jenkins_provisioning_dashboard.png" /> |
 
-## Jenkins Health Metrics
+## Build Duration
+
+* Name: `ci.pipeline.run.duration`
+* Type: Histogram with buckets: `1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192` (buckets subject to change)
+* Unit: `s`
+* Attributes:
+  * `ci.pipeline.id`: The full name of the Jenkins job if complying with the allow and deny lists specified through 
+    configuration parameters documented below, otherwise `#other#` to limit the cardinality of the metric. 
+  Example: `my-team/my-app/main`. See `hudson.model.AbstractItem#getFullName()`.
+  * `ci.pipeline.result`: `SUCCESS`, `UNSTABLE`, `FAILUIRE`, `NOT_BUILT`, `ABORTED`. See `hudson.model.Run#getResult()`.
+* Configuration parameters to control the cardinality of the `ci.pipeline.id` attribute:
+  * `otel.instrumentation.jenkins.run.metric.duration.allow_list`: Java regex. Example `jenkins_folder_a/.*|jenkins_folder_b/.*`
+  * `otel.instrumentation.jenkins.run.metric.duration.deny_list`: Java regex. Example `.*test.*`
+
+## Jenkins Build & Health Metrics
 
 Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
 <table>
@@ -36,127 +50,141 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <th>Description</th>
     </tr>
     <tr>
+        <td>/td>
+        <td>`s`</td>
+        <td></td>
+        <td></td>
+        <td>Duration of runs</td>
+    </tr>
+    <tr>
         <td>ci.pipeline.run.active</td>
-        <td>1</td>
+        <td>`{jobs}`</td>
+        <td></td>
+        <td></td>
+        <td>Gauge of active jobs</td>
+    </tr>
+    <tr>
+        <td>ci.pipeline.run.active</td>
+        <td>`{jobs}`</td>
         <td></td>
         <td></td>
         <td>Gauge of active jobs</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.launched</td>
-        <td>1</td>
+        <td>`{jobs}`</td>
         <td></td>
         <td></td>
         <td>Job launched</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.started</td>
-        <td>1</td>
+        <td>`{jobs}`</td>
         <td></td>
         <td></td>
         <td>Job started</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.completed</td>
-        <td>1</td>
+        <td>`{jobs}`</td>
         <td></td>
         <td></td>
         <td>Job completed</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.aborted</td>
-        <td>1</td>
+        <td>`{jobs}`</td>
         <td></td>
         <td></td>
         <td>Job aborted</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.success</td>
-        <td>1</td>
+        <td>`{jobs}`</td>
         <td></td>
         <td></td>
         <td>Job successful</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.failed</td>
-        <td>1</td>
+        <td>`{jobs}`</td>
         <td></td>
         <td></td>
         <td>Job failed</td>
     </tr>
     <tr>
         <td>jenkins.executor.available</td>
-        <td>1</td>
+        <td>`${executors}`</td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.busy</td>
-        <td>1</td>
+        <td>`${executors}`</td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.idle</td>
-        <td>1</td>
+        <td>`${executors}`</td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.online</td>
-        <td>1</td>
+        <td>`${executors}`</td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.connecting</td>
-        <td>1</td>
+        <td>`${executors}`</td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.defined</td>
-        <td>1</td>
+        <td>`${executors}`</td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.queue</td>
-        <td>1</td>
+        <td>`${items}`</td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.queue.waiting</td>
-        <td>1</td>
+        <td>`${items}`</td>
         <td></td>
         <td></td>
         <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see <a href="https://javadoc.jenkins.io/hudson/model/Queue.html#getUnblockedItems--">`Queue#getUnblockedItems()`</a>)</td>
     </tr>
     <tr>
         <td>jenkins.queue.blocked</td>
-        <td>1</td>
+        <td>`${items}`</td>
         <td></td>
         <td></td>
         <td>Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked. (see <a href="https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html">`QueueListener#onEnterBlocked() - QueueListener#onLeaveBlocked()`</a>)</td>
     </tr>
     <tr>
         <td>jenkins.queue.buildable</td>
-        <td>1</td>
+        <td>`${items}`</td>
         <td></td>
         <td></td>
         <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see <a href="https://javadoc.jenkins.io/hudson/model/Queue.html#getBuildableItems--">`Queue#getBuildableItems()`]</a>)</td>
     </tr>
     <tr>
         <td>jenkins.queue.left</td>
-        <td>1</td>
+        <td>`${items}`</td>
         <td></td>
         <td></td>
         <td>Total count of tasks that have been processed (see [`QueueListener#onLeft`]()-</td>
@@ -189,42 +217,42 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     </tr>
     <tr>
         <td>jenkins.agents.total</td>
-        <td>1</td>
+        <td>`{agents}`</td>
         <td></td>
         <td></td>
         <td>Number of agents</td>
     </tr>
     <tr>
         <td>jenkins.agents.online</td>
-        <td>1</td>
+        <td>`{agents}`</td>
         <td></td>
         <td></td>
         <td>Number of online agents</td>
     </tr>
     <tr>
         <td>jenkins.agents.offline</td>
-        <td>1</td>
+        <td>`{agents}`</td>
         <td></td>
         <td></td>
         <td>Number of offline agents</td>
     </tr>
     <tr>
         <td>jenkins.agents.launch.failure</td>
-        <td>1</td>
+        <td>`{agents}`</td>
         <td></td>
         <td></td>
         <td>Number of failed launched agents</td>
     </tr>
     <tr>
         <td>jenkins.cloud.agents.completed</td>
-        <td>1</td>
+        <td>`{agents}`</td>
         <td></td>
         <td></td>
         <td>Number of provisioned cloud agents</td>
     </tr>
     <tr>
         <td>jenkins.cloud.agents.launch.failure</td>
-        <td>1</td>
+        <td>`{agents}`</td>
         <td></td>
         <td></td>
         <td>Number of failed cloud agents</td>
@@ -243,7 +271,7 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     </tr>
     <tr>
         <td>github.api.rate_limit.remaining_requests</td>
-        <td>1</td>
+        <td>`{requests}`</td>
         <td>
             Always reported: github.api.url, github.authentication<br/>
             For user based authentication:, enduser.id<br/>
@@ -261,28 +289,28 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     </tr>
     <tr>
         <td>jenkins.scm.event.pool_size</td>
-        <td>1</td>
+        <td>`{events}`</td>
         <td></td>
         <td></td>
         <td>Thread pool size of the SCM Event queue processor</td>
     </tr>
     <tr>
         <td>jenkins.scm.event.active_threads</td>
-        <td>1</td>
+        <td>`{threads}`</td>
         <td></td>
         <td></td>
         <td>Number of active threads of the SCM events thread pool</td>
     </tr>
     <tr>
         <td>jenkins.scm.event.queued_tasks</td>
-        <td>1</td>
+        <td>`{tasks}`</td>
         <td></td>
         <td></td>
         <td>Number of events in the SCM event queue</td>
     </tr>
     <tr>
         <td>jenkins.scm.event.completed_tasks</td>
-        <td>1</td>
+        <td>`{tasks}`</td>
         <td></td>
         <td></td>
         <td>Number of processed SCM events</td>
@@ -304,7 +332,7 @@ See OpenTelemetry [Semantic Conventions for Runtime Environment Metrics](https:/
     <tr>
         <td>process.runtime.jvm.buffer.count</td>
         <td>The number of buffers in the pool</td>
-        <td> gauge</td>
+        <td>gauge</td>
         <td>pool</td>
         <td>direct, mapped, mapped - 'non-volatile memory'</td>
     </tr>
@@ -435,8 +463,8 @@ See OpenTelemetry [Semantic Conventions for Runtime Environment Metrics](https:/
 
 ## Jenkins Security Metrics
 
-| Metrics                          | Unit  | Attribute Key | Attribute value | Description            |
-|----------------------------------|-------|-----------------------|-------------------------|------------------------|
-| login                            | 1     |                       |                         | Login count            |
-| login_success                    | 1     |                       |                         | Successful login count |
-| login_failure                    | 1     |                       |                         | Failed login count     |
+| Metrics                          | Unit        | Attribute Key | Attribute value | Description            |
+|----------------------------------|-------------|-----------------------|-------------------------|------------------------|
+| login                            | ${logins}   |                       |                         | Login count            |
+| login_success                    | ${logins}   |                       |                         | Successful login count |
+| login_failure                    | ${logins}   |                       |                         | Failed login count     |

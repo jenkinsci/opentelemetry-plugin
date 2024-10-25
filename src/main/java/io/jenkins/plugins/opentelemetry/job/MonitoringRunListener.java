@@ -5,6 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -66,6 +70,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verifyNotNull;
@@ -77,8 +82,11 @@ import static com.google.common.base.Verify.verifyNotNull;
 public class MonitoringRunListener extends OtelContextAwareAbstractRunListener implements OpenTelemetryLifecycleListener {
 
     static final Pattern MATCH_ANYTHING = Pattern.compile(".*");
-    static final Pattern MATCH_NOTHING = Pattern.compile(""); // FIXME check regex
+    static final Pattern MATCH_NOTHING = Pattern.compile("$^");
 
+    static final List<Double> DURATION_SECONDS_BUCKETS =
+        unmodifiableList(
+            asList(1D, 2D, 4D, 8D, 16D, 32D, 64D, 128D, 256D, 512D, 1024D, 2048D, 4096D, 8192D));
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
@@ -92,8 +100,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
     private LongCounter runSuccessCounter;
     private LongCounter runFailedCounter;
     private List<RunHandler> runHandlers;
-    private Pattern runDurationHistogramAllowList;
-    private Pattern runDurationHistogramDenyList;
+    @VisibleForTesting
+    Pattern runDurationHistogramAllowList;
+    @VisibleForTesting
+    Pattern runDurationHistogramDenyList;
 
     @PostConstruct
     public void postConstruct() {
@@ -116,9 +126,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
         // METRICS
         activeRunGauge = new AtomicInteger();
 
-        runDurationHistogram = meter.histogramBuilder("ci.pipeline.run.duration")
-        // TODO clarify histogram buckets.
+        runDurationHistogram = meter.histogramBuilder(JenkinsSemanticMetrics.CI_PIPELINE_RUN_DURATION)
             .setUnit("s")
+            .setExplicitBucketBoundariesAdvice(DURATION_SECONDS_BUCKETS)
             .build();
         runDurationHistogramAllowList = MATCH_ANYTHING; // allow all
         runDurationHistogramDenyList = MATCH_NOTHING; // deny nothing
@@ -162,14 +172,26 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
-        this.runDurationHistogramAllowList = Optional
-            .ofNullable(configProperties.getString(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST))
-            .map(Pattern::compile)
-            .orElse(MATCH_ANYTHING);
-        this.runDurationHistogramDenyList = Optional
-            .ofNullable(configProperties.getString(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST))
-            .map(Pattern::compile)
-            .orElse(MATCH_NOTHING);
+        try {
+            this.runDurationHistogramAllowList = Optional
+                .ofNullable(configProperties.getString(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST))
+                .map(Pattern::compile)
+                .orElse(MATCH_NOTHING);
+        } catch (PatternSyntaxException e) {
+            this.runDurationHistogramAllowList = MATCH_NOTHING;
+            throw new IllegalArgumentException("Invalid regex for '" +
+                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST + "'", e);
+        }
+        try {
+            this.runDurationHistogramDenyList = Optional
+                .ofNullable(configProperties.getString(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST))
+                .map(Pattern::compile)
+                .orElse(MATCH_NOTHING);
+        } catch (PatternSyntaxException e) {
+            this.runDurationHistogramDenyList = MATCH_NOTHING;
+            throw new IllegalArgumentException("Invalid regex for '" +
+                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST + "'", e);
+        }
     }
 
     @NonNull
@@ -425,18 +447,17 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
                 this.runAbortedCounter.add(1);
             }
 
+            String jobFullName = run.getParent().getFullName();
             String pipelineId =
-                runDurationHistogramAllowList.matcher(run.getParent().getFullName()).matches()
+                runDurationHistogramAllowList.matcher(jobFullName).matches()
                     &&
-                    !runDurationHistogramDenyList.matcher(run.getParent().getFullName()).matches() ?
-                    run.getParent().getFullName() : "#other#";
+                    !runDurationHistogramDenyList.matcher(jobFullName).matches() ?
+                    jobFullName : "#other#";
             runDurationHistogram.record(
                 TimeUnit.SECONDS.convert(run.getDuration(), TimeUnit.MILLISECONDS),
                 Attributes.of(
                     JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, pipelineId,
-                    JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, result.toString(),
-                    // TODO do we need this `completed` dimension that we captured on spans? Can't this inferred from the `result` attribute ?
-                    JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMPLETED, result.isCompleteBuild())
+                    JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_RESULT, result.toString())
             );
         } finally {
             activeRunGauge.decrementAndGet();

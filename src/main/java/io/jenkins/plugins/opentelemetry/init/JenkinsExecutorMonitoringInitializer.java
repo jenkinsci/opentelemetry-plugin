@@ -48,7 +48,7 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
         final ObservableLongMeasurement onlineExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_ONLINE).setUnit("${executors}").setDescription("Online executors").ofLongs().buildObserver();
         final ObservableLongMeasurement connectingExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_CONNECTING).setUnit("${executors}").setDescription("Connecting executors").ofLongs().buildObserver();
         final ObservableLongMeasurement definedExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_DEFINED).setUnit("${executors}").setDescription("Defined executors").ofLongs().buildObserver();
-        final ObservableLongMeasurement queueLength = meter.gaugeBuilder(JENKINS_EXECUTOR_QUEUE).setUnit("${executors}").setDescription("Defined executors").ofLongs().buildObserver();
+        final ObservableLongMeasurement queueLength = meter.gaugeBuilder(JENKINS_EXECUTOR_QUEUE).setUnit("${items}").setDescription("Executors queue items").ofLongs().buildObserver();
         logger.log(Level.FINER, () -> "Metrics: " + availableExecutors + ", " + busyExecutors + ", " + idleExecutors + ", " + onlineExecutors + ", " + connectingExecutors + ", " + definedExecutors + ", " + queueLength);
 
         meter.batchCallback(() -> {

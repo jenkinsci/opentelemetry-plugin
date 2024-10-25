@@ -137,7 +137,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         return meter;
     }
 
-    public ConfigProperties getConfigProperties() {
+    protected ConfigProperties getConfigProperties() {
         return configProperties;
     }
 }

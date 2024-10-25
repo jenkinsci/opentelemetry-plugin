@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry.semconv;
 import hudson.PluginWrapper;
 import hudson.model.Computer;
 import hudson.model.Job;
+import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import jenkins.model.Jenkins;
@@ -46,6 +47,9 @@ public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
     public static final AttributeKey<List<Boolean>> CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE = AttributeKey.booleanArrayKey("ci.pipeline.parameter.sensitive");
     public static final AttributeKey<List<String>> CI_PIPELINE_RUN_PARAMETER_NAME = AttributeKey.stringArrayKey("ci.pipeline.parameter.name");
     public static final AttributeKey<List<String>> CI_PIPELINE_RUN_PARAMETER_VALUE = AttributeKey.stringArrayKey("ci.pipeline.parameter.value");
+    /**
+     * @see Run#getResult()
+     */
     public static final AttributeKey<String> CI_PIPELINE_RUN_RESULT = AttributeKey.stringKey("ci.pipeline.run.result");
     public static final AttributeKey<String> CI_PIPELINE_RUN_URL = AttributeKey.stringKey("ci.pipeline.run.url");
     public static final AttributeKey<String> CI_PIPELINE_RUN_USER = AttributeKey.stringKey("ci.pipeline.run.user");
