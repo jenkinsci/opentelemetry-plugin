@@ -172,26 +172,28 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
+        Pattern newRunDurationHistogramAllowList;
+        Pattern newRunDurationHistogramDenyList;
         try {
-            this.runDurationHistogramAllowList = Optional
+            newRunDurationHistogramAllowList = Optional
                 .ofNullable(configProperties.getString(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST))
                 .map(Pattern::compile)
                 .orElse(MATCH_NOTHING);
         } catch (PatternSyntaxException e) {
-            this.runDurationHistogramAllowList = MATCH_NOTHING;
             throw new IllegalArgumentException("Invalid regex for '" +
                 JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST + "'", e);
         }
         try {
-            this.runDurationHistogramDenyList = Optional
+             newRunDurationHistogramDenyList = Optional
                 .ofNullable(configProperties.getString(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST))
                 .map(Pattern::compile)
                 .orElse(MATCH_NOTHING);
         } catch (PatternSyntaxException e) {
-            this.runDurationHistogramDenyList = MATCH_NOTHING;
             throw new IllegalArgumentException("Invalid regex for '" +
                 JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST + "'", e);
         }
+        this.runDurationHistogramAllowList = newRunDurationHistogramAllowList;
+        this.runDurationHistogramDenyList = newRunDurationHistogramDenyList;
     }
 
     @NonNull
