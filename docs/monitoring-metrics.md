@@ -35,8 +35,8 @@ or APIs ([here](https://www.elastic.co/guide/en/kibana/current/dashboard-import-
   Example: `my-team/my-app/main`. See `hudson.model.AbstractItem#getFullName()`.
   * `ci.pipeline.result`: `SUCCESS`, `UNSTABLE`, `FAILUIRE`, `NOT_BUILT`, `ABORTED`. See `hudson.model.Run#getResult()`.
 * Configuration parameters to control the cardinality of the `ci.pipeline.id` attribute:
-  * `otel.instrumentation.jenkins.run.metric.duration.allow_list`: Java regex. Example `jenkins_folder_a/.*|jenkins_folder_b/.*`
-  * `otel.instrumentation.jenkins.run.metric.duration.deny_list`: Java regex. Example `.*test.*`
+  * `otel.instrumentation.jenkins.run.metric.duration.allow_list`: Java regex, default value: `$^` (ie match nothing). Example `jenkins_folder_a/.*|jenkins_folder_b/.*`
+  * `otel.instrumentation.jenkins.run.metric.duration.deny_list`: Java regex, default value: `$^` (ie match nothing). Example `.*test.*`
 
 ## Jenkins Build & Health Metrics
 
