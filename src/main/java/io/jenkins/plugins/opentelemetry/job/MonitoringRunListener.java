@@ -84,6 +84,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
     static final Pattern MATCH_ANYTHING = Pattern.compile(".*");
     static final Pattern MATCH_NOTHING = Pattern.compile("$^");
 
+    // TODO support configurability of these histogram buckets. Note that the conversion from a string to a list of
+    //  doubles will require boilerplate so we are interested in getting user feedback before implementing this.
     static final List<Double> DURATION_SECONDS_BUCKETS =
         unmodifiableList(
             asList(1D, 2D, 4D, 8D, 16D, 32D, 64D, 128D, 256D, 512D, 1024D, 2048D, 4096D, 8192D));
