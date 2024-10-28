@@ -30,10 +30,20 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
 
     private final boolean setOnChildren;
 
+    private final boolean setAttributesOnlyOnParent;
+
     public SpanAttributeStepExecution(List<SpanAttribute> spanAttributes, boolean setOnChildren, StepContext context) {
         super(context);
         this.spanAttributes = spanAttributes;
         this.setOnChildren = setOnChildren;
+        this.setAttributesOnlyOnParent = false;
+    }
+
+    public SpanAttributeStepExecution(List<SpanAttribute> spanAttributes, boolean setOnChildren, StepContext context, boolean setAttributesOnlyOnParent) {
+        super(context);
+        this.spanAttributes = spanAttributes;
+        this.setOnChildren = setOnChildren;
+        this.setAttributesOnlyOnParent = setAttributesOnlyOnParent;
     }
 
     @Override
@@ -58,6 +68,7 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
         OtelTraceService otelTraceService = ExtensionList.lookupSingleton(OtelTraceService.class);
         Run run = getContext().get(Run.class);
         FlowNode flowNode = getContext().get(FlowNode.class);
+        String currentSpanId = otelTraceService.getSpan(run, flowNode).getSpanContext().getSpanId();
         spanAttributes.forEach(spanAttribute -> {
             switch (spanAttribute.getTarget()) {
                 case PIPELINE_ROOT_SPAN:
@@ -100,7 +111,7 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
             });
             getContext()
                 .newBodyInvoker()
-                .withContext(mergeAttributes(getContext(), spanAttributes))
+                .withContext(mergeAttributes(getContext(), spanAttributes, currentSpanId))
                 .withCallback(NopCallback.INSTANCE)
                 .start();
         }
@@ -117,7 +128,7 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
         openTelemetryAttributesAction.getAttributes().put(attributeKey, convertedValue);
     }
 
-    private OpenTelemetryAttributesAction mergeAttributes(StepContext context, List<SpanAttribute> spanAttributes) throws IOException, InterruptedException {
+    private OpenTelemetryAttributesAction mergeAttributes(StepContext context, List<SpanAttribute> spanAttributes, String currentSpanId) throws IOException, InterruptedException {
         OpenTelemetryAttributesAction existingAttributes = context.get(OpenTelemetryAttributesAction.class);
         OpenTelemetryAttributesAction resultingAttributes = new OpenTelemetryAttributesAction();
         if (existingAttributes != null) {
@@ -126,6 +137,12 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
         spanAttributes.forEach(spanAttribute ->
             resultingAttributes.getAttributes().put(spanAttribute.getAttributeKey(), spanAttribute.getConvertedValue())
         );
+
+        if (setAttributesOnlyOnParent) {
+            // If the flag is set to true, then only the current span will get the attributes.
+            // This will prevent any children from inheriting the attributes of the parent span.
+            resultingAttributes.addSpanIdToInheritanceAllowedList(currentSpanId);
+        }
         return resultingAttributes;
     }
 
