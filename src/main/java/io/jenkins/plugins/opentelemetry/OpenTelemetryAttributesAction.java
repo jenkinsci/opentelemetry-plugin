@@ -12,8 +12,10 @@ import io.opentelemetry.api.common.AttributeKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -31,6 +33,10 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
     private transient Map<AttributeKey<?>, Object> attributes;
 
     private transient Set<String> appliedToSpans;
+    // If the list has any values, then only the spans on the list will get attributes.
+    // If the list is empty, then there is no restriction.
+    // Used to control attribute inheritance to children spans.
+    private transient List<String> inheritanceAllowedSpanIdList;
 
     @NonNull
     public Map<AttributeKey<?>, Object> getAttributes() {
@@ -50,6 +56,27 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
             appliedToSpans = new HashSet<>();
         }
         return appliedToSpans.add(spanId);
+    }
+
+    public void addSpanIdToInheritanceAllowedList(String spanId) {
+        if (inheritanceAllowedSpanIdList == null) {
+            inheritanceAllowedSpanIdList = new ArrayList<>();
+        }
+        inheritanceAllowedSpanIdList.add(spanId);
+    }
+
+    public boolean inheritanceAllowedSpanIdListIsEmpty() {
+        if (inheritanceAllowedSpanIdList == null) {
+            return true;
+        }
+        return inheritanceAllowedSpanIdList.isEmpty();
+    }
+
+    public boolean isSpanIdAllowedToInheritAttributes(String spanId) {
+        if (inheritanceAllowedSpanIdList == null) {
+            return false;
+        }
+        return inheritanceAllowedSpanIdList.contains(spanId);
     }
 
     @Override
