@@ -28,7 +28,7 @@ or APIs ([here](https://www.elastic.co/guide/en/kibana/current/dashboard-import-
 
 **⚠️ In order to control metrics cardinality, the `ci.pipeline.run.duration` metrics are enabled by default 
 aggregating the durations of all the jobs/pipelines under the umbrella `ci.pipeline.id=#other#`.
-To enable per  job/pipeline metrics, use the allow and deny list setting the configuration parameters 
+To enable per job/pipeline metrics, use the allow and deny list setting the configuration parameters 
 `otel.instrumentation.jenkins.run.metric.duration.allow_list` and `otel.instrumentation.jenkins.run.metric.duration.deny_list`.**
 
 * Name: `ci.pipeline.run.duration`
