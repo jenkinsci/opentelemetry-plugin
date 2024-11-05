@@ -40,7 +40,7 @@ public class LogsViewHeader {
         ConsoleAnnotator consoleAnnotator = new ConsoleAnnotator() {
             @Override
             public ConsoleAnnotator annotate(@NonNull Object context, @NonNull MarkupText text) {
-                StaplerRequest2 currentRequest = Stapler.getCurrentRequest();
+                StaplerRequest2 currentRequest = Stapler.getCurrentRequest2();
                 String iconRootContextRelativeUrl;
                 if (currentRequest == null) { // unit test
                     iconRootContextRelativeUrl = backendIconUrl;

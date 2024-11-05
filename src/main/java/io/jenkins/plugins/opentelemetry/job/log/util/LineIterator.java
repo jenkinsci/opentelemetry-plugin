@@ -73,7 +73,7 @@ public interface LineIterator extends Iterator<String> {
         }
 
         Map<RunFlowNodeIdentifier, Map<Long, Long>> getContext() {
-            StaplerRequest2 currentRequest = Stapler.getCurrentRequest();
+            StaplerRequest2 currentRequest = Stapler.getCurrentRequest2();
             if (currentRequest == null) {
                 // happens when reading logs is not tied to a web request
                 // (e.g. API call from within a pipeline as described in https://github.com/jenkinsci/opentelemetry-plugin/issues/564)
