@@ -28,14 +28,14 @@ import org.apache.commons.lang.StringUtils;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 import javax.inject.Inject;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,7 +56,7 @@ import java.util.HashSet;
  * Instrumentation of the Stapler MVC framework.
  * Must be a {@link Filter}  rather than a {@link jenkins.util.HttpServletFilter} because it must wrap the invocation of the {@link FilterChain} to create a {@link Span}.
  * TODO find a smarter way to instrument each HTTP request path. It should rely on instrumenting the Stapler framework
- * TODO adopt <a href="https://javadoc.jenkins.io/component/stapler/org/kohsuke/stapler/StaplerRequest.html#getAncestors()">StaplerRequest.html#getAncestors()</a>
+ * TODO adopt <a href="https://javadoc.jenkins.io/component/stapler/org/kohsuke/stapler/StaplerRequest2.html#getAncestors()">StaplerRequest2.html#getAncestors()</a>
  */
 @Extension
 public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetryLifecycleListener {

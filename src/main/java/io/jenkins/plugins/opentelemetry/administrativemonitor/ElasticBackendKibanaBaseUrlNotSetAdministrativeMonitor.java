@@ -12,8 +12,8 @@ import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.HttpResponse;
 import org.kohsuke.stapler.HttpResponses;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import javax.inject.Inject;
@@ -41,7 +41,7 @@ public class ElasticBackendKibanaBaseUrlNotSetAdministrativeMonitor extends Admi
      * Depending on whether the user said "yes" or "no", send him to the right place.
      */
     @RequirePOST
-    public HttpResponse doAct(StaplerRequest req, StaplerResponse rsp) throws IOException {
+    public HttpResponse doAct(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
         if (req.hasParameter("no")) {
             disable(true);
         }

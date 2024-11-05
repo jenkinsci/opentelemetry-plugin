@@ -12,8 +12,8 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import java.io.IOException;
@@ -41,7 +41,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
      * Invoked by `/job/:jobFullName/:runNumber/logText/progressiveHtml
      */
     @Override
-    public void doProgressiveHtml(StaplerRequest req, StaplerResponse rsp) throws IOException {
+    public void doProgressiveHtml(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.doProgressiveHtml")
             .startSpan();
@@ -68,7 +68,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     }
 
     @Override
-    public void doProgressiveText(StaplerRequest req, StaplerResponse rsp) throws IOException {
+    public void doProgressiveText(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.doProgressiveText")
             .startSpan();
@@ -194,7 +194,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     }
 
     @Override
-    public void doProgressText(StaplerRequest req, StaplerResponse rsp) throws IOException {
+    public void doProgressText(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.doProgressText")
             .startSpan();
@@ -221,7 +221,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     }
 
     @Override
-    protected Writer createWriter(StaplerRequest req, StaplerResponse rsp, long size) throws IOException {
+    protected Writer createWriter(StaplerRequest2 req, StaplerResponse2 rsp, long size) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("OverallLog.createWriter")
             .startSpan();

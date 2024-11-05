@@ -14,7 +14,7 @@ Successful and failed log in events are captured as structured log messages:
     * `event.category`: `authentication`
     * `event.action`: `user_login`
     * `event.outcome`: `success`
-    * `net.peer.ip`: `javax.servlet.ServletRequest.getRemoteAddr()`
+    * `net.peer.ip`: `jakarta.servlet.ServletRequest.getRemoteAddr()`
   * Body
      * Example: "Successful login of user 'admin' from 127.0.0.1"
 * Login failure

@@ -11,7 +11,7 @@ import hudson.console.ConsoleAnnotator;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.kohsuke.stapler.Stapler;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -40,7 +40,7 @@ public class LogsViewHeader {
         ConsoleAnnotator consoleAnnotator = new ConsoleAnnotator() {
             @Override
             public ConsoleAnnotator annotate(@NonNull Object context, @NonNull MarkupText text) {
-                StaplerRequest currentRequest = Stapler.getCurrentRequest();
+                StaplerRequest2 currentRequest = Stapler.getCurrentRequest();
                 String iconRootContextRelativeUrl;
                 if (currentRequest == null) { // unit test
                     iconRootContextRelativeUrl = backendIconUrl;
