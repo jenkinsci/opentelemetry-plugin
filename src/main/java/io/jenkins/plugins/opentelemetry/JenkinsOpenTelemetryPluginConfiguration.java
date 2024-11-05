@@ -179,7 +179,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         try {
             configureOpenTelemetrySdk();
             save();
-        } catch (ConfigurationException e) {
+        } catch (RuntimeException e) {
             LOGGER.log(Level.WARNING, "Exception configuring OpenTelemetry SDK", e);
             throw new FormException("Exception configuring OpenTelemetry SDK: " + e.getMessage(), e, "endpoint");
         }
