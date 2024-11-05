@@ -55,7 +55,7 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <th>Description</th>
     </tr>
     <tr>
-        <td>/td>
+        <td>ci.pipeline.run.duration</td>
         <td>`s`</td>
         <td></td>
         <td></td>
