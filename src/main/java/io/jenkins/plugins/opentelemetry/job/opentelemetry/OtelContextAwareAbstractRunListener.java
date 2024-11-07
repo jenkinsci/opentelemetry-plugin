@@ -30,7 +30,7 @@ import java.util.logging.Logger;
  * {@link RunListener} that setups the OpenTelemetry {@link io.opentelemetry.context.Context}
  * with the current {@link Span}.
  */
-public abstract class OtelContextAwareAbstractRunListener extends RunListener<Run> {
+public abstract class OtelContextAwareAbstractRunListener extends RunListener<Run<?, ?>> {
 
     private final static Logger LOGGER = Logger.getLogger(OtelContextAwareAbstractRunListener.class.getName());
 
@@ -56,18 +56,18 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     }
 
     @Override
-    public final void onCompleted(@NonNull Run run, @NonNull TaskListener listener) {
+    public final void onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
         Span span = getTraceService().getSpan(run);
         try (Scope scope = span.makeCurrent()) {
             this._onCompleted(run, listener);
         }
     }
 
-    public void _onCompleted(@NonNull Run run, @NonNull TaskListener listener) {
+    public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
     }
 
     @Override
-    public final void onFinalized(@NonNull Run run) {
+    public final void onFinalized(@NonNull Run<?, ?> run) {
         Span span = getTraceService().getSpan(run);
         try (Scope scope = span.makeCurrent()) {
             this._onFinalized(run);
@@ -75,26 +75,26 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     }
 
 
-    public void _onFinalized(Run run) {
+    public void _onFinalized(Run<?, ?> run) {
     }
 
     @Override
-    public final void onInitialize(@NonNull Run run) {
+    public final void onInitialize(@NonNull Run<?, ?> run) {
         this._onInitialize(run);
     }
 
-    public void _onInitialize(@NonNull Run run) {
+    public void _onInitialize(@NonNull Run<?, ?> run) {
     }
 
     @Override
-    public final void onStarted(@NonNull Run run, @NonNull TaskListener listener) {
+    public final void onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
         Span span = getTraceService().getSpan(run);
         try (Scope scope = span.makeCurrent()) {
             this._onStarted(run, listener);
         }
     }
 
-    public void _onStarted(@NonNull Run run, @NonNull TaskListener listener) {
+    public void _onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
     }
 
     @Override
@@ -112,14 +112,14 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     }
 
     @Override
-    public final void onDeleted(@NonNull Run run) {
+    public final void onDeleted(@NonNull Run<?, ?> run) {
         Span span = getTraceService().getSpan(run);
         try (Scope ignored = span.makeCurrent()) {
             this._onDeleted(run);
         }
     }
 
-    public void _onDeleted(@NonNull Run run) {
+    public void _onDeleted(@NonNull Run<?, ?> run) {
     }
 
     @NonNull
@@ -137,7 +137,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         return meter;
     }
 
-    public ConfigProperties getConfigProperties() {
+    protected ConfigProperties getConfigProperties() {
         return configProperties;
     }
 }

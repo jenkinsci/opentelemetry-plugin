@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.semconv;
 
 public class JenkinsSemanticMetrics {
     public static final String  CI_PIPELINE_RUN_ACTIVE =            "ci.pipeline.run.active";
+    public static final String  CI_PIPELINE_RUN_DURATION =          "ci.pipeline.run.duration";
     public static final String  CI_PIPELINE_RUN_LAUNCHED =          "ci.pipeline.run.launched";
     public static final String  CI_PIPELINE_RUN_STARTED =           "ci.pipeline.run.started";
     public static final String  CI_PIPELINE_RUN_COMPLETED =         "ci.pipeline.run.completed";
