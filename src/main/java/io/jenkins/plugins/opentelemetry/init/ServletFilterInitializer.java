@@ -14,8 +14,8 @@ import jenkins.YesNoMaybe;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.servlet.Filter;
-import javax.servlet.ServletException;
+import jakarta.servlet.Filter;
+import jakarta.servlet.ServletException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

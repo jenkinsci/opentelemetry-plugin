@@ -12,10 +12,10 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 import org.kohsuke.stapler.Stapler;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.jenkins.plugins.opentelemetry.job.RunFlowNodeIdentifier;
@@ -73,7 +73,7 @@ public interface LineIterator extends Iterator<String> {
         }
 
         Map<RunFlowNodeIdentifier, Map<Long, Long>> getContext() {
-            StaplerRequest currentRequest = Stapler.getCurrentRequest();
+            StaplerRequest2 currentRequest = Stapler.getCurrentRequest2();
             if (currentRequest == null) {
                 // happens when reading logs is not tied to a web request
                 // (e.g. API call from within a pipeline as described in https://github.com/jenkinsci/opentelemetry-plugin/issues/564)

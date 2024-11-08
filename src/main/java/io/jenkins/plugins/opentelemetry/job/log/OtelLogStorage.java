@@ -131,10 +131,10 @@ class OtelLogStorage implements LogStorage {
      * Invoked by
      * io.jenkins.plugins.opentelemetry.job.log.OtelLogStorage#overallLog(org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner.Executable, boolean)
      * |- org.jenkinsci.plugins.workflow.job.WorkflowRun#getLogText()
-     *    |- org.jenkinsci.plugins.workflow.job.WorkflowRun#doConsoleText(org.kohsuke.stapler.StaplerRequest, org.kohsuke.stapler.StaplerResponse)
+     *    |- org.jenkinsci.plugins.workflow.job.WorkflowRun#doConsoleText(org.kohsuke.stapler.StaplerRequest2, org.kohsuke.stapler.StaplerResponse2)
      *    |- org.jenkinsci.plugins.workflow.job.WorkflowRun#getLog()
      *    |- org.jenkinsci.plugins.workflow.job.WorkflowRun#getLogInputStream()
-     *       |- hudson.model.Run#doConsoleText(org.kohsuke.stapler.StaplerRequest, org.kohsuke.stapler.StaplerResponse)
+     *       |- hudson.model.Run#doConsoleText(org.kohsuke.stapler.StaplerRequest2, org.kohsuke.stapler.StaplerResponse2)
      *       |- hudson.model.Run#writeLogTo(long, org.apache.commons.jelly.XMLOutput)
      *          |- workflowRun/console.jelly
      */
