@@ -40,8 +40,8 @@ To enable per job/pipeline metrics, use the allow and deny list setting the conf
   Example: `my-team/my-app/main`. See `hudson.model.AbstractItem#getFullName()`.
   * `ci.pipeline.result`: `SUCCESS`, `UNSTABLE`, `FAILUIRE`, `NOT_BUILT`, `ABORTED`. See `hudson.model.Run#getResult()`.
 * Configuration parameters to control the cardinality of the `ci.pipeline.id` attribute:
-  * `otel.instrumentation.jenkins.run.metric.duration.allow_list`: Java regex, default value: `$^` (ie match nothing). Example `jenkins_folder_a/.*|jenkins_folder_b/.*`
-  * `otel.instrumentation.jenkins.run.metric.duration.deny_list`: Java regex, default value: `$^` (ie match nothing). Example `.*test.*`
+  * `otel.instrumentation.jenkins.run.metric.duration.allow_list`: Java regex, default value: `$^` (ie impossible regex matching nothing). Example `jenkins_folder_a/.*|jenkins_folder_b/.*`
+  * `otel.instrumentation.jenkins.run.metric.duration.deny_list`: Java regex, default value: `$^` (ie impossible regex matching nothing). Example `.*test.*`
 
 ## Jenkins Build & Health Metrics
 
@@ -120,49 +120,49 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     <tr>
         <td>jenkins.executor.available</td>
         <td><code>${executors}</code></td>
-        <td>label</td>
+        <td><code>label</code></td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.busy</td>
         <td><code>${executors}</code></td>
-        <td>label</td>
+        <td><code>label</code></td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.idle</td>
         <td><code>${executors}</code></td>
-        <td>label</td>
+        <td><code>label</code></td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.online</td>
         <td><code>${executors}</code></td>
-        <td>label</td>
+        <td><code>label</code></td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.connecting</td>
         <td><code>${executors}</code></td>
-        <td>label</td>
+        <td><code>label</code></td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.defined</td>
         <td><code>${executors}</code></td>
-        <td>label</td>
+        <td><code>label</code></td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.queue</td>
         <td><code>${items}</code></td>
-        <td>label</td>
+        <td><code>label</code></td>
         <td></td>
         <td></td>
     </tr>
@@ -185,7 +185,7 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td><code>${items}</code></td>
         <td></td>
         <td></td>
-        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see <a href="https://javadoc.jenkins.io/hudson/model/Queue.html#getBuildableItems--"><code>Queue#getBuildableItems()`]</a>)</td>
+        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see <a href="https://javadoc.jenkins.io/hudson/model/Queue.html#getBuildableItems--"><code>Queue#getBuildableItems()</code></a>)</td>
     </tr>
     <tr>
         <td>jenkins.queue.left</td>
@@ -196,14 +196,14 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     </tr>
     <tr>
         <td>jenkins.queue.time_spent_millis</td>
-        <td>ms</td>
+        <td><code>ms</code></td>
         <td></td>
         <td></td>
         <td>Total time spent in queue by the tasks that have been processed (see <a href="https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html#onLeft-hudson.model.Queue.LeftItem-"><code>QueueListener#onLeft()</code></a> and <a href="https://javadoc.jenkins.io/hudson/model/Queue.Item.html#getInQueueSince--"><code>Item#getInQueueSince()</code></a>)</td>
     </tr>
     <tr>
         <td>jenkins.disk.usage.bytes</td>
-        <td>By</td>
+        <td><code>By</code></td>
         <td></td>
         <td></td>
         <td>Disk Usage size</td>
@@ -278,20 +278,24 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td>github.api.rate_limit.remaining_requests</td>
         <td><code>{requests}</code></td>
         <td>
-            Always reported: github.api.url, github.authentication<br/>
-            For user based authentication:, enduser.id<br/>
-            For GitHub App based authentication: github.app.id, github.app.owner, github.app.name
+            Always reported: <code>github.api.url</code>, <code>github.authentication</code><br/>
+            For user based authentication:<code>enduser.id</code><br/>
+            For GitHub App based authentication: <code>github.app.id</code>, <code>github.app.owner</code>, 
+                <code>github.app.name</code>
         </td>
         <td>Examples:
          <ul>
-         <li>github.api.url: <code>https://api.github.com</code></li>
-         <li>github.authentication: <code>anonymous</code> 
-            or <code>app:id=1234,app.name="My Jenkins App",app.owner="My Jenkins App"</code> 
-            or <code>login:john-doe`</code>  or enduser.id: <code>john-doe</code></li>
-         <li>github.app.id: `12345`, github.app.name: `My Jenkins App`, github.app.owner: `My Jenkins App</code></li>
+         <li><code>github.api.url=https://api.github.com</code></li>
+         <li><code>github.authentication: anonymous</code> 
+            or <code>app.id=1234,app.name="My Jenkins App",app.owner="My Jenkins App"</code> 
+            or <code>login=john-doe</code>  or  <code>enduser.id= john-doe</code></li>
+         <li><code>github.app.id= 12345, github.app.name="My Jenkins App", github.app.owner= "My Jenkins App"</code></li>
         </ul>
         </td>
-        <td>When using the GitHub Branch Source plugin, remaining requests for the authenticated GitHub user/app according to the <a href="https://docs.github.com/en/rest/rate-limit">GitHub API Rate Limit</a></td>
+        <td>
+            When using the GitHub Branch Source plugin, remaining requests for the authenticated GitHub user/app 
+            according to the <a href="https://docs.github.com/en/rest/rate-limit">GitHub API Rate Limit</a>
+        </td>
     </tr>
     <tr>
         <td>jenkins.scm.event.pool_size</td>
