@@ -56,140 +56,140 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     </tr>
     <tr>
         <td>ci.pipeline.run.duration</td>
-        <td>`s`</td>
+        <td><code>s</code></td>
         <td></td>
         <td></td>
         <td>Duration of runs</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.active</td>
-        <td>`{jobs}`</td>
+        <td><code>{jobs}</code></td>
         <td></td>
         <td></td>
         <td>Gauge of active jobs</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.active</td>
-        <td>`{jobs}`</td>
+        <td><code>{jobs}</code></td>
         <td></td>
         <td></td>
         <td>Gauge of active jobs</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.launched</td>
-        <td>`{jobs}`</td>
+        <td><code>{jobs}</code></td>
         <td></td>
         <td></td>
         <td>Job launched</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.started</td>
-        <td>`{jobs}`</td>
+        <td><code>{jobs}</code></td>
         <td></td>
         <td></td>
         <td>Job started</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.completed</td>
-        <td>`{jobs}`</td>
+        <td><code>{jobs}</code></td>
         <td></td>
         <td></td>
         <td>Job completed</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.aborted</td>
-        <td>`{jobs}`</td>
+        <td><code>{jobs}</code></td>
         <td></td>
         <td></td>
         <td>Job aborted</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.success</td>
-        <td>`{jobs}`</td>
+        <td><code>{jobs}</code></td>
         <td></td>
         <td></td>
         <td>Job successful</td>
     </tr>
     <tr>
         <td>ci.pipeline.run.failed</td>
-        <td>`{jobs}`</td>
+        <td><code>{jobs}</code></td>
         <td></td>
         <td></td>
         <td>Job failed</td>
     </tr>
     <tr>
         <td>jenkins.executor.available</td>
-        <td>`${executors}`</td>
+        <td><code>${executors}</code></td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.busy</td>
-        <td>`${executors}`</td>
+        <td><code>${executors}</code></td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.idle</td>
-        <td>`${executors}`</td>
+        <td><code>${executors}</code></td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.online</td>
-        <td>`${executors}`</td>
+        <td><code>${executors}</code></td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.connecting</td>
-        <td>`${executors}`</td>
+        <td><code>${executors}</code></td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.defined</td>
-        <td>`${executors}`</td>
+        <td><code>${executors}</code></td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.executor.queue</td>
-        <td>`${items}`</td>
+        <td><code>${items}</code></td>
         <td>label</td>
         <td></td>
         <td></td>
     </tr>
     <tr>
         <td>jenkins.queue.waiting</td>
-        <td>`${items}`</td>
+        <td><code>${items}</code></td>
         <td></td>
         <td></td>
-        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see <a href="https://javadoc.jenkins.io/hudson/model/Queue.html#getUnblockedItems--">`Queue#getUnblockedItems()`</a>)</td>
+        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see <a href="https://javadoc.jenkins.io/hudson/model/Queue.html#getUnblockedItems--"><code>Queue#getUnblockedItems()</code></a>)</td>
     </tr>
     <tr>
         <td>jenkins.queue.blocked</td>
-        <td>`${items}`</td>
+        <td><code>${items}</code></td>
         <td></td>
         <td></td>
-        <td>Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked. (see <a href="https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html">`QueueListener#onEnterBlocked() - QueueListener#onLeaveBlocked()`</a>)</td>
+        <td>Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked. (see <a href="https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html"><code>QueueListener#onEnterBlocked() - QueueListener#onLeaveBlocked()</code></a>)</td>
     </tr>
     <tr>
         <td>jenkins.queue.buildable</td>
-        <td>`${items}`</td>
+        <td><code>${items}</code></td>
         <td></td>
         <td></td>
-        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see <a href="https://javadoc.jenkins.io/hudson/model/Queue.html#getBuildableItems--">`Queue#getBuildableItems()`]</a>)</td>
+        <td>Number of tasks in the queue with the status 'buildable' or 'pending' (see <a href="https://javadoc.jenkins.io/hudson/model/Queue.html#getBuildableItems--"><code>Queue#getBuildableItems()`]</a>)</td>
     </tr>
     <tr>
         <td>jenkins.queue.left</td>
-        <td>`${items}`</td>
+        <td><code>${items}</code></td>
         <td></td>
         <td></td>
         <td>Total count of tasks that have been processed (see [`QueueListener#onLeft`]()-</td>
@@ -199,7 +199,7 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td>ms</td>
         <td></td>
         <td></td>
-        <td>Total time spent in queue by the tasks that have been processed (see <a href="https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html#onLeft-hudson.model.Queue.LeftItem-">`QueueListener#onLeft()`</a> and <a href="https://javadoc.jenkins.io/hudson/model/Queue.Item.html#getInQueueSince--">`Item#getInQueueSince()`</a>)</td>
+        <td>Total time spent in queue by the tasks that have been processed (see <a href="https://javadoc.jenkins.io/hudson/model/queue/QueueListener.html#onLeft-hudson.model.Queue.LeftItem-"><code>QueueListener#onLeft()</code></a> and <a href="https://javadoc.jenkins.io/hudson/model/Queue.Item.html#getInQueueSince--"><code>Item#getInQueueSince()</code></a>)</td>
     </tr>
     <tr>
         <td>jenkins.disk.usage.bytes</td>
@@ -222,42 +222,42 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     </tr>
     <tr>
         <td>jenkins.agents.total</td>
-        <td>`{agents}`</td>
+        <td><code>{agents}</code></td>
         <td></td>
         <td></td>
         <td>Number of agents</td>
     </tr>
     <tr>
         <td>jenkins.agents.online</td>
-        <td>`{agents}`</td>
+        <td><code>{agents}</code></td>
         <td></td>
         <td></td>
         <td>Number of online agents</td>
     </tr>
     <tr>
         <td>jenkins.agents.offline</td>
-        <td>`{agents}`</td>
+        <td><code>{agents}</code></td>
         <td></td>
         <td></td>
         <td>Number of offline agents</td>
     </tr>
     <tr>
         <td>jenkins.agents.launch.failure</td>
-        <td>`{agents}`</td>
+        <td><code>{agents}</code></td>
         <td></td>
         <td></td>
         <td>Number of failed launched agents</td>
     </tr>
     <tr>
         <td>jenkins.cloud.agents.completed</td>
-        <td>`{agents}`</td>
+        <td><code>{agents}</code></td>
         <td></td>
         <td></td>
         <td>Number of provisioned cloud agents</td>
     </tr>
     <tr>
         <td>jenkins.cloud.agents.launch.failure</td>
-        <td>`{agents}`</td>
+        <td><code>{agents}</code></td>
         <td></td>
         <td></td>
         <td>Number of failed cloud agents</td>
@@ -276,7 +276,7 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
     </tr>
     <tr>
         <td>github.api.rate_limit.remaining_requests</td>
-        <td>`{requests}`</td>
+        <td><code>{requests}</code></td>
         <td>
             Always reported: github.api.url, github.authentication<br/>
             For user based authentication:, enduser.id<br/>
@@ -284,38 +284,39 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         </td>
         <td>Examples:
          <ul>
-         <li>github.api.url: `https://api.github.com`</li>
-         <li>github.authentication: `anonymous` or `app:id=1234,app.name="My Jenkins App",app.owner="My Jenkins App"` or `login:john-doe` 
-         enduser.id: `john-doe`</li>
-         <li>github.app.id: `12345`, github.app.name: `My Jenkins App`, github.app.owner: `My Jenkins App`</li>
+         <li>github.api.url: <code>https://api.github.com</code></li>
+         <li>github.authentication: <code>anonymous</code> 
+            or <code>app:id=1234,app.name="My Jenkins App",app.owner="My Jenkins App"</code> 
+            or <code>login:john-doe`</code>  or enduser.id: <code>john-doe</code></li>
+         <li>github.app.id: `12345`, github.app.name: `My Jenkins App`, github.app.owner: `My Jenkins App</code></li>
         </ul>
         </td>
         <td>When using the GitHub Branch Source plugin, remaining requests for the authenticated GitHub user/app according to the <a href="https://docs.github.com/en/rest/rate-limit">GitHub API Rate Limit</a></td>
     </tr>
     <tr>
         <td>jenkins.scm.event.pool_size</td>
-        <td>`{events}`</td>
+        <td><code>{events}</code></td>
         <td></td>
         <td></td>
         <td>Thread pool size of the SCM Event queue processor</td>
     </tr>
     <tr>
         <td>jenkins.scm.event.active_threads</td>
-        <td>`{threads}`</td>
+        <td><code>{threads}</code></td>
         <td></td>
         <td></td>
         <td>Number of active threads of the SCM events thread pool</td>
     </tr>
     <tr>
         <td>jenkins.scm.event.queued_tasks</td>
-        <td>`{tasks}`</td>
+        <td><code>{tasks}</code></td>
         <td></td>
         <td></td>
         <td>Number of events in the SCM event queue</td>
     </tr>
     <tr>
         <td>jenkins.scm.event.completed_tasks</td>
-        <td>`{tasks}`</td>
+        <td><code>{tasks}</code></td>
         <td></td>
         <td></td>
         <td>Number of processed SCM events</td>
@@ -468,8 +469,8 @@ See OpenTelemetry [Semantic Conventions for Runtime Environment Metrics](https:/
 
 ## Jenkins Security Metrics
 
-| Metrics                          | Unit        | Attribute Key | Attribute value | Description            |
-|----------------------------------|-------------|-----------------------|-------------------------|------------------------|
-| login                            | ${logins}   |                       |                         | Login count            |
-| login_success                    | ${logins}   |                       |                         | Successful login count |
-| login_failure                    | ${logins}   |                       |                         | Failed login count     |
+| Metrics                          | Unit        | Attribute Key   | Attribute value   | Description            |
+|----------------------------------|-------------|-----------------|-------------------|------------------------|
+| login                            | ${logins}   |                 |                   | Login count            |
+| login_success                    | ${logins}   |                 |                   | Successful login count |
+| login_failure                    | ${logins}   |                 |                   | Failed login count     |
