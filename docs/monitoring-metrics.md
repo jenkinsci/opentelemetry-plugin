@@ -140,7 +140,6 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
             <code>status</code>
         </td>
         <td>
-            Jenkins build agent <code>label</code>code> like <code>linux</code><br/>
             <code>busy</code>, <code>idle</code>
         </td>
         <td>Jenkins executors broken down by <code>status</code></td>
@@ -269,7 +268,7 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
             <code>server.port</code>
         </td>
         <td></td>
-        <td>Disk Free size</td>
+        <td>HTTP server duration metric as defined by the OpenTelemetry specification ([here](https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverrequestduration))</td>
     </tr>
     <tr>
         <td>jenkins.plugins</td>
