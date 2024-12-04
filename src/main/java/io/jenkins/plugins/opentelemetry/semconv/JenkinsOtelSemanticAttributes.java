@@ -173,6 +173,10 @@ public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
         public static final String AUTHENTICATION = "authentication";
     }
 
+    public static final AttributeKey<String> STATUS = AttributeKey.stringKey("status");
+    public static final AttributeKey<String> LABEL = AttributeKey.stringKey("label");
+
+
     /**
      * Values in {@link EventOutcomeValues}
      */
