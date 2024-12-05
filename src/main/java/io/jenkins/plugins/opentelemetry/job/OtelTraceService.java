@@ -186,12 +186,14 @@ public class OtelTraceService {
             .ifPresentOrElse(
                 FlowNodeMonitoringAction::purgeSpanAndCloseAssociatedScopes,
                 () -> {
-                    String msg = "span not found to be purged: " + OtelUtils.toDebugString(span) +
-                        " ending " + OtelUtils.toDebugString(startSpanNode) + " in " + run;
-                    if (STRICT_MODE) {
-                        throw new IllegalStateException(msg);
-                    } else {
-                        LOGGER.log(Level.WARNING, msg);
+                    if (!Objects.equals(span, Span.getInvalid())) { // recovery of a previous error, skip the invalid span
+                        String msg = "span not found to be purged: " + OtelUtils.toDebugString(span) +
+                            " ending " + OtelUtils.toDebugString(startSpanNode) + " in " + run;
+                        if (STRICT_MODE) {
+                            throw new IllegalStateException(msg);
+                        } else {
+                            LOGGER.log(Level.WARNING, msg);
+                        }
                     }
                 });
     }
@@ -205,8 +207,11 @@ public class OtelTraceService {
             .reverse()
             .stream()
             .filter(buildStepMonitoringAction -> Objects.equals(buildStepMonitoringAction.getSpanId(), span.getSpanContext().getSpanId()))
-            .findFirst().ifPresentOrElse(BuildStepMonitoringAction::purgeSpanAndCloseAssociatedScopes, () -> {
-                throw new IllegalStateException("span not found to be purged: " + span + " for " + buildStep);
+            .findFirst()
+            .ifPresentOrElse(BuildStepMonitoringAction::purgeSpanAndCloseAssociatedScopes, () -> {
+                if (!Objects.equals(span, Span.getInvalid())) { // recovery of a previous error, skip the invalid span
+                    throw new IllegalStateException("span not found to be purged: " + span + " for " + buildStep);
+                }
             });
     }
 
