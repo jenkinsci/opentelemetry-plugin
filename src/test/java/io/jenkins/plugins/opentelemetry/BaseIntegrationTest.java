@@ -104,14 +104,6 @@ public class BaseIntegrationTest {
         jenkinsRule.waitUntilNoActivity();
         LOGGER.log(Level.INFO, "Jenkins started");
 
-        // // Update all sites to reload available plugins.
-        // jenkinsRule.jenkins.getUpdateCenter().updateAllSites();
-
-        // // install() returns a Future for every plugin. Call get() on the Future so that this line blocks
-        // // until the operation is finished and the future is available.
-        // jenkinsRule.jenkins.getPluginManager().install(
-        //     Collections.singletonList("durable-task"), true).get(0).get();
-        // Assert.assertNotNull(jenkinsRule.jenkins.getPluginManager().getPlugin("durable-task"));
 
         ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries = jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
         verify(jenkinsOpenTelemetries.size() == 1, "Number of jenkinsControllerOpenTelemetrys: %s", jenkinsOpenTelemetries.size());
