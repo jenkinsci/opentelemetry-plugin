@@ -5,6 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry.queue;
 
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.*;
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.STATUS;
+
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
@@ -65,19 +68,19 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
             .setUnit("${tasks}")
             .buildObserver();
         // should be deprecated in favor of "jenkins.queue" metric with status attribute
-        final ObservableLongMeasurement queueWaitingItems = meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_WAITING)
+        final ObservableLongMeasurement queueWaitingItems = meter.gaugeBuilder(JENKINS_QUEUE_WAITING)
             .ofLongs()
             .setDescription("Number of tasks in the queue with the status 'waiting', 'buildable' or 'pending'")
             .setUnit("{tasks}")
             .buildObserver();
         // should be deprecated in favor of "jenkins.queue" metric with status attribute
-        final ObservableLongMeasurement queueBlockedItems = meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BLOCKED)
+        final ObservableLongMeasurement queueBlockedItems = meter.gaugeBuilder(JENKINS_QUEUE_BLOCKED)
             .ofLongs()
             .setDescription("Number of blocked tasks in the queue. Note that waiting for an executor to be available is not a reason to be counted as blocked")
             .setUnit("{tasks}")
             .buildObserver();
         // should be deprecated in favor of "jenkins.queue" metric with status attribute
-        final ObservableLongMeasurement queueBuildableItems = meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_BUILDABLE)
+        final ObservableLongMeasurement queueBuildableItems = meter.gaugeBuilder(JENKINS_QUEUE_BUILDABLE)
             .ofLongs()
             .setDescription("Number of tasks in the queue with the status 'buildable' or 'pending'")
             .setUnit("{tasks}")
@@ -114,24 +117,24 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
                             unknown.incrementAndGet();
                         }
                     });
-                    queueItems.record(blocked.get(), Attributes.of(JenkinsOtelSemanticAttributes.STATUS, "blocked"));
+                    queueItems.record(blocked.get(), Attributes.of(STATUS, "blocked"));
                     queueBlockedItems.record(blocked.get());
-                    queueItems.record(buildable.get(), Attributes.of(JenkinsOtelSemanticAttributes.STATUS, "buildable"));
+                    queueItems.record(buildable.get(), Attributes.of(STATUS, "buildable"));
                     queueBuildableItems.record(buildable.get());
-                    queueItems.record(stuck.get(), Attributes.of(JenkinsOtelSemanticAttributes.STATUS, "stuck"));
+                    queueItems.record(stuck.get(), Attributes.of(STATUS, "stuck"));
                     if (unknown.get() > 0) {
-                        queueItems.record(unknown.get(), Attributes.of(JenkinsOtelSemanticAttributes.STATUS, "unknown"));
+                        queueItems.record(unknown.get(), Attributes.of(STATUS, "unknown"));
                     }
-                    queueItems.record(waiting.get(), Attributes.of(JenkinsOtelSemanticAttributes.STATUS, "waiting"));
+                    queueItems.record(waiting.get(), Attributes.of(STATUS, "waiting"));
                     queueWaitingItems.record(waiting.get());
                 });
         }, queueItems, queueWaitingItems, queueBlockedItems, queueBuildableItems);
 
-        leftItemCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_LEFT)
+        leftItemCounter = meter.counterBuilder(JENKINS_QUEUE_LEFT)
             .setDescription("Total count of tasks that have been processed")
             .setUnit("{tasks}")
             .build();
-        timeInQueueInMillisCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_QUEUE_TIME_SPENT_MILLIS)
+        timeInQueueInMillisCounter = meter.counterBuilder(JENKINS_QUEUE_TIME_SPENT_MILLIS)
             .setDescription("Total time spent in queue by the tasks that have been processed")
             .setUnit("ms")
             .build();

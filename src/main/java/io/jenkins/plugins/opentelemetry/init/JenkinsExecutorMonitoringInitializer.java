@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.init;
 
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.STATUS;
+
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.LoadStatistics;
@@ -103,19 +105,19 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
                 }
             });
 
-            totalExecutors.record(totalExecutorsBusy.get(), Attributes.of(JenkinsOtelSemanticAttributes.STATUS, "busy"));
-            totalExecutors.record(totalExecutorsIdle.get(), Attributes.of(JenkinsOtelSemanticAttributes.STATUS, "idle"));
-            nodes.record(nodeOnline.get(), Attributes.of(JenkinsOtelSemanticAttributes.STATUS, "online"));
-            nodes.record(nodeOffline.get(), Attributes.of(JenkinsOtelSemanticAttributes.STATUS, "offline"));
+            totalExecutors.record(totalExecutorsBusy.get(), Attributes.of(STATUS, "busy"));
+            totalExecutors.record(totalExecutorsIdle.get(), Attributes.of(STATUS, "idle"));
+            nodes.record(nodeOnline.get(), Attributes.of(STATUS, "online"));
+            nodes.record(nodeOffline.get(), Attributes.of(STATUS, "offline"));
 
             // PER LABEL
             jenkins.getLabels().forEach(label -> {
                 LoadStatistics.LoadStatisticsSnapshot loadStatisticsSnapshot = label.loadStatistics.computeSnapshot();
                 Attributes attributes = Attributes.of(JenkinsOtelSemanticAttributes.LABEL, label.getDisplayName());
 
-                executors.record(loadStatisticsSnapshot.getBusyExecutors(), attributes.toBuilder().put(JenkinsOtelSemanticAttributes.STATUS, "busy").build());
-                executors.record(loadStatisticsSnapshot.getIdleExecutors(), attributes.toBuilder().put(JenkinsOtelSemanticAttributes.STATUS, "idle").build());
-                executors.record(loadStatisticsSnapshot.getConnectingExecutors(), attributes.toBuilder().put(JenkinsOtelSemanticAttributes.STATUS, "connecting").build());
+                executors.record(loadStatisticsSnapshot.getBusyExecutors(), attributes.toBuilder().put(STATUS, "busy").build());
+                executors.record(loadStatisticsSnapshot.getIdleExecutors(), attributes.toBuilder().put(STATUS, "idle").build());
+                executors.record(loadStatisticsSnapshot.getConnectingExecutors(), attributes.toBuilder().put(STATUS, "connecting").build());
                 queueLength.record(loadStatisticsSnapshot.getQueueLength(), attributes);
 
                 // TODO the metrics below should be deprecated in favor of `jenkins.executor` metric with the `status`
