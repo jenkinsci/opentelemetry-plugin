@@ -118,6 +118,8 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
             //   The OTel `url.full` spec requires to redact sensitive info including query parameters like
             //   `AWSAccessKeyId`, `Signature`, `X-Goog-Credential`, `X-Goog-Signature`, or `sig`. It's safer to omit
             //   the query string.
+            // Interesting query parameters should be captured explicitly and users can explicitly capture more
+            // using the config param `otel.instrumentation.servlet.experimental.capture-request-parameters`
             .put(UrlAttributes.URL_FULL, servletRequest.getRequestURL().toString())
             .put(UserAgentAttributes.USER_AGENT_ORIGINAL, servletRequest.getHeader("User-Agent"));
         Optional.ofNullable(User.current()).ifPresent(user -> httpServerSpanAttributesBuilder.put(UserIncubatingAttributes.USER_ID, user.getId()));
