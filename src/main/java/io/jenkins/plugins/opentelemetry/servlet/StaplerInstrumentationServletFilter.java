@@ -32,7 +32,6 @@ import io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.UserIncubatingAttributes;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -105,7 +104,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
             .put(ServerAttributes.SERVER_ADDRESS, servletRequest.getServerName())
             .put(ServerAttributes.SERVER_PORT, (long) servletRequest.getServerPort());
 
-        String sanitizedUrl = servletRequest.getScheme() + "://" + servletRequest.getServerName() + ":" + servletRequest.getServerPort() + servletRequest.getRequestURI() + (servletRequest.getQueryString() != null ? "?" + servletRequest.getQueryString() : "");
         Thread currentThread = Thread.currentThread();
         AttributesBuilder httpServerSpanAttributesBuilder = Attributes.builder()
             .putAll(httpServerMetricOnStartAttributesBuilder.build())
@@ -113,7 +111,14 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
             .put(ThreadIncubatingAttributes.THREAD_ID, currentThread.getId())
             .put(ClientAttributes.CLIENT_ADDRESS, servletRequest.getRemoteAddr())
             .put(ClientAttributes.CLIENT_PORT, (long) servletRequest.getRemotePort())
-            .put(UrlAttributes.URL_FULL, sanitizedUrl)
+            // See https://opentelemetry.io/docs/specs/semconv/attributes-registry/url/#url-full
+            // Security notes:
+            // * `HttpServletRequest.getRequestURL()` is safe not including URL credentials
+            // * Omit the URL query string to ensure we don't surface secrets.
+            //   The OTel `url.full` spec requires to redact sensitive info including query parameters like
+            //   `AWSAccessKeyId`, `Signature`, `X-Goog-Credential`, `X-Goog-Signature`, or `sig`. It's safer to omit
+            //   the query string.
+            .put(UrlAttributes.URL_FULL, servletRequest.getRequestURL().toString())
             .put(UserAgentAttributes.USER_AGENT_ORIGINAL, servletRequest.getHeader("User-Agent"));
         Optional.ofNullable(User.current()).ifPresent(user -> httpServerSpanAttributesBuilder.put(UserIncubatingAttributes.USER_ID, user.getId()));
 
