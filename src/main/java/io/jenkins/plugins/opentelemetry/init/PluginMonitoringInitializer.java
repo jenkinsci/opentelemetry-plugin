@@ -69,7 +69,7 @@ public class PluginMonitoringInitializer implements OpenTelemetryLifecycleListen
             });
             int failed = pluginManager.getFailedPlugins().size();
             plugins.record(active.get(), Attributes.of(STATUS, "active"));
-            plugins.record(active.get(), Attributes.of(STATUS, "inactive"));
+            plugins.record(inactive.get(), Attributes.of(STATUS, "inactive"));
             plugins.record(failed, Attributes.of(STATUS, "failed"));
 
         }, plugins);
