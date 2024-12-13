@@ -275,7 +275,14 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td><code>${plugins}</code></td>
         <td><code>status</code></td>
         <td><code>active</code>, <code>inactive</code>, <code>failed</code></td>
-        <td>Jenkins plugins broken down by <code>status</code></td>
+        <td>Jenkins plugins broken down by activation <code>status</code></td>
+    </tr>
+    <tr>
+        <td>jenkins.plugins.updates</td>
+        <td><code>${plugins}</code></td>
+        <td><code>status</code></td>
+        <td><code>hasUpdate</code>, <code>isUpToDate</code></td>
+        <td>Jenkins plugins broken down by updatability <code>status</code></td>
     </tr>
 </table>
 

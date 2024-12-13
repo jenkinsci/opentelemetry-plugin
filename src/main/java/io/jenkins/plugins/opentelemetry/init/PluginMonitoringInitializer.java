@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.STATUS;
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.JENKINS_PLUGINS;
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.JENKINS_PLUGINS_UPDATES;
 
 /**
  * <p>
@@ -48,13 +49,25 @@ public class PluginMonitoringInitializer implements OpenTelemetryLifecycleListen
 
         Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
 
-        final ObservableLongMeasurement plugins = meter.gaugeBuilder(JENKINS_PLUGINS).setUnit("${plugins}").setDescription("Jenkins plugins").ofLongs().buildObserver();
+        final ObservableLongMeasurement plugins = meter
+            .gaugeBuilder(JENKINS_PLUGINS)
+            .setUnit("${plugins}")
+            .setDescription("Jenkins plugins")
+            .ofLongs()
+            .buildObserver();
+        final ObservableLongMeasurement pluginUpdates = meter
+            .gaugeBuilder(JENKINS_PLUGINS_UPDATES)
+            .setUnit("${plugins}")
+            .setDescription("Jenkins plugin updates")
+            .ofLongs()
+            .buildObserver();
         meter.batchCallback(() -> {
             logger.log(Level.FINE, () -> "Recording Jenkins controller executor pool metrics...");
 
             AtomicInteger active = new AtomicInteger();
             AtomicInteger inactive = new AtomicInteger();
             AtomicInteger hasUpdate = new AtomicInteger();
+            AtomicInteger isUpToDate = new AtomicInteger();
 
             PluginManager pluginManager = Jenkins.get().getPluginManager();
             pluginManager.getPlugins().forEach(plugin -> {
@@ -65,13 +78,16 @@ public class PluginMonitoringInitializer implements OpenTelemetryLifecycleListen
                 }
                 if (plugin.hasUpdate()) {
                     hasUpdate.incrementAndGet();
+                } else {
+                    isUpToDate.incrementAndGet();
                 }
             });
             int failed = pluginManager.getFailedPlugins().size();
             plugins.record(active.get(), Attributes.of(STATUS, "active"));
             plugins.record(inactive.get(), Attributes.of(STATUS, "inactive"));
             plugins.record(failed, Attributes.of(STATUS, "failed"));
-
-        }, plugins);
+            pluginUpdates.record(hasUpdate.get(), Attributes.of(STATUS, "hasUpdate"));
+            pluginUpdates.record(isUpToDate.get(), Attributes.of(STATUS, "isUpToDate"));
+        }, plugins, pluginUpdates);
     }
 }
