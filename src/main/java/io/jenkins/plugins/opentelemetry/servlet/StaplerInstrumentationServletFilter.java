@@ -120,6 +120,8 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
             //   the query string.
             // Interesting query parameters should be captured explicitly and users can explicitly capture more
             // using the config param `otel.instrumentation.servlet.experimental.capture-request-parameters`
+            // Note: OTel specs may stop making `url.full` mandatory in the future:
+            // https://github.com/open-telemetry/semantic-conventions/issues/128
             .put(UrlAttributes.URL_FULL, servletRequest.getRequestURL().toString())
             .put(UserAgentAttributes.USER_AGENT_ORIGINAL, servletRequest.getHeader("User-Agent"));
         Optional.ofNullable(User.current()).ifPresent(user -> httpServerSpanAttributesBuilder.put(UserIncubatingAttributes.USER_ID, user.getId()));
