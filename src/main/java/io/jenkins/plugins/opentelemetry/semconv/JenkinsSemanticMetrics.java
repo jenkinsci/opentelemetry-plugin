@@ -21,6 +21,10 @@ public class JenkinsSemanticMetrics {
     public static final String JENKINS_EXECUTOR_CONNECTING =        "jenkins.executor.connecting";
     public static final String JENKINS_EXECUTOR_DEFINED =           "jenkins.executor.defined";
     public static final String JENKINS_EXECUTOR_QUEUE =             "jenkins.executor.queue";
+    public static final String JENKINS_EXECUTOR_TOTAL =             "jenkins.executor.total";
+    public static final String JENKINS_EXECUTOR =                   "jenkins.executor";
+    public static final String JENKINS_NODE =                       "jenkins.node";
+    public static final String JENKINS_QUEUE =                      "jenkins.queue";
     public static final String JENKINS_QUEUE_WAITING =              "jenkins.queue.waiting";
     public static final String JENKINS_QUEUE_BLOCKED =              "jenkins.queue.blocked";
     public static final String JENKINS_QUEUE_BUILDABLE =            "jenkins.queue.buildable";
@@ -33,6 +37,9 @@ public class JenkinsSemanticMetrics {
     public static final String JENKINS_CLOUD_AGENTS_FAILURE =       "jenkins.cloud.agents.failure";
     public static final String JENKINS_CLOUD_AGENTS_COMPLETED =     "jenkins.cloud.agents.completed";
     public static final String JENKINS_DISK_USAGE_BYTES =           "jenkins.disk.usage.bytes";
+
+    public static final String JENKINS_PLUGINS =             "jenkins.plugins";
+    public static final String JENKINS_PLUGINS_UPDATES =             "jenkins.plugins.updates";
 
     public static final String JENKINS_SCM_EVENT_POOL_SIZE =         "jenkins.scm.event.pool_size";
     public static final String JENKINS_SCM_EVENT_ACTIVE_THREADS =    "jenkins.scm.event.active_threads";
