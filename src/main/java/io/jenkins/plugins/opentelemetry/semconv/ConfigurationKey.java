@@ -6,16 +6,23 @@ import java.util.Objects;
  * Configuration key for the OpenTelemetry SDK {@link io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties}.
  */
 public final class ConfigurationKey {
+
+    public static final ConfigurationKey OTEL_EXPORTER_JAEGER_ENDPOINT = new ConfigurationKey("otel.exporter.jaeger.endpoint");
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_CERTIFICATE = new ConfigurationKey("otel.exporter.otlp.certificate");
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_ENDPOINT = new ConfigurationKey("otel.exporter.otlp.endpoint");
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_HEADERS = new ConfigurationKey("otel.exporter.otlp.headers");
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_INSECURE = new ConfigurationKey("otel.exporter.otlp.insecure");
+    public static final ConfigurationKey OTEL_EXPORTER_OTLP_METRICS_ENDPOINT = new ConfigurationKey("otel.exporter.otlp.metrics.endpoint");
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_PROTOCOL = new ConfigurationKey("otel.exporter.otlp.protocol");
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_TIMEOUT = new ConfigurationKey("otel.exporter.otlp.timeout");
+    public static final ConfigurationKey OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = new ConfigurationKey("otel.exporter.otlp.traces.endpoint");
+    public static final ConfigurationKey OTEL_EXPORTER_PROMETHEUS_PORT = new ConfigurationKey("otel.exporter.prometheus.port");
     public static final ConfigurationKey OTEL_IMR_EXPORT_INTERVAL = new ConfigurationKey("otel.imr.export.interval");
     public static final ConfigurationKey OTEL_LOGS_EXPORTER = new ConfigurationKey("otel.logs.exporter");
     public static final ConfigurationKey OTEL_LOGS_MIRROR_TO_DISK = new ConfigurationKey("otel.logs.mirror_to_disk");
     public static final ConfigurationKey OTEL_METRICS_EXPORTER = new ConfigurationKey("otel.metrics.exporter");
+    public static final ConfigurationKey OTEL_RESOURCE_ATTRIBUTES = new ConfigurationKey("otel.resource.attributes");
+    public static final ConfigurationKey OTEL_SERVICE_NAME = new ConfigurationKey("otel.service.name");
     public static final ConfigurationKey OTEL_TRACES_EXPORTER = new ConfigurationKey("otel.traces.exporter");
 
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED = new ConfigurationKey("otel.instrumentation.jenkins.web.enabled");
@@ -34,21 +41,24 @@ public final class ConfigurationKey {
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS = new ConfigurationKey("otel.instrumentation.jenkins.export_otel_config_as_env_vars");
 
     /**
-     * https://opentelemetry.io/docs/zero-code/java/agent/configuration/#capturing-servlet-request-parameters
+     * <a href=https://opentelemetry.io/docs/zero-code/java/agent/instrumentation/http/#capturing-servlet-request-parameters">HTTP instrumentation configuration / Capturing HTTP request params</a>
      */
     public static final ConfigurationKey OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS = new ConfigurationKey("otel.instrumentation.servlet.experimental.capture-request-parameters");
 
     private final String environmentVariableName;
     private final String propertyName;
 
-    public ConfigurationKey(String name) {
-        for(char c: name.toCharArray()){
-            if(Character.isAlphabetic(c) && !Character.isLowerCase(c)){
-                throw new IllegalArgumentException("Invalid uppercase char in configuration key: " + name);
+    /**
+     * @param lowerCaseName `.` separated lowercase name
+     */
+    private ConfigurationKey(String lowerCaseName) {
+        for (char c : lowerCaseName.toCharArray()) {
+            if (Character.isAlphabetic(c) && !Character.isLowerCase(c)) {
+                throw new IllegalArgumentException("Invalid uppercase char in configuration key: " + lowerCaseName);
             }
         }
-        this.environmentVariableName = name.replace('.', '_').toUpperCase();
-        this.propertyName = name;
+        this.propertyName = lowerCaseName;
+        this.environmentVariableName = lowerCaseName.replace('.', '_').toUpperCase();
     }
 
     /**
