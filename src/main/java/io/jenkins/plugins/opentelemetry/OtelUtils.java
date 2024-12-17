@@ -23,6 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.codec.net.URLCodec;
@@ -41,7 +42,6 @@ import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
 import hudson.util.VersionNumber;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
@@ -262,7 +262,7 @@ public class OtelUtils {
         "otel.traces.exporter", "otel.metrics.exporter", "otel.logs.exporter",
         "otel.exporter.otlp.endpoint"  , "otel.exporter.otlp.traces.endpoint", "otel.exporter.otlp.metrics.endpoint",
         "otel.exporter.jaeger.endpoint", "otel.exporter.prometheus.port",
-        JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED);
+        ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED.asProperty());
 
     private final static List<AttributeKey> noteworthyResourceAttributeKeys = Arrays.asList(
         ServiceAttributes.SERVICE_NAME, ServiceIncubatingAttributes.SERVICE_NAMESPACE, ServiceAttributes.SERVICE_VERSION

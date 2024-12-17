@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.servlet;
 
 import hudson.Extension;
 import hudson.model.User;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -68,12 +69,12 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
 
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
-        enabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED, true));
+        enabled.set(configProperties.getBoolean(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED.asProperty(), true));
 
         logger.log(Level.FINE, () -> "Jenkins Web instrumentation enabled: " + enabled.get() + ". To change config, use the property " +
-            JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED + ".");
+            ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED.asProperty() + ".");
 
-        capturedRequestParameters = configProperties.getList(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS, Collections.emptyList());
+        capturedRequestParameters = configProperties.getList(ConfigurationKey.OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS.asProperty(), Collections.emptyList());
     }
 
     @Override

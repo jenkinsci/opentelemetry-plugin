@@ -115,7 +115,6 @@ public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
     public static final String JENKINS_JOB_SPAN_PHASE_RUN_NAME = "Phase: Run";
     public static final String JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME = "Phase: Finalise";
 
-
     /**
      * A machine or a container which is connected to the Jenkins coordinator and capable of executing
      * Pipelines or Jobs.
@@ -141,24 +140,6 @@ public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
     public static final String JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD = "position";
     public static final String JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD = "note";
 
-    public static final String OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED = "otel.instrumentation.jenkins.web.enabled";
-    public static final String OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED = "otel.instrumentation.jenkins.remote.span.enabled";
-    public static final String OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST = "otel.instrumentation.jenkins.run.metric.duration.allow_list";
-    public static final String OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST = "otel.instrumentation.jenkins.run.metric.duration.deny_list";
-    /**
-     * Instrument Jenkins Remoting from the Jenkins controller to Jenkins build agents
-     */
-    public static final String OTEL_INSTRUMENTATION_JENKINS_REMOTING_ENABLED = "otel.instrumentation.jenkins.remoting.enabled";
-    /**
-     * Instrument Jenkins build agents
-     */
-    public static final String OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED = "otel.instrumentation.jenkins.agent.enabled";
-    /**
-     * https://opentelemetry.io/docs/zero-code/java/agent/configuration/#capturing-servlet-request-parameters
-     */
-    public static final String OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS = "otel.instrumentation.servlet.experimental.capture-request-parameters";
-
-
     /**
      * Values in {@link EventCategoryValues}
      */
@@ -169,7 +150,6 @@ public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
      * See https://www.elastic.co/guide/en/ecs/current/ecs-allowed-values-event-category.html
      */
     public static final class EventCategoryValues {
-
         public static final String AUTHENTICATION = "authentication";
     }
 
@@ -183,6 +163,4 @@ public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
         public static final String FAILURE = "failure";
         public static final String UNKNOWN = "unknown";
     }
-
-
 }

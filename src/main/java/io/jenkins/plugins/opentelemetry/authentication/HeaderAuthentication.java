@@ -26,6 +26,8 @@ import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_HEADERS;
+
 @Extension
 public class HeaderAuthentication extends OtlpAuthentication {
     private final static Logger LOGGER = Logger.getLogger(HeaderAuthentication.class.getName());
@@ -56,13 +58,13 @@ public class HeaderAuthentication extends OtlpAuthentication {
     @Override
     public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {
         // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
-        configProperties.put("otel.exporter.otlp.headers", this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
+        configProperties.put(OTEL_EXPORTER_OTLP_HEADERS.asProperty(), this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
     }
 
     @Override
     public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
         // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
-        environmentVariables.put("OTEL_EXPORTER_OTLP_HEADERS", this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
+        environmentVariables.put(OTEL_EXPORTER_OTLP_HEADERS.asEnvVar(), this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
     }
 
     public String getHeaderName() {

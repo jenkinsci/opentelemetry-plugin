@@ -14,9 +14,10 @@ import hudson.model.Run;
 import hudson.plugins.git.GitSCM;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributorService;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -205,13 +206,13 @@ public class BaseIntegrationTest {
     }
 
     protected void assertEnvironmentVariables(EnvVars environment) {
-        MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.SPAN_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.TRACE_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(environment.get(OtelEnvironmentContributorService.SPAN_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(environment.get(OtelEnvironmentContributorService.TRACE_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
         // See src/test/resources/io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
-        MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_TRACES_EXPORTER), CoreMatchers.is("otlp"));
-        MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_ENDPOINT), CoreMatchers.is("http://otel-collector-contrib:4317"));
-        MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_INSECURE), CoreMatchers.is("true"));
-        MatcherAssert.assertThat(environment.get(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT), CoreMatchers.is("3000"));
+        MatcherAssert.assertThat(environment.get(ConfigurationKey.OTEL_TRACES_EXPORTER.asEnvVar()), CoreMatchers.is("otlp"));
+        MatcherAssert.assertThat(environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_ENDPOINT.asEnvVar()), CoreMatchers.is("http://otel-collector-contrib:4317"));
+        MatcherAssert.assertThat(environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_INSECURE.asEnvVar()), CoreMatchers.is("true"));
+        MatcherAssert.assertThat(environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_TIMEOUT.asEnvVar()), CoreMatchers.is("3000"));
     }
 
     protected void assertJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans, String jobType) throws Exception {

@@ -24,6 +24,7 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.User;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
@@ -178,21 +179,21 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
         Pattern newRunDurationHistogramDenyList;
         try {
             newRunDurationHistogramAllowList = Optional
-                .ofNullable(configProperties.getString(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST))
+                .ofNullable(configProperties.getString(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST.asProperty()))
                 .map(Pattern::compile)
                 .orElse(MATCH_NOTHING);
         } catch (PatternSyntaxException e) {
             throw new IllegalArgumentException("Invalid regex for '" +
-                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST + "'", e);
+                    ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST.asProperty() + "'", e);
         }
         try {
              newRunDurationHistogramDenyList = Optional
-                .ofNullable(configProperties.getString(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST))
+                .ofNullable(configProperties.getString(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST.asProperty()))
                 .map(Pattern::compile)
                 .orElse(MATCH_NOTHING);
         } catch (PatternSyntaxException e) {
             throw new IllegalArgumentException("Invalid regex for '" +
-                JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST + "'", e);
+                ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST.asProperty() + "'", e);
         }
         this.runDurationHistogramAllowList = newRunDurationHistogramAllowList;
         this.runDurationHistogramDenyList = newRunDurationHistogramDenyList;

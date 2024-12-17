@@ -1,6 +1,7 @@
 package io.jenkins.plugins.opentelemetry.remotespan;
 
 import com.github.rutledgepaulv.prune.Tree;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -47,7 +48,7 @@ public class RemoteSpanTest extends BaseIntegrationTest {
 
         JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
-        configuration.setConfigurationProperties(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED + "=true");
+        configuration.setConfigurationProperties(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED.asProperty() + "=true");
         OpenTelemetryConfiguration config = configuration.toOpenTelemetryConfiguration();
 
         jenkinsControllerOpenTelemetry.initialize(config);
