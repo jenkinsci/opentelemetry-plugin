@@ -13,6 +13,7 @@ import hudson.model.TaskListener;
 import hudson.remoting.Channel;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.ComputerListener;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
@@ -98,7 +99,7 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
         OpenTelemetryConfiguration openTelemetryConfiguration = jenkinsOpenTelemetryPluginConfiguration.toOpenTelemetryConfiguration();
 
         boolean otlpLogsEnabled = "otlp".equals(configProperties.getString("otel.logs.exporter")); // pipeline logs export to OTLP endpoint activated
-        boolean jenkinsAgentInstrumentationDisabled = "false".equalsIgnoreCase(configProperties.getString(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED));
+        boolean jenkinsAgentInstrumentationDisabled = "false".equalsIgnoreCase(configProperties.getString(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED.asProperty()));
         this.buildAgentsInstrumentationEnabled.set(otlpLogsEnabled || !jenkinsAgentInstrumentationDisabled);
         if (!buildAgentsInstrumentationEnabled.get()) {
             return;

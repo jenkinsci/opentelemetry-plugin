@@ -11,9 +11,9 @@ import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttrib
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
@@ -53,7 +53,7 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
 
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
-        traceContextPropagationEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED, false));
+        traceContextPropagationEnabled.set(configProperties.getBoolean(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED.asProperty(), false));
     }
 
     @PostConstruct

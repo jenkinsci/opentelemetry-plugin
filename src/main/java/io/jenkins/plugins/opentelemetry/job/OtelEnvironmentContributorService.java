@@ -1,12 +1,12 @@
 package io.jenkins.plugins.opentelemetry.job;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.Span;
@@ -14,12 +14,13 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapSetter;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.List;
+import java.util.Optional;
+
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.*;
 
 /**
  * Inject OpenTelemetry environment variables in shell steps: {@code TRACEPARENT}, {@code OTEL_EXPORTER_OTLP_ENDPOINT}...
@@ -30,15 +31,29 @@ import java.util.logging.Logger;
 @Extension
 public class OtelEnvironmentContributorService {
 
-    private final static Logger LOGGER = Logger.getLogger(OtelEnvironmentContributorService.class.getName());
+    public static final String SPAN_ID = "SPAN_ID";
+    public static final String TRACE_ID = "TRACE_ID";
 
-    private JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration;
+    private final List<ConfigurationKey> exportedConfigKeys = List.of(
+        OTEL_EXPORTER_OTLP_CERTIFICATE,
+        OTEL_EXPORTER_OTLP_ENDPOINT,
+        OTEL_EXPORTER_OTLP_HEADERS,
+        OTEL_EXPORTER_OTLP_INSECURE,
+        OTEL_EXPORTER_OTLP_PROTOCOL,
+        OTEL_EXPORTER_OTLP_TIMEOUT,
+        OTEL_IMR_EXPORT_INTERVAL,
+        OTEL_LOGS_EXPORTER,
+        OTEL_METRICS_EXPORTER,
+        OTEL_TRACES_EXPORTER
+    );
 
-    public void addEnvironmentVariables(@NonNull Run run, @NonNull EnvVars envs, @NonNull Span span) {
+    private ReconfigurableOpenTelemetry reconfigurableOpenTelemetry;
+
+    public void addEnvironmentVariables(@NonNull Run<?, ?> run, @NonNull EnvVars envs, @NonNull Span span) {
         String spanId = span.getSpanContext().getSpanId();
         String traceId = span.getSpanContext().getTraceId();
-        envs.putIfAbsent(OTelEnvironmentVariablesConventions.TRACE_ID, traceId);
-        envs.put(OTelEnvironmentVariablesConventions.SPAN_ID, spanId);
+        envs.put(TRACE_ID, traceId);
+        envs.put(SPAN_ID, spanId);
         try (Scope ignored = span.makeCurrent()) {
             TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
             W3CTraceContextPropagator.getInstance().inject(Context.current(), envs, setter);
@@ -51,38 +66,27 @@ public class OtelEnvironmentContributorService {
             TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
             W3CBaggagePropagator.getInstance().inject(Context.current(), envs, setter);
         }
-        if (OtelUtils.hasOpentelemetryData(run)) {
-            MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-            // Add visualization link as environment variables to provide visualization links in notifications (to GitHub, slack messages...)
-            for (MonitoringAction.ObservabilityBackendLink link : monitoringAction.getLinks()) {
-                // Default backend link got an empty environment variable.
-                if (link.getEnvironmentVariableName() != null) {
-                    envs.put(link.getEnvironmentVariableName(), link.getUrl());
-                }
-            }
-        }
 
-        if (this.jenkinsOpenTelemetryPluginConfiguration.isExportOtelConfigurationAsEnvironmentVariables()) {
-            Map<String, String> otelConfiguration = jenkinsOpenTelemetryPluginConfiguration.getOtelConfigurationAsEnvironmentVariables();
-            for (Map.Entry<String, String> otelEnvironmentVariable : otelConfiguration.entrySet()) {
-                String envVarValue = otelEnvironmentVariable.getValue();
-                String envVarName = otelEnvironmentVariable.getKey();
-                if (envVarValue == null) {
-                    LOGGER.log(Level.FINE, () -> "No value found for environment variable '" + envVarName + "'");
-                } else {
-                    String previousValue = envs.put(envVarName, envVarValue);
-                    if (previousValue != null) {
-                        LOGGER.log(Level.FINE, () -> "Overwrite environment variable '" + envVarName + "'");
-                    }
-                }
+        Optional.ofNullable(run.getAction(MonitoringAction.class))
+            .ifPresent(monitoringAction -> {
+                // Add visualization link as environment variables to provide visualization links in notifications (to GitHub, slack messages...)
+                monitoringAction.getLinks().stream()
+                    .filter(link -> link.getEnvironmentVariableName() != null)
+                    .forEach(link -> envs.put(link.getEnvironmentVariableName(), link.getUrl()));
+            });
+
+        ConfigProperties config = reconfigurableOpenTelemetry.getConfig();
+        boolean exportOTelConfigAsEnvVar = config.getBoolean(OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS.asProperty(), true);
+        if (exportOTelConfigAsEnvVar) {
+            for (ConfigurationKey configKey : exportedConfigKeys) {
+                Optional.ofNullable(config.getString(configKey.asProperty()))
+                    .ifPresent(configValue -> envs.put(configKey.asEnvVar(), configValue));
             }
-        } else {
-            // skip
         }
     }
 
     @Inject
-    public void setJenkinsOpenTelemetryPluginConfiguration(JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration) {
-        this.jenkinsOpenTelemetryPluginConfiguration = jenkinsOpenTelemetryPluginConfiguration;
+    public void setReconfigurableOpenTelemetry(ReconfigurableOpenTelemetry reconfigurableOpenTelemetry) {
+        this.reconfigurableOpenTelemetry = reconfigurableOpenTelemetry;
     }
 }

@@ -5,26 +5,26 @@
 
 package io.jenkins.plugins.opentelemetry.authentication;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import hudson.Extension;
+import hudson.security.ACL;
+import hudson.util.ListBoxModel;
+import hudson.util.Secret;
+import jenkins.model.Jenkins;
+import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.jenkinsci.Symbol;
-import org.jenkinsci.plugins.plaincredentials.StringCredentials;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-
-import hudson.Extension;
-import hudson.security.ACL;
-import hudson.util.ListBoxModel;
-import hudson.util.Secret;
-import jenkins.model.Jenkins;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_HEADERS;
 
 /**
  * See https://tools.ietf.org/html/rfc6750
@@ -62,13 +62,13 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
     @Override
     public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {
         // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
-        configProperties.put("otel.exporter.otlp.headers", "Authorization=Bearer " + this.getAuthenticationHeaderValue());
+        configProperties.put(OTEL_EXPORTER_OTLP_HEADERS.asProperty(), "Authorization=Bearer " + this.getAuthenticationHeaderValue());
     }
 
     @Override
     public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
         // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
-        environmentVariables.put("OTEL_EXPORTER_OTLP_HEADERS", "authorization=Bearer " + this.getAuthenticationHeaderValue());
+        environmentVariables.put(OTEL_EXPORTER_OTLP_HEADERS.asEnvVar(), "authorization=Bearer " + this.getAuthenticationHeaderValue());
     }
 
     public String getTokenId() {
