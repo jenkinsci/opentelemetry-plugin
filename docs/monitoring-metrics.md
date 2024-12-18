@@ -118,6 +118,44 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td>Job failed</td>
     </tr>
     <tr>
+        <td>jenkins.executor</td>
+        <td><code>${executors}</code></td>
+        <td>
+            <code>label</code>,<br/>
+            <code>status</code>
+        </td>
+        <td>
+            Jenkins build agent <code>label</code>code> like <code>linux</code><br/>
+            <code>busy</code>, <code>idle</code>, <code>connecting</code>
+        </td>
+        <td>
+            Jenkins executors broken down by <code>label</code> and <code>status</code>. Executors annotated with 
+            multiple <code>label</code> are reported multiple times
+        </td>
+    </tr>
+    <tr>
+        <td>jenkins.executor.total</td>
+        <td><code>${executors}</code></td>
+        <td>
+            <code>status</code>
+        </td>
+        <td>
+            <code>busy</code>, <code>idle</code>
+        </td>
+        <td>Jenkins executors broken down by <code>status</code></td>
+    </tr>
+    <tr>
+        <td>jenkins.node</td>
+        <td><code>${nodes}</code></td>
+        <td>
+            <code>status</code>
+        </td>
+        <td>
+            <code>online</code>, <code>offline</code>
+        </td>
+        <td>Jenkins build nodes</td>
+    </tr>
+    <tr>
         <td>jenkins.executor.available</td>
         <td><code>${executors}</code></td>
         <td><code>label</code></td>
@@ -167,6 +205,15 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td></td>
     </tr>
     <tr>
+        <td>jenkins.queue</td>
+        <td><code>${tasks}</code></td>
+        <td><code>status</code></td>
+        <td>
+            <code>blocked</code>, <code>buildable</code>, <code>stuck</code>, <code>waiting</code>, <code>unknown</code>
+        </td>
+        <td>Number of tasks in the queue. See <code>status</code>code> description [here](https://javadoc.jenkins.io/hudson/model/Queue.html)</td>
+    </tr>
+    <tr>
         <td>jenkins.queue.waiting</td>
         <td><code>${items}</code></td>
         <td></td>
@@ -207,6 +254,35 @@ Inventory of health metrics collected by the Jenkins OpenTelemetry integration:
         <td></td>
         <td></td>
         <td>Disk Usage size</td>
+    </tr>
+    <tr>
+        <td>http.server.request.duration</td>
+        <td><code>s</code></td>
+        <td>
+            <code>http.request.method</code>,<br/>
+            <code>url.scheme</code>,<br/>
+            <code>error.type</code>, <br/>
+            <code>http.response.status_code</code>, <br/>
+            <code>http.route</code>, <br/>
+            <code>server.address</code>, <br/>
+            <code>server.port</code>
+        </td>
+        <td></td>
+        <td>HTTP server duration metric as defined by the OpenTelemetry specification ([here](https://opentelemetry.io/docs/specs/semconv/http/http-metrics/#metric-httpserverrequestduration))</td>
+    </tr>
+    <tr>
+        <td>jenkins.plugins</td>
+        <td><code>${plugins}</code></td>
+        <td><code>status</code></td>
+        <td><code>active</code>, <code>inactive</code>, <code>failed</code></td>
+        <td>Jenkins plugins broken down by activation <code>status</code></td>
+    </tr>
+    <tr>
+        <td>jenkins.plugins.updates</td>
+        <td><code>${plugins}</code></td>
+        <td><code>status</code></td>
+        <td><code>hasUpdate</code>, <code>isUpToDate</code></td>
+        <td>Jenkins plugins broken down by updatability <code>status</code></td>
     </tr>
 </table>
 

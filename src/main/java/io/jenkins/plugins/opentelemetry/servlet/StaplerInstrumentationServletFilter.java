@@ -5,38 +5,43 @@
 
 package io.jenkins.plugins.opentelemetry.servlet;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.model.User;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.instrumentation.api.instrumenter.OperationListener;
+import io.opentelemetry.instrumentation.api.semconv.http.HttpServerMetrics;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.ClientAttributes;
+import io.opentelemetry.semconv.ErrorAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
-import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.ServerAttributes;
 import io.opentelemetry.semconv.UrlAttributes;
-import io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes;
+import io.opentelemetry.semconv.UserAgentAttributes;
 import io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes;
-import org.apache.commons.lang.StringUtils;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
-
-import javax.inject.Inject;
+import io.opentelemetry.semconv.incubating.UserIncubatingAttributes;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.commons.lang.StringUtils;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,8 +55,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.Set;
-import java.util.HashSet;
 
 /**
  * Instrumentation of the Stapler MVC framework.
@@ -61,11 +64,17 @@ import java.util.HashSet;
  */
 @Extension
 public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetryLifecycleListener {
-    private static final Set<String> SKIP_PATHS = new HashSet<>(Arrays.asList("static", "adjuncts", "scripts", "plugin", "images", "sse-gateway"));
     private final static Logger logger = Logger.getLogger(StaplerInstrumentationServletFilter.class.getName());
     final AtomicBoolean enabled = new AtomicBoolean(false);
     List<String> capturedRequestParameters;
     Tracer tracer;
+    Meter meter;
+    OperationListener httpServerMetrics;
+
+    @PostConstruct
+    public void postConstruct() {
+        httpServerMetrics = HttpServerMetrics.get().create(meter);
+    }
 
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
@@ -88,174 +97,175 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     }
 
     public void _doFilter(HttpServletRequest servletRequest, HttpServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-        String pathInfo = servletRequest.getPathInfo();
-        List<String> pathInfoTokens = Collections.list(new StringTokenizer(pathInfo, "/")).stream()
-            .map(token -> (String) token)
-            .filter(t -> !t.isEmpty())
-            .collect(Collectors.toList());
 
-        if (pathInfoTokens.isEmpty()) {
-            pathInfoTokens = Collections.singletonList("");
-        }
-
-        String rootPath = pathInfoTokens.get(0);
-        // The matched route (path template).
-        String httpRoute;
-        if (SKIP_PATHS.contains(rootPath)) {
-            // skip
-            filterChain.doFilter(servletRequest, servletResponse);
-            return;
-        }
-        if (rootPath.equals("$stapler")) {
-            // TODO handle URL pattern /$stapler/bound/ec328aeb-26be-43da-94a3-59f2d683131c/news
-            filterChain.doFilter(servletRequest, servletResponse);
-            return;
-        }
-        final SpanBuilder spanBuilder;
-        try {
-            if (rootPath.equals("job")) {
-                // e.g /job/my-war/job/master/lastBuild/console
-                // e.g /job/my-war/job/master/2/console
-                ParsedJobUrl parsedJobUrl = parseJobUrl(pathInfoTokens);
-                httpRoute = parsedJobUrl.urlPattern;
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedJobUrl.urlPattern);
-                if (parsedJobUrl.jobName != null) {
-                    spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedJobUrl.jobName);
-                }
-                if (parsedJobUrl.runNumber != null) {
-                    spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedJobUrl.runNumber);
-                }
-            } else if (rootPath.equals("blue")) {
-                if (pathInfoTokens.size() == 1) {
-                    httpRoute = "/blue/";
-                    spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
-                } else if ("rest".equals(pathInfoTokens.get(1))) {
-                    if (pathInfoTokens.size() == 2) {
-                        httpRoute = "/blue/rest/";
-                        spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
-                    } else if ("organizations".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 7) {
-                        // eg /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/blueTestSummary/
-
-                        ParsedJobUrl parsedBlueOceanPipelineUrl = parseBlueOceanRestPipelineUrl(pathInfoTokens);
-                        httpRoute = parsedBlueOceanPipelineUrl.urlPattern;
-                        spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + parsedBlueOceanPipelineUrl.urlPattern);
-                        if (parsedBlueOceanPipelineUrl.jobName != null) {
-                            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, parsedBlueOceanPipelineUrl.jobName);
-                        }
-                        if (parsedBlueOceanPipelineUrl.runNumber != null) {
-                            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, parsedBlueOceanPipelineUrl.runNumber);
-                        }
-                    } else if ("classes".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 3) {
-                        // eg /blue/rest/classes/io.jenkins.blueocean.rest.impl.pipeline.PipelineRunImpl/
-                        String blueOceanClass = pathInfoTokens.get(3);
-                        httpRoute = "/blue/rest/classes/:blueOceanClass";
-                        spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute)
-                            .setAttribute("blueOceanClass", blueOceanClass);
-                    } else {
-                        // eg /blue/rest/i18n/blueocean-personalization/1.25.2/jenkins.plugins.blueocean.personalization.Messages/en-US
-                        httpRoute = "/blue/rest/" + pathInfoTokens.get(2) + "/*";
-                        spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
-                    }
-                } else {
-                    httpRoute = "/blue/" + pathInfoTokens.get(1) + "/*";
-                    spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute);
-                }
-
-            } else if (rootPath.equals("administrativeMonitor")) {
-                // eg GET /administrativeMonitor/hudson.diagnosis.ReverseProxySetupMonitor/testForReverseProxySetup/http://localhost:8080/jenkins/manage/
-                httpRoute = "/administrativeMonitor/:administrativeMonitor/*";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/administrativeMonitor/");
-                if (pathInfoTokens.size() > 1) {
-                    spanBuilder.setAttribute("administrativeMonitor", pathInfoTokens.get(1));
-                }
-            } else if (rootPath.equals("asynchPeople")) {
-                httpRoute = "/asynchPeople";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/asynchPeople");
-            } else if (rootPath.equals("computer")) {
-                // /computer/(master)/
-                httpRoute = "/computer/:computer/*";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/computer/*");
-                // TODO more details
-            } else if (rootPath.equals("credentials")) {
-                // eg /credentials/store/system/domain/_/
-                httpRoute = "/credentials/store/:store/domain/:domain/*";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/credentials/*");
-                // TODO more details
-            } else if (rootPath.equals("descriptorByName")) {
-                httpRoute = "/descriptorByName/:descriptor/*";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/descriptorByName/");
-                if (pathInfoTokens.size() > 1) {
-                    spanBuilder.setAttribute("descriptor", pathInfoTokens.get(1));
-                }
-            } else if (rootPath.equals("extensionList")) {
-                // eg /extensionList/hudson.diagnosis.MemoryUsageMonitor/0/heap/graph
-                httpRoute = "/extensionList/:extension/*";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/extensionList/");
-                if (pathInfoTokens.size() > 1) {
-                    spanBuilder.setAttribute("extension", pathInfoTokens.get(1));
-                }
-            } else if (rootPath.equals("fingerprint")) {
-                httpRoute = "/fingerprint/:fingerprint";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/fingerprint/");
-                spanBuilder.setAttribute("fingerprint", pathInfo.substring("/fingerprint/".length()));
-                if (pathInfoTokens.size() > 1) {
-                    spanBuilder.setAttribute("fingerprint", pathInfoTokens.get(1));
-                }
-            } else if (rootPath.equals("user")) {
-                //eg /user/cyrille.leclerc/ /user/cyrille.leclerc/configure /user/cyrille.leclerc/my-views/view/all/
-                httpRoute = "/user/:user/*";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + "/user/*");
-                if (pathInfoTokens.size() > 1) {
-                    spanBuilder.setAttribute("user", pathInfoTokens.get(1));
-                }
-            } else {
-                httpRoute = "/" + rootPath + "/*";
-                spanBuilder = tracer.spanBuilder(servletRequest.getMethod() + " " + pathInfo);
-            }
-        } catch (RuntimeException e) {
-            logger.log(Level.INFO, () -> "Exception processing URL " + pathInfo + ", skip instrumentation with tracing: " + e);
-            filterChain.doFilter(servletRequest, servletResponse);
-            return;
-        }
-
-
-        String httpTarget = servletRequest.getRequestURI();
-        String queryString = servletRequest.getQueryString();
-        if (queryString != null && !queryString.isEmpty()) {
-            httpTarget += "?" + queryString;
-        }
+        // Attributes common to Http Server span and metric
+        AttributesBuilder httpServerMetricOnStartAttributesBuilder = Attributes.builder()
+            .put(HttpAttributes.HTTP_REQUEST_METHOD, servletRequest.getMethod())
+            .put(UrlAttributes.URL_SCHEME, servletRequest.getScheme())
+            .put(ServerAttributes.SERVER_ADDRESS, servletRequest.getServerName())
+            .put(ServerAttributes.SERVER_PORT, (long) servletRequest.getServerPort());
 
         Thread currentThread = Thread.currentThread();
-        spanBuilder
-            .setAttribute(ClientAttributes.CLIENT_ADDRESS, servletRequest.getRemoteAddr())
-            .setAttribute(UrlAttributes.URL_SCHEME, servletRequest.getScheme())
-            .setAttribute(ServerAttributes.SERVER_ADDRESS, servletRequest.getServerName())
-            .setAttribute(ServerAttributes.SERVER_PORT, (long) servletRequest.getServerPort())
-            .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, servletRequest.getMethod())
-            .setAttribute(UrlAttributes.URL_PATH, httpTarget)
-            .setAttribute(HttpAttributes.HTTP_ROUTE, httpRoute)
-            .setAttribute(NetworkAttributes.NETWORK_TRANSPORT, NetworkAttributes.NetworkTransportValues.TCP)
-            .setAttribute(ClientAttributes.CLIENT_ADDRESS, servletRequest.getRemoteAddr())
-            .setAttribute(ClientAttributes.CLIENT_PORT, (long) servletRequest.getRemotePort())
-            .setAttribute(ThreadIncubatingAttributes.THREAD_NAME, currentThread.getName())
-            .setAttribute(ThreadIncubatingAttributes.THREAD_ID, currentThread.getId())
-            .setSpanKind(SpanKind.SERVER);
+        AttributesBuilder httpServerSpanAttributesBuilder = Attributes.builder()
+            .putAll(httpServerMetricOnStartAttributesBuilder.build())
+            .put(ThreadIncubatingAttributes.THREAD_NAME, currentThread.getName())
+            .put(ThreadIncubatingAttributes.THREAD_ID, currentThread.getId())
+            .put(ClientAttributes.CLIENT_ADDRESS, servletRequest.getRemoteAddr())
+            .put(ClientAttributes.CLIENT_PORT, (long) servletRequest.getRemotePort())
+            // See https://opentelemetry.io/docs/specs/semconv/attributes-registry/url/#url-full
+            // Security notes:
+            // * `HttpServletRequest.getRequestURL()` is safe not including URL credentials
+            // * Omit the URL query string to ensure we don't surface secrets.
+            //   The OTel `url.full` spec requires to redact sensitive info including query parameters like
+            //   `AWSAccessKeyId`, `Signature`, `X-Goog-Credential`, `X-Goog-Signature`, or `sig`. It's safer to omit
+            //   the query string.
+            // Interesting query parameters should be captured explicitly and users can explicitly capture more
+            // using the config param `otel.instrumentation.servlet.experimental.capture-request-parameters`
+            // Note: OTel specs may stop making `url.full` mandatory in the future:
+            // https://github.com/open-telemetry/semantic-conventions/issues/128
+            .put(UrlAttributes.URL_FULL, servletRequest.getRequestURL().toString())
+            .put(UserAgentAttributes.USER_AGENT_ORIGINAL, servletRequest.getHeader("User-Agent"));
+        Optional.ofNullable(User.current()).ifPresent(user -> httpServerSpanAttributesBuilder.put(UserIncubatingAttributes.USER_ID, user.getId()));
 
-        Optional.ofNullable(User.current()).ifPresent(user -> spanBuilder.setAttribute(EnduserIncubatingAttributes.ENDUSER_ID, user.getId()));
+        Context httpServerDurationMetricContext = httpServerMetrics.onStart(Context.current(), httpServerMetricOnStartAttributesBuilder.build(), System.nanoTime());
 
-        capturedRequestParameters.forEach(
-            parameterName ->
-                Optional.ofNullable(servletRequest.getParameter(parameterName))
-                    .ifPresent(value -> spanBuilder.setAttribute("http.request.parameter." + parameterName, value)));
+        AttributesBuilder httpServerMetricOnEndAttributesBuilder = Attributes.builder();
+        try {
 
-        Span span = spanBuilder.startSpan();
-        try (Scope scope = span.makeCurrent()) {
-            filterChain.doFilter(servletRequest, servletResponse);
-            span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, servletResponse.getStatus());
+            List<String> pathInfoTokens = Collections.list(new StringTokenizer(servletRequest.getPathInfo(), "/")).stream()
+                .map(token -> (String) token)
+                .filter(t -> !t.isEmpty())
+                .collect(Collectors.toList());
+
+            if (pathInfoTokens.isEmpty()) {
+                pathInfoTokens = Collections.singletonList("");
+            }
+
+            String rootPath = pathInfoTokens.get(0);
+            String httpRoute;
+
+            boolean skipSpan = false;
+            try {
+                switch (rootPath) {
+                    case "job" -> {
+                        // e.g /job/my-war/job/master/lastBuild/console
+                        // e.g /job/my-war/job/master/2/console
+                        ParsedJobUrl parsedJobUrl = parseJobUrl(pathInfoTokens);
+                        httpRoute = parsedJobUrl.urlPattern;
+                        Optional.ofNullable(parsedJobUrl.jobName).ifPresent(jobName -> httpServerSpanAttributesBuilder.put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobName));
+                        Optional.ofNullable(parsedJobUrl.runNumber).ifPresent(runNumber -> httpServerSpanAttributesBuilder.put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, runNumber));
+                    }
+                    case "blue" -> {
+                        if (pathInfoTokens.size() == 1) {
+                            httpRoute = "/blue/";
+                        } else if ("rest".equals(pathInfoTokens.get(1))) {
+                            if (pathInfoTokens.size() == 2) {
+                                httpRoute = "/blue/rest/";
+                            } else if ("organizations".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 7) {
+                                // eg /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/blueTestSummary/
+                                ParsedJobUrl parsedBlueOceanPipelineUrl = parseBlueOceanRestPipelineUrl(pathInfoTokens);
+                                httpRoute = parsedBlueOceanPipelineUrl.urlPattern;
+                                Optional.ofNullable(parsedBlueOceanPipelineUrl.jobName).ifPresent(jobName -> httpServerSpanAttributesBuilder.put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobName));
+                                Optional.ofNullable(parsedBlueOceanPipelineUrl.runNumber).ifPresent(runNumber -> httpServerSpanAttributesBuilder.put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, runNumber));
+                            } else if ("classes".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 3) {
+                                // eg /blue/rest/classes/io.jenkins.blueocean.rest.impl.pipeline.PipelineRunImpl/
+                                String blueOceanClass = pathInfoTokens.get(3);
+                                httpRoute = "/blue/rest/classes/:blueOceanClass";
+                                httpServerSpanAttributesBuilder.put("blueOceanClass", blueOceanClass);
+                            } else {
+                                // eg /blue/rest/i18n/blueocean-personalization/1.25.2/jenkins.plugins.blueocean.personalization.Messages/en-US
+                                httpRoute = "/blue/rest/" + pathInfoTokens.get(2) + "/*";
+                            }
+                        } else {
+                            httpRoute = "/blue/" + pathInfoTokens.get(1) + "/*";
+                        }
+                    }
+                    case "administrativeMonitor" -> {
+                        // eg GET /administrativeMonitor/hudson.diagnosis.ReverseProxySetupMonitor/testForReverseProxySetup/http://localhost:8080/jenkins/manage/
+                        httpRoute = "/administrativeMonitor/:administrativeMonitor/*";
+                        if (pathInfoTokens.size() > 1) {
+                            httpServerSpanAttributesBuilder.put("administrativeMonitor", pathInfoTokens.get(1));
+                        }
+                    }
+                    case "asynchPeople" -> {
+                        httpRoute = "/asynchPeople";
+                    }
+                    case "computer" -> {
+                        // /computer/(master)/
+                        httpRoute = "/computer/:computer/*";
+                        // TODO add details
+                    }
+                    case "credentials" -> {
+                        // eg /credentials/store/system/domain/_/
+                        httpRoute = "/credentials/store/:store/domain/:domain/*";
+                        // TODO add details
+                    }
+                    case "descriptorByName" -> {
+                        httpRoute = "/descriptorByName/:descriptor/*";
+                        if (pathInfoTokens.size() > 1) {
+                            httpServerSpanAttributesBuilder.put("descriptor", pathInfoTokens.get(1));
+                        }
+                    }
+                    case "extensionList" -> {
+                        // eg /extensionList/hudson.diagnosis.MemoryUsageMonitor/0/heap/graph
+                        httpRoute = "/extensionList/:extension/*";
+                        if (pathInfoTokens.size() > 1) {
+                            httpServerSpanAttributesBuilder.put("extension", pathInfoTokens.get(1));
+                        }
+                    }
+                    case "fingerprint" -> {
+                        httpRoute = "/fingerprint/:fingerprint";
+                        httpServerSpanAttributesBuilder.put("fingerprint", servletRequest.getPathInfo().substring("/fingerprint/".length()));
+                        if (pathInfoTokens.size() > 1) {
+                            httpServerSpanAttributesBuilder.put("fingerprint", pathInfoTokens.get(1));
+                        }
+                    }
+                    case "user" -> {
+                        //eg /user/cyrille.leclerc/ /user/cyrille.leclerc/configure /user/cyrille.leclerc/my-views/view/all/
+                        httpRoute = "/user/:user/*";
+                        if (pathInfoTokens.size() > 1) {
+                            httpServerSpanAttributesBuilder.put("user", pathInfoTokens.get(1));
+                        }
+                    }
+                    default -> {
+                        // "static", "adjuncts", "scripts", "plugin", "images", "sse-gateway"
+                        // e.g /$stapler/bound/ec328aeb-26be-43da-94a3-59f2d683131c/news
+                        httpRoute = "/*";
+                        skipSpan = true;
+                    }
+                }
+            } catch (RuntimeException e) {
+                logger.log(Level.INFO, () -> "Exception processing URL " + servletRequest.getPathInfo() + ", skip instrumentation with tracing: " + e);
+                httpRoute = "/##error-processing-url-to-extract-http-route##";
+            }
+
+            httpServerSpanAttributesBuilder.put(HttpAttributes.HTTP_ROUTE, httpRoute);
+            httpServerMetricOnEndAttributesBuilder.put(HttpAttributes.HTTP_ROUTE, httpRoute);
+            capturedRequestParameters.forEach(
+                parameterName ->
+                    Optional.ofNullable(servletRequest.getParameter(parameterName))
+                        .ifPresent(value -> httpServerSpanAttributesBuilder.put("http.request.parameter." + parameterName, value)));
+
+            Span span = skipSpan ? Span.getInvalid() :  tracer.spanBuilder(servletRequest.getMethod() + " " + httpRoute)
+                .setAllAttributes(httpServerSpanAttributesBuilder.build())
+                .setSpanKind(SpanKind.SERVER).startSpan();
+            try (Scope scope = span.makeCurrent()) {
+                filterChain.doFilter(servletRequest, servletResponse);
+            } catch (IOException | ServletException | RuntimeException e) {
+                if (servletResponse.getStatus() < 500) {
+                    servletResponse.setStatus(500);
+                }
+                span.recordException(e);
+                httpServerMetricOnEndAttributesBuilder.put(ErrorAttributes.ERROR_TYPE, e.getClass().getName());
+                throw e;
+            } finally {
+                span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, servletResponse.getStatus());
+                httpServerMetricOnEndAttributesBuilder.put(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, servletResponse.getStatus());
+                span.end();
+            }
         } finally {
-            span.end();
+            httpServerMetrics.onEnd(httpServerDurationMetricContext, httpServerMetricOnEndAttributesBuilder.build(), System.nanoTime());
         }
-
     }
 
     /**
@@ -630,16 +640,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     }
 
     @Override
-    public void destroy() {
-
-    }
-
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         return o != null && getClass() == o.getClass();
@@ -653,5 +653,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     @Inject
     public void setTracer(ReconfigurableOpenTelemetry openTelemetry) {
         this.tracer = openTelemetry.getTracer("io.jenkins.stapler");
+        this.meter = openTelemetry.getMeter("io.jenkins.stapler");
     }
 }
