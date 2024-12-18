@@ -4,7 +4,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
@@ -46,7 +45,7 @@ public class OtelEnvironmentContributorService {
         OTEL_LOGS_EXPORTER,
         OTEL_METRICS_EXPORTER,
         OTEL_TRACES_EXPORTER
-        );
+    );
 
     private ReconfigurableOpenTelemetry reconfigurableOpenTelemetry;
 
@@ -67,16 +66,14 @@ public class OtelEnvironmentContributorService {
             TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);
             W3CBaggagePropagator.getInstance().inject(Context.current(), envs, setter);
         }
-        if (OtelUtils.hasOpentelemetryData(run)) {
-            MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-            // Add visualization link as environment variables to provide visualization links in notifications (to GitHub, slack messages...)
-            for (MonitoringAction.ObservabilityBackendLink link : monitoringAction.getLinks()) {
-                // Default backend link got an empty environment variable.
-                if (link.getEnvironmentVariableName() != null) {
-                    envs.put(link.getEnvironmentVariableName(), link.getUrl());
-                }
-            }
-        }
+
+        Optional.ofNullable(run.getAction(MonitoringAction.class))
+            .ifPresent(monitoringAction -> {
+                // Add visualization link as environment variables to provide visualization links in notifications (to GitHub, slack messages...)
+                monitoringAction.getLinks().stream()
+                    .filter(link -> link.getEnvironmentVariableName() != null)
+                    .forEach(link -> envs.put(link.getEnvironmentVariableName(), link.getUrl()));
+            });
 
         ConfigProperties config = reconfigurableOpenTelemetry.getConfig();
         boolean exportOTelConfigAsEnvVar = config.getBoolean(OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS.asProperty(), true);
