@@ -41,7 +41,7 @@ public final class ConfigurationKey {
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS = new ConfigurationKey("otel.instrumentation.jenkins.export_otel_config_as_env_vars");
 
     /**
-     * <a href=https://opentelemetry.io/docs/zero-code/java/agent/instrumentation/http/#capturing-servlet-request-parameters">HTTP instrumentation configuration / Capturing HTTP request params</a>
+     * <a href="https://opentelemetry.io/docs/zero-code/java/agent/instrumentation/http/#capturing-servlet-request-parameters">HTTP instrumentation configuration / Capturing HTTP request params</a>
      */
     public static final ConfigurationKey OTEL_INSTRUMENTATION_SERVLET_CAPTURE_REQUEST_PARAMETERS = new ConfigurationKey("otel.instrumentation.servlet.experimental.capture-request-parameters");
 
