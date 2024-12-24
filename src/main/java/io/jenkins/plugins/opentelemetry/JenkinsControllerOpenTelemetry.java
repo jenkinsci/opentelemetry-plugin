@@ -21,8 +21,11 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_LOGS_EXPORTER;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_LOGS_MIRROR_TO_DISK;
 
 /**
  * {@link OpenTelemetry} instance intended to live on the Jenkins Controller.
@@ -34,8 +37,6 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
      * See {@code OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS}
      */
     public static final String DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS = ProcessResourceProvider.class.getName();
-
-    public final static AtomicInteger INSTANCE_COUNTER = new AtomicInteger(0);
 
     @VisibleForTesting
     @Inject
@@ -86,13 +87,13 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
     }
 
     public boolean isLogsEnabled() {
-        String otelLogsExporter = openTelemetry.getConfig().getString("otel.logs.exporter");
-        return otelLogsExporter != null && !otelLogsExporter.equals("none");
+        String otelLogsExporter = openTelemetry.getConfig().getString(OTEL_LOGS_EXPORTER.asProperty(), "none");
+        return !Objects.equals(otelLogsExporter, "none");
     }
 
     public boolean isOtelLogsMirrorToDisk() {
-        String otelLogsExporter = openTelemetry.getConfig().getString("otel.logs.mirror_to_disk");
-        return otelLogsExporter != null && otelLogsExporter.equals("true");
+        String mirrorLogsToDisk = openTelemetry.getConfig().getString(OTEL_LOGS_MIRROR_TO_DISK.asProperty(), "false");
+        return Objects.equals(mirrorLogsToDisk, "true");
     }
 
     @VisibleForTesting
@@ -105,7 +106,8 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
     public void initialize(@NonNull OpenTelemetryConfiguration configuration) {
         openTelemetry.configure(
             configuration.toOpenTelemetryProperties(),
-            configuration.toOpenTelemetryResource());
+            configuration.toOpenTelemetryResource(),
+            true);
     }
 
     static public JenkinsControllerOpenTelemetry get() {

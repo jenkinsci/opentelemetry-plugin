@@ -5,15 +5,17 @@
 
 package io.jenkins.plugins.opentelemetry.init;
 
-import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
+import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import org.junit.Test;
+
+import java.util.Collections;
 
 public class StepExecutionInstrumentationInitializerTest {
 
     @Test
     public void testAfterConfiguration() {
         StepExecutionInstrumentationInitializer stepExecutionInstrumentationInitializer = new StepExecutionInstrumentationInitializer();
-        stepExecutionInstrumentationInitializer.afterConfiguration(ConfigPropertiesUtils.emptyConfig());
+        stepExecutionInstrumentationInitializer.afterConfiguration(DefaultConfigProperties.createFromMap(Collections.emptyMap()));
     }
 
 }
