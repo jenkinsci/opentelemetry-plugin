@@ -83,13 +83,13 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
      */
     @Nullable
     private LogStorage forExec(@NonNull Queue.Executable exec){
+        LogStorage ret = null;
         if (exec instanceof Run<?, ?> run && run.getAction(MonitoringAction.class) != null) {
             // it's a pipeline with monitoring data
             logger.log(Level.FINEST, () -> "forExec(" + run + ")");
-            return new OtelLogStorage(run, getOtelTraceService(), tracer);
-        } else {
-            return null;
-        }
+            ret = new OtelLogStorage(run, getOtelTraceService(), tracer);
+        } 
+        return ret;
     }
     
     /**
