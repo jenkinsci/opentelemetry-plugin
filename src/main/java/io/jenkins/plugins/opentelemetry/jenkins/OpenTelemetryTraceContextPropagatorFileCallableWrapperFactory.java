@@ -9,6 +9,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.remoting.DelegatingCallable;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
@@ -56,14 +57,14 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
     @Inject
     public void setJenkinsOpenTelemetryPluginConfiguration(JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration) {
         ConfigProperties configProperties = jenkinsOpenTelemetryPluginConfiguration.getConfigProperties();
-        this.buildAgentsInstrumentationEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED, false));
-        this.remotingTracingEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTING_ENABLED, false));
+        this.buildAgentsInstrumentationEnabled.set(configProperties.getBoolean(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED.asProperty(), false));
+        this.remotingTracingEnabled.set(configProperties.getBoolean(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_REMOTING_ENABLED.asProperty(), false));
     }
 
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
-        this.buildAgentsInstrumentationEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED, false));
-        this.remotingTracingEnabled.set(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTING_ENABLED, false));
+        this.buildAgentsInstrumentationEnabled.set(configProperties.getBoolean(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED.asProperty(), false));
+        this.remotingTracingEnabled.set(configProperties.getBoolean(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_REMOTING_ENABLED.asProperty(), false));
     }
 
     static class OTelDelegatingCallable<V, T extends Throwable> implements DelegatingCallable<V, T> {

@@ -26,11 +26,9 @@ import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.backend.custom.CustomLogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import io.jenkins.plugins.opentelemetry.opentelemetry.autoconfigure.ConfigPropertiesUtils;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.semconv.OTelEnvironmentVariablesConventions;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigurationException;
+import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.ServiceAttributes;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
@@ -79,6 +77,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.*;
 import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
 import static io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend.ICONS_PREFIX;
 
@@ -208,6 +207,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         getObservabilityBackends().forEach(backend -> configurationProperties.putAll(backend.getOtelConfigurationProperties()));
         configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_VERSION.getKey(), OtelUtils.getJenkinsVersion());
         configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_URL.getKey(), this.jenkinsLocationConfiguration.getUrl());
+        configurationProperties.put(OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS.asProperty(), Boolean.toString(this.exportOtelConfigurationAsEnvironmentVariables));
+
         // use same Jenkins instance identifier as the Jenkins Support Core plugin. No need to add the complexity of the instance-identity-plugin
         // https://github.com/jenkinsci/support-core-plugin/blob/support-core-2.81/src/main/java/com/cloudbees/jenkins/support/impl/AboutJenkins.java#L401
         configurationProperties.put(ServiceIncubatingAttributes.SERVICE_INSTANCE_ID.getKey(), Jenkins.get().getLegacyInstanceId());
@@ -386,19 +387,19 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         }
 
         Map<String, String> environmentVariables = new HashMap<>();
-        environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_TRACES_EXPORTER, "otlp");
-        environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_ENDPOINT, this.endpoint);
+        environmentVariables.put(OTEL_TRACES_EXPORTER.asEnvVar(), "otlp");
+        environmentVariables.put(OTEL_EXPORTER_OTLP_ENDPOINT.asEnvVar(), this.endpoint);
         String sanitizeOtlpEndpoint = sanitizeOtlpEndpoint(this.endpoint);
         if (sanitizeOtlpEndpoint != null && sanitizeOtlpEndpoint.startsWith("http://")) {
-            environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_INSECURE, Boolean.TRUE.toString());
+            environmentVariables.put(OTEL_EXPORTER_OTLP_INSECURE.asEnvVar(), Boolean.TRUE.toString());
         }
         this.authentication.enrichOtelEnvironmentVariables(environmentVariables);
         String trustedCertificatesPem = this.getTrustedCertificatesPem();
         if (trustedCertificatesPem != null && !trustedCertificatesPem.isEmpty()) {
-            environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_CERTIFICATE, trustedCertificatesPem);
+            environmentVariables.put(OTEL_EXPORTER_OTLP_CERTIFICATE.asEnvVar(), trustedCertificatesPem);
         }
         if (this.exporterTimeoutMillis != null) {
-            environmentVariables.put(OTelEnvironmentVariablesConventions.OTEL_EXPORTER_OTLP_TIMEOUT, Integer.toString(this.exporterTimeoutMillis));
+            environmentVariables.put(OTEL_EXPORTER_OTLP_TIMEOUT.asEnvVar(), Integer.toString(this.exporterTimeoutMillis));
         }
         return environmentVariables;
     }
@@ -546,7 +547,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @NonNull
     public ConfigProperties getConfigProperties() {
         if (this.openTelemetry == null) {
-            return ConfigPropertiesUtils.emptyConfig();
+            return DefaultConfigProperties.createFromMap(Collections.emptyMap());
         } else {
             return this.openTelemetry.getConfig();
         }

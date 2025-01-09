@@ -12,8 +12,8 @@ import hudson.ExtensionList;
 import hudson.model.Queue;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.trace.Tracer;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 /**
  * Binds Otel Logs to Pipeline logs.
  * <p>
- * See https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/PipelineBridge.java
+ * See <a href="https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/PipelineBridge.java">Pipeline Cloudwatch Logs - PipelineBridge</a>
  */
 @Extension
 public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelemetryLifecycleListener {
@@ -84,12 +84,10 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
     @Nullable
     private LogStorage forExec(@NonNull Queue.Executable exec){
         LogStorage ret = null;
-        if (exec instanceof Run) {
-            Run<?, ?> run = (Run<?, ?>) exec;
-            if(OtelUtils.hasOpentelemetryData(run)){
-                logger.log(Level.FINEST, () -> "forExec(" + run + ")");
-                ret = new OtelLogStorage(run, getOtelTraceService(), tracer);
-            }
+        if (exec instanceof Run<?, ?> run && run.getAction(MonitoringAction.class) != null) {
+            // it's a pipeline with monitoring data
+            logger.log(Level.FINEST, () -> "forExec(" + run + ")");
+            ret = new OtelLogStorage(run, getOtelTraceService(), tracer);
         } 
         return ret;
     }

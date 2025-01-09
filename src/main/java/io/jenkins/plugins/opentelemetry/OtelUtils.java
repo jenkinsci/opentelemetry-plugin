@@ -5,34 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.TreeMap;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import jakarta.servlet.http.HttpServletRequest;
-
-import org.apache.commons.codec.net.URLCodec;
-import org.apache.commons.lang.StringUtils;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
-
 import com.google.common.collect.Iterators;
-
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -40,24 +13,40 @@ import hudson.Plugin;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Run;
 import hudson.util.VersionNumber;
-import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.common.AttributeKey;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.semconv.ServiceAttributes;
-import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
+import jakarta.servlet.http.HttpServletRequest;
 import jenkins.model.Jenkins;
 import jenkins.scm.api.SCMHead;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 import jenkins.scm.api.mixin.TagSCMHead;
+import org.apache.commons.codec.net.URLCodec;
+import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.function.Function;
+
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.*;
 
 public class OtelUtils {
 
@@ -72,8 +61,6 @@ public class OtelUtils {
     public static final String TAG = "tag";
     public static final String JENKINS_CORE = "jenkins-core";
     public static final String UNKNOWN_VALUE = "#unknown";
-    private static final Logger logger = Logger.getLogger(OtelUtils.class.getName());
-
 
     @CheckForNull
     public static String getSystemPropertyOrEnvironmentVariable(String environmentVariableName) {
@@ -94,8 +81,7 @@ public class OtelUtils {
         return span -> {
             if (span == null) {
                 return "#null#";
-            } else if (span instanceof ReadableSpan) {
-                ReadableSpan readableSpan = (ReadableSpan) span;
+            } else if (span instanceof ReadableSpan readableSpan) {
                 SpanData spanData = readableSpan.toSpanData();
                 return "span(" +
                     "name: " + readableSpan.getName() + ", " +
@@ -110,7 +96,7 @@ public class OtelUtils {
     }
 
     @NonNull
-    public static String getProjectType(Run run) {
+    public static String getProjectType(Run<?,?> run) {
         if (isFreestyle(run)) {
             return FREESTYLE;
         }
@@ -130,7 +116,7 @@ public class OtelUtils {
     }
 
     @NonNull
-    public static String getMultibranchType(Run run) {
+    public static String getMultibranchType(Run<?,?> run) {
         if (isMultibranch(run)) {
             if (isMultibranchChangeRequest(run)) {
                 return CHANGE_REQUEST;
@@ -145,50 +131,49 @@ public class OtelUtils {
         return UNKNOWN;
     }
 
-    public static boolean isMultibranchTag(Run run) {
+    public static boolean isMultibranchTag(Run<?,?> run) {
         if (isMultibranch(run)) {
             return (SCMHead.HeadByItem.findHead(run.getParent()) instanceof TagSCMHead);
         }
         return false;
     }
 
-    public static boolean isMultibranchChangeRequest(Run run) {
+    public static boolean isMultibranchChangeRequest(Run<?,?> run) {
         if (isMultibranch(run)) {
             return (SCMHead.HeadByItem.findHead(run.getParent()) instanceof ChangeRequestSCMHead);
         }
         return false;
     }
 
-    public static boolean isMultibranchBranch(Run run) {
+    public static boolean isMultibranchBranch(Run<?,?> run) {
         if (isMultibranch(run)) {
             return !(isMultibranchChangeRequest(run) || isMultibranchTag(run));
         }
         return false;
     }
 
-    public static boolean isMultibranch(Run run) {
+    public static boolean isMultibranch(Run<?,?> run) {
         if (run == null) {
             return false;
         }
         return (run instanceof WorkflowRun && run.getParent().getParent() instanceof WorkflowMultiBranchProject);
     }
 
-    public static boolean isWorkflow(Run run) {
+    public static boolean isWorkflow(Run<?,?> run) {
         if (run == null) {
             return false;
         }
         return (run instanceof WorkflowRun && !(run.getParent().getParent() instanceof WorkflowMultiBranchProject));
     }
 
-    public static boolean isFreestyle(Run run) {
+    public static boolean isFreestyle(Run<?,?> run) {
         if (run == null) {
             return false;
         }
         return (run instanceof FreeStyleBuild);
     }
 
-    @NonNull
-    public static boolean isMatrix(Run run) {
+    public static boolean isMatrix(Run<?,?> run) {
         if (run == null) {
             return false;
         }
@@ -197,7 +182,7 @@ public class OtelUtils {
             isInstance(run, "hudson.matrix.MatrixRun");
     }
 
-    public static boolean isMaven(Run run) {
+    public static boolean isMaven(Run<?,?> run) {
         if (run == null) {
             return false;
         }
@@ -251,39 +236,24 @@ public class OtelUtils {
         return opentelemetryPlugin == null ? UNKNOWN_VALUE : opentelemetryPlugin.getWrapper().getVersion();
     }
 
-    public static String prettyPrintOtelSdkConfig(ConfigProperties configProperties, Resource resource) {
-        return "SDK [" +
-            "config: " + prettyPrintConfiguration(configProperties) + ", "+
-            "resource: " + prettyPrintResource(resource) +
-            "]";
-    }
-    private final static List<String> noteworthyConfigurationPropertyNames = Arrays.asList(
-        "otel.resource.attributes", "otel.service.name",
-        "otel.traces.exporter", "otel.metrics.exporter", "otel.logs.exporter",
-        "otel.exporter.otlp.endpoint"  , "otel.exporter.otlp.traces.endpoint", "otel.exporter.otlp.metrics.endpoint",
-        "otel.exporter.jaeger.endpoint", "otel.exporter.prometheus.port",
-        JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED);
-
-    private final static List<AttributeKey> noteworthyResourceAttributeKeys = Arrays.asList(
-        ServiceAttributes.SERVICE_NAME, ServiceIncubatingAttributes.SERVICE_NAMESPACE, ServiceAttributes.SERVICE_VERSION
-    ) ;
-
-    public static String prettyPrintConfiguration(ConfigProperties config) {
-        Map<String, String> message = new LinkedHashMap<>();
-        for (String attributeName : noteworthyConfigurationPropertyNames) {
-            final String attributeValue = config.getString(attributeName);
-            if (attributeValue != null) {
-                message.put(attributeName, attributeValue);
-            }
-        }
-        return message.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).collect(Collectors.joining(", "));
-    }
+    private final static List<ConfigurationKey> noteworthyConfigurationPropertyNames = Arrays.asList(
+        OTEL_RESOURCE_ATTRIBUTES, 
+        OTEL_SERVICE_NAME,
+        OTEL_TRACES_EXPORTER, 
+        OTEL_METRICS_EXPORTER, 
+        OTEL_LOGS_EXPORTER,
+        OTEL_EXPORTER_OTLP_ENDPOINT, 
+        OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, 
+        OTEL_EXPORTER_OTLP_METRICS_ENDPOINT,
+        OTEL_EXPORTER_JAEGER_ENDPOINT, 
+        OTEL_EXPORTER_PROMETHEUS_PORT,
+        OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED);
 
     public static Map<String, String> noteworthyConfigProperties(ConfigProperties configProperties) {
         Map<String, String> noteworthyConfigProperties = new TreeMap<>();
         noteworthyConfigurationPropertyNames.forEach(k -> {
-            if (configProperties.getString(k) != null) {
-                noteworthyConfigProperties.put(k, configProperties.getString(k));
+            if (configProperties.getString(k.asProperty()) != null) {
+                noteworthyConfigProperties.put(k.asProperty(), configProperties.getString(k.asProperty()));
             }
         });
         return noteworthyConfigProperties;
@@ -291,26 +261,13 @@ public class OtelUtils {
 
     public static Map<String, String> getW3cTraceContext(Span span) {
         Map<String, String> w3cTraceContext = new HashMap<>(2);
-        try (Scope scope = span.makeCurrent()) {
+        try (Scope ignored = span.makeCurrent()) {
             W3CTraceContextPropagator.getInstance().inject(Context.current(), w3cTraceContext, (carrier, key, value) -> {
                 assert carrier != null;
                 carrier.put(key, value);
             });
         }
         return w3cTraceContext;
-    }
-    public static String prettyPrintResource(@Nullable Resource resource) {
-        if (resource == null) {
-            return "#null#";
-        }
-        Map<String, String> message = new LinkedHashMap<>();
-        for (AttributeKey attributeKey : noteworthyResourceAttributeKeys) {
-            Object attributeValue = resource.getAttribute(attributeKey);
-            if (attributeValue != null) {
-                message.put(attributeKey.getKey(), Objects.toString(attributeValue, "#null#"));
-            }
-        }
-        return message.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue()).collect(Collectors.joining(", "));
     }
 
     public static class HttpServletRequestTextMapGetter implements TextMapGetter<HttpServletRequest> {
@@ -328,20 +285,5 @@ public class OtelUtils {
                 .map(c -> c.getHeader(key))
                 .orElse(null);
         }
-    }
-
-    /**
-     * Check if the run has Opentelemetry data
-     * To validate it search for the MonitoringAction in the build actions.
-     * @param run the Build
-     * @return true if the run has Opentelemetry data
-     */
-    public static boolean hasOpentelemetryData(Run<?, ?> run){
-        MonitoringAction monitoringAction = run.getAction(MonitoringAction.class);
-        boolean ret = monitoringAction != null;
-        if (!ret) {
-            logger.log(Level.FINE, () -> "No MonitoringAction found in " + run);
-        }
-        return ret;
     }
 }
