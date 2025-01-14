@@ -47,9 +47,6 @@ public class ConfigurationAsCodeJaegerTest {
 
         MatcherAssert.assertThat(configuration.getServiceName(), CoreMatchers.is("my-jenkins"));
         MatcherAssert.assertThat(configuration.getServiceNamespace(), CoreMatchers.is("ci"));
-
-        MatcherAssert.assertThat(configuration.getExporterIntervalMillis(), CoreMatchers.is(Integer.valueOf(60_000)));
-        MatcherAssert.assertThat(configuration.getExporterTimeoutMillis(), CoreMatchers.is(Integer.valueOf(30_000)));
     }
 
     @Test

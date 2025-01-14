@@ -50,8 +50,7 @@ public class JenkinsControllerOpenTelemetryTest {
         OpenTelemetryConfiguration openTelemetryConfiguration = new OpenTelemetryConfiguration(
             Optional.of("http://localhost:4317/"),
             Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
+
             Optional.empty(),
             Optional.ofNullable(serviceNameDefinedInConfig),
             Optional.ofNullable(serviceNamespaceDefinedInConfig),

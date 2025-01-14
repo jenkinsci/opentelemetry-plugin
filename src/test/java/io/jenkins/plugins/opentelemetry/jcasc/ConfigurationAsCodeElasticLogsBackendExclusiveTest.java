@@ -51,9 +51,6 @@ public class ConfigurationAsCodeElasticLogsBackendExclusiveTest {
         OtlpAuthentication authentication = configuration.getAuthentication();
         MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
 
-        MatcherAssert.assertThat(configuration.getExporterTimeoutMillis(), CoreMatchers.nullValue());
-        MatcherAssert.assertThat(configuration.getExporterIntervalMillis(), CoreMatchers.nullValue());
-
         MatcherAssert.assertThat(configuration.getIgnoredSteps(), CoreMatchers.is("dir,echo,isUnix,pwd,properties"));
 
         MatcherAssert.assertThat(configuration.getServiceName(), CoreMatchers.is("jenkins"));

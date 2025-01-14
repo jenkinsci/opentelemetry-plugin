@@ -115,7 +115,6 @@ public class BaseIntegrationTest {
             OpenTelemetryConfiguration configuration = new OpenTelemetryConfiguration(
                 of("http://localhost:4317"), empty(),
                 empty(),
-                empty(), empty(),
                 empty(), empty(), empty(),
                 Collections.emptyMap());
 

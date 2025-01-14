@@ -1,5 +1,5 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
     <f:section title="OpenTelemetry">
             <f:entry title="OTLP Endpoint" field="endpoint" description="e.g. 'http://otel.example.com:4317', aka OTEL_EXPORTER_OTLP_ENDPOINT">
                 <f:textbox />
@@ -27,7 +27,10 @@
                 />
             </f:entry>
             <f:advanced>
-                <f:entry title="Service name" field="serviceName" description="e.g. 'my-jenkins.example.com', the Logical name of the service. Aka OTEL_SERVICE_NAME">
+                <f:entry title="Service name" field="serviceName" description="e.g. 'my-jenkins.example.com', the Logical name of the service. Aka 'OTEL_SERVICE_NAME'">
+                    <f:textbox />
+                </f:entry>
+                <f:entry title="Service namespace" field="serviceNamespace" description="e.g. 'ci', a namespace for service name. Aka 'OTEL_SERVICE_NAMESPACE'">
                     <f:textbox />
                 </f:entry>
                 <f:entry field="disabledResourceProviders" title="Disabled resource providers" description="Coma separated list of class names. Aka 'OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS'">
@@ -39,16 +42,7 @@
                 <f:entry title="Configuration properties" field="configurationProperties" description="Additional OpenTelemetry SDK configuration properties.">
                     <f:textarea />
                 </f:entry>
-                <f:entry title="Service namespace" field="serviceNamespace" description="e.g. 'ci', a namespace for service name">
-                    <f:textbox />
-                </f:entry>
-                <f:entry field="exporterTimeoutMillis" title="Exporter Timeout (ms)" description="e.g. '30000'. Aka OTEL_EXPORTER_OTLP_TIMEOUT">
-                    <f:number clazz="required positive number" min="1" default="${exporterTimeoutMillis}"/>
-                </f:entry>
-                <f:entry field="exporterIntervalMillis" title="Metrics Exporter Interval (ms)" description="e.g. '60000'. Aka OTEL_IMR_EXPORT_INTERVAL">
-                    <f:number clazz="required positive number" min="1" default="${exporterIntervalMillis}"/>
-                </f:entry>
-                <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format)">
+                <f:entry title="OTLP Endpoint Certificates" field="trustedCertificatesPem" description="OTLP endpoint certificates (PEM format). Aka 'OTEL_EXPORTER_OTLP_CERTIFICATE'">
                     <f:textarea />
                 </f:entry>
                 <f:entry title="Noteworthy active configuration properties" description="Noteworthy config properties of the active OpenTelemetry SDK.">
@@ -57,7 +51,7 @@
                     </textarea>
                 </f:entry>
 
-                <f:entry title="Active resource attributes" description="Resource attributes of the active OpenTelemetry SDK. See 'OTEL_RESOURCE_ATTRIBUTES'.">
+                <f:entry title="Active resource attributes" description="Resource attributes of the active OpenTelemetry SDK. Aka 'OTEL_RESOURCE_ATTRIBUTES'.">
                     <textarea rows="10" cols="100" wrap="off" readonly="readonly" style="overflow:scroll;background-color:lightgrey">
                         ${instance.resourceAsText}
                     </textarea>

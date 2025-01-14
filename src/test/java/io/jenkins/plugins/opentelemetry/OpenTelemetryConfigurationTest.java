@@ -93,8 +93,6 @@ public class OpenTelemetryConfigurationTest {
             Optional.ofNullable(otlpEndpoint),
             Optional.empty(),
             Optional.empty(),
-            Optional.empty(),
-            Optional.empty(),
             Optional.of("my-jenkins"),
             Optional.empty(),
             Optional.empty(),
