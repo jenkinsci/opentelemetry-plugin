@@ -23,11 +23,11 @@
         <jenkins.baseline>2.479</jenkins.baseline>
         <jenkins.version>${jenkins.baseline}.1</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.44.1</opentelemetry.version>
+        <opentelemetry.version>1.46.0-alpha</opentelemetry.version>
         <jenkins-opentelemetry.version>1.44.1.40.v93f5f8ca_42c3</jenkins-opentelemetry.version>
-        <opentelemetry-instrumentation.version>2.10.0</opentelemetry-instrumentation.version>
-        <opentelemetry-semconv.version>1.28.0-alpha</opentelemetry-semconv.version>
-        <opentelemetry-contrib.version>1.41.0-alpha</opentelemetry-contrib.version>
+        <opentelemetry-instrumentation.version>2.11.0-alpha</opentelemetry-instrumentation.version>
+        <opentelemetry-semconv.version>1.29.0-alpha</opentelemetry-semconv.version>
+        <opentelemetry-contrib.version>1.42.0-alpha</opentelemetry-contrib.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.14.3</elasticstack.version>
         <error-prone.version>2.36.0</error-prone.version>
@@ -60,7 +60,7 @@
             <dependency>
                 <groupId>io.opentelemetry</groupId>
                 <artifactId>opentelemetry-bom-alpha</artifactId>
-                <version>${opentelemetry.version}-alpha</version>
+                <version>${opentelemetry.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -74,7 +74,7 @@
             <dependency>
                 <groupId>io.opentelemetry.instrumentation</groupId>
                 <artifactId>opentelemetry-instrumentation-bom-alpha</artifactId>
-                <version>${opentelemetry-instrumentation.version}-alpha</version>
+                <version>${opentelemetry-instrumentation.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
