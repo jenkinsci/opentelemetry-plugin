@@ -3,8 +3,6 @@ unclassified:
     configurationProperties: "otel.exporter.otlp.protocol=grpc"
     endpoint: "http://otel-collector-contrib:4317"
     exportOtelConfigurationAsEnvironmentVariables: false
-    exporterIntervalMillis: 60000
-    exporterTimeoutMillis: 30000
     observabilityBackends:
       - jaeger:
           jaegerBaseUrl: "http://my-jaeger.acme.com:16686"
