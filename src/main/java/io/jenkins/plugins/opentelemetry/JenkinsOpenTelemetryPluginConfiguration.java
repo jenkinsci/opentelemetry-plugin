@@ -81,7 +81,7 @@ import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.*;
 import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
 import static io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend.ICONS_PREFIX;
 
-@Extension(ordinal = Integer.MAX_VALUE-1 /* initialize OTel ASAP, just after loading JenkinsControllerOpenTelemetry as GlobalOpenTelemetry */)
+@Extension(ordinal = Integer.MAX_VALUE - 1 /* initialize OTel ASAP, just after loading JenkinsControllerOpenTelemetry as GlobalOpenTelemetry */)
 @Symbol("openTelemetry")
 public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration {
     private final static Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());
@@ -121,8 +121,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private List<ObservabilityBackend> observabilityBackends = new ArrayList<>();
 
+    @Deprecated
     private Integer exporterTimeoutMillis = null;
 
+    @Deprecated
     private Integer exporterIntervalMillis = null;
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
@@ -188,8 +190,33 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     protected Object readResolve() {
         LOGGER.log(Level.FINE, "readResolve()");
+        boolean configModified = false;
         if (this.disabledResourceProviders == null) {
             this.disabledResourceProviders = JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+            LOGGER.log(Level.INFO, "Migration of the 'disabledResourceProviders' config param");
+            configModified = true;
+        }
+        if (this.exporterTimeoutMillis != null) {
+            this.configurationProperties =
+                this.configurationProperties + "\n" +
+                    "# Migration of the 'exporterTimeoutMillis' config param to 'otel.exporter.otlp.timeout' property\n" +
+                    OTEL_EXPORTER_OTLP_TIMEOUT.asProperty() + "=" + this.exporterTimeoutMillis;
+            this.exporterTimeoutMillis = null;
+            LOGGER.log(Level.INFO, "Migration of the 'exporterTimeoutMillis' config param to 'otel.exporter.otlp.timeout' property");
+            configModified = true;
+        }
+        if (this.exporterIntervalMillis != null) {
+            this.configurationProperties =
+                this.configurationProperties + "\n" +
+                    "# Migration of the 'exporterIntervalMillis' config param to 'otel.metric.export.interval' property\n" +
+                    OTEL_METRIC_EXPORT_INTERVAL.asProperty() + "=" + this.exporterIntervalMillis;
+            this.exporterIntervalMillis = null;
+            LOGGER.log(Level.INFO, "Migration of the 'exporterIntervalMillis' config param to 'otel.metric.export.interval' property");
+            configModified = true;
+        }
+
+        if (configModified) {
+            save();
         }
         return this;
     }
@@ -218,8 +245,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             Optional.ofNullable(this.getEndpoint()),
             Optional.ofNullable(this.getTrustedCertificatesPem()),
             Optional.of(this.getAuthentication()),
-            Optional.ofNullable(this.getExporterTimeoutMillis()),
-            Optional.ofNullable(this.getExporterIntervalMillis()),
             Optional.ofNullable(this.getServiceName()),
             Optional.ofNullable(this.getServiceNamespace()),
             Optional.ofNullable(this.getDisabledResourceProviders()),
@@ -318,16 +343,19 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return observabilityBackends;
     }
 
+    @Deprecated
     public Integer getExporterTimeoutMillis() {
         return exporterTimeoutMillis;
     }
 
+    @Deprecated
     @DataBoundSetter
     public void setExporterTimeoutMillis(Integer exporterTimeoutMillis) {
         this.exporterTimeoutMillis = exporterTimeoutMillis;
 
     }
 
+    @Deprecated
     public Integer getExporterIntervalMillis() {
         return exporterIntervalMillis;
     }
@@ -335,7 +363,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setExporterIntervalMillis(Integer exporterIntervalMillis) {
         this.exporterIntervalMillis = exporterIntervalMillis;
-
     }
 
     public String getIgnoredSteps() {

@@ -17,12 +17,19 @@ public final class ConfigurationKey {
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_TIMEOUT = new ConfigurationKey("otel.exporter.otlp.timeout");
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = new ConfigurationKey("otel.exporter.otlp.traces.endpoint");
     public static final ConfigurationKey OTEL_EXPORTER_PROMETHEUS_PORT = new ConfigurationKey("otel.exporter.prometheus.port");
-    public static final ConfigurationKey OTEL_IMR_EXPORT_INTERVAL = new ConfigurationKey("otel.imr.export.interval");
+
+    public static final ConfigurationKey OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS = new ConfigurationKey("otel.java.disabled.resource.providers");
+
     public static final ConfigurationKey OTEL_LOGS_EXPORTER = new ConfigurationKey("otel.logs.exporter");
     public static final ConfigurationKey OTEL_LOGS_MIRROR_TO_DISK = new ConfigurationKey("otel.logs.mirror_to_disk");
+
+    public static final ConfigurationKey OTEL_METRIC_EXPORT_INTERVAL = new ConfigurationKey("otel.metric.export.interval");
     public static final ConfigurationKey OTEL_METRICS_EXPORTER = new ConfigurationKey("otel.metrics.exporter");
+
     public static final ConfigurationKey OTEL_RESOURCE_ATTRIBUTES = new ConfigurationKey("otel.resource.attributes");
+
     public static final ConfigurationKey OTEL_SERVICE_NAME = new ConfigurationKey("otel.service.name");
+
     public static final ConfigurationKey OTEL_TRACES_EXPORTER = new ConfigurationKey("otel.traces.exporter");
 
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED = new ConfigurationKey("otel.instrumentation.jenkins.web.enabled");
