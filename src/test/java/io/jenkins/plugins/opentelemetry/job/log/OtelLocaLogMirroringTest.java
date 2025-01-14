@@ -59,7 +59,7 @@ public class OtelLocaLogMirroringTest {
 
         openTelemetry = ExtensionList.lookup(ReconfigurableOpenTelemetry.class).get(0);
         jenkinsControllerOpenTelemetry = jenkinsOpenTelemetries.get(0);
-        jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap()));
+        jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap()));
     }
     @AfterClass
     public static void afterClass() throws Exception {
@@ -99,7 +99,7 @@ public class OtelLocaLogMirroringTest {
     }
 
     private void reInitProvider(Map<String, String> configuration) {
-        jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), configuration));
+        jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), configuration));
     }
 
 
