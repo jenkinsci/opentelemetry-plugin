@@ -33,15 +33,14 @@ public class MatrixRunHandler implements RunHandler {
     }
 
     @Override
-    public boolean canCreateSpanBuilder(@NonNull Run run) {
+    public boolean canCreateSpanBuilder(@NonNull Run<?, ?> run) {
         return run instanceof MatrixRun || run instanceof MatrixBuild;
     }
 
     @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@NonNull Run run, @NonNull Tracer tracer) {
-        if (run instanceof MatrixRun) {
-            MatrixRun matrixRun = (MatrixRun) run;
+    public SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer) {
+        if (run instanceof MatrixRun matrixRun) {
             MatrixConfiguration matrixConfiguration = matrixRun.getParent();
 
             MatrixProject matrixProject = matrixConfiguration.getParent();
@@ -51,17 +50,15 @@ public class MatrixRunHandler implements RunHandler {
             List<String> axisNames = new ArrayList<>();
             List<String> axisValues = new ArrayList<>();
 
-            combination.entrySet().stream().forEach(entry -> {
-                    axisNames.add(entry.getKey());
-                    axisValues.add(entry.getValue());
-                }
-            );
+            combination.forEach((key, value) -> {
+                axisNames.add(key);
+                axisValues.add(value);
+            });
             spanBuilder.setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_AXIS_NAMES, axisNames);
             spanBuilder.setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_AXIS_VALUES, axisValues);
 
             return spanBuilder;
-        } else if (run instanceof MatrixBuild) {
-            MatrixBuild matrixBuild = (MatrixBuild) run;
+        } else if (run instanceof MatrixBuild matrixBuild) {
             return tracer.spanBuilder(JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + matrixBuild.getParent().getFullName());
         } else {
             throw new IllegalStateException("Unsupported run type " + run);

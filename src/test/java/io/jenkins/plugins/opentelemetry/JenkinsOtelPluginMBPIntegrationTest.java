@@ -5,12 +5,13 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.logging.Logger;
-
+import com.github.rutledgepaulv.prune.Tree;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.opentelemetry.api.common.Attributes;
+import jenkins.branch.BranchProperty;
+import jenkins.branch.BranchSource;
+import jenkins.branch.DefaultBranchPropertyStrategy;
+import jenkins.plugins.git.GitSCMSource;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -19,35 +20,30 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.junit.Test;
 
-import com.github.rutledgepaulv.prune.Tree;
+import java.util.List;
+import java.util.Optional;
 
-import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
-import io.opentelemetry.api.common.Attributes;
-import jenkins.branch.BranchProperty;
-import jenkins.branch.BranchSource;
-import jenkins.branch.DefaultBranchPropertyStrategy;
-import jenkins.plugins.git.GitSCMSource;
+import static org.junit.Assume.assumeFalse;
 
 public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
-    private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     @Test
     public void testMultibranchPipelineStep() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        String pipelineScript = "pipeline {\n" +
-                "  agent any\n" +
-                "  stages {\n" +
-                "    stage('foo') {\n" +
-                "      steps {\n" +
-                "        echo 'hello world' \n" +
-                "        script { \n" +
-                "          currentBuild.description = 'Bar' \n" +
-                "        } \n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}";
+        String pipelineScript = """
+            pipeline {
+              agent any
+              stages {
+                stage('foo') {
+                  steps {
+                    echo 'hello world'\s
+                    script {\s
+                      currentBuild.description = 'Bar'\s
+                    }\s
+                  }
+                }
+              }
+            }""";
         sampleRepo.init();
         sampleRepo.write("Jenkinsfile", pipelineScript);
         sampleRepo.write("file", "initial content");

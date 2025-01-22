@@ -263,7 +263,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         }
         UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
         if (describable != null) {
-            Descriptor<? extends Describable> d = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
+            Descriptor<? extends Describable<?>> d = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
             return d.getDisplayName();
         }
         return stepDescriptor.getDisplayName();
@@ -276,7 +276,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
         }
         UninstantiatedDescribable describable = getUninstantiatedDescribableOrNull(node, stepDescriptor);
         if (describable != null) {
-            Descriptor<? extends Describable> d = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
+            Descriptor<? extends Describable<?>> d = SymbolLookup.get().findDescriptor(Describable.class, describable.getSymbol());
             return d.getDisplayName();
         }
         return stepDescriptor.getDisplayName();
@@ -419,7 +419,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     List<SpanAttribute> attributes = ((List<?>) attributesObj).stream()
                                                          .filter(item -> item instanceof SpanAttribute)
                                                          .map(item -> (SpanAttribute) item)
-                                                         .collect(Collectors.toList());
+                                                         .toList();
 
                     for (SpanAttribute attribute : attributes) {
                         // Set the attributeType in case it's not there.
@@ -520,7 +520,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     @NonNull
     @MustBeClosed
     protected Scope setupContext(WorkflowRun run, @NonNull FlowNode node) {
-        run = verifyNotNull(run, "%s No run found for node %s", run, node);
+        verifyNotNull(run, "%s No run found for node %s", run, node);
         Span span = this.otelTraceService.getSpan(run, node);
 
         return span.makeCurrent();

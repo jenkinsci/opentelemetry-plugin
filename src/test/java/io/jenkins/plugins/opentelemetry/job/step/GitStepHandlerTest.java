@@ -25,7 +25,7 @@ public class GitStepHandlerTest {
     @Test
     public void testHttpsGithubUrl() throws Exception {
         SpanBuilderMock spanBuilder = testGithubUrl("https://github.com/open-telemetry/opentelemetry-java", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java"));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
@@ -34,7 +34,7 @@ public class GitStepHandlerTest {
     @Test
     public void testSshGithubUrl() throws Exception {
         SpanBuilderMock spanBuilder = testGithubUrl("git@github.com:open-telemetry/opentelemetry-java.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("github.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
@@ -44,7 +44,7 @@ public class GitStepHandlerTest {
     public void testScpStyleSshGitUrl() throws Exception {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_the_ssh_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("user@example.com:open-telemetry/opentelemetry-java.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
@@ -54,7 +54,7 @@ public class GitStepHandlerTest {
     public void testScpStyleSshGitUrlWithoutUsername() throws Exception {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_the_ssh_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("example.com:open-telemetry/opentelemetry-java.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
@@ -64,7 +64,7 @@ public class GitStepHandlerTest {
     public void testSshGitUrl() throws Exception {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_the_ssh_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("ssh://user@example.com/project.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("project"));
@@ -74,7 +74,7 @@ public class GitStepHandlerTest {
     public void testSshGitUrlWithPort() throws Exception {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_the_ssh_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("ssh://user@example.com:2222/project.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("project"));
@@ -84,7 +84,7 @@ public class GitStepHandlerTest {
     public void testSshGitUrlWithoutUsername() throws Exception {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_the_ssh_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("ssh://example.com/project.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("project"));
@@ -93,7 +93,7 @@ public class GitStepHandlerTest {
     @Test
     public void testHttpsGithubUrlWithSuffix() throws Exception {
         SpanBuilderMock spanBuilder = testGithubUrl("https://github.com/open-telemetry/opentelemetry-java.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
         MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
@@ -101,7 +101,7 @@ public class GitStepHandlerTest {
     @Test
     public void testHttpsGithubUrlWithUsername() throws Exception {
         SpanBuilderMock spanBuilder = testGithubUrl("https://my_username@github.com/open-telemetry/opentelemetry-java.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
         MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
@@ -109,7 +109,7 @@ public class GitStepHandlerTest {
     @Test
     public void testHttpsGithubUrlWithUsernamePassword() throws Exception {
         SpanBuilderMock spanBuilder = testGithubUrl("https://my_username:my_password@github.com/open-telemetry/opentelemetry-java.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
         MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("open-telemetry/opentelemetry-java"));
     }
@@ -118,7 +118,7 @@ public class GitStepHandlerTest {
     public void testFileGitUrl() throws Exception {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_local_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("file:///srv/git/project.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.is(Matchers.nullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("srv/git/project"));
@@ -128,7 +128,7 @@ public class GitStepHandlerTest {
     public void testFileGitUrlWithoutSchemeLinux() throws Exception {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_local_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("/srv/git/project.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.is(Matchers.nullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("srv/git/project"));
@@ -138,7 +138,7 @@ public class GitStepHandlerTest {
     public void testFileGitUrlWithoutSchemeWindows() throws Exception {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_local_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("c:\\srv/git/project.git", "master", "my-git-user");
-        Map<AttributeKey, Object> attributes = spanBuilder.getAttributes();
+        Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
         MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.is(Matchers.nullValue()));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("c:\\srv/git/project"));
@@ -148,8 +148,7 @@ public class GitStepHandlerTest {
 
         GitStepHandler handler = new GitStepHandler();
 
-        SpanBuilderMock spanBuilder = (SpanBuilderMock) handler.createSpanBuilderFromGitDetails(githubUrl, gitBranch, gitUsername, "git", new TracerMock());
-        return spanBuilder;
+        return (SpanBuilderMock) handler.createSpanBuilderFromGitDetails(githubUrl, gitBranch, gitUsername, "git", new TracerMock());
     }
 
     @Test

@@ -5,9 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.errorprone.annotations.MustBeClosed;
@@ -24,13 +21,13 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.User;
-import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
 import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
 import io.jenkins.plugins.opentelemetry.queue.RemoteSpanAction;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.common.Attributes;
@@ -75,6 +72,8 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verifyNotNull;
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
 
 /**
  * TODO support reconfiguration
@@ -277,8 +276,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
             .ifPresent(action -> {
                 TraceStateBuilder traceStateBuilder = TraceState.builder();
                 Map<String, String> traceStateMap = action.getTraceStateMap();
-                traceStateMap.entrySet()
-                    .forEach(entry -> traceStateBuilder.put(entry.getKey(), entry.getValue()));
+                traceStateMap.forEach(traceStateBuilder::put);
                 SpanContext spanContext = SpanContext.createFromRemoteParent(
                     action.getTraceId(),
                     action.getSpanId(),
@@ -294,8 +292,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
         Optional<Cause> optCause = run.getCauses().stream().findFirst();
         optCause.ifPresent(cause -> {
-                if (cause instanceof Cause.UpstreamCause) {
-                    Cause.UpstreamCause upstreamCause = (Cause.UpstreamCause) cause;
+                if (cause instanceof Cause.UpstreamCause upstreamCause) {
                     Run<?, ?> upstreamRun = upstreamCause.getUpstreamRun();
                     if (upstreamRun == null) {
                         // hudson.model.Cause.UpstreamCause.getUpstreamRun() can return null, probably if upstream job or build has been deleted.
@@ -369,10 +366,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
     @Override
     public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
-        try (Scope parentScope = endPipelinePhaseSpan(run)) {
+        try (Scope ignoredParentScope = endPipelinePhaseSpan(run)) {
             Span finalizeSpan = getTracer().spanBuilder(JenkinsAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(finalizeSpan));
-            try (Scope scope = finalizeSpan.makeCurrent()) {
+            try (Scope ignored = finalizeSpan.makeCurrent()) {
                 this.getTraceService().putRunPhaseSpan(run, finalizeSpan);
             }
         }
@@ -393,7 +390,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
     @Override
     public void _onFinalized(@NonNull Run<?, ?> run) {
 
-        try (Scope parentScope = endPipelinePhaseSpan(run)) {
+        try (Scope ignoredParentScope = endPipelinePhaseSpan(run)) {
             Span parentSpan = Span.current();
             parentSpan.setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_DURATION_MILLIS, run.getDuration());
             String description = run.getDescription(); // make spotbugs happy extracting a variable

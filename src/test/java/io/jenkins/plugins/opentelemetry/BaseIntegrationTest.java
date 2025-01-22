@@ -214,22 +214,22 @@ public class BaseIntegrationTest {
         MatcherAssert.assertThat(environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_TIMEOUT.asEnvVar()), CoreMatchers.is("3000"));
     }
 
-    protected void assertJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans, String jobType) throws Exception {
+    protected void assertJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans, String jobType) throws Exception {
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(jobType));
         MatcherAssert.assertThat(attributes.get(JenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
     }
 
-    protected void assertFreestyleJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
+    protected void assertFreestyleJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) throws Exception {
         assertJobMetadata(build, spans, OtelUtils.FREESTYLE);
     }
 
-    protected void assertMatrixJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
+    protected void assertMatrixJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) throws Exception {
         assertJobMetadata(build, spans, OtelUtils.MATRIX);
     }
 
-    protected void assertMavenJobMetadata(AbstractBuild build, Tree<SpanDataWrapper> spans) throws Exception {
+    protected void assertMavenJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) throws Exception {
         assertJobMetadata(build, spans, OtelUtils.MAVEN);
     }
 

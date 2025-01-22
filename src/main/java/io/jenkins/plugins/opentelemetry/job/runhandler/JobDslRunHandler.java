@@ -37,8 +37,8 @@ public class JobDslRunHandler implements RunHandler {
     }
 
     @Override
-    public boolean canCreateSpanBuilder(@NonNull Run run) {
-        Job job = run.getParent();
+    public boolean canCreateSpanBuilder(@NonNull Run<?, ?> run) {
+        Job<?, ?> job = run.getParent();
         // perf optimization: directly lookup up in the SeedJobTransientActionFactory over `job.getAction(SeedJobAction.class)`
         Collection<? extends Action> actions = seedJobTransientActionFactory.createFor(job);
         return !actions.isEmpty();
@@ -46,12 +46,12 @@ public class JobDslRunHandler implements RunHandler {
 
     @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@NonNull Run run, @NonNull Tracer tracer) {
-        Job job = run.getParent();
+    public SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer) {
+        Job<?, ?> job = run.getParent();
         // perf optimization: directly lookup up in the SeedJobTransientActionFactory over `job.getAction(SeedJobAction.class)`
         Collection<? extends Action> actions = seedJobTransientActionFactory.createFor(job);
 
-        SeedJobAction seedJobAction = (SeedJobAction) actions.stream().filter(action -> action instanceof SeedJobAction).findFirst().orElseThrow(() -> new IllegalStateException());
+        SeedJobAction seedJobAction = (SeedJobAction) actions.stream().filter(action -> action instanceof SeedJobAction).findFirst().orElseThrow(IllegalStateException::new);
 
         // TODO understand the difference between seedJobAction.getTemplateJob() and seedJobAction.getSeedJob()
         Item seedJob = seedJobAction.getSeedJob();

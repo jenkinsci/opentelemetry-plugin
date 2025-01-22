@@ -1,6 +1,7 @@
 package io.jenkins.plugins.opentelemetry.remotespan;
 
 import com.github.rutledgepaulv.prune.Tree;
+import hudson.model.FreeStyleBuild;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -19,6 +20,7 @@ import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import jenkins.model.GlobalConfiguration;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -92,11 +94,11 @@ public class RemoteSpanTest extends BaseIntegrationTest {
         await().atMost(30, SECONDS).untilAsserted(() ->
             {
 
-                Run targetBuild = targetProject.getLastBuild();
+                Run<WorkflowJob, WorkflowRun> targetBuild = targetProject.getLastBuild();
                 assertThat(targetProject.getName() + " should complete successfully",
                     targetBuild != null && Result.SUCCESS.equals(targetBuild.getResult()));
 
-                Run targetSubBuild = targetSubProject.getLastBuild();
+                Run<FreeStyleProject, FreeStyleBuild> targetSubBuild = targetSubProject.getLastBuild();
                 assertThat(targetSubProject.getName() + " should complete successfully",
                     targetSubBuild != null && Result.SUCCESS.equals(targetSubBuild.getResult()));
             }

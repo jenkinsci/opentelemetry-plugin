@@ -128,8 +128,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
             String gitBranch = branch.getName();
 
             final SCM scm = branch.getScm();
-            if (scm instanceof GitSCM) {
-                GitSCM gitScm = (GitSCM) scm;
+            if (scm instanceof GitSCM gitScm) {
                 CloneOption clone = gitScm.getExtensions().get(CloneOption.class);
                 if (clone != null && clone.isShallow()) {
                     if (clone.getDepth() != null) {
@@ -155,7 +154,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
         }
     }
 
-    private SpanBuilder addCloneAttributes(@NonNull SpanBuilder spanBuilder, @NonNull boolean shallow, @NonNull int depth) {
+    private SpanBuilder addCloneAttributes(@NonNull SpanBuilder spanBuilder, boolean shallow, int depth) {
         return spanBuilder
             .setAttribute(JenkinsAttributes.GIT_CLONE_DEPTH, (long) depth)
             .setAttribute(JenkinsAttributes.GIT_CLONE_SHALLOW, shallow);

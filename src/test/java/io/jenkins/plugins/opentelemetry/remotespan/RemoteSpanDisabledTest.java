@@ -8,8 +8,10 @@ import static org.hamcrest.Matchers.not;
 
 import java.util.Optional;
 
+import hudson.model.FreeStyleBuild;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Test;
 
 import com.github.rutledgepaulv.prune.Tree;
@@ -70,11 +72,11 @@ public class RemoteSpanDisabledTest extends BaseIntegrationTest {
         await().atMost(30, SECONDS).untilAsserted(() ->
             {
 
-                Run targetBuild = targetProject.getLastBuild();
+                Run<WorkflowJob, WorkflowRun> targetBuild = targetProject.getLastBuild();
                 assertThat(targetProject.getName() + " should complete successfully",
                     targetBuild != null && Result.SUCCESS.equals(targetBuild.getResult()));
 
-                Run targetSubBuild = targetSubProject.getLastBuild();
+                Run<FreeStyleProject, FreeStyleBuild> targetSubBuild = targetSubProject.getLastBuild();
                 assertThat(targetSubProject.getName() + " should complete successfully",
                     targetSubBuild != null && Result.SUCCESS.equals(targetSubBuild.getResult()));
             }

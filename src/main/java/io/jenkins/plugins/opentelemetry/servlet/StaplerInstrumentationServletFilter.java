@@ -271,7 +271,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     /**
      * Throws an {@link IllegalArgumentException} if the given {@code pathInfo} doesn't match the given {@code expected} path
      *
-     * @param pathInfo
      * @param expected '*' element means not check
      * @throws IllegalArgumentException if not matching
      */
@@ -288,7 +287,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     /**
      * Return {@code false} if the given {@code pathInfo} doesn't match the given {@code expected} path
      *
-     * @param pathInfo
      * @param expected '*' element means not check
      */
     boolean isUrlPathInfoMatch(List<String> pathInfo, String... expected) {
@@ -298,7 +296,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     /**
      * Return {@code false} if the given {@code pathInfo} doesn't match the given {@code expected} path
      *
-     * @param pathInfo
      * @param expected expected uri segment. Segments starting with ':' or '*' means wildcard
      */
     boolean isUrlPathInfoMatch(List<String> pathInfo, List<String> expected) {
@@ -307,7 +304,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     }
 
     /**
-     * @param pathInfo
      * @param expected expected uri segment. Segments starting with ':' or '*' means wildcard
      */
     private int getUrlPathInfoMatch(List<String> pathInfo, List<String> expected) {
@@ -493,7 +489,7 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
             } else if ("job".equals(token)) {
                 // skip
             } else {
-                throw new IllegalStateException("Unexpected token '" + token + "' with previousToken '" + previousToken + "' and nextToken '" + nextToken + "' in " + pathInfo.stream().collect(Collectors.joining("/")));
+                throw new IllegalStateException("Unexpected token '" + token + "' with previousToken '" + previousToken + "' and nextToken '" + nextToken + "' in " + String.join("/", pathInfo));
             }
             idx++;
         }

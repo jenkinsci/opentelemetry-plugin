@@ -33,13 +33,13 @@ public class DefaultRunHandler implements RunHandler {
         "-" + ChangeRequestCheckoutStrategy.MERGE.name().toLowerCase(Locale.ENGLISH)));
 
     @Override
-    public boolean canCreateSpanBuilder(@NonNull Run run) {
+    public boolean canCreateSpanBuilder(@NonNull Run<?,?> run) {
         return true;
     }
 
     @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@NonNull Run run, @NonNull Tracer tracer) {
+    public SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer) {
         SCMHead head = SCMHead.HeadByItem.findHead(run.getParent());
         String spanName;
         if (head instanceof ChangeRequestSCMHead) {
@@ -47,9 +47,7 @@ public class DefaultRunHandler implements RunHandler {
         } else {
             spanName = run.getParent().getFullName();
         }
-        SpanBuilder spanBuilder = tracer.spanBuilder(JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
-
-        return spanBuilder;
+        return tracer.spanBuilder(JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
     }
 
     @VisibleForTesting
