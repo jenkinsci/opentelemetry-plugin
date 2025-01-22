@@ -66,7 +66,7 @@ public class OtelTraceService {
      * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_RUN_NAME},
      * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
      */
-    public Span getSpan(@NonNull Run run) {
+    public Span getSpan(@NonNull Run<?, ?> run) {
         return ImmutableList.copyOf(run.getActions(RunPhaseMonitoringAction.class))
             .reverse()
             .stream().filter(Predicate.not(RunPhaseMonitoringAction::hasEnded))
@@ -79,12 +79,12 @@ public class OtelTraceService {
      * Returns top level span of the {@link Run}
      */
     @NonNull
-    public Span getPipelineRootSpan(@NonNull Run run) {
+    public Span getPipelineRootSpan(@NonNull Run<?, ?> run) {
         return run.getActions(MonitoringAction.class).stream().findFirst().map(MonitoringAction::getSpan).orElse(Span.getInvalid());
     }
 
     @NonNull
-    public Span getSpan(@NonNull Run run, FlowNode flowNode) {
+    public Span getSpan(@NonNull Run<?, ?> run, FlowNode flowNode) {
         Iterable<FlowNode> ancestors = getAncestors(flowNode);
         for (FlowNode currentFlowNode : ancestors) {
             Optional<Span> span = ImmutableList.copyOf(currentFlowNode.getActions(FlowNodeMonitoringAction.class))
@@ -101,7 +101,7 @@ public class OtelTraceService {
     }
 
     @NonNull
-    public Span getSpan(@NonNull AbstractBuild build, @NonNull BuildStep buildStep) {
+    public Span getSpan(@NonNull AbstractBuild<?, ?> build, @NonNull BuildStep buildStep) {
         return ImmutableList.copyOf(build.getActions(BuildStepMonitoringAction.class)).reverse() // from last to first
             .stream()
             .filter(Predicate.not(BuildStepMonitoringAction::hasEnded)) // only the non ended spans
@@ -199,10 +199,10 @@ public class OtelTraceService {
     }
 
 
-    public void removeJobPhaseSpan(@NonNull Run run, @NonNull Span span) {
+    public void removeJobPhaseSpan(@NonNull Run<?, ?> run, @NonNull Span span) {
     }
 
-    public void removeBuildStepSpan(@NonNull AbstractBuild build, @NonNull BuildStep buildStep, @NonNull Span span) {
+    public void removeBuildStepSpan(@NonNull AbstractBuild<?, ?> build, @NonNull BuildStep buildStep, @NonNull Span span) {
         ImmutableList.copyOf(build.getActions(BuildStepMonitoringAction.class))
             .reverse()
             .stream()
@@ -215,11 +215,10 @@ public class OtelTraceService {
             });
     }
 
-    public void purgeRun(@NonNull Run run) {
+    public void purgeRun(@NonNull Run<?, ?> run) {
         run.getActions(OtelMonitoringAction.class).forEach(OtelMonitoringAction::purgeSpanAndCloseAssociatedScopes);
         // TODO verify we don't need this cleanup
-        if (run instanceof WorkflowRun) {
-            WorkflowRun workflowRun = (WorkflowRun) run;
+        if (run instanceof WorkflowRun workflowRun) {
             List<FlowNode> flowNodesHeads = Optional.ofNullable(workflowRun.getExecution()).map(FlowExecution::getCurrentHeads).orElse(Collections.emptyList());
             ForkScanner scanner = new ForkScanner();
             scanner.setup(flowNodesHeads);
@@ -227,22 +226,22 @@ public class OtelTraceService {
         }
     }
 
-    public void putSpan(@NonNull AbstractBuild build, @NonNull Span span) {
+    public void putSpan(@NonNull AbstractBuild<?, ?> build, @NonNull Span span) {
         build.addAction(new MonitoringAction(span));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
-    public void putSpan(AbstractBuild build, BuildStep buildStep, Span span) {
+    public void putSpan(AbstractBuild<?, ?> build, BuildStep buildStep, Span span) {
         build.addAction(new BuildStepMonitoringAction(span));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + build.getFullDisplayName() + ", " + buildStep + "," + OtelUtils.toDebugString(span) + ")");
     }
 
-    public void putSpan(@NonNull Run run, @NonNull Span span) {
+    public void putSpan(@NonNull Run<?, ?> run, @NonNull Span span) {
         run.addAction(new MonitoringAction(span));
         LOGGER.log(Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
-    public void putRunPhaseSpan(@NonNull Run run, @NonNull Span span) {
+    public void putRunPhaseSpan(@NonNull Run<?, ?> run, @NonNull Span span) {
         run.addAction(new RunPhaseMonitoringAction(span));
         // Phase spans do not get the attributes from the StepContext.
         // To ensure that attributes of child spans of the root span are set correctly we read them from an OpenTelemetryAttributesAction set on the Run.
@@ -250,7 +249,7 @@ public class OtelTraceService {
         LOGGER.log(Level.FINEST, () -> "putRunPhaseSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
-    public void putAgentSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
+    public void putAgentSpan(@NonNull Run<?, ?> run, @NonNull Span span, @NonNull FlowNode flowNode) {
         // Agent spans do not get the attributes from the StepContext.
         // To ensure that attributes of child spans of the root span are set correctly we read them from an OpenTelemetryAttributesAction set on the Run.
         setAttributesToSpan(span, run.getAction(OpenTelemetryAttributesAction.class));
@@ -258,7 +257,7 @@ public class OtelTraceService {
         LOGGER.log(Level.FINEST, () -> "putAgentSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
-    public void putSpan(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode) {
+    public void putSpan(@NonNull Run<?, ?> run, @NonNull Span span, @NonNull FlowNode flowNode) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
         flowNode.addAction(new FlowNodeMonitoringAction(span));
 
@@ -266,7 +265,7 @@ public class OtelTraceService {
             OtelUtils.toDebugString(flowNode) + ", " + OtelUtils.toDebugString(span) + ")");
     }
 
-    public void putSpanAndScopes(@NonNull Run run, @NonNull Span span, @NonNull FlowNode flowNode, List<Scope> scopes) {
+    public void putSpanAndScopes(@NonNull Run<?, ?> run, @NonNull Span span, @NonNull FlowNode flowNode, List<Scope> scopes) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
         flowNode.addAction(new FlowNodeMonitoringAction(span, scopes));
 

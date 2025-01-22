@@ -277,8 +277,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
             .ifPresent(action -> {
                 TraceStateBuilder traceStateBuilder = TraceState.builder();
                 Map<String, String> traceStateMap = action.getTraceStateMap();
-                traceStateMap.entrySet()
-                    .forEach(entry -> traceStateBuilder.put(entry.getKey(), entry.getValue()));
+                traceStateMap.forEach(traceStateBuilder::put);
                 SpanContext spanContext = SpanContext.createFromRemoteParent(
                     action.getTraceId(),
                     action.getSpanId(),
@@ -294,8 +293,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
         Optional<Cause> optCause = run.getCauses().stream().findFirst();
         optCause.ifPresent(cause -> {
-                if (cause instanceof Cause.UpstreamCause) {
-                    Cause.UpstreamCause upstreamCause = (Cause.UpstreamCause) cause;
+                if (cause instanceof Cause.UpstreamCause upstreamCause) {
                     Run<?, ?> upstreamRun = upstreamCause.getUpstreamRun();
                     if (upstreamRun == null) {
                         // hudson.model.Cause.UpstreamCause.getUpstreamRun() can return null, probably if upstream job or build has been deleted.
@@ -369,10 +367,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
     @Override
     public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
-        try (Scope parentScope = endPipelinePhaseSpan(run)) {
+        try (Scope ignoredParentScope = endPipelinePhaseSpan(run)) {
             Span finalizeSpan = getTracer().spanBuilder(JenkinsOtelSemanticAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME).setParent(Context.current()).startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(finalizeSpan));
-            try (Scope scope = finalizeSpan.makeCurrent()) {
+            try (Scope ignored = finalizeSpan.makeCurrent()) {
                 this.getTraceService().putRunPhaseSpan(run, finalizeSpan);
             }
         }
@@ -393,7 +391,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
     @Override
     public void _onFinalized(@NonNull Run<?, ?> run) {
 
-        try (Scope parentScope = endPipelinePhaseSpan(run)) {
+        try (Scope ignoredParentScope = endPipelinePhaseSpan(run)) {
             Span parentSpan = Span.current();
             parentSpan.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DURATION_MILLIS, run.getDuration());
             String description = run.getDescription(); // make spotbugs happy extracting a variable

@@ -124,7 +124,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
 
         Span span = spanBuilder.startSpan();
 
-        try (Scope scope = span.makeCurrent()) {
+        try (Scope ignored = span.makeCurrent()) {
 
             LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters = new LokiGetJenkinsBuildLogsQueryParametersBuilder()
                 .setJobFullName(jobFullName)
@@ -183,7 +183,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
 
         Span span = spanBuilder.startSpan();
 
-        try (Scope scope = span.makeCurrent()) {
+        try (Scope ignored = span.makeCurrent()) {
 
             LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters = new LokiGetJenkinsBuildLogsQueryParametersBuilder()
                 .setJobFullName(jobFullName)

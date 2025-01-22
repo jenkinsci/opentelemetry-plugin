@@ -21,7 +21,7 @@ public class SpanBuilderMock implements SpanBuilder {
 
     private final SpanBuilder delegate;
 
-    private final Map<AttributeKey, Object> attributes = new HashMap<>();
+    private final Map<AttributeKey<?>, Object> attributes = new HashMap<>();
 
     public SpanBuilderMock(String spanName) {
         this.delegate = OpenTelemetry.noop().getTracer("noop").spanBuilder(spanName);
@@ -110,7 +110,7 @@ public class SpanBuilderMock implements SpanBuilder {
     }
 
     @NonNull
-    public Map<AttributeKey, Object> getAttributes() {
+    public Map<AttributeKey<?>, Object> getAttributes() {
         return attributes;
     }
 }

@@ -5,11 +5,18 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
-import static org.junit.Assume.assumeFalse;
-
-import java.util.List;
-
+import com.github.rutledgepaulv.prune.Tree;
+import hudson.model.Cause;
+import hudson.model.FreeStyleBuild;
+import hudson.model.FreeStyleProject;
+import hudson.model.Node;
+import hudson.model.Result;
+import hudson.tasks.Ant;
+import hudson.tasks.ArtifactArchiver;
+import hudson.tasks.Shell;
+import hudson.tasks._ant.AntTargetNote;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.opentelemetry.api.common.Attributes;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -24,20 +31,10 @@ import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
-import com.github.rutledgepaulv.prune.Tree;
 import java.util.List;
 
-import hudson.model.Cause;
-import hudson.model.FreeStyleBuild;
-import hudson.model.FreeStyleProject;
-import hudson.model.Node;
-import hudson.model.Result;
-import hudson.tasks.Ant;
-import hudson.tasks.ArtifactArchiver;
-import hudson.tasks.Shell;
-import hudson.tasks._ant.AntTargetNote;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.opentelemetry.api.common.Attributes;
+import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
+import static org.junit.Assume.assumeFalse;
 
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
 
@@ -45,7 +42,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     public TemporaryFolder tmp = new TemporaryFolder();
 
     @Rule
-    public TestRule antTargetNoteEnabled = new FlagRule<Boolean>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
+    public TestRule antTargetNoteEnabled = new FlagRule<>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
 
     @Test
     public void testFreestyleJob() throws Exception {
@@ -186,7 +183,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.setScm(new SingleFileSCM("build.xml", io.jenkins.plugins.opentelemetry.JenkinsOtelPluginFreestyleIntegrationTest.class.getResource("ant.xml")));
         String antName = configureDefaultAnt().getName();
-        project.getBuildersList().add(new Ant("foo", antName,null,null,null));
+        project.getBuildersList().add(new Ant("foo", antName, null, null, null));
         final Node agent = jenkinsRule.createOnlineSlave();
         try {
             agent.setLabelString("ant");
@@ -205,7 +202,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
             assertBuildStepMetadata(spans, "ant", "ant");
             assertNodeMetadata(spans, rootSpanName, true);
         } finally {
-          jenkinsRule.jenkins.removeNode(agent);
+            jenkinsRule.jenkins.removeNode(agent);
         }
     }
 

@@ -87,7 +87,7 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
                 .setAttribute("query.index", ElasticsearchFields.INDEX_TEMPLATE_PATTERNS)
                 .setAttribute("query.keepAlive", POINT_IN_TIME_KEEP_ALIVE.time())
                 .startSpan();
-            try (Scope esOpenPitSpanScope = esOpenPitSpan.makeCurrent()) {
+            try (Scope ignored = esOpenPitSpan.makeCurrent()) {
                 pointInTimeId = esClient.openPointInTime(pit -> pit.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS).keepAlive(POINT_IN_TIME_KEEP_ALIVE)).id();
                 esOpenPitSpan.setAttribute("pitId", pointInTimeId);
             } finally {
@@ -134,12 +134,12 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
             spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId);
         }
         Span closeSpan = spanBuilder.startSpan();
-        try (Scope closeSpanScope = closeSpan.makeCurrent()) {
+        try (Scope ignored = closeSpan.makeCurrent()) {
             if (pointInTimeId != null) {
                 Span esClosePitSpan = this.tracer.spanBuilder("Elasticsearch.closePointInTime")
                     .setAttribute("query.pointInTimeId", pointInTimeId)
                     .startSpan();
-                try (Scope scope = esClosePitSpan.makeCurrent()) {
+                try (Scope ignored2 = esClosePitSpan.makeCurrent()) {
                     esClient.closePointInTime(builder -> builder.id(pointInTimeId));
                 } finally {
                     esClosePitSpan.end();
@@ -172,7 +172,7 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
 
         Span esSearchSpan = tracer.spanBuilder("ElasticsearchLogsSearchIterator.search")
             .startSpan();
-        try (Scope esSearchSpanScope = esSearchSpan.makeCurrent()) {
+        try (Scope ignoredEsSearchSpanScope = esSearchSpan.makeCurrent()) {
             esSearchSpan
                 .setAttribute("query.pointInTimeId", lazyLoadPointInTimeId())
                 .setAttribute("query.from", readLines)

@@ -97,7 +97,7 @@ public class MonitoringComputerListener extends ComputerListener implements Open
         if (jenkins == null) {
             return 0;
         }
-        return Arrays.stream(jenkins.getComputers()).filter(computer -> computer.isOffline()).count();
+        return Arrays.stream(jenkins.getComputers()).filter(Computer::isOffline).count();
     }
 
     private long getOnlineAgentsCount() {
@@ -105,7 +105,7 @@ public class MonitoringComputerListener extends ComputerListener implements Open
         if (jenkins == null) {
             return 0;
         }
-        return Arrays.stream(jenkins.getComputers()).filter(computer -> computer.isOnline()).count();
+        return Arrays.stream(jenkins.getComputers()).filter(Computer::isOnline).count();
     }
 
     private long getAgentsCount() {
@@ -131,7 +131,7 @@ public class MonitoringComputerListener extends ComputerListener implements Open
     }
 
     @Override
-    public void onLaunchFailure(Computer computer, TaskListener taskListener) throws IOException, InterruptedException {
+    public void onLaunchFailure(Computer computer, TaskListener taskListener) {
         failureAgentCounter.add(1);
         LOGGER.log(Level.FINE, () -> "onLaunchFailure(" + computer + "): ");
     }

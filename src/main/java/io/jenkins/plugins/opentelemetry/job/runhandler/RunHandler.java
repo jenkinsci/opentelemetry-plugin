@@ -14,12 +14,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface RunHandler extends Comparable<RunHandler> {
 
-    default void configure(ConfigProperties config){}
+    default void configure(ConfigProperties config) {
+    }
 
-    boolean canCreateSpanBuilder(@NonNull Run run);
+    boolean canCreateSpanBuilder(@NonNull Run<?, ?> run);
 
     @NonNull
-    SpanBuilder createSpanBuilder(@NonNull Run run, @NonNull Tracer tracer);
+    SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer);
 
     /**
      * @return the ordinal of this handler to execute run handlers in predictable order. The smallest ordinal is executed first.

@@ -99,8 +99,8 @@ public class MonitoringBuildStepListener extends BuildStepListener  {
      */
     @MustBeClosed
     @NonNull
-    protected Scope setupContext(AbstractBuild build, @NonNull BuildStep buildStep) {
-        build = verifyNotNull(build, "%s No build found for step %s", build, buildStep);
+    protected Scope setupContext(AbstractBuild<?, ?> build, @NonNull BuildStep buildStep) {
+        verifyNotNull(build, "%s No build found for step %s", build, buildStep);
         Span span = this.otelTraceService.getSpan(build, buildStep);
         return span.makeCurrent();
     }
