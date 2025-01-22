@@ -25,10 +25,8 @@ import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 import java.net.URISyntaxException;
-import java.util.logging.Logger;
 
 public abstract class AbstractGitStepHandler implements StepHandler {
-    private final static Logger LOGGER = Logger.getLogger(AbstractGitStepHandler.class.getName());
 
     public String searchGitUserName(@Nullable String credentialsId, @NonNull WorkflowRun run) {
         if (credentialsId == null) {

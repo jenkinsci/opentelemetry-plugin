@@ -151,7 +151,7 @@ class OtelLogStorage implements LogStorage {
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
-        try (Scope scope = span.makeCurrent()){
+        try (Scope ignored = span.makeCurrent()){
             LogStorageRetriever logStorageRetriever = getLogStorageRetriever();
             Instant startTime = Instant.ofEpochMilli(run.getStartTimeInMillis());
             Instant endTime = run.getDuration() == 0 ? null : startTime.plusMillis(run.getDuration());
@@ -179,7 +179,7 @@ class OtelLogStorage implements LogStorage {
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
-        try (Scope scope = span.makeCurrent()){
+        try (Scope ignored = span.makeCurrent()){
             String traceId = runTraceContext.getTraceId();
             String spanId = runTraceContext.getSpanId();
             if (traceId == null || spanId == null) {
@@ -203,17 +203,17 @@ class OtelLogStorage implements LogStorage {
     @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST", justification = "forBuild only accepts Run")
     @Deprecated
     @Override
-    public File getLogFile(FlowExecutionOwner.Executable build, boolean complete) {
+    public File getLogFile(@NonNull FlowExecutionOwner.Executable build, boolean complete) {
         logger.log(Level.FINE, "getLogFile(complete: " + complete + ")");
         Span span = tracer.spanBuilder("OtelLogStorage.getLogFile")
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
             .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
-        try (Scope scope = span.makeCurrent()) {
+        try (Scope ignored = span.makeCurrent()) {
             AnnotatedLargeText<FlowExecutionOwner.Executable> logText = overallLog(build, complete);
             // Not creating a temp file since it would be too expensive to have multiples:
-            File f = new File(((Run) build).getRootDir(), "log");
+            File f = new File(((Run<?, ?>) build).getRootDir(), "log");
             f.deleteOnExit();
             try (OutputStream os = new FileOutputStream(f)) {
                 // Similar to Run#writeWholeLogTo but terminates even if !complete:

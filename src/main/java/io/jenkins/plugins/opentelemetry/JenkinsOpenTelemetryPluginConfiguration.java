@@ -456,7 +456,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nullable
-    private Descriptor<? extends Describable> getStepDescriptor(@NonNull FlowNode node, @Nullable Descriptor<? extends Describable> descriptor) {
+    private Descriptor<? extends Describable<?>> getStepDescriptor(@NonNull FlowNode node, @Nullable Descriptor<? extends Describable<?>> descriptor) {
         // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
         if (descriptor instanceof CoreStep.DescriptorImpl) {
             Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
@@ -471,8 +471,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nullable
-    private Descriptor<? extends Describable> getBuildStepDescriptor(@NonNull BuildStep buildStep) {
-        return Jenkins.get().getDescriptor((Class<? extends Describable>) buildStep.getClass());
+    private Descriptor<? extends Describable<?>> getBuildStepDescriptor(@NonNull BuildStep buildStep) {
+        return Jenkins.get().getDescriptor((Class<? extends Describable<?>>) buildStep.getClass());
     }
 
     @NonNull
@@ -491,7 +491,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @NonNull
-    public StepPlugin findStepPluginOrDefault(@NonNull String stepName, @Nullable Descriptor<? extends Describable> descriptor) {
+    public StepPlugin findStepPluginOrDefault(@NonNull String stepName, @Nullable Descriptor<? extends Describable<?>> descriptor) {
         StepPlugin data = loadedStepsPlugins.get(stepName);
         if (data != null) {
             LOGGER.log(Level.FINEST, " found the plugin for the step '" + stepName + "' - " + data);
@@ -516,7 +516,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @NonNull
-    public String findSymbolOrDefault(@NonNull String buildStepName, @Nullable Descriptor<? extends Describable> descriptor) {
+    public String findSymbolOrDefault(@NonNull String buildStepName, @Nullable Descriptor<? extends Describable<?>> descriptor) {
         String value = buildStepName;
         if (descriptor != null) {
             Set<String> values = SymbolLookup.getSymbolValue(descriptor);
