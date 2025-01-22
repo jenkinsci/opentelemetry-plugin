@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.opentelemetry.instrumentation.resources.ContainerResourceProvider;
 import io.opentelemetry.instrumentation.resources.HostIdResourceProvider;
 import io.opentelemetry.instrumentation.resources.HostResourceProvider;
@@ -46,7 +46,7 @@ public final class GlobalOpenTelemetrySdk {
         openTelemetry = ReconfigurableOpenTelemetry.get();
         otelLogger = openTelemetry
             .getLogsBridge()
-            .loggerBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
+            .loggerBuilder(JenkinsAttributes.INSTRUMENTATION_NAME)
             .build();
     }
 

@@ -11,7 +11,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
@@ -118,12 +118,12 @@ public abstract class AbstractGitStepHandler implements StepHandler {
             spanBuilder = tracer.spanBuilder(spanName);
         }
 
-        spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.GIT_REPOSITORY, gitRepositoryPath);
+        spanBuilder.setAttribute(JenkinsAttributes.GIT_REPOSITORY, gitRepositoryPath);
         if (!Strings.isNullOrEmpty(gitBranch)) {
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.GIT_BRANCH, gitBranch);
+            spanBuilder.setAttribute(JenkinsAttributes.GIT_BRANCH, gitBranch);
         }
         if (!Strings.isNullOrEmpty(gitUserName)) {
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.GIT_USERNAME, gitUserName);
+            spanBuilder.setAttribute(JenkinsAttributes.GIT_USERNAME, gitUserName);
         }
 
         return spanBuilder;

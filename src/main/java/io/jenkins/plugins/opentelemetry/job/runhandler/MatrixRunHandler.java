@@ -12,7 +12,7 @@ import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
 import hudson.matrix.MatrixRun;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
@@ -46,7 +46,7 @@ public class MatrixRunHandler implements RunHandler {
 
             MatrixProject matrixProject = matrixConfiguration.getParent();
             String spanName = expandJobName ? run.getParent().getFullName() : matrixProject.getFullName() + "/execution";
-            SpanBuilder spanBuilder = tracer.spanBuilder(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
+            SpanBuilder spanBuilder = tracer.spanBuilder(JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
             Combination combination = matrixConfiguration.getCombination();
             List<String> axisNames = new ArrayList<>();
             List<String> axisValues = new ArrayList<>();
@@ -56,13 +56,13 @@ public class MatrixRunHandler implements RunHandler {
                     axisValues.add(entry.getValue());
                 }
             );
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_AXIS_NAMES, axisNames);
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_AXIS_VALUES, axisValues);
+            spanBuilder.setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_AXIS_NAMES, axisNames);
+            spanBuilder.setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_AXIS_VALUES, axisValues);
 
             return spanBuilder;
         } else if (run instanceof MatrixBuild) {
             MatrixBuild matrixBuild = (MatrixBuild) run;
-            return tracer.spanBuilder(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + matrixBuild.getParent().getFullName());
+            return tracer.spanBuilder(JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + matrixBuild.getParent().getFullName());
         } else {
             throw new IllegalStateException("Unsupported run type " + run);
         }

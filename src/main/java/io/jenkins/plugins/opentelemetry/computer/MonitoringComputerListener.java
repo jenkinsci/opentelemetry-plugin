@@ -14,8 +14,8 @@ import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
@@ -62,29 +62,29 @@ public class MonitoringComputerListener extends ComputerListener implements Open
                 for (Map.Entry<String, String> attribute : attributesAsMap.entrySet()) {
                     openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
                 }
-                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey()), JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
+                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()), JenkinsAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
                 LOGGER.log(Level.FINER, () -> "Resources for Jenkins Controller computer " + controllerComputer + ": " + openTelemetryAttributesAction);
                 controllerComputer.addAction(openTelemetryAttributesAction);
             } catch (IOException e) {
                 LOGGER.log(Level.WARNING, "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
             }
         }
-        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
+        meter.gaugeBuilder(JenkinsMetrics.JENKINS_AGENTS_OFFLINE)
             .ofLongs()
             .setDescription("Number of offline agents")
             .setUnit("{agents}")
             .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount()));
-        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
+        meter.gaugeBuilder(JenkinsMetrics.JENKINS_AGENTS_ONLINE)
             .ofLongs()
             .setDescription("Number of online agents")
             .setUnit("{agents}")
             .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount()));
-        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
+        meter.gaugeBuilder(JenkinsMetrics.JENKINS_AGENTS_TOTAL)
             .ofLongs()
             .setDescription("Number of agents")
             .setUnit("{agents}")
             .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount()));
-        failureAgentCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
+        failureAgentCounter = meter.counterBuilder(JenkinsMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
             .setDescription("Number of ComputerLauncher failures")
             .setUnit("{agents}")
             .build();
@@ -124,7 +124,7 @@ public class MonitoringComputerListener extends ComputerListener implements Open
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {
             openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
         }
-        openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
+        openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
 
         LOGGER.log(Level.FINE, () -> "preOnline(" + computer + "): " + openTelemetryAttributesAction);
         computer.addAction(openTelemetryAttributesAction);

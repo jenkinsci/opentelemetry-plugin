@@ -11,7 +11,7 @@ import hudson.model.Action;
 import hudson.model.Item;
 import hudson.model.Job;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
@@ -69,12 +69,12 @@ public class JobDslRunHandler implements RunHandler {
             spanName = collapseJobName ? "Job from seed '" + templateFullName + "'" : job.getFullName();
         }
 
-        SpanBuilder spanBuilder = tracer.spanBuilder(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
+        SpanBuilder spanBuilder = tracer.spanBuilder(JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
         if (templateFullName != null) {
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TEMPLATE_ID, templateFullName);
+            spanBuilder.setAttribute(JenkinsAttributes.CI_PIPELINE_TEMPLATE_ID, templateFullName);
         }
         if (templateUrl != null) {
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TEMPLATE_URL, templateUrl);
+            spanBuilder.setAttribute(JenkinsAttributes.CI_PIPELINE_TEMPLATE_URL, templateUrl);
         }
         return spanBuilder;
     }

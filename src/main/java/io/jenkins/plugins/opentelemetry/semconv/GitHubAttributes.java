@@ -7,7 +7,7 @@ package io.jenkins.plugins.opentelemetry.semconv;
 
 import io.opentelemetry.api.common.AttributeKey;
 
-public final class GitHubSemanticAttributes {
+public final class GitHubAttributes {
 
     public static final AttributeKey<Long> GITHUB_APP_ID = AttributeKey.longKey("github.app.id");
 

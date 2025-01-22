@@ -11,7 +11,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.metrics.Meter;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
@@ -45,7 +45,7 @@ public class DiskUsageMonitoringInitializer implements OpenTelemetryLifecycleLis
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage...");
 
         Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
-        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
+        meter.gaugeBuilder(JenkinsMetrics.JENKINS_DISK_USAGE_BYTES)
             .ofLongs()
             .setDescription("Disk usage of first level folder in JENKINS_HOME.")
             .setUnit("byte")

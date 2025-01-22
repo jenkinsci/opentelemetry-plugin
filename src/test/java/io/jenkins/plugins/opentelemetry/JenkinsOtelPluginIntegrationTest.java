@@ -34,8 +34,8 @@ import hudson.Functions;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
@@ -73,14 +73,14 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
-        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, JenkinsAttributes.AGENT_ALLOCATION_UI, JenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
@@ -114,7 +114,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         LOGGER.log(Level.INFO, "InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE: " + InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE);
         Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
         dumpMetrics(exportedMetrics);
-        MetricData diskUsageData = exportedMetrics.get(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES);
+        MetricData diskUsageData = exportedMetrics.get(JenkinsMetrics.JENKINS_DISK_USAGE_BYTES);
         MatcherAssert.assertThat(diskUsageData, CoreMatchers.notNullValue());
         // TODO TEST METRICS WITH PROPER RESET BETWEEN TESTS
         MatcherAssert.assertThat(diskUsageData.getType(), CoreMatchers.is(MetricDataType.LONG_GAUGE));
@@ -172,33 +172,33 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
-        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Stage: foo", "Phase: Run");
+        checkChainOfSpans(spans, JenkinsAttributes.AGENT_ALLOCATION_UI, JenkinsAttributes.AGENT_UI, "Stage: foo", "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
 
-        Optional<Tree.Node<SpanDataWrapper>> executorNodeAllocation = spans.breadthFirstSearchNodes(node -> (JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI).equals(node.getData().spanData.getName()));
+        Optional<Tree.Node<SpanDataWrapper>> executorNodeAllocation = spans.breadthFirstSearchNodes(node -> (JenkinsAttributes.AGENT_ALLOCATION_UI).equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(executorNodeAllocation, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = executorNodeAllocation.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
 
-        Optional<Tree.Node<SpanDataWrapper>> executorNode = spans.breadthFirstSearchNodes(node -> (JenkinsOtelSemanticAttributes.AGENT_UI).equals(node.getData().spanData.getName()));
+        Optional<Tree.Node<SpanDataWrapper>> executorNode = spans.breadthFirstSearchNodes(node -> (JenkinsAttributes.AGENT_UI).equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(executorNode, CoreMatchers.is(CoreMatchers.notNullValue()));
         attributes = executorNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.WORKFLOW));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.WORKFLOW));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
     }
 
     @Test
@@ -222,19 +222,19 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
         Optional<Tree.Node<SpanDataWrapper>> stageNode = spans.breadthFirstSearchNodes(node -> "Stage: ze-stage1".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(stageNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = stageNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
@@ -258,16 +258,16 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
 
         Optional<Tree.Node<SpanDataWrapper>> shellNode = spans.breadthFirstSearchNodes(node -> "shell-1".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(shellNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = shellNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
@@ -289,9 +289,9 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
-        checkChainOfSpans(spans, "error", "Stage: ze-stage2", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", JenkinsAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", JenkinsAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "error", "Stage: ze-stage2", JenkinsAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
     }
 
@@ -319,17 +319,17 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         parentPipeline.setDefinition(new CpsFlowDefinition(parentPipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, parentPipeline.scheduleBuild2(0));
 
-        String childPipelineRootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + childPipeline.getName();
+        String childPipelineRootSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + childPipeline.getName();
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans,
             "Stage: child-pipeline",
-            JenkinsOtelSemanticAttributes.AGENT_UI,
+            JenkinsAttributes.AGENT_UI,
             "Phase: Run",
             childPipelineRootSpanName, // child pipeline execution
             "build: " + childPipeline.getName(),
             "Stage: trigger-child-pipeline",
-            JenkinsOtelSemanticAttributes.AGENT_UI,
+            JenkinsAttributes.AGENT_UI,
             "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(15L));
     }
@@ -356,17 +356,17 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
-        checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
-        checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", JenkinsAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", JenkinsAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", JenkinsAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
 
         Optional<Tree.Node<SpanDataWrapper>> branchNode = spans.breadthFirstSearchNodes(node -> "Parallel branch: parallelBranch1".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(branchNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = branchNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
@@ -415,16 +415,16 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "git: github.com/octocat/Hello-World", "Stage: foo", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "git: github.com/octocat/Hello-World", "Stage: foo", JenkinsAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         Optional<Tree.Node<SpanDataWrapper>> gitNode = spans.breadthFirstSearchNodes(node -> "git: github.com/octocat/Hello-World".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(gitNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = gitNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_USERNAME), CoreMatchers.is(gitUserName));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_USERNAME), CoreMatchers.is(gitUserName));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
@@ -443,17 +443,17 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "checkout: github.com/octocat/Hello-World", "Stage: foo", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "checkout: github.com/octocat/Hello-World", "Stage: foo", JenkinsAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         Optional<Tree.Node<SpanDataWrapper>> checkoutNode = spans.breadthFirstSearchNodes(node -> "checkout: github.com/octocat/Hello-World".equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(checkoutNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = checkoutNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(true));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(2L));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(true));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(2L));
     }
 
     @Test
@@ -472,14 +472,14 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "checkout: github.com/octocat/Hello-World", "Stage: foo", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "checkout: github.com/octocat/Hello-World", "Stage: foo", JenkinsAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         Optional<Tree.Node<SpanDataWrapper>> checkoutNode = spans.breadthFirstSearchNodes(node -> "checkout: github.com/octocat/Hello-World".equals(node.getData().spanData.getName()));
         Attributes attributes = checkoutNode.get().getData().spanData.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
+        MatcherAssert.assertThat(attributes.get(JenkinsAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
     }
 
     @Test
@@ -502,7 +502,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans, "sleep", "Parallel branch: branchThatWillBeInterrupted", "Stage: ze-parallel-stage", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "sleep", "Parallel branch: branchThatWillBeInterrupted", "Stage: ze-parallel-stage", JenkinsAttributes.AGENT_UI, "Phase: Run");
 
         SpanData sleepSpanData = spans.breadthFirstSearchNodes(node -> "sleep".equals(node.getData().spanData.getName())).get().getData().spanData;
         MatcherAssert.assertThat(sleepSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
@@ -510,7 +510,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         SpanData branchThatWillBeInterruptedSpanData = spans.breadthFirstSearchNodes(node -> "Parallel branch: branchThatWillBeInterrupted".equals(node.getData().spanData.getName())).get().getData().spanData;
         MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
         MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getStatus().getDescription(), CoreMatchers.is("FlowInterruptedException: FailFastCause: Failed in branch failingBranch"));
-        MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getAttributes().get(JenkinsOtelSemanticAttributes.JENKINS_STEP_INTERRUPTION_CAUSES), CoreMatchers.is(List.of("FailFastCause: Failed in branch failingBranch")));
+        MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getAttributes().get(JenkinsAttributes.JENKINS_STEP_INTERRUPTION_CAUSES), CoreMatchers.is(List.of("FailFastCause: Failed in branch failingBranch")));
 
         SpanData failingBranchSpanData = spans.breadthFirstSearchNodes(node -> "Parallel branch: failingBranch".equals(node.getData().spanData.getName())).get().getData().spanData;
         MatcherAssert.assertThat(failingBranchSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.ERROR));
@@ -536,10 +536,10 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans,"SpanContextPropagationTestStep.execution", "spanContextPropagationSynchronousTestStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans,"SpanContextPropagationTestStep.execution", "spanContextPropagationSynchronousTestStep", "Stage: ze-stage1", JenkinsAttributes.AGENT_UI, "Phase: Run");
     }
     @Test
     public void testSpanContextPropagationSynchronousNonBlockingTestStep() throws Exception {
@@ -560,10 +560,10 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
-        checkChainOfSpans(spans,"SpanContextPropagationSynchronousNonBlockingTestStep.execution", "spanContextPropagationSynchronousNonBlockingTestStep", "Stage: ze-stage1", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans,"SpanContextPropagationSynchronousNonBlockingTestStep.execution", "spanContextPropagationSynchronousNonBlockingTestStep", "Stage: ze-stage1", JenkinsAttributes.AGENT_UI, "Phase: Run");
     }
 
 }

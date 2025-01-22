@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import com.google.common.base.Objects;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
@@ -51,8 +51,8 @@ public class RunTraceContext implements Serializable {
     @NonNull
     public Attributes toAttributes() {
         return Attributes.builder()
-            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
-            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, runNumber)
+            .put(JenkinsAttributes.CI_PIPELINE_ID, jobFullName)
+            .put(JenkinsAttributes.CI_PIPELINE_RUN_NUMBER, runNumber)
             .build();
     }
 

@@ -26,7 +26,7 @@ import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.backend.custom.CustomLogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
@@ -232,8 +232,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
         Map<String, String> configurationProperties = new HashMap<>();
         getObservabilityBackends().forEach(backend -> configurationProperties.putAll(backend.getOtelConfigurationProperties()));
-        configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_VERSION.getKey(), OtelUtils.getJenkinsVersion());
-        configurationProperties.put(JenkinsOtelSemanticAttributes.JENKINS_URL.getKey(), this.jenkinsLocationConfiguration.getUrl());
+        configurationProperties.put(JenkinsAttributes.JENKINS_VERSION.getKey(), OtelUtils.getJenkinsVersion());
+        configurationProperties.put(JenkinsAttributes.JENKINS_URL.getKey(), this.jenkinsLocationConfiguration.getUrl());
         configurationProperties.put(OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS.asProperty(), Boolean.toString(this.exportOtelConfigurationAsEnvironmentVariables));
 
         // use same Jenkins instance identifier as the Jenkins Support Core plugin. No need to add the complexity of the instance-identity-plugin
@@ -529,7 +529,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * @see io.opentelemetry.semconv.ServiceAttributes#SERVICE_NAME
      */
     public String getServiceName() {
-        return (Strings.isNullOrEmpty(this.serviceName)) ? JenkinsOtelSemanticAttributes.JENKINS : this.serviceName;
+        return (Strings.isNullOrEmpty(this.serviceName)) ? JenkinsAttributes.JENKINS : this.serviceName;
     }
 
     @DataBoundSetter
@@ -542,7 +542,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * @see io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes#SERVICE_NAMESPACE
      */
     public String getServiceNamespace() {
-        return (Strings.isNullOrEmpty(this.serviceNamespace)) ? JenkinsOtelSemanticAttributes.JENKINS : this.serviceNamespace;
+        return (Strings.isNullOrEmpty(this.serviceNamespace)) ? JenkinsAttributes.JENKINS : this.serviceNamespace;
     }
 
     @DataBoundSetter

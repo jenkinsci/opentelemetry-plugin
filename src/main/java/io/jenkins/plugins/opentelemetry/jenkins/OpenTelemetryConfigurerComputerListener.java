@@ -17,9 +17,8 @@ import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.ServiceAttributes;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
@@ -156,10 +155,10 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
         // use the same service.name for the Jenkins build agent in order to not break visualization
         // of pipeline logs stored externally (Loki, Elasticsearch...) as these visualization logics
         // may query on the service name
-        String serviceName = Optional.ofNullable(otelSdkResourceProperties.get(ServiceAttributes.SERVICE_NAME.getKey())).orElse(JenkinsAttributes.JENKINS);// + "-agent";
+        String serviceName = Optional.ofNullable(otelSdkResourceProperties.get(ServiceAttributes.SERVICE_NAME.getKey())).orElse(io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes.JENKINS);// + "-agent";
         buildAgentOtelSdkResourceProperties.put(ServiceAttributes.SERVICE_NAME.getKey(), serviceName);
-        buildAgentOtelSdkResourceProperties.put(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
-        buildAgentOtelSdkResourceProperties.put(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
+        buildAgentOtelSdkResourceProperties.put(JenkinsAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
+        buildAgentOtelSdkResourceProperties.put(JenkinsAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
 
         OpenTelemetryConfigurerMasterToSlaveCallable callable;
         callable = new OpenTelemetryConfigurerMasterToSlaveCallable(buildAgentOtelSdkProperties, buildAgentOtelSdkResourceProperties);

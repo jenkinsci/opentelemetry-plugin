@@ -6,8 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.ServiceAttributes;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
@@ -73,7 +72,7 @@ public class JenkinsControllerOpenTelemetryTest {
             CoreMatchers.is(expectedServiceNamespace));
         if (System.getenv("JENKINS_URL") == null && System.getProperty("jenkins.url") == null) {
             MatcherAssert.assertThat(
-                resource.getAttribute(JenkinsOtelSemanticAttributes.JENKINS_URL),
+                resource.getAttribute(JenkinsAttributes.JENKINS_URL),
                 CoreMatchers.is("https://jenkins.example.com/"));
         } else {
             // on ci.jenkins.io, the JENKINS_URL environment variable is set to 'https://ci.jenkins.io", breaking the check
@@ -81,7 +80,7 @@ public class JenkinsControllerOpenTelemetryTest {
                 "because the environment variable or the system property is specified");
         }
         MatcherAssert.assertThat(
-            resource.getAttribute(JenkinsOtelSemanticAttributes.JENKINS_VERSION),
+            resource.getAttribute(JenkinsAttributes.JENKINS_VERSION),
             CoreMatchers.is("1.2.3"));
         MatcherAssert.assertThat(
             resource.getAttribute(ServiceAttributes.SERVICE_VERSION),

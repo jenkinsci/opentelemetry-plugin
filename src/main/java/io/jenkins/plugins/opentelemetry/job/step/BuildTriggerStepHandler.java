@@ -17,7 +17,7 @@ import org.jenkinsci.plugins.workflow.support.steps.build.BuildTriggerStep;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import jenkins.YesNoMaybe;
@@ -35,7 +35,7 @@ public class BuildTriggerStepHandler implements StepHandler {
         Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
         String job = checkNotNull(arguments.get("job")).toString();
         SpanBuilder spanBuilder = tracer.spanBuilder("build: " + job);
-        spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_NAME, job);
+        spanBuilder.setAttribute(JenkinsAttributes.CI_PIPELINE_NAME, job);
         return spanBuilder;
     }
 }

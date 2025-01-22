@@ -9,7 +9,6 @@ import hudson.PluginWrapper;
 import hudson.model.Computer;
 import hudson.model.Job;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -20,7 +19,7 @@ import java.util.List;
  * @see io.opentelemetry.api.common.Attributes
  * @see io.opentelemetry.semconv.ServiceAttributes
  */
-public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
+public final class JenkinsAttributes extends io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes {
     public static final AttributeKey<String> CI_PIPELINE_TYPE = AttributeKey.stringKey("ci.pipeline.type");
     public static final AttributeKey<String> CI_PIPELINE_MULTIBRANCH_TYPE = AttributeKey.stringKey("ci.pipeline.multibranch.type");
     /**

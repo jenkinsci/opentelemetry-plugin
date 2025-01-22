@@ -12,7 +12,7 @@ import hudson.slaves.CloudProvisioningListener;
 import hudson.slaves.NodeProvisioner;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import jenkins.YesNoMaybe;
@@ -37,11 +37,11 @@ public class MonitoringCloudListener extends CloudProvisioningListener implement
         Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller cloud agent provisioning...");
 
-        failureCloudCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_FAILURE)
+        failureCloudCounter = meter.counterBuilder(JenkinsMetrics.JENKINS_CLOUD_AGENTS_FAILURE)
             .setDescription("Number of failed cloud agents when provisioning")
             .setUnit("{agents}")
             .build();
-        totalCloudCount = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_CLOUD_AGENTS_COMPLETED)
+        totalCloudCount = meter.counterBuilder(JenkinsMetrics.JENKINS_CLOUD_AGENTS_COMPLETED)
             .setDescription("Number of provisioned cloud agents")
             .setUnit("{agents}")
             .build();

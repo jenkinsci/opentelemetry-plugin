@@ -12,7 +12,7 @@ import hudson.model.BuildListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.opentelemetry.common.Clocks;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.sdk.common.Clock;
 import jenkins.util.JenkinsJVM;
@@ -100,7 +100,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
         @Override
         public io.opentelemetry.api.logs.Logger getOtelLogger() {
             JenkinsJVM.checkJenkinsJVM();
-            return GlobalOpenTelemetry.get().getLogsBridge().get(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
+            return GlobalOpenTelemetry.get().getLogsBridge().get(JenkinsAttributes.INSTRUMENTATION_NAME);
         }
 
         /**

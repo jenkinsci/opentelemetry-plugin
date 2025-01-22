@@ -15,7 +15,7 @@ import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
 import jenkins.model.GlobalConfiguration;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -109,12 +109,12 @@ public class RemoteSpanTest extends BaseIntegrationTest {
         await().atMost(30, SECONDS).pollInterval(1, SECONDS).untilAsserted(() ->
         {
             Tree<SpanDataWrapper> spans = getGeneratedSpans();
-            String targetSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + targetProject.getName();
+            String targetSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + targetProject.getName();
             Optional<Tree.Node<SpanDataWrapper>> targetJobSpan = spans.breadthFirstSearchNodes(node -> targetSpanName.equals(node.getData().spanData.getName()));
             assertThat("Should have target job span in the tree", targetJobSpan.isPresent());
             assertThat("Target job should not have the traceId same as trace parent", targetJobSpan.get().getData().spanData.getTraceId(), equalTo(PARENT_TRACE_ID));
 
-            String targetSubSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + targetSubProject.getName();
+            String targetSubSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + targetSubProject.getName();
             Optional<Tree.Node<SpanDataWrapper>> targetSubSpan = targetJobSpan.get().asTree()
                 .breadthFirstSearchNodes(node -> targetSubSpanName.equals(node.getData().spanData.getName()));
             assertThat("Should have target sub job span in the tree", targetSubSpan.isPresent());
