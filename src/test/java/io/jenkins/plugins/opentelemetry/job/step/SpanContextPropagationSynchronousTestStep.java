@@ -19,6 +19,7 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
+import java.io.Serial;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -76,6 +77,7 @@ public class SpanContextPropagationSynchronousTestStep extends Step {
             return null;
         }
 
+        @Serial
         private static final long serialVersionUID = 1L;
     }
 }

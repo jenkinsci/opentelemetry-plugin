@@ -18,6 +18,7 @@ import org.jenkinsci.plugins.workflow.steps.GeneralNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -146,10 +147,12 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
         return resultingAttributes;
     }
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private static class NopCallback extends BodyExecutionCallback.TailCall {
 
+        @Serial
         private static final long serialVersionUID = 957579239256583870L;
 
         public static final NopCallback INSTANCE = new NopCallback();

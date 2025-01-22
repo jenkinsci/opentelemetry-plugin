@@ -11,9 +11,11 @@ import org.jenkinsci.plugins.workflow.log.OutputStreamTaskListener;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.Serial;
 
 public class TeeOutputStreamBuildListener implements BuildListener, OutputStreamTaskListener, AutoCloseable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final BuildListener primary;

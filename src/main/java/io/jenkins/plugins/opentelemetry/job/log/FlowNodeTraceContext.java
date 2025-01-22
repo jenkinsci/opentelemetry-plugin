@@ -15,11 +15,13 @@ import io.opentelemetry.api.trace.Span;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 import javax.annotation.Nonnull;
+import java.io.Serial;
 import java.util.Map;
 
 public class FlowNodeTraceContext extends RunTraceContext {
 
-    static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     public static FlowNodeTraceContext newFlowNodeTraceContext(@NonNull Run run, @NonNull FlowNode flowNode, @NonNull Span span) {
         String spanId = span.getSpanContext().getSpanId();
