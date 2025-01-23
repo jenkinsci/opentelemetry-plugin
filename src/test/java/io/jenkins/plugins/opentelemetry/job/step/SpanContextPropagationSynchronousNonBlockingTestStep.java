@@ -20,6 +20,7 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Objects;
@@ -27,6 +28,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 public class SpanContextPropagationSynchronousNonBlockingTestStep extends Step  implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final static Logger logger = Logger.getLogger(SpanContextPropagationSynchronousNonBlockingTestStep.class.getName());
@@ -80,6 +82,7 @@ public class SpanContextPropagationSynchronousNonBlockingTestStep extends Step  
             return null;
         }
 
+        @Serial
         private static final long serialVersionUID = 1L;
     }
 }

@@ -29,6 +29,7 @@ import org.jenkinsci.remoting.RoleChecker;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -68,6 +69,7 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
     }
 
     static class OTelDelegatingCallable<V, T extends Throwable> implements DelegatingCallable<V, T> {
+        @Serial
         private static final long serialVersionUID = 1L;
         final DelegatingCallable<V, T> callable;
         final Map<String, String> w3cTraceContext;

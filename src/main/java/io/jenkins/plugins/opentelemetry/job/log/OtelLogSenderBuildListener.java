@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.Serial;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -87,6 +88,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
      * that retrieves the {@link io.opentelemetry.api.logs.Logger} from the {@link JenkinsControllerOpenTelemetry}
      */
     static final class OtelLogSenderBuildListenerOnController extends OtelLogSenderBuildListener {
+        @Serial
         private static final long serialVersionUID = 1;
 
         private final static Logger logger = Logger.getLogger(OtelLogSenderBuildListenerOnController.class.getName());
@@ -124,6 +126,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
      * serialization
      */
     private static class OtelLogSenderBuildListenerOnAgent extends OtelLogSenderBuildListener {
+        @Serial
         private static final long serialVersionUID = 1;
 
         private final static Logger logger = Logger.getLogger(OtelLogSenderBuildListenerOnAgent.class.getName());
