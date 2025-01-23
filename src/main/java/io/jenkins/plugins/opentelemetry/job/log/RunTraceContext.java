@@ -16,13 +16,15 @@ import io.opentelemetry.context.propagation.TextMapGetter;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 
 import javax.annotation.Nonnull;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 
 public class RunTraceContext implements Serializable {
 
-    static final long serialVersionUID = 1L;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     final String jobFullName;
     final int runNumber;

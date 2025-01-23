@@ -12,11 +12,13 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.ObjectStreamException;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 
 public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implements ExtensionPoint, Serializable {
 
+    @Serial
     private static final long serialVersionUID = -8621147407454968274L;
 
     private String key;

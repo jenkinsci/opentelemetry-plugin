@@ -11,6 +11,7 @@ import io.opentelemetry.api.common.AttributeKey;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 public class OpenTelemetryAttributesAction extends InvisibleAction implements Serializable {
     private final static Logger LOGGER = Logger.getLogger(MonitoringAction.class.getName());
 
+    @Serial
     private static final long serialVersionUID = 5488506456727905116L;
 
     private transient Map<AttributeKey<?>, Object> attributes;
