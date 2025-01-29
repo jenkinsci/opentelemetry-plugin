@@ -2,7 +2,7 @@ unclassified:
   openTelemetry:
     configurationProperties: "otel.exporter.otlp.protocol=grpc"
     endpoint: "http://otel-collector-contrib:4317"
-    exportOtelConfigurationAsEnvironmentVariables: false
+    exportOtelConfigurationAsEnvironmentVariables: falsew
     observabilityBackends:
       - zipkin:
           name: "My Zipkin"

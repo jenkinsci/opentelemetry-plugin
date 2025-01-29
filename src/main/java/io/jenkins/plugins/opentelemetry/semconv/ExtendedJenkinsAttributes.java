@@ -20,7 +20,7 @@ import java.util.List;
  * @see io.opentelemetry.api.common.Attributes
  * @see io.opentelemetry.semconv.ServiceAttributes
  */
-public final class JenkinsOtelSemanticAttributes extends JenkinsAttributes {
+public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
     public static final AttributeKey<String> CI_PIPELINE_TYPE = AttributeKey.stringKey("ci.pipeline.type");
     public static final AttributeKey<String> CI_PIPELINE_MULTIBRANCH_TYPE = AttributeKey.stringKey("ci.pipeline.multibranch.type");
     /**

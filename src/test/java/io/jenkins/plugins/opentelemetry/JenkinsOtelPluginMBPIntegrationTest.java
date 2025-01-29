@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import com.github.rutledgepaulv.prune.Tree;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
 import jenkins.branch.BranchProperty;
 import jenkins.branch.BranchSource;
@@ -58,21 +58,21 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         WorkflowRun b1 = p.getLastBuild();
         final String jobName = mbpName + "/" + branchName;
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
-        checkChainOfSpans(spans, "Stage: Declarative: Checkout SCM", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run");
+        checkChainOfSpans(spans, "Stage: Declarative: Checkout SCM", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.is(OtelUtils.BRANCH));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.MULTIBRANCH));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_DESCRIPTION), CoreMatchers.is("Bar"));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE), CoreMatchers.is(List.of("BranchIndexingCause")));
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.is(OtelUtils.BRANCH));
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.MULTIBRANCH));
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_DESCRIPTION), CoreMatchers.is("Bar"));
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_CAUSE), CoreMatchers.is(List.of("BranchIndexingCause")));
 
         // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
         // It returns the first checkout, aka the one without any shallow cloning, depth shallow.
@@ -80,8 +80,8 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(checkoutNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         attributes = checkoutNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
 
         // TODO verify environment variables are populated in shell steps
     }

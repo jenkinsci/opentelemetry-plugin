@@ -20,7 +20,7 @@ import io.jenkins.plugins.opentelemetry.job.action.BuildStepMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.OtelMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.action.RunPhaseMonitoringAction;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
@@ -62,9 +62,9 @@ public class OtelTraceService {
      * Returns the span of the current run phase.
      *
      * @return the span of the current pipeline run phase:
-     * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_START_NAME},
-     * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_RUN_NAME},
-     * {@link JenkinsOtelSemanticAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
+     * {@link ExtendedJenkinsAttributes#JENKINS_JOB_SPAN_PHASE_START_NAME},
+     * {@link ExtendedJenkinsAttributes#JENKINS_JOB_SPAN_PHASE_RUN_NAME},
+     * {@link ExtendedJenkinsAttributes#JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME},
      */
     public Span getSpan(@NonNull Run<?, ?> run) {
         return ImmutableList.copyOf(run.getActions(RunPhaseMonitoringAction.class))

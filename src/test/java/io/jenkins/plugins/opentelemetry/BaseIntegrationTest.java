@@ -17,7 +17,7 @@ import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 import io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributorService;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -217,8 +217,8 @@ public class BaseIntegrationTest {
     protected void assertJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans, String jobType) throws Exception {
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(jobType));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(jobType));
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
     }
 
     protected void assertFreestyleJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) throws Exception {
@@ -239,12 +239,12 @@ public class BaseIntegrationTest {
         Attributes attributes = shell.get().getData().spanData.getAttributes();
 
         if (withNode) {
-            MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.not(Matchers.emptyOrNullString()));
+            MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.not(Matchers.emptyOrNullString()));
         } else {
-            MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is(Matchers.emptyOrNullString()));
+            MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is(Matchers.emptyOrNullString()));
         }
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_NAME), CoreMatchers.not(Matchers.emptyOrNullString()));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_AGENT_ID), Matchers.notNullValue());
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_NAME), CoreMatchers.not(Matchers.emptyOrNullString()));
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_ID), Matchers.notNullValue());
     }
 
     protected void assertBuildStepMetadata(Tree<SpanDataWrapper> spans, String stepName, String pluginName) throws Exception {
@@ -252,8 +252,8 @@ public class BaseIntegrationTest {
         MatcherAssert.assertThat(step, CoreMatchers.is(CoreMatchers.notNullValue()));
         Attributes attributes = step.get().getData().spanData.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(pluginName));
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(pluginName));
+        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     /**
@@ -336,14 +336,14 @@ public class BaseIntegrationTest {
             String result = spanData.getName();
 
             final Attributes attributes = spanData.getAttributes();
-            if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE) != null) {
-                result += ", function: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_TYPE);
+            if (attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE) != null) {
+                result += ", function: " + attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE);
             }
-            if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME) != null) {
-                result += ", name: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_NAME);
+            if (attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_NAME) != null) {
+                result += ", name: " + attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_NAME);
             }
-            if (attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID) != null) {
-                result += ", node.id: " + attributes.get(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID);
+            if (attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_ID) != null) {
+                result += ", node.id: " + attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_ID);
             }
             return result;
         }

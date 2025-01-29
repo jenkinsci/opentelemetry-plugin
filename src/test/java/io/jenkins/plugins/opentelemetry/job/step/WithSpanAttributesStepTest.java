@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.job.step;
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import org.apache.commons.lang3.SystemUtils;
@@ -50,15 +50,15 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
-        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "release-script-1", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "release-script-2", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "test-script", "Stage: test", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI, ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script-1", "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script-2", "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "test-script", "Stage: test", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
         { // attribute 'pipeline.type' - implicitly TARGET_ONLY
@@ -180,21 +180,21 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
-        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "release-script-1", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "release-script-2", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "test-script-1", "Stage: test", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "test-script-2", "Stage: test", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "test-script-3", "Stage: test", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI, ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script-1", "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script-2", "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "test-script-1", "Stage: test", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "test-script-2", "Stage: test", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "test-script-3", "Stage: test", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
         { // value 'd' - overrides 'a', 'b' and 'c' for the root span and child spans
-            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI.equals(sdw.spanData.getName())).findFirst().get().spanData;
+            SpanData actualSpanData = spans.breadthFirstStream().filter(sdw -> ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI.equals(sdw.spanData.getName())).findFirst().get().spanData;
             String actualBuildTool = actualSpanData.getAttributes().get(AttributeKey.stringKey("build.tool"));
             MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("d"));
             SpanData actualSpanData2 = spans.breadthFirstStream().filter(sdw -> "Phase: Finalise".equals(sdw.spanData.getName())).findFirst().get().spanData;
@@ -258,14 +258,14 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
-        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "release-script", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI, ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script", "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
         {
@@ -306,14 +306,14 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
-        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "release-script", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI, ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script", "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
         {
@@ -365,7 +365,7 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
         //       options {
         //       ^
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
@@ -402,14 +402,14 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
-        checkChainOfSpans(spans, JenkinsOtelSemanticAttributes.AGENT_ALLOCATION_UI, JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "release-script", "Stage: build", JenkinsOtelSemanticAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI, ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script", "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
         {

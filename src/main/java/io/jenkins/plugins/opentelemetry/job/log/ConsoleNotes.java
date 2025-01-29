@@ -16,7 +16,7 @@ import com.google.common.collect.ImmutableMap;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.console.ConsoleNote;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -63,7 +63,7 @@ public class ConsoleNotes {
                 }
                 buf.append(line, pos, preamble);
                 annotations.add(
-                    ImmutableMap.of(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD, buf.length(), JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD, line.substring(endOfPreamble, postamble)));
+                    ImmutableMap.of(ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD, buf.length(), ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD, line.substring(endOfPreamble, postamble)));
                 pos = postamble + ConsoleNote.POSTAMBLE_STR.length();
             }
             buf.append(line, pos, line.length()); // append tail
@@ -90,8 +90,8 @@ public class ConsoleNotes {
             int pos = 0;
             for (Object o : annotations) {
                 JSONObject annotation = (JSONObject) o;
-                int position = annotation.getInt(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD);
-                String note = annotation.getString(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD);
+                int position = annotation.getInt(ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD);
+                String note = annotation.getString(ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD);
                 formattedMessage.write(message, pos, position - pos);
                 formattedMessage.write(ConsoleNote.PREAMBLE_STR);
                 formattedMessage.write(note);

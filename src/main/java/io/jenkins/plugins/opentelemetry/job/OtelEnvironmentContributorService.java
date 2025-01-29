@@ -6,7 +6,7 @@ import hudson.Extension;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.baggage.propagation.W3CBaggagePropagator;
 import io.opentelemetry.api.trace.Span;
@@ -59,8 +59,8 @@ public class OtelEnvironmentContributorService {
             W3CTraceContextPropagator.getInstance().inject(Context.current(), envs, setter);
         }
         Baggage baggage = Baggage.builder()
-            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID.getKey(), run.getParent().getFullName())
-            .put(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER.getKey(), String.valueOf(run.getNumber()))
+            .put(ExtendedJenkinsAttributes.CI_PIPELINE_ID.getKey(), run.getParent().getFullName())
+            .put(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER.getKey(), String.valueOf(run.getNumber()))
             .build();
         try (Scope ignored = baggage.makeCurrent()) {
             TextMapSetter<EnvVars> setter = (carrier, key, value) -> carrier.put(key.toUpperCase(), value);

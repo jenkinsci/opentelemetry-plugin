@@ -5,7 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.semconv;
 
-public class JenkinsSemanticMetrics {
+public class JenkinsMetrics {
     public static final String  CI_PIPELINE_RUN_ACTIVE =            "ci.pipeline.run.active";
     public static final String  CI_PIPELINE_RUN_DURATION =          "ci.pipeline.run.duration";
     public static final String  CI_PIPELINE_RUN_LAUNCHED =          "ci.pipeline.run.launched";
@@ -52,5 +52,5 @@ public class JenkinsSemanticMetrics {
     public static final String LOGIN_SUCCESS =   "login_success";
     public static final String LOGIN_FAILURE =   "login_failure";
 
-    private JenkinsSemanticMetrics(){}
+    private JenkinsMetrics(){}
 }

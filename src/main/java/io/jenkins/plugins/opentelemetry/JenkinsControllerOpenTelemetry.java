@@ -11,7 +11,7 @@ import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.ExtensionPoint;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.metrics.Meter;
@@ -56,17 +56,17 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
 
         this.defaultTracer =
             this.openTelemetry
-                .tracerBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
+                .tracerBuilder(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME)
                 .setInstrumentationVersion(opentelemetryPluginVersion)
                 .build();
 
         this.defaultEventLogger = openTelemetry
-            .eventLoggerBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
+            .eventLoggerBuilder(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
             .build();
 
         this.defaultMeter = openTelemetry
-            .meterBuilder(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME)
+            .meterBuilder(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
             .build();
     }

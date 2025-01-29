@@ -13,7 +13,7 @@ import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.git.extensions.impl.CloneOption;
 import hudson.scm.SCM;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import jenkins.YesNoMaybe;
@@ -156,7 +156,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
 
     private SpanBuilder addCloneAttributes(@NonNull SpanBuilder spanBuilder, boolean shallow, int depth) {
         return spanBuilder
-            .setAttribute(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH, (long) depth)
-            .setAttribute(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW, shallow);
+            .setAttribute(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH, (long) depth)
+            .setAttribute(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW, shallow);
     }
 }

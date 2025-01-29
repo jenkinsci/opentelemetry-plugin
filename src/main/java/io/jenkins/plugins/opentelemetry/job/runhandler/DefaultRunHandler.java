@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry.job.runhandler;
 import com.google.common.annotations.VisibleForTesting;
 import hudson.Extension;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import jenkins.scm.api.SCMHead;
@@ -47,8 +47,7 @@ public class DefaultRunHandler implements RunHandler {
         } else {
             spanName = run.getParent().getFullName();
         }
-
-        return tracer.spanBuilder(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
+        return tracer.spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
     }
 
     @VisibleForTesting

@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.STATUS;
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.JENKINS_PLUGINS;
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.JENKINS_PLUGINS_UPDATES;
+import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes.STATUS;
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_PLUGINS;
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_PLUGINS_UPDATES;
 
 /**
  * <p>

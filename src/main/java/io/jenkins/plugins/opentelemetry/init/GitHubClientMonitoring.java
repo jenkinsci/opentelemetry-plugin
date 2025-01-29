@@ -32,7 +32,7 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static io.jenkins.plugins.opentelemetry.semconv.GitHubSemanticAttributes.*;
+import static io.jenkins.plugins.opentelemetry.semconv.GitHubAttributes.*;
 
 /**
  * This implementation of the monitoring of the GitHub client relies on a hack with Java reflection to access a private

@@ -18,7 +18,7 @@ import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import io.jenkins.plugins.opentelemetry.job.log.util.InputStreamByteBuffer;
 import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
 import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIteratorInputStream;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -94,7 +94,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         this.lokiTenantId = lokiTenantId;
         this.httpContext = new BasicHttpContext();
         this.openTelemetry = GlobalOpenTelemetry.get();
-        this.tracer = openTelemetry.getTracer(JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME);
+        this.tracer = openTelemetry.getTracer(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME);
 
         HttpClientBuilder httpClientBuilder = ApacheHttpClientTelemetry.create(openTelemetry).newHttpClientBuilder();
         if (disableSslVerifications) {
@@ -118,8 +118,8 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
     @Override
     public LogsQueryResult overallLog(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nonnull Instant startTime, @Nullable Instant endTime) {
         SpanBuilder spanBuilder = tracer.spanBuilder("LokiLogStorageRetriever.overallLog")
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
             .setAttribute("complete", complete);
 
         Span span = spanBuilder.startSpan();
@@ -139,7 +139,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
                 lokiQueryParameters,
                 httpClient, httpContext,
                 lokiUrl, lokiCredentials, lokiTenantId,
-                openTelemetry.getTracer( JenkinsOtelSemanticAttributes.INSTRUMENTATION_NAME));
+                openTelemetry.getTracer( ExtendedJenkinsAttributes.INSTRUMENTATION_NAME));
 
             LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<Long> lineBytesToLineNumberConverter = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, null);
             InputStream lineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, lineBytesToLineNumberConverter, tracer);
@@ -176,9 +176,9 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
     @Override
     public LogsQueryResult stepLog(@Nonnull String jobFullName, int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nonnull Instant startTime, @Nullable Instant endTime) {
         SpanBuilder spanBuilder = tracer.spanBuilder("LokiLogStorageRetriever.stepLog")
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_ID, jobFullName)
-            .setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
-            .setAttribute(JenkinsOtelSemanticAttributes.JENKINS_STEP_ID, flowNodeId)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, flowNodeId)
             .setAttribute("complete", complete);
 
         Span span = spanBuilder.startSpan();

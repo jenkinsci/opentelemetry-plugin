@@ -10,8 +10,8 @@ import hudson.Extension;
 import hudson.model.User;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.incubator.events.EventLogger;
@@ -60,18 +60,18 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
 
         loginSuccessCounter =
-            meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_SUCCESS)
+            meter.counterBuilder(JenkinsMetrics.LOGIN_SUCCESS)
                 .setDescription("Successful logins")
                 .setUnit("${logins}")
                 .build();
         loginFailureCounter =
-            meter.counterBuilder(JenkinsSemanticMetrics.LOGIN_FAILURE)
+            meter.counterBuilder(JenkinsMetrics.LOGIN_FAILURE)
                 .setDescription("Failing logins")
                 .setUnit("${logins}")
                 .build();
 
         loginCounter =
-            meter.counterBuilder(JenkinsSemanticMetrics.LOGIN)
+            meter.counterBuilder(JenkinsMetrics.LOGIN)
                 .setDescription("Logins")
                 .setUnit("${logins}")
                 .build();
@@ -96,8 +96,8 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         AttributesBuilder attributesBuilder = Attributes.builder();
         Optional<User> user = Optional.ofNullable(User.current());
         attributesBuilder
-            .put(JenkinsOtelSemanticAttributes.EVENT_CATEGORY, JenkinsOtelSemanticAttributes.EventCategoryValues.AUTHENTICATION)
-            .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.SUCCESS)
+            .put(ExtendedJenkinsAttributes.EVENT_CATEGORY, ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
+            .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.SUCCESS)
             .put(EnduserIncubatingAttributes.ENDUSER_ID, user.map(User::getId).orElse(username))
         ;
 
@@ -130,8 +130,8 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         String message = "Failed login of user '" + username + "'";
         AttributesBuilder attributesBuilder = Attributes.builder();
         attributesBuilder
-            .put(JenkinsOtelSemanticAttributes.EVENT_CATEGORY, JenkinsOtelSemanticAttributes.EventCategoryValues.AUTHENTICATION)
-            .put(JenkinsOtelSemanticAttributes.EVENT_OUTCOME, JenkinsOtelSemanticAttributes.EventOutcomeValues.FAILURE)
+            .put(ExtendedJenkinsAttributes.EVENT_CATEGORY, ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
+            .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.FAILURE)
             .put(EnduserIncubatingAttributes.ENDUSER_ID, username)
         ;
 

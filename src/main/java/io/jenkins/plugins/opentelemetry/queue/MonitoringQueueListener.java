@@ -5,8 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.queue;
 
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.*;
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.STATUS;
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.*;
+import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes.STATUS;
 
 import hudson.Extension;
 import hudson.model.Queue;
@@ -14,7 +14,6 @@ import hudson.model.queue.QueueListener;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
@@ -35,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics.JENKINS_QUEUE;
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_QUEUE;
 
 /**
  * Monitor the Jenkins Build queue
