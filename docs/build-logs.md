@@ -101,19 +101,22 @@ src="./images/jenkins-pipeline-logs-elastic-kibana-user.png" />
 
    
 3. Ensure your project includes OTLP exporter dependency. For Maven. add the following to your `pom.xml`:
-  <dependency>
+   ```
+     <dependency>
        <groupID>io.opentelemetry</groupID>
        <artifactID>opentelemetry-exporter-otlp</artifactID>
        <version>1.30.0</version>
-  </dependency> 
+     </dependency>
+   ```
+  
 
-4. Configure the following environment variables:
+5. Configure the following environment variables:
    ```properties
    otel.logs.exporter=otlp
    otel.logs.mirror_to_disk=true
    ```
 
-5. Start your application and verify that logs are being exported 
+6. Start your application and verify that logs are being exported 
    to the OTLP endpoint and are also visible locally.
 
 
@@ -127,12 +130,13 @@ src="./images/jenkins-pipeline-logs-elastic-kibana-user.png" />
 
 * Deploying in Kubernetes
   See the environment variables in your Kubernetes YAML:
-  
+  ```
   env:
   - name: otel.logs.exporter
     value: "otlp"
   - name: otel.logs.mirror_to_disk
     value: "true"
+
 #### Storing Jenkins Pipeline Logs in Loki
 
 To store pipeline logs in Loki,
