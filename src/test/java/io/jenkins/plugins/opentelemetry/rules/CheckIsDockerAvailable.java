@@ -4,7 +4,7 @@
  */
 package io.jenkins.plugins.opentelemetry.rules;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import org.junit.Assume;
 
 import org.junit.rules.ExternalResource;
 import org.testcontainers.DockerClientFactory;
@@ -16,6 +16,6 @@ import org.testcontainers.DockerClientFactory;
 public class CheckIsDockerAvailable extends ExternalResource {
       @Override
   protected void before() {
-    assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+    Assume.assumeTrue(DockerClientFactory.instance().isDockerAvailable());
   }
 }
