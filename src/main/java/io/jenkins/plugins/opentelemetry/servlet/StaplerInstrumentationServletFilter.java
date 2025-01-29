@@ -11,7 +11,7 @@ import hudson.model.User;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.metrics.Meter;
@@ -152,8 +152,8 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
                         // e.g /job/my-war/job/master/2/console
                         ParsedJobUrl parsedJobUrl = parseJobUrl(pathInfoTokens);
                         httpRoute = parsedJobUrl.urlPattern;
-                        Optional.ofNullable(parsedJobUrl.jobName).ifPresent(jobName -> httpServerSpanAttributesBuilder.put(JenkinsAttributes.CI_PIPELINE_ID, jobName));
-                        Optional.ofNullable(parsedJobUrl.runNumber).ifPresent(runNumber -> httpServerSpanAttributesBuilder.put(JenkinsAttributes.CI_PIPELINE_RUN_NUMBER, runNumber));
+                        Optional.ofNullable(parsedJobUrl.jobName).ifPresent(jobName -> httpServerSpanAttributesBuilder.put(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobName));
+                        Optional.ofNullable(parsedJobUrl.runNumber).ifPresent(runNumber -> httpServerSpanAttributesBuilder.put(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, runNumber));
                     }
                     case "blue" -> {
                         if (pathInfoTokens.size() == 1) {
@@ -165,8 +165,8 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
                                 // eg /blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/blueTestSummary/
                                 ParsedJobUrl parsedBlueOceanPipelineUrl = parseBlueOceanRestPipelineUrl(pathInfoTokens);
                                 httpRoute = parsedBlueOceanPipelineUrl.urlPattern;
-                                Optional.ofNullable(parsedBlueOceanPipelineUrl.jobName).ifPresent(jobName -> httpServerSpanAttributesBuilder.put(JenkinsAttributes.CI_PIPELINE_ID, jobName));
-                                Optional.ofNullable(parsedBlueOceanPipelineUrl.runNumber).ifPresent(runNumber -> httpServerSpanAttributesBuilder.put(JenkinsAttributes.CI_PIPELINE_RUN_NUMBER, runNumber));
+                                Optional.ofNullable(parsedBlueOceanPipelineUrl.jobName).ifPresent(jobName -> httpServerSpanAttributesBuilder.put(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobName));
+                                Optional.ofNullable(parsedBlueOceanPipelineUrl.runNumber).ifPresent(runNumber -> httpServerSpanAttributesBuilder.put(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, runNumber));
                             } else if ("classes".equals(pathInfoTokens.get(2)) && pathInfoTokens.size() > 3) {
                                 // eg /blue/rest/classes/io.jenkins.blueocean.rest.impl.pipeline.PipelineRunImpl/
                                 String blueOceanClass = pathInfoTokens.get(3);

@@ -22,7 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Iterators;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
 import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
@@ -127,11 +127,11 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
     public void close() throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchBuildLogsLineIterator.close")
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_ID, jobFullName)
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
             .setAttribute("pointInTimeId", pointInTimeId);
         if (flowNodeId != null) {
-            spanBuilder.setAttribute(JenkinsAttributes.JENKINS_STEP_ID, flowNodeId);
+            spanBuilder.setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, flowNodeId);
         }
         Span closeSpan = spanBuilder.startSpan();
         try (Scope ignored = closeSpan.makeCurrent()) {
@@ -218,8 +218,8 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
     public void skipLines(long skipLines) {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchBuildLogsLineIterator.skip")
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_ID, jobFullName)
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
             .setAttribute("pointInTimeId", pointInTimeId)
             .setAttribute("skipLines", skipLines);
         Span span = spanBuilder.startSpan();
@@ -278,7 +278,7 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
             if (labels == null) {
                 annotations = null;
             } else {
-                JsonNode annotationsAsText = labels.get(JenkinsAttributes.JENKINS_ANSI_ANNOTATIONS.getKey());
+                JsonNode annotationsAsText = labels.get(ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS.getKey());
                 if (annotationsAsText == null) {
                     annotations = null;
                 } else {

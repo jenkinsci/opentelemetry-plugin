@@ -2,7 +2,7 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.console.LineTransformationOutputStream;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.logs.Severity;
@@ -48,7 +48,7 @@ final class OtelLogOutputStream extends LineTransformationOutputStream {
         } else {
             AttributesBuilder attributesBuilder = Attributes.builder();
             if (ENABLE_LOG_FORMATTING && textAndAnnotations.annotations != null) {
-                attributesBuilder.put(JenkinsAttributes.JENKINS_ANSI_ANNOTATIONS, textAndAnnotations.annotations.toString());
+                attributesBuilder.put(ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS, textAndAnnotations.annotations.toString());
             }
             attributesBuilder.putAll(runTraceContext.toAttributes());
 

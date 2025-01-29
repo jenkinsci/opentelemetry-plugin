@@ -13,7 +13,7 @@ import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
@@ -121,7 +121,7 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
                     spanName = "Call";
                 }
                 span = GlobalOpenTelemetry
-                    .getTracer(JenkinsAttributes.INSTRUMENTATION_NAME)
+                    .getTracer(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME)
                     .spanBuilder(spanName)
                     .setParent(callerContext)
                     .setSpanKind(SpanKind.SERVER)

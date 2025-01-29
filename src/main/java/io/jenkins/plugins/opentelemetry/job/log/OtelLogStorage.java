@@ -12,7 +12,7 @@ import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeBuildListener;
 import io.jenkins.plugins.opentelemetry.job.log.util.TeeOutputStreamBuildListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
@@ -147,8 +147,8 @@ class OtelLogStorage implements LogStorage {
         }
 
         Span span = tracer.spanBuilder("OtelLogStorage.overallLog")
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope ignored = span.makeCurrent()){
@@ -175,8 +175,8 @@ class OtelLogStorage implements LogStorage {
         }
 
         Span span = tracer.spanBuilder("OtelLogStorage.stepLog")
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope ignored = span.makeCurrent()){
@@ -206,8 +206,8 @@ class OtelLogStorage implements LogStorage {
     public File getLogFile(@NonNull FlowExecutionOwner.Executable build, boolean complete) {
         logger.log(Level.FINE, "getLogFile(complete: " + complete + ")");
         Span span = tracer.spanBuilder("OtelLogStorage.getLogFile")
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
             .setAttribute("complete", complete)
             .startSpan();
         try (Scope ignored = span.makeCurrent()) {

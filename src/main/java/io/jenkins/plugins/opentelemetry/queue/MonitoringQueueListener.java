@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry.queue;
 
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.*;
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes.STATUS;
+import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes.STATUS;
 
 import hudson.Extension;
 import hudson.model.Queue;

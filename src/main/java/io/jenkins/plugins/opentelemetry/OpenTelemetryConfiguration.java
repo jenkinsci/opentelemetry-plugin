@@ -10,7 +10,7 @@ import com.google.common.base.Preconditions;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 import io.opentelemetry.semconv.ServiceAttributes;
@@ -147,7 +147,7 @@ public class OpenTelemetryConfiguration {
         this.getServiceNamespace().ifPresent(serviceNamespace ->
             resourceBuilder.put(ServiceIncubatingAttributes.SERVICE_NAMESPACE, serviceNamespace));
 
-        resourceBuilder.put(JenkinsAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION, OtelUtils.getOpentelemetryPluginVersion());
+        resourceBuilder.put(ExtendedJenkinsAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION, OtelUtils.getOpentelemetryPluginVersion());
 
         return resourceBuilder.build();
     }
@@ -163,7 +163,7 @@ public class OpenTelemetryConfiguration {
         this.getServiceNamespace().ifPresent(serviceNamespace ->
             resourceMap.put(ServiceIncubatingAttributes.SERVICE_NAMESPACE.getKey(), serviceNamespace));
 
-        resourceMap.put(JenkinsAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION.getKey(), OtelUtils.getOpentelemetryPluginVersion());
+        resourceMap.put(ExtendedJenkinsAttributes.JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION.getKey(), OtelUtils.getOpentelemetryPluginVersion());
 
         return resourceMap;
     }

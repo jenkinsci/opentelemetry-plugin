@@ -5,7 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.init;
 
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes.STATUS;
+import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes.STATUS;
 
 import hudson.Extension;
 import hudson.model.Computer;
@@ -13,7 +13,7 @@ import hudson.model.LoadStatistics;
 import hudson.model.Node;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
@@ -113,7 +113,7 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
             // PER LABEL
             jenkins.getLabels().forEach(label -> {
                 LoadStatistics.LoadStatisticsSnapshot loadStatisticsSnapshot = label.loadStatistics.computeSnapshot();
-                Attributes attributes = Attributes.of(JenkinsAttributes.LABEL, label.getDisplayName());
+                Attributes attributes = Attributes.of(ExtendedJenkinsAttributes.LABEL, label.getDisplayName());
 
                 executors.record(loadStatisticsSnapshot.getBusyExecutors(), attributes.toBuilder().put(STATUS, "busy").build());
                 executors.record(loadStatisticsSnapshot.getIdleExecutors(), attributes.toBuilder().put(STATUS, "idle").build());

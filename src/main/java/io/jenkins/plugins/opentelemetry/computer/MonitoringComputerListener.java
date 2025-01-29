@@ -14,7 +14,7 @@ import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.metrics.LongCounter;
@@ -62,7 +62,7 @@ public class MonitoringComputerListener extends ComputerListener implements Open
                 for (Map.Entry<String, String> attribute : attributesAsMap.entrySet()) {
                     openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
                 }
-                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()), JenkinsAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
+                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()), ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
                 LOGGER.log(Level.FINER, () -> "Resources for Jenkins Controller computer " + controllerComputer + ": " + openTelemetryAttributesAction);
                 controllerComputer.addAction(openTelemetryAttributesAction);
             } catch (IOException e) {
@@ -124,7 +124,7 @@ public class MonitoringComputerListener extends ComputerListener implements Open
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {
             openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
         }
-        openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
+        openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
 
         LOGGER.log(Level.FINE, () -> "preOnline(" + computer + "): " + openTelemetryAttributesAction);
         computer.addAction(openTelemetryAttributesAction);

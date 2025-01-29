@@ -10,7 +10,7 @@ import hudson.Extension;
 import hudson.model.User;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -96,8 +96,8 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         AttributesBuilder attributesBuilder = Attributes.builder();
         Optional<User> user = Optional.ofNullable(User.current());
         attributesBuilder
-            .put(JenkinsAttributes.EVENT_CATEGORY, JenkinsAttributes.EventCategoryValues.AUTHENTICATION)
-            .put(JenkinsAttributes.EVENT_OUTCOME, JenkinsAttributes.EventOutcomeValues.SUCCESS)
+            .put(ExtendedJenkinsAttributes.EVENT_CATEGORY, ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
+            .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.SUCCESS)
             .put(EnduserIncubatingAttributes.ENDUSER_ID, user.map(User::getId).orElse(username))
         ;
 
@@ -130,8 +130,8 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         String message = "Failed login of user '" + username + "'";
         AttributesBuilder attributesBuilder = Attributes.builder();
         attributesBuilder
-            .put(JenkinsAttributes.EVENT_CATEGORY, JenkinsAttributes.EventCategoryValues.AUTHENTICATION)
-            .put(JenkinsAttributes.EVENT_OUTCOME, JenkinsAttributes.EventOutcomeValues.FAILURE)
+            .put(ExtendedJenkinsAttributes.EVENT_CATEGORY, ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
+            .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.FAILURE)
             .put(EnduserIncubatingAttributes.ENDUSER_ID, username)
         ;
 

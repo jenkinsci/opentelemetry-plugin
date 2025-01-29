@@ -22,7 +22,7 @@ import hudson.model.Run;
 import hudson.security.AuthorizationStrategy;
 import hudson.security.SecurityRealm;
 import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -89,12 +89,12 @@ public class RemoteSpanDisabledTest extends BaseIntegrationTest {
         await().atMost(30, SECONDS).pollInterval(1, SECONDS).untilAsserted(() ->
         {
             Tree<SpanDataWrapper> spans = getGeneratedSpans(1); //Since we disable the remote span tracing, the first span is the Jenkins Web Environment. We pick the 2nd (index 1).
-            String targetSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + targetProject.getName();
+            String targetSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + targetProject.getName();
             Optional<Tree.Node<SpanDataWrapper>> targetJobSpan = spans.breadthFirstSearchNodes(node -> targetSpanName.equals(node.getData().spanData.getName()));
             assertThat("Should have target job span in the tree", targetJobSpan.isPresent());
             assertThat("Target job should have the traceId same as trace parent", targetJobSpan.get().getData().spanData.getTraceId(), not(equalTo(PARENT_TRACE_ID)));
 
-            String targetSubSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + targetSubProject.getName();
+            String targetSubSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + targetSubProject.getName();
             Optional<Tree.Node<SpanDataWrapper>> targetSubSpan = targetJobSpan.get().asTree()
                 .breadthFirstSearchNodes(node -> targetSubSpanName.equals(node.getData().spanData.getName()));
             assertThat("Should have target sub job span in the tree", targetSubSpan.isPresent());

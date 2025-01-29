@@ -18,7 +18,7 @@ import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.ServiceAttributes;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
@@ -157,8 +157,8 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
         // may query on the service name
         String serviceName = Optional.ofNullable(otelSdkResourceProperties.get(ServiceAttributes.SERVICE_NAME.getKey())).orElse(io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes.JENKINS);// + "-agent";
         buildAgentOtelSdkResourceProperties.put(ServiceAttributes.SERVICE_NAME.getKey(), serviceName);
-        buildAgentOtelSdkResourceProperties.put(JenkinsAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
-        buildAgentOtelSdkResourceProperties.put(JenkinsAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
+        buildAgentOtelSdkResourceProperties.put(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
+        buildAgentOtelSdkResourceProperties.put(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
 
         OpenTelemetryConfigurerMasterToSlaveCallable callable;
         callable = new OpenTelemetryConfigurerMasterToSlaveCallable(buildAgentOtelSdkProperties, buildAgentOtelSdkResourceProperties);

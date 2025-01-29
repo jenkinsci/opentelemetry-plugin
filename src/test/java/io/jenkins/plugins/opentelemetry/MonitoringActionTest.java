@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import groovy.text.GStringTemplateEngine;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -32,7 +32,7 @@ public class MonitoringActionTest {
 
         Map<String, Object> binding = new HashMap<>();
         binding.put("baseUrl", "https://localhost:9200");
-        binding.put("serviceName", JenkinsAttributes.JENKINS);
+        binding.put("serviceName", ExtendedJenkinsAttributes.JENKINS);
         binding.put("rootSpanName", OtelUtils.urlEncode("my-pipeline"));
         binding.put("traceId", "ef7e4138d38d9e24c494ce123ccbad5d");
         binding.put("spanId", "a3bab980d6a51ba9");
@@ -54,7 +54,7 @@ public class MonitoringActionTest {
 
         Map<String, Object> binding = new HashMap<>();
         binding.put("baseUrl", "https://localhost:9200");
-        binding.put("serviceName", JenkinsAttributes.JENKINS);
+        binding.put("serviceName", ExtendedJenkinsAttributes.JENKINS);
         binding.put("rootSpanName", OtelUtils.urlEncode("my+job-with+chars+that+need:escaping"));
         binding.put("traceId", "ef7e4138d38d9e24c494ce123ccbad5d");
         binding.put("spanId", "a3bab980d6a51ba9");

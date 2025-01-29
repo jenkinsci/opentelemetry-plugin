@@ -27,7 +27,7 @@ import io.jenkins.plugins.opentelemetry.job.step.SpanAttribute;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
 import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributeStep;
 import io.jenkins.plugins.opentelemetry.job.step.WithSpanAttributesStep;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -106,39 +106,39 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
     public void onStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String agentLabel, @NonNull WorkflowRun run) {
         try (Scope nodeSpanScope = setupContext(run, stepStartNode)) {
             verifyNotNull(nodeSpanScope, "%s - No span found for node %s", run, stepStartNode);
-            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), JenkinsAttributes.STEP_NODE);
+            String stepType = getStepType(stepStartNode, stepStartNode.getDescriptor(), ExtendedJenkinsAttributes.STEP_NODE);
             JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
 
-            SpanBuilder agentSpanBuilder = getTracer().spanBuilder(JenkinsAttributes.AGENT_UI)
+            SpanBuilder agentSpanBuilder = getTracer().spanBuilder(ExtendedJenkinsAttributes.AGENT_UI)
                 .setParent(Context.current())
-                .setAttribute(JenkinsAttributes.JENKINS_STEP_TYPE, stepType)
-                .setAttribute(JenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                .setAttribute(JenkinsAttributes.JENKINS_STEP_NAME, JenkinsAttributes.AGENT) // FIXME verify it's the right semantic and value
-                .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, stepType)
+                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_NAME, ExtendedJenkinsAttributes.AGENT) // FIXME verify it's the right semantic and value
+                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
             if (agentLabel != null) {
-                agentSpanBuilder.setAttribute(JenkinsAttributes.JENKINS_STEP_AGENT_LABEL, agentLabel);
+                agentSpanBuilder.setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL, agentLabel);
             }
             Span agentSpan = agentSpanBuilder.startSpan();
 
-            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + JenkinsAttributes.AGENT + "(" + agentLabel + ") - begin " + OtelUtils.toDebugString(agentSpan));
+            LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + ExtendedJenkinsAttributes.AGENT + "(" + agentLabel + ") - begin " + OtelUtils.toDebugString(agentSpan));
 
             getTracerService().putAgentSpan(run, agentSpan, stepStartNode);
 
             try (Scope allocateAgentSpanScope = agentSpan.makeCurrent()) {
-                SpanBuilder allocateAgentSpanBuilder = getTracer().spanBuilder(JenkinsAttributes.AGENT_ALLOCATION_UI)
+                SpanBuilder allocateAgentSpanBuilder = getTracer().spanBuilder(ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI)
                     .setParent(Context.current())
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode, stepStartNode.getDescriptor(), JenkinsAttributes.STEP_NODE))
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_NAME, JenkinsAttributes.AGENT_ALLOCATE) // FIXME verify it's the right semantic and value
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, getStepType(stepStartNode, stepStartNode.getDescriptor(), ExtendedJenkinsAttributes.STEP_NODE))
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_NAME, ExtendedJenkinsAttributes.AGENT_ALLOCATE) // FIXME verify it's the right semantic and value
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
                 if (agentLabel != null) {
-                    allocateAgentSpanBuilder.setAttribute(JenkinsAttributes.JENKINS_STEP_AGENT_LABEL, agentLabel);
+                    allocateAgentSpanBuilder.setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL, agentLabel);
                 }
                 Span allocateAgentSpan = allocateAgentSpanBuilder.startSpan();
 
-                LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + JenkinsAttributes.AGENT_ALLOCATE + "(" + agentLabel + ") - begin " + OtelUtils.toDebugString(allocateAgentSpan));
+                LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + ExtendedJenkinsAttributes.AGENT_ALLOCATE + "(" + agentLabel + ") - begin " + OtelUtils.toDebugString(allocateAgentSpan));
 
                 getTracerService().putAgentSpan(run, allocateAgentSpan, stepStartNode);
             }
@@ -162,11 +162,11 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             Span stageSpan = getTracer().spanBuilder(spanStageName)
                     .setParent(Context.current())
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_TYPE, stepType)
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_NAME, stageName)
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, stepType)
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_NAME, stageName)
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > stage(" + stageName + ") - begin " + OtelUtils.toDebugString(stageSpan));
 
@@ -213,16 +213,16 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 new IllegalStateException("No StepHandler found for node " + node.getClass() + " - " + node + " on " + run));
         SpanBuilder spanBuilder = stepHandler.createSpanBuilder(node, run, getTracer());
 
-        String stepType = getStepType(node, node.getDescriptor(), JenkinsAttributes.STEP_NAME);
+        String stepType = getStepType(node, node.getDescriptor(), ExtendedJenkinsAttributes.STEP_NAME);
         JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin = JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, node);
 
         spanBuilder
-            .setAttribute(JenkinsAttributes.JENKINS_STEP_TYPE, stepType)
-            .setAttribute(JenkinsAttributes.JENKINS_STEP_ID, node.getId())
-            .setAttribute(JenkinsAttributes.JENKINS_STEP_NAME, getStepName(node, JenkinsAttributes.STEP_NAME))
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_USER, principal)
-            .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-            .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+            .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, stepType)
+            .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, node.getId())
+            .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_NAME, getStepName(node, ExtendedJenkinsAttributes.STEP_NAME))
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_USER, principal)
+            .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+            .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
 
         Span atomicStepSpan = spanBuilder.startSpan();
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin " + OtelUtils.toDebugString(atomicStepSpan));
@@ -315,11 +315,11 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             Span atomicStepSpan = getTracer().spanBuilder("Parallel branch: " + branchName)
                     .setParent(Context.current())
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_TYPE, stepType)
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_NAME, branchName)
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                    .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, stepType)
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_NAME, branchName)
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
                     .startSpan();
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - > parallel branch(" + branchName + ") - begin " + OtelUtils.toDebugString(atomicStepSpan));
 
@@ -353,7 +353,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     if (status == null) status = GenericStatus.fromResult(interruptedException.getResult());
 
                     List<String> causeDescriptions = causesOfInterruption.stream().map(cause -> cause.getClass().getSimpleName() + ": " + cause.getShortDescription()).collect(Collectors.toList());
-                    span.setAttribute(JenkinsAttributes.JENKINS_STEP_INTERRUPTION_CAUSES, causeDescriptions);
+                    span.setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_INTERRUPTION_CAUSES, causeDescriptions);
 
                     String statusDescription = throwable.getClass().getSimpleName() + ": " + String.join(", ", causeDescriptions);
 
@@ -379,7 +379,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
             if (status != null) {
                 status = StatusAndTiming.coerceStatusApi(status, StatusAndTiming.API_V2);
-                span.setAttribute(JenkinsAttributes.JENKINS_STEP_RESULT, status.toString());
+                span.setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT, status.toString());
             }
 
             span.end();
@@ -405,11 +405,11 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
             final String spanLabel = Strings.isNullOrEmpty(spanLabelArgument) ? stepName : spanLabelArgument;
             SpanBuilder spanBuilder = getTracer().spanBuilder(spanLabel)
                                                 .setParent(Context.current())
-                                                .setAttribute(JenkinsAttributes.JENKINS_STEP_TYPE, stepType)
-                                                .setAttribute(JenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
-                                                .setAttribute(JenkinsAttributes.JENKINS_STEP_NAME, stepName)
-                                                .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                                                .setAttribute(JenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+                                                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, stepType)
+                                                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                                                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_NAME, stepName)
+                                                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                                                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
 
             // Populate the attributes if any 'attributes' argument was passed to the 'withNewSpan' step.
             try {
@@ -468,7 +468,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     // @see hudson.model.Computer#getHostName()
                     openTelemetryAttributesAction.getAttributes().put(HostIncubatingAttributes.HOST_NAME, hostName);
                 }
-                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
+                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
                 computer.addAction(openTelemetryAttributesAction);
             }
             OpenTelemetryAttributesAction otelComputerAttributesAction = computer.getAction(OpenTelemetryAttributesAction.class);

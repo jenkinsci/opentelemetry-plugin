@@ -18,7 +18,7 @@ import com.github.rutledgepaulv.prune.Tree;
 
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.trace.data.SpanData;
 
@@ -46,13 +46,13 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        String rootSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         final Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
-        checkChainOfSpans(spans, JenkinsAttributes.AGENT_ALLOCATION_UI, JenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        checkChainOfSpans(spans, "release-script", "Stage: build", JenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI, ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
+        checkChainOfSpans(spans, "release-script", "Stage: build", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
         { // attribute 'pipeline.type' - PIPELINE_ROOT_SPAN

@@ -32,7 +32,7 @@ import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import io.jenkins.plugins.opentelemetry.job.log.util.InputStreamByteBuffer;
 import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
 import io.jenkins.plugins.opentelemetry.job.log.util.LineIteratorInputStream;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
@@ -155,8 +155,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         Charset charset = StandardCharsets.UTF_8;
 
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.overallLog")
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_ID, jobFullName)
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
             .setAttribute("complete", complete);
 
         Span span = spanBuilder.startSpan();
@@ -191,9 +191,9 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         final Charset charset = StandardCharsets.UTF_8;
 
         SpanBuilder spanBuilder = getTracer().spanBuilder("ElasticsearchLogStorageRetriever.stepLog")
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_ID, jobFullName)
-            .setAttribute(JenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
-            .setAttribute(JenkinsAttributes.JENKINS_STEP_ID, flowNodeId)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+            .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, flowNodeId)
             .setAttribute("complete", complete);
 
         Span span = spanBuilder.startSpan();

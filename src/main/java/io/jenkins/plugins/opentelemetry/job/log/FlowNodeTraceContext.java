@@ -9,7 +9,7 @@ import com.google.common.base.Objects;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
@@ -74,7 +74,7 @@ public class FlowNodeTraceContext extends RunTraceContext {
     public Attributes toAttributes() {
         return Attributes.builder()
             .putAll(super.toAttributes())
-            .put(JenkinsAttributes.JENKINS_STEP_ID, flowNodeId)
+            .put(ExtendedJenkinsAttributes.JENKINS_STEP_ID, flowNodeId)
             .build();
     }
 }

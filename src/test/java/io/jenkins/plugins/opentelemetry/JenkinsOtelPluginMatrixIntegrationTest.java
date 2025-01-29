@@ -11,7 +11,7 @@ import hudson.matrix.MatrixBuild;
 import hudson.matrix.MatrixProject;
 import hudson.matrix.TextAxis;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -37,13 +37,13 @@ public class JenkinsOtelPluginMatrixIntegrationTest extends BaseIntegrationTest 
         project.setAxes(axes);
         MatrixBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-        String rootSpanName = JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
         Tree<SpanDataWrapper> spans = getGeneratedSpans();
 
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(20L));
         // TODO deeper checkChainOfSpans
-        checkChainOfSpans(spans, JenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + "test-matrix-1/execution", rootSpanName);
+        checkChainOfSpans(spans, ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + "test-matrix-1/execution", rootSpanName);
 
         assertMatrixJobMetadata(build, spans);
         // TODO: maven multimodule contains the jobname and the maven goals.
