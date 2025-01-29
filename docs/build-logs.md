@@ -69,6 +69,12 @@ Please use the "Validate Elasticsearch configuration" to verify the setup.
    alt="Configuration - Storing Jenkins Pipeline Logs in Elastic visualizing logs in Kibana and through Jenkins"
    src="./images/jenkins-config-elastic-logs-with-visualization-through-jenkins.png" />
 
+#### Log Exporter Configuration
+
+* To export logs to an OTLP endpoint, configure the following environment variables:
+- `otel.logs.exporter=otlp` : Specifies that logs should be exported using the OTLP exporter.
+- `otel.logs.mirror_to_disk=true` : Ensure logs are written to disk, making them visible
+- in local systems(eg., Jenkins) in addition to the observability platform.
 #### Architecture
 
 <img width="400px"
@@ -93,7 +99,41 @@ src="./images/jenkins-pipeline-logs-elastic-kibana-role.png" />
 alt="Configuration - User creation in Kibana"
 src="./images/jenkins-pipeline-logs-elastic-kibana-user.png" />
 
-## Storing Jenkins Pipeline Logs in Loki
+   
+3. Ensure your project includes OTLP exporter dependency. For Maven. add the following to your `pom.xml`:
+  <dependency>
+       <groupID>io.opentelemetry</groupID>
+       <artifactID>opentelemetry-exporter-otlp</artifactID>
+       <version>1.30.0</version>
+  </dependency> 
+
+4. Configure the following environment variables:
+   ```properties
+   otel.logs.exporter=otlp
+   otel.logs.mirror_to_disk=true
+   ```
+
+5. Start your application and verify that logs are being exported 
+   to the OTLP endpoint and are also visible locally.
+
+
+#### Configuration Examples for Different Use Cases
+  *  Using Logback with OTLP Exporter
+     Add the following to your `logback.xml` :
+     ```xml
+     <appender name="OTLP" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
+     <exporter>otlp</exporter>
+     </appender>
+
+* Deploying in Kubernetes
+  See the environment variables in your Kubernetes YAML:
+  
+  env:
+  - name: otel.logs.exporter
+    value: "otlp"
+  - name: otel.logs.mirror_to_disk
+    value: "true"
+#### Storing Jenkins Pipeline Logs in Loki
 
 To store pipeline logs in Loki,
 
