@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
+import hudson.init.Terminator;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
@@ -19,6 +20,7 @@ import io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes;
 import jenkins.YesNoMaybe;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -175,7 +177,18 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
         this.loggerProvider = openTelemetry.getLogsBridge();
         this.captureExperimentalAttributes = openTelemetry.getConfig().getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
         Logger.getLogger("").addHandler(this);
-        logger.log(Level.FINE, "Otel java.util.logging bridge initialized");
+        logger.log(Level.INFO, "OTel logging Handler registered on java.util.logging");
+    }
+
+    /**
+     * Unregister the java.util.logging handler.
+     * As {@link @PreDestroy} doesn't seem to be honored by Jenkins, we use {@link @Terminator} in addition.
+     */
+    @Terminator
+    @PreDestroy
+    public void preDestroy() {
+        Logger.getLogger("").removeHandler(this);
+        logger.log(Level.INFO, "OTel logging Handler unregistered from java.util.logging");
     }
 
     /**

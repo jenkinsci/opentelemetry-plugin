@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
+import hudson.init.Terminator;
 import hudson.util.PluginServletFilter;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.servlet.StaplerInstrumentationServletFilter;
@@ -13,6 +14,7 @@ import io.jenkins.plugins.opentelemetry.servlet.TraceContextServletFilter;
 import jenkins.YesNoMaybe;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import jakarta.servlet.Filter;
 import jakarta.servlet.ServletException;
@@ -38,6 +40,17 @@ public class ServletFilterInitializer implements OpenTelemetryLifecycleListener 
     public void postConstruct() {
         addToPluginServletFilter(traceContextServletFilter);
         addToPluginServletFilter(staplerInstrumentationServletFilter);
+    }
+
+    /**
+     * Unregister the {@link Filter}s from the {@link PluginServletFilter}.
+     * As {@link @PreDestroy} doesn't seem to be honored by Jenkins, we use {@link @Terminator} in addition.
+     */
+    @Terminator
+    @PreDestroy
+    public void preDestroy() throws ServletException {
+        PluginServletFilter.removeFilter(traceContextServletFilter);
+        PluginServletFilter.removeFilter(staplerInstrumentationServletFilter);
     }
 
     private void addToPluginServletFilter(Filter filter) {
