@@ -44,7 +44,7 @@ public class ServletFilterInitializer implements OpenTelemetryLifecycleListener 
 
     /**
      * Unregister the {@link Filter}s from the {@link PluginServletFilter}.
-     * As {@link @PreDestroy} doesn't seem to be honored by Jenkins, we use {@link @Terminator} in addition.
+     * As <code>@PreDestroy</code> doesn't seem to be honored by Jenkins, we use <code>@Terminator</code> in addition.
      */
     @Terminator
     @PreDestroy

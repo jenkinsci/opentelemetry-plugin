@@ -182,7 +182,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
 
     /**
      * Unregister the java.util.logging handler.
-     * As {@link @PreDestroy} doesn't seem to be honored by Jenkins, we use {@link @Terminator} in addition.
+     * As <code>@PreDestroy</code> doesn't seem to be honored by Jenkins, we use <code>@Terminator</code> in addition.
      */
     @Terminator
     @PreDestroy
