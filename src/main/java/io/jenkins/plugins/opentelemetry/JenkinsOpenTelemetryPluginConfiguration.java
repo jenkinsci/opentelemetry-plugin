@@ -16,6 +16,7 @@ import hudson.Extension;
 import hudson.PluginWrapper;
 import hudson.init.InitMilestone;
 import hudson.init.Initializer;
+import hudson.init.Terminator;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.tasks.BuildStep;
@@ -716,6 +717,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return FormValidation.warning("Note that OpenTelemetry credentials, if configured, will be exposed as environment variables (likely in OTEL_EXPORTER_OTLP_HEADERS)");
     }
 
+    /**
+     * Close the @link LogStorageRetriever}.
+     * As <code>@PreDestroy</code> doesn't seem to be honored by Jenkins, we use <code>@Terminator</code> in addition.
+     */
+    @Terminator
     @PreDestroy
     public void preDestroy() throws Exception {
         if (logStorageRetriever != null) {
