@@ -395,7 +395,7 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
-            <version>3.24</version>
+            <version>3.25</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
