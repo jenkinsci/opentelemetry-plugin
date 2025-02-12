@@ -207,7 +207,7 @@ class OtelLogStorage implements LogStorage {
         logger.log(Level.FINE, "getLogFile(complete: " + complete + ")");
         File logFile = new File(runFolderPath, "log");
         if (logFile.exists()) {
-            return logFile;
+            return FileLogStorage.forFile(logFile).getLogFile(build, complete);
         }
 
         Span span = tracer.spanBuilder("OtelLogStorage.getLogFile")
