@@ -17,6 +17,7 @@ import org.junit.*;
 import org.jvnet.hudson.test.JenkinsRule;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -119,6 +120,8 @@ public class OtelLocaLogMirroringTest {
         File log = new File(build.getRootDir().getPath(), "log");
         assertFalse(log.exists());
         assertFalse(logIndex.exists());
+
+        assertTrue(Files.readString(build.getLogFile().toPath()).isEmpty());
     }
 
 
@@ -139,6 +142,8 @@ public class OtelLocaLogMirroringTest {
         File logIndex = new File(build.getRootDir().getPath(), "log-index");
         assertTrue(logIndex.exists());
         assertTrue(logText.length() > 0);
+
+        assertEquals(Files.readString(build.getLogFile().toPath()), logText);
     }
 
 
@@ -158,6 +163,8 @@ public class OtelLocaLogMirroringTest {
         File logIndex = new File(build.getRootDir().getPath(), "log-index");
         assertTrue(logIndex.exists());
         assertTrue(logText.length() > 0);
+
+        assertEquals(Files.readString(build.getLogFile().toPath()), logText);
     }
 }
 
