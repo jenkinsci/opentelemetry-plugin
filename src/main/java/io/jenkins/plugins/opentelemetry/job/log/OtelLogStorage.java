@@ -205,6 +205,11 @@ class OtelLogStorage implements LogStorage {
     @Override
     public File getLogFile(@NonNull FlowExecutionOwner.Executable build, boolean complete) {
         logger.log(Level.FINE, "getLogFile(complete: " + complete + ")");
+        File logFile = new File(runFolderPath, "log");
+        if (logFile.exists()) {
+            return FileLogStorage.forFile(logFile).getLogFile(build, complete);
+        }
+
         Span span = tracer.spanBuilder("OtelLogStorage.getLogFile")
             .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
             .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
