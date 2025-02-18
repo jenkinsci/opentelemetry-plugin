@@ -183,6 +183,8 @@
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-resources</artifactId>
+            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
