@@ -5,16 +5,16 @@ export ELASTIC_STACK_VERSION?=8.14.2
 
 .PHONY: build
 build:
-	@env docker-compose --file docker-compose.yml build
+	@env docker compose --file docker-compose.yml build
 
 .PHONY: start
 start:
-	@env docker-compose --file docker-compose.yml up --detach --no-recreate
+	@env docker compose --file docker-compose.yml up --detach --no-recreate
 
 .PHONY: stop
 stop:
-	@env docker-compose --file docker-compose.yml stop
+	@env docker compose --file docker-compose.yml stop
 
 .PHONY: clean
 clean:
-	@env docker-compose --file docker-compose.yml down -v
+	@env docker compose --file docker-compose.yml down -v
