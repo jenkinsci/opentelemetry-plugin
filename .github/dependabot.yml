@@ -15,3 +15,7 @@ updates:
     directory: /
     schedule:
         interval: monthly
+  - package-ecosystem: docker-compose
+    directory: /src/test/resources
+    schedule:
+        interval: monthly
