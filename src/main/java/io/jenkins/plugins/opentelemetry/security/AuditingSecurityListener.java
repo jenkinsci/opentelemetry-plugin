@@ -12,14 +12,16 @@ import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
-import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.semconv.ClientAttributes;
 import io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.EventIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.UserIncubatingAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.security.SecurityListener;
 import org.springframework.security.core.Authentication;
@@ -48,7 +50,7 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
     private LongCounter loginFailureCounter;
     private LongCounter loginCounter;
 
-    private EventLogger eventLogger;
+    private io.opentelemetry.api.logs.Logger otelLogger;
 
     private JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
@@ -56,7 +58,8 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
     public void postConstruct() {
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller authentication events...");
 
-        this.eventLogger = jenkinsControllerOpenTelemetry.getDefaultEventLogger();
+       otelLogger = GlobalOpenTelemetry.get().getLogsBridge().get(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME);
+
         Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
 
         loginSuccessCounter =
@@ -96,9 +99,11 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         AttributesBuilder attributesBuilder = Attributes.builder();
         Optional<User> user = Optional.ofNullable(User.current());
         attributesBuilder
+            .put(EventIncubatingAttributes.EVENT_NAME, ExtendedJenkinsAttributes.EVENT_NAME_USER_LOGIN)
             .put(ExtendedJenkinsAttributes.EVENT_CATEGORY, ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
             .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.SUCCESS)
             .put(EnduserIncubatingAttributes.ENDUSER_ID, user.map(User::getId).orElse(username))
+            .put(UserIncubatingAttributes.USER_ID, username)
         ;
 
         // Stapler.getCurrentRequest() returns null, it's not yet initialized
@@ -113,11 +118,11 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
                 message += " from " + webAuthenticationDetails.getRemoteAddress();
             }
         }
-        attributesBuilder.put("message", message);
 
-        eventLogger.builder("user_login")
-            .setAttributes(attributesBuilder.build())
+        otelLogger.logRecordBuilder()
+            .setAllAttributes(attributesBuilder.build())
             .setSeverity(Severity.INFO)
+            .setBody(message)
             .emit();
     }
 
@@ -130,18 +135,19 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         String message = "Failed login of user '" + username + "'";
         AttributesBuilder attributesBuilder = Attributes.builder();
         attributesBuilder
+            .put(EventIncubatingAttributes.EVENT_NAME, ExtendedJenkinsAttributes.EVENT_NAME_USER_LOGIN)
             .put(ExtendedJenkinsAttributes.EVENT_CATEGORY, ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
             .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.FAILURE)
             .put(EnduserIncubatingAttributes.ENDUSER_ID, username)
+            .put(UserIncubatingAttributes.USER_ID, username)
         ;
 
         // TODO find a solution to retrieve the remoteIpAddress
 
-        attributesBuilder.put("message", message);
-
-        eventLogger.builder("user_login")
-            .setAttributes(attributesBuilder.build())
+        otelLogger.logRecordBuilder()
+            .setAllAttributes(attributesBuilder.build())
             .setSeverity(Severity.WARN)
+            .setBody(message)
             .emit();
     }
 

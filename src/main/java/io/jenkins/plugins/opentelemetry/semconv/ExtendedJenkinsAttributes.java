@@ -145,6 +145,7 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
      */
     public static final AttributeKey<String> EVENT_CATEGORY = AttributeKey.stringKey("event.category");
     public final static String INSTRUMENTATION_NAME = "io.jenkins.opentelemetry";
+    public static final String EVENT_NAME_USER_LOGIN = "user_login";
 
     /**
      * See https://www.elastic.co/guide/en/ecs/current/ecs-allowed-values-event-category.html

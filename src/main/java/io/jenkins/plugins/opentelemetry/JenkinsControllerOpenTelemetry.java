@@ -81,6 +81,12 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
         return defaultMeter;
     }
 
+    /**
+     * Will be removed in <a
+     * href="https://github.com/open-telemetry/opentelemetry-java/releases/tag/v1.47.0">opentelemetry-api:1.47.0</a>
+     * @deprecated use {@link OpenTelemetry#getLogsBridge()}
+     */
+    @Deprecated
     @NonNull
     public EventLogger getDefaultEventLogger() {
         return defaultEventLogger;
