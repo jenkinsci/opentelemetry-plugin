@@ -23,11 +23,11 @@
         <jenkins.baseline>2.479</jenkins.baseline>
         <jenkins.version>${jenkins.baseline}.1</jenkins.version>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-        <opentelemetry.version>1.44.1</opentelemetry.version>
-        <jenkins-opentelemetry.version>1.44.1.40.v93f5f8ca_42c3</jenkins-opentelemetry.version>
-        <opentelemetry-instrumentation.version>2.10.0</opentelemetry-instrumentation.version>
-        <opentelemetry-semconv.version>1.28.0-alpha</opentelemetry-semconv.version>
-        <opentelemetry-contrib.version>1.41.0-alpha</opentelemetry-contrib.version>
+        <opentelemetry.version>1.46.0</opentelemetry.version>
+        <jenkins-opentelemetry.version>1.46.0.54.v83ff2ff43a_c3</jenkins-opentelemetry.version>
+        <opentelemetry-instrumentation.version>2.12.0</opentelemetry-instrumentation.version>
+        <opentelemetry-semconv.version>1.29.0-alpha</opentelemetry-semconv.version>
+        <opentelemetry-contrib.version>1.44.0-alpha</opentelemetry-contrib.version>
         <useBeta>true</useBeta>
         <elasticstack.version>8.14.3</elasticstack.version>
         <error-prone.version>2.36.0</error-prone.version>
@@ -212,6 +212,21 @@
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-core</artifactId>
                 </exclusion>
+                <exclusion>
+                    <!-- contrib:1.44 depends on api:1.47 when we pull 1.46 -->
+                    <groupId>io.opentelemetry</groupId>
+                    <artifactId>opentelemetry-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- contrib:1.44 depends on sdk:1.47  when we pull 1.46 -->
+                    <groupId>io.opentelemetry</groupId>
+                    <artifactId>opentelemetry-sdk</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- contrib:1.44 depends on semconv:1.30  when we pull 1.29-alpha -->
+                    <groupId>io.opentelemetry.semconv</groupId>
+                    <artifactId>opentelemetry-semconv</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -223,6 +238,16 @@
                     <!-- we get okhttp from org.jenkins-ci.plugins:jackson2-api -->
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- contrib:1.44 depends on api:1.47 when we pull 1.46 -->
+                    <groupId>io.opentelemetry</groupId>
+                    <artifactId>opentelemetry-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- contrib:1.44 depends on sdk:1.47  when we pull 1.46 -->
+                    <groupId>io.opentelemetry</groupId>
+                    <artifactId>opentelemetry-sdk</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
