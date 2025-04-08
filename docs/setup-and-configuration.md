@@ -11,7 +11,7 @@ For better scalability, particularly when sending logs to Elastic, it is recomme
 
 <img width="400px"
 alt="Configuration - Elastic Observability Backend - Advanced configuration"
-src="https://github.com/jenkinsci/opentelemetry-plugin/blob/main/docs/images/jenkins-config-elastic-logs-without-visualization-through-jenkins.png" />
+src="docs/images/jenkins-config-elastic-logs-with-visualization-through-jenkins.png" />
 
 _Jenkins OpenTelemetry set up with Elastic including storing logs in Elastic visualizing logs both in Elastic Kibana and through Jenkins_
 
