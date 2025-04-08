@@ -69,7 +69,11 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
 
         meter.batchCallback(() -> {
             logger.log(Level.FINE, () -> "Recording Jenkins controller executor pool metrics...");
-            Jenkins jenkins = Jenkins.get();
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+            if (jenkins == null) {
+                logger.log(Level.FINE, "Jenkins instance is null, skipping executor pool metrics recording");
+                return;
+            }
 
             // TOTAL EXECUTORS
             AtomicInteger totalExecutorsIdle = new AtomicInteger();

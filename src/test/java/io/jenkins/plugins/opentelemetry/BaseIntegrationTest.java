@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry;
 
 import com.cloudbees.hudson.plugins.folder.computed.FolderComputation;
 import com.github.rutledgepaulv.prune.Tree;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
@@ -41,8 +42,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.jvnet.hudson.test.BuildWatcher;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,7 +60,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verify;
-import static java.util.Optional.*;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static org.junit.Assert.fail;
 
 public class BaseIntegrationTest {
@@ -139,7 +139,11 @@ public class BaseIntegrationTest {
             Assert.fail("No element in the list of expected spans for " + Arrays.asList(expectedSpanNames));
         }
         final String leafSpanName = expectedSpanNamesIt.next();
-        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(node -> Objects.equals(leafSpanName, node.getData().spanData.getName()));
+        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(
+            node -> {
+                LOGGER.log( Level.FINE, () -> "Compare '" + leafSpanName + "' with '" + node.getData().spanData.getName() + "'");
+                return Objects.equals(leafSpanName, node.getData().spanData.getName());
+            });
 
         MatcherAssert.assertThat("Expected leaf span '" + leafSpanName + "' in chain of span" + expectedSpanNamesList + " not found", actualNodeOptional.isPresent(), CoreMatchers.is(true));
 
@@ -182,7 +186,7 @@ public class BaseIntegrationTest {
         return getGeneratedSpans(0);
     }
 
-    protected Tree<SpanDataWrapper> getGeneratedSpans(int index) {
+    protected Tree<SpanDataWrapper> getGeneratedSpans(int buildIndex) {
         CompletableResultCode completableResultCode = jenkinsControllerOpenTelemetry.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
         completableResultCode.join(1, TimeUnit.SECONDS);
         List<SpanData> spans = InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.getFinishedSpanItems();
@@ -192,16 +196,23 @@ public class BaseIntegrationTest {
             final SpanData spanData2 = spanDataNode2.getData().spanData;
             return Objects.equals(spanData1.getSpanId(), spanData2.getParentSpanId());
         };
-        final List<Tree<SpanDataWrapper>> trees = Tree.of(spans.stream().map(span -> new SpanDataWrapper(span)).collect(Collectors.toList()), parentChildMatcher);
+        final List<Tree<SpanDataWrapper>> trees = Tree.of(spans.stream().map(SpanDataWrapper::new).collect(Collectors.toList()), parentChildMatcher);
         System.out.println("## TREE VIEW OF SPANS ## ");
         for (Tree<SpanDataWrapper> tree : trees) {
             System.out.println(tree);
         }
 
-        if (index < 0 || index >= trees.size()) {
-            throw new IllegalArgumentException("No span found for index=" + index + ", trees.size()=" + trees.size());
+        int currentBuildIndex = 0;
+        for (Tree<SpanDataWrapper> tree : trees) {
+            if (tree.asNode().getData().spanData.getName().startsWith(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX)) {
+                if (currentBuildIndex == buildIndex) {
+                    return tree;
+                } else {
+                    currentBuildIndex++;
+                }
+            }
         }
-        return trees.get(index);
+        throw new IllegalArgumentException("No root span found starting with " + ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + " and index " + buildIndex);
     }
 
     protected void assertEnvironmentVariables(EnvVars environment) {

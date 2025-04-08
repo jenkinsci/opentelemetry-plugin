@@ -87,9 +87,10 @@ public class OpenTelemetryConfiguration {
     public Map<String, String> toOpenTelemetryProperties() {
         Map<String, String> properties = new HashMap<>(this.configurationProperties);
         if (TESTING_INMEMORY_MODE) {
-            properties.put(OTEL_TRACES_EXPORTER.asProperty(), "testing");
-            properties.put(OTEL_METRICS_EXPORTER.asProperty(), "testing");
-            properties.put(OTEL_METRIC_EXPORT_INTERVAL.asProperty(), "10ms");
+            properties.putIfAbsent(OTEL_TRACES_EXPORTER.asProperty(), "testing");
+            properties.putIfAbsent(OTEL_METRICS_EXPORTER.asProperty(), "testing");
+            properties.putIfAbsent(OTEL_METRIC_EXPORT_INTERVAL.asProperty(), "10ms");
+            properties.putIfAbsent(OTEL_LOGS_EXPORTER.asProperty(), "testing");
         } else if (this.getEndpoint().isPresent()) {
             this.getEndpoint().ifPresent(endpoint -> { // prepare of Optional.ifPResentOrElse()
                 properties.compute(OTEL_TRACES_EXPORTER.asProperty(), (key, oldValue) -> {
