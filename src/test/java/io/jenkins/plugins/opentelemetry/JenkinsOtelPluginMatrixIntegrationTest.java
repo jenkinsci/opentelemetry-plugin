@@ -39,7 +39,7 @@ public class JenkinsOtelPluginMatrixIntegrationTest extends BaseIntegrationTest 
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
 
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(20L));
         // TODO deeper checkChainOfSpans

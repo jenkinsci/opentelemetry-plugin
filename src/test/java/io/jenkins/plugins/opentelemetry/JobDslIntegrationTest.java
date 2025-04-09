@@ -31,7 +31,7 @@ public class JobDslIntegrationTest extends BaseIntegrationTest {
         MatcherAssert.assertThat(generatedJob, CoreMatchers.notNullValue());
 
         jenkinsRule.buildAndAssertSuccess(generatedJob);
-        getGeneratedSpans();
+        getBuildTrace();
 
     }
 }

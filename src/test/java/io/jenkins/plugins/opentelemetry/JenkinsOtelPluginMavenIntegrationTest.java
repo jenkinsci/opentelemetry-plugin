@@ -36,7 +36,7 @@ public class JenkinsOtelPluginMavenIntegrationTest extends BaseIntegrationTest {
         project.setGoals("validate");
         MavenModuleSetBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         // TODO: decide whether to support the maven modules under the same maven build
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(3L));
 

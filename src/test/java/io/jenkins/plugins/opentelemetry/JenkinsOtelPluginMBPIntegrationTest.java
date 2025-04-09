@@ -60,7 +60,7 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
         checkChainOfSpans(spans, "Stage: Declarative: Checkout SCM", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");

@@ -33,6 +33,7 @@ import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -182,11 +183,16 @@ public class BaseIntegrationTest {
         }).collect(Collectors.joining(" \n")));
     }
 
-    protected Tree<SpanDataWrapper> getGeneratedSpans() {
-        return getGeneratedSpans(0);
+    protected Tree<SpanDataWrapper> getBuildTrace() {
+        return getBuildTrace(0);
     }
 
-    protected Tree<SpanDataWrapper> getGeneratedSpans(int buildIndex) {
+    protected Tree<SpanDataWrapper> getBuildTrace(int traceIndex) {
+        String rootSpanPrefix = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX;
+        return getTrace(rootSpanPrefix, traceIndex);
+    }
+
+    protected static @NotNull Tree<SpanDataWrapper> getTrace(String rootSpanPrefix, int traceIndex) {
         CompletableResultCode completableResultCode = jenkinsControllerOpenTelemetry.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
         completableResultCode.join(1, TimeUnit.SECONDS);
         List<SpanData> spans = InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.getFinishedSpanItems();
@@ -204,15 +210,15 @@ public class BaseIntegrationTest {
 
         int currentBuildIndex = 0;
         for (Tree<SpanDataWrapper> tree : trees) {
-            if (tree.asNode().getData().spanData.getName().startsWith(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX)) {
-                if (currentBuildIndex == buildIndex) {
+            if (tree.asNode().getData().spanData.getName().startsWith(rootSpanPrefix)) {
+                if (currentBuildIndex == traceIndex) {
                     return tree;
                 } else {
                     currentBuildIndex++;
                 }
             }
         }
-        throw new IllegalArgumentException("No root span found starting with " + ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + " and index " + buildIndex);
+        throw new IllegalArgumentException("No root span found starting with " + rootSpanPrefix + " and index " + traceIndex);
     }
 
     protected void assertEnvironmentVariables(EnvVars environment) {

@@ -112,7 +112,7 @@ public class OtelLocaLogMirroringTest {
         reInitProvider(configuration);
 
         WorkflowRun build = runBuild();
-        assertEquals(build.getLogText().getClass(), OverallLog.class);
+        assertEquals(OverallLog.class, build.getLogText().getClass());
 
         assertTrue(build.getLog().isEmpty());
 
@@ -135,7 +135,7 @@ public class OtelLocaLogMirroringTest {
 
         WorkflowRun build = runBuild();
 
-        assertNotEquals(build.getLogText().getClass(), OverallLog.class);
+        assertNotEquals(OverallLog.class, build.getLogText().getClass());
         String logText = build.getLog();
         assertTrue(logText.contains(printedLine));
 

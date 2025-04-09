@@ -75,7 +75,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI, ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
@@ -144,7 +144,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
             pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
             jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-            final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+            final Tree<SpanDataWrapper> spans = getBuildTrace();
             MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
         }
     }
@@ -174,7 +174,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI, ExtendedJenkinsAttributes.AGENT_UI, "Stage: foo", "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
@@ -224,7 +224,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
@@ -257,7 +257,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
@@ -288,7 +288,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "error", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
@@ -321,7 +321,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         String childPipelineRootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + childPipeline.getName();
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans,
             "Stage: child-pipeline",
             ExtendedJenkinsAttributes.AGENT_UI,
@@ -355,7 +355,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
@@ -414,7 +414,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "git: github.com/octocat/Hello-World", "Stage: foo", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
@@ -442,7 +442,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "checkout: github.com/octocat/Hello-World", "Stage: foo", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
@@ -471,7 +471,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "checkout: github.com/octocat/Hello-World", "Stage: foo", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
@@ -501,7 +501,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.FAILURE, pipeline.scheduleBuild2(0));
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "sleep", "Parallel branch: branchThatWillBeInterrupted", "Stage: ze-parallel-stage", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
 
         SpanData sleepSpanData = spans.breadthFirstSearchNodes(node -> "sleep".equals(node.getData().spanData.getName())).get().getData().spanData;
@@ -538,7 +538,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans,"SpanContextPropagationTestStep.execution", "spanContextPropagationSynchronousTestStep", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
     }
     @Test
@@ -562,7 +562,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans,"SpanContextPropagationSynchronousNonBlockingTestStep.execution", "spanContextPropagationSynchronousNonBlockingTestStep", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
     }
 
