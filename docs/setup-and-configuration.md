@@ -11,7 +11,7 @@ For better scalability, particularly when sending logs to Elastic, it is recomme
 
 <img width="400px"
 alt="Configuration - Elastic Observability Backend - Advanced configuration"
-src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/better-docs/docs/images/jenkins-config-elastic-logs-with-visualization-through-jenkins.png" />
+src="images/jenkins-config-elastic-logs-with-visualization-through-jenkins.png" />
 
 _Jenkins OpenTelemetry set up with Elastic including storing logs in Elastic visualizing logs both in Elastic Kibana and through Jenkins_
 
@@ -45,7 +45,7 @@ _OpenTelemetry Collector configuration to export traces, metrics, and logs to El
 
 | Jenkins Monitoring with Elastic | Jenkins Monitoring with Elastic and OpenTelemetry Collector |
 |------------------------------------------------|----------------------------------|
-|  <img alt="Jenkins monitoring with Elastic Observability" width="400" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-architecture-elastic.png" > | <img alt="Jenkins monitoring with Elastic Observability" width="400" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-architecture-collector-elastic.png" > |
+|  <img alt="Jenkins monitoring with Elastic Observability" width="400" src="images/jenkins-opentelemetry-architecture-elastic.png" > | <img alt="Jenkins monitoring with Elastic Observability" width="400" src="images/jenkins-opentelemetry-architecture-collector-elastic.png" > |
 
 
 ### Setup for Prometheus
@@ -99,7 +99,7 @@ service:
 ```
 _OpenTelemetry Collector configuration to export traces to Jaeger_
 
-<img alt="Jenkins monitoring with Jaeger and Prometheus" width="400" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-architecture-jaeger-prometheus.png" >
+<img alt="Jenkins monitoring with Jaeger and Prometheus" width="400" src="images/jenkins-opentelemetry-architecture-jaeger-prometheus.png" >
 
 _Jenkins monitoring with Jaeger and Prometheus_
 
