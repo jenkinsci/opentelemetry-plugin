@@ -21,12 +21,14 @@ import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.sdk.trace.data.StatusData;
 import jenkins.plugins.git.ExtendedGitSampleRepoRule;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -361,6 +363,13 @@ public class BaseIntegrationTest {
             }
             if (attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_ID) != null) {
                 result += ", node.id: " + attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_ID);
+            }
+            StatusData status = spanData.getStatus();
+            if (status != null && status.getStatusCode() != StatusCode.UNSET) {
+                result += ", status.code: " + status.getStatusCode();
+            }
+            if (status != null && status.getDescription() != null && !status.getDescription().isEmpty()) {
+                result += ", status.description: " + status.getDescription();
             }
             return result;
         }

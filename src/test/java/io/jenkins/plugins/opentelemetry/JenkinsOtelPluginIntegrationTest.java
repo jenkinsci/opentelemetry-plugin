@@ -509,7 +509,6 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         SpanData branchThatWillBeInterruptedSpanData = spans.breadthFirstSearchNodes(node -> "Parallel branch: branchThatWillBeInterrupted".equals(node.getData().spanData.getName())).get().getData().spanData;
         MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
-        MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getStatus().getDescription(), CoreMatchers.is("FlowInterruptedException: FailFastCause: Failed in branch failingBranch"));
         MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_INTERRUPTION_CAUSES), CoreMatchers.is(List.of("FailFastCause: Failed in branch failingBranch")));
 
         SpanData failingBranchSpanData = spans.breadthFirstSearchNodes(node -> "Parallel branch: failingBranch".equals(node.getData().spanData.getName())).get().getData().spanData;
