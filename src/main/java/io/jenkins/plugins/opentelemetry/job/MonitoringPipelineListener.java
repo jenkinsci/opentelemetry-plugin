@@ -346,8 +346,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                 span.setStatus(StatusCode.OK);
             } else {
                 Throwable throwable = errorAction.getError();
-                if (throwable instanceof FlowInterruptedException) {
-                    FlowInterruptedException interruptedException = (FlowInterruptedException) throwable;
+                if (throwable instanceof FlowInterruptedException interruptedException) {
                     List<CauseOfInterruption> causesOfInterruption = interruptedException.getCauses();
 
                     if (status == null) status = GenericStatus.fromResult(interruptedException.getResult());
@@ -355,7 +354,6 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                     List<String> causeDescriptions = causesOfInterruption.stream().map(cause -> cause.getClass().getSimpleName() + ": " + cause.getShortDescription()).collect(Collectors.toList());
                     span.setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_INTERRUPTION_CAUSES, causeDescriptions);
 
-                    String statusDescription = throwable.getClass().getSimpleName() + ": " + String.join(", ", causeDescriptions);
 
                     boolean suppressSpanStatusCodeError = false;
                     for (CauseOfInterruption causeOfInterruption: causesOfInterruption) {
@@ -365,9 +363,12 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
                         }
                     }
                     if (suppressSpanStatusCodeError) {
-                        span.setStatus(StatusCode.UNSET, statusDescription);
+                        // status.description can't be set for status `unset` as specified by
+                        // https://github.com/open-telemetry/opentelemetry-specification/blob/v1.43.0/specification/trace/api.md#set-status
+                        span.setStatus(StatusCode.UNSET);
                     } else {
                         span.recordException(throwable);
+                        String statusDescription = throwable.getClass().getSimpleName() + ": " + String.join(", ", causeDescriptions);
                         span.setStatus(StatusCode.ERROR, statusDescription);
                     }
                 } else {
