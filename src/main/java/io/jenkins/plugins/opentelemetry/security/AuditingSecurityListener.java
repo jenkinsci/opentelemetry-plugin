@@ -58,7 +58,7 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
     public void postConstruct() {
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller authentication events...");
 
-       otelLogger = GlobalOpenTelemetry.get().getLogsBridge().get(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME);
+        otelLogger = GlobalOpenTelemetry.get().getLogsBridge().get(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME);
 
         Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
 
@@ -103,7 +103,7 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
             .put(ExtendedJenkinsAttributes.EVENT_CATEGORY, ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
             .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.SUCCESS)
             .put(EnduserIncubatingAttributes.ENDUSER_ID, user.map(User::getId).orElse(username))
-            .put(UserIncubatingAttributes.USER_ID, username)
+            .put(UserIncubatingAttributes.USER_ID, user.map(User::getId).orElse(username))
         ;
 
         // Stapler.getCurrentRequest() returns null, it's not yet initialized
@@ -111,8 +111,7 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         if (securityContext != null) {
             Authentication authentication = securityContext.getAuthentication();
             Object details = authentication.getDetails();
-            if (details instanceof WebAuthenticationDetails) {
-                WebAuthenticationDetails webAuthenticationDetails = (WebAuthenticationDetails) details;
+            if (details instanceof WebAuthenticationDetails webAuthenticationDetails) {
                 attributesBuilder
                     .put(ClientAttributes.CLIENT_ADDRESS, webAuthenticationDetails.getRemoteAddress());
                 message += " from " + webAuthenticationDetails.getRemoteAddress();
