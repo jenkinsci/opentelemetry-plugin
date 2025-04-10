@@ -54,7 +54,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
@@ -76,7 +76,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
@@ -98,7 +98,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
@@ -122,7 +122,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "archiveArtifacts", "Phase: Run", rootSpanName);
@@ -148,7 +148,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
             String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-            Tree<SpanDataWrapper> spans = getGeneratedSpans();
+            Tree<SpanDataWrapper> spans = getBuildTrace();
             checkChainOfSpans(spans, "Phase: Start", rootSpanName);
             checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
             checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
@@ -169,7 +169,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.getBuildersList().add(new Shell("set -u && touch \"x\""));
         jenkinsRule.assertBuildStatusSuccess(project.scheduleBuild2(0, new Cause.UserIdCause()));
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_CAUSE), CoreMatchers.is(List.of("UserIdCause:SYSTEM")));
@@ -192,7 +192,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
             String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-            Tree<SpanDataWrapper> spans = getGeneratedSpans();
+            Tree<SpanDataWrapper> spans = getBuildTrace();
             checkChainOfSpans(spans, "Phase: Start", rootSpanName);
             checkChainOfSpans(spans, "ant", "Phase: Run", rootSpanName);
             checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
@@ -227,21 +227,21 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Run", rootSpanName);
 
         // 2nd build
         scm.addChange().withAuthor("bob");
         project.getBuildersList().add(new FailureBuilder());
         jenkinsRule.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(0).get());
-        spans = getGeneratedSpans(1);
+        spans = getBuildTrace(1);
         checkChainOfSpans(spans, "Phase: Run", rootSpanName);
 
         // 3rd build. bob continues to be in culprit
         project.getBuildersList().add(new FailureBuilder());
         scm.addChange().withAuthor("charlie");
         FreeStyleBuild build = project.scheduleBuild2(0).get();
-        spans = getGeneratedSpans(2);
+        spans = getBuildTrace(2);
 
         checkChainOfSpans(spans, "Phase: Run", rootSpanName);
 

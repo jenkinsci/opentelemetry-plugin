@@ -64,12 +64,18 @@ public class PluginMonitoringInitializer implements OpenTelemetryLifecycleListen
         meter.batchCallback(() -> {
             logger.log(Level.FINE, () -> "Recording Jenkins controller executor pool metrics...");
 
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+            if (jenkins == null) {
+                logger.log(Level.FINE, () -> "Jenkins instance is null, skipping plugin monitoring metrics recording");
+                return;
+            }
+
             AtomicInteger active = new AtomicInteger();
             AtomicInteger inactive = new AtomicInteger();
             AtomicInteger hasUpdate = new AtomicInteger();
             AtomicInteger isUpToDate = new AtomicInteger();
 
-            PluginManager pluginManager = Jenkins.get().getPluginManager();
+            PluginManager pluginManager = jenkins.getPluginManager();
             pluginManager.getPlugins().forEach(plugin -> {
                 if (plugin.isActive()) {
                     active.incrementAndGet();

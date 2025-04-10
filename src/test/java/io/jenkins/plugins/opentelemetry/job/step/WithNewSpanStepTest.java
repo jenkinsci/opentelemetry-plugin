@@ -59,7 +59,7 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spansTree = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spansTree = getBuildTrace();
         Map<String, List<String>> spansTreeMap = getSpanMapWithChildrenFromTree(spansTree);
 
         // Check that the new spans exist.
@@ -91,7 +91,7 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spansTree = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spansTree = getBuildTrace();
         Map<String, List<String>> spansTreeMap = getSpanMapWithChildrenFromTree(spansTree);
         Map<String, SpanData> spansDataMap = getSpanDataMapFromTree(spansTree);
 
@@ -130,7 +130,7 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spansTree = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spansTree = getBuildTrace();
         Map<String, List<String>> spansTreeMap = getSpanMapWithChildrenFromTree(spansTree);
 
         // Use a non-existent span name.
@@ -163,7 +163,7 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spansTree = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spansTree = getBuildTrace();
         Map<String, List<String>> spansTreeMap = getSpanMapWithChildrenFromTree(spansTree);
 
         // Check that the new spans exist.
@@ -193,7 +193,7 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        final Tree<SpanDataWrapper> spansTree = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spansTree = getBuildTrace();
         Map<String, List<String>> spansTreeMap = getSpanMapWithChildrenFromTree(spansTree);
         Map<String, SpanData> spansDataMap = getSpanDataMapFromTree(spansTree);
 

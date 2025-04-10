@@ -110,7 +110,7 @@ public class RemoteSpanTest extends BaseIntegrationTest {
         //We will wait all spans at most 30s.
         await().atMost(30, SECONDS).pollInterval(1, SECONDS).untilAsserted(() ->
         {
-            Tree<SpanDataWrapper> spans = getGeneratedSpans();
+            Tree<SpanDataWrapper> spans = getTrace("POST", 0);
             String targetSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + targetProject.getName();
             Optional<Tree.Node<SpanDataWrapper>> targetJobSpan = spans.breadthFirstSearchNodes(node -> targetSpanName.equals(node.getData().spanData.getName()));
             assertThat("Should have target job span in the tree", targetJobSpan.isPresent());

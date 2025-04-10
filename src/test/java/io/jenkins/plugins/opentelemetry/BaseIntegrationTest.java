@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry;
 
 import com.cloudbees.hudson.plugins.folder.computed.FolderComputation;
 import com.github.rutledgepaulv.prune.Tree;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
@@ -20,18 +21,21 @@ import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.sdk.trace.data.StatusData;
 import jenkins.plugins.git.ExtendedGitSampleRepoRule;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -40,8 +44,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.jvnet.hudson.test.BuildWatcher;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,7 +63,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Verify.verify;
-import static java.util.Optional.*;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static org.junit.Assert.fail;
 
 public class BaseIntegrationTest {
@@ -139,7 +142,11 @@ public class BaseIntegrationTest {
             Assert.fail("No element in the list of expected spans for " + Arrays.asList(expectedSpanNames));
         }
         final String leafSpanName = expectedSpanNamesIt.next();
-        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(node -> Objects.equals(leafSpanName, node.getData().spanData.getName()));
+        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(
+            node -> {
+                LOGGER.log( Level.FINE, () -> "Compare '" + leafSpanName + "' with '" + node.getData().spanData.getName() + "'");
+                return Objects.equals(leafSpanName, node.getData().spanData.getName());
+            });
 
         MatcherAssert.assertThat("Expected leaf span '" + leafSpanName + "' in chain of span" + expectedSpanNamesList + " not found", actualNodeOptional.isPresent(), CoreMatchers.is(true));
 
@@ -178,11 +185,16 @@ public class BaseIntegrationTest {
         }).collect(Collectors.joining(" \n")));
     }
 
-    protected Tree<SpanDataWrapper> getGeneratedSpans() {
-        return getGeneratedSpans(0);
+    protected Tree<SpanDataWrapper> getBuildTrace() {
+        return getBuildTrace(0);
     }
 
-    protected Tree<SpanDataWrapper> getGeneratedSpans(int index) {
+    protected Tree<SpanDataWrapper> getBuildTrace(int traceIndex) {
+        String rootSpanPrefix = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX;
+        return getTrace(rootSpanPrefix, traceIndex);
+    }
+
+    protected static @NotNull Tree<SpanDataWrapper> getTrace(String rootSpanPrefix, int traceIndex) {
         CompletableResultCode completableResultCode = jenkinsControllerOpenTelemetry.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
         completableResultCode.join(1, TimeUnit.SECONDS);
         List<SpanData> spans = InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.getFinishedSpanItems();
@@ -192,16 +204,23 @@ public class BaseIntegrationTest {
             final SpanData spanData2 = spanDataNode2.getData().spanData;
             return Objects.equals(spanData1.getSpanId(), spanData2.getParentSpanId());
         };
-        final List<Tree<SpanDataWrapper>> trees = Tree.of(spans.stream().map(span -> new SpanDataWrapper(span)).collect(Collectors.toList()), parentChildMatcher);
+        final List<Tree<SpanDataWrapper>> trees = Tree.of(spans.stream().map(SpanDataWrapper::new).collect(Collectors.toList()), parentChildMatcher);
         System.out.println("## TREE VIEW OF SPANS ## ");
         for (Tree<SpanDataWrapper> tree : trees) {
             System.out.println(tree);
         }
 
-        if (index < 0 || index >= trees.size()) {
-            throw new IllegalArgumentException("No span found for index=" + index + ", trees.size()=" + trees.size());
+        int currentBuildIndex = 0;
+        for (Tree<SpanDataWrapper> tree : trees) {
+            if (tree.asNode().getData().spanData.getName().startsWith(rootSpanPrefix)) {
+                if (currentBuildIndex == traceIndex) {
+                    return tree;
+                } else {
+                    currentBuildIndex++;
+                }
+            }
         }
-        return trees.get(index);
+        throw new IllegalArgumentException("No root span found starting with " + rootSpanPrefix + " and index " + traceIndex);
     }
 
     protected void assertEnvironmentVariables(EnvVars environment) {
@@ -344,6 +363,13 @@ public class BaseIntegrationTest {
             }
             if (attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_ID) != null) {
                 result += ", node.id: " + attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_ID);
+            }
+            StatusData status = spanData.getStatus();
+            if (status != null && status.getStatusCode() != StatusCode.UNSET) {
+                result += ", status.code: " + status.getStatusCode();
+            }
+            if (status != null && status.getDescription() != null && !status.getDescription().isEmpty()) {
+                result += ", status.description: " + status.getDescription();
             }
             return result;
         }

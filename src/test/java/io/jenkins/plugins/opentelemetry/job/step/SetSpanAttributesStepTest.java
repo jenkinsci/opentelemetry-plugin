@@ -46,7 +46,7 @@ public class SetSpanAttributesStepTest extends BaseIntegrationTest {
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        final Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        final Tree<SpanDataWrapper> spans = getBuildTrace();
 
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI, ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
