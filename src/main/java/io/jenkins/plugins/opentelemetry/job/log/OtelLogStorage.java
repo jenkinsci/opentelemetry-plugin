@@ -200,7 +200,6 @@ class OtelLogStorage implements LogStorage {
         }
     }
 
-    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST", justification = "forBuild only accepts Run")
     @Deprecated
     @Override
     public File getLogFile(@NonNull FlowExecutionOwner.Executable build, boolean complete) {
