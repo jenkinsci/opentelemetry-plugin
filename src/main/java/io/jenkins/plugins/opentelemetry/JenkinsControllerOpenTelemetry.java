@@ -13,7 +13,6 @@ import hudson.ExtensionPoint;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.incubator.events.EventLogger;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.resources.ProcessResourceProvider;
@@ -44,7 +43,6 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
 
     private Tracer defaultTracer;
     private Meter defaultMeter;
-    private EventLogger defaultEventLogger;
 
     public JenkinsControllerOpenTelemetry() {
         super();
@@ -60,11 +58,6 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
                 .setInstrumentationVersion(opentelemetryPluginVersion)
                 .build();
 
-        this.defaultEventLogger = openTelemetry
-            .eventLoggerBuilder(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME)
-            .setInstrumentationVersion(opentelemetryPluginVersion)
-            .build();
-
         this.defaultMeter = openTelemetry
             .meterBuilder(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME)
             .setInstrumentationVersion(opentelemetryPluginVersion)
@@ -79,17 +72,6 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
     @NonNull
     public Meter getDefaultMeter() {
         return defaultMeter;
-    }
-
-    /**
-     * Will be removed in <a
-     * href="https://github.com/open-telemetry/opentelemetry-java/releases/tag/v1.47.0">opentelemetry-api:1.47.0</a>
-     * @deprecated use {@link OpenTelemetry#getLogsBridge()}
-     */
-    @Deprecated
-    @NonNull
-    public EventLogger getDefaultEventLogger() {
-        return defaultEventLogger;
     }
 
     public boolean isLogsEnabled() {
