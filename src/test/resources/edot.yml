@@ -1,0 +1,53 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+---
+connectors:
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+processors:
+  batch:
+    send_batch_size: 1000
+    timeout: 1s
+    send_batch_max_size: 1500
+  batch/metrics:
+    # explicitly set send_batch_max_size to 0, as splitting metrics requests may cause version_conflict_engine_exception in TSDB
+    send_batch_max_size: 0
+    timeout: 1s
+  # [Elastic Trace Processor](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elastictraceprocessor)
+  elastictrace: {} # The processor enriches traces with elastic specific requirements.
+exporters:
+  debug: {}
+  # [Elasticsearch exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/elasticsearchexporter/README.md)
+  elasticsearch/otel:
+    # List of Elasticsearch endpoints.
+    endpoints:
+      - ${env:ELASTIC_ENDPOINT}
+    # API key for Elasticsearch authentication.
+    api_key: ${env:ELASTIC_API_KEY}
+    logs_dynamic_index:
+      enabled: true
+    metrics_dynamic_index:
+      enabled: true
+    traces_dynamic_index:
+      enabled: true
+    tls:
+      insecure_skip_verify: true
+    mapping:
+      mode: otel
+service:
+  pipelines:
+    metrics/otel:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, elasticsearch/otel]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, elasticsearch/otel]
+    traces:
+      receivers: [otlp]
+      processors: [batch, elastictrace]
+      exporters: [debug, elasticsearch/otel]

@@ -1,34 +1,47 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 ---
 networks:
-    default:
-        name: integration-testing
+  default:
+    name: integration-testing
 services:
-    elasticsearch:
-        extends:
-            file: elastic-stack.yml
-            service: elasticsearch
+  elasticsearch:
+    extends:
+      file: elastic-stack.yml
+      service: elasticsearch
 
-    kibana:
-        extends:
-            file: elastic-stack.yml
-            service: kibana
-        depends_on:
-            elasticsearch:
-                condition: service_healthy
+  kibana:
+    extends:
+      file: elastic-stack.yml
+      service: kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
-    fleet-server:
-        extends:
-            file: elastic-stack.yml
-            service: fleet-server
-        depends_on:
-            elasticsearch:
-                condition: service_healthy
-            kibana:
-                condition: service_healthy
+  api-key:
+    extends:
+      file: elastic-stack.yml
+      service: api-key
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
-    wait:
-        image: busybox
-        depends_on:
-            elasticsearch: { condition: service_healthy }
-            kibana: { condition: service_healthy }
-            fleet-server: { condition: service_healthy }
+  edot:
+    extends:
+      file: elastic-stack.yml
+      service: edot
+    depends_on:
+      api-key:
+        condition: service_completed_successfully
+
+
+  wait:
+    image: busybox
+    depends_on:
+      elasticsearch: { condition: service_healthy }
+      kibana: { condition: service_healthy }
+      edot: { condition: service_healthy }
+
+volumes:
+  edot-config:
+    driver: local

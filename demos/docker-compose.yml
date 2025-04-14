@@ -44,17 +44,24 @@ services:
     networks:
       - jenkins
 
-  fleet-server:
+  api-key:
     extends:
       file: ../src/test/resources/elastic-stack.yml
-      service: fleet-server
+      service: api-key
     networks:
       - jenkins
     depends_on:
-      elasticsearch:
-        condition: service_healthy
       kibana:
         condition: service_healthy
+  edot:
+    extends:
+      file: ../src/test/resources/elastic-stack.yml
+      service: edot
+    networks:
+      - jenkins
+    depends_on:
+      api-key:
+        condition: service_completed_successfully
 
   elasticsearch:
     extends:
@@ -114,7 +121,7 @@ services:
     depends_on:
       - jaeger-all-in-one
       - zipkin-all-in-one
-      - fleet-server
+      - edot
       - prometheus
     networks:
       - jenkins
@@ -123,6 +130,8 @@ volumes:
   jenkins:
     driver: local
   esdata:
+    driver: local
+  edot-config:
     driver: local
 
 networks:
