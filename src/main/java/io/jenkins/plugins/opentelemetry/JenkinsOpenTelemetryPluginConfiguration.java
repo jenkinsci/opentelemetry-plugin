@@ -653,7 +653,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     /**
      * https://github.com/spotbugs/spotbugs/issues/1175
      */
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     @NonNull
     public static JenkinsOpenTelemetryPluginConfiguration get() {
         return Objects.requireNonNull(GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class));
