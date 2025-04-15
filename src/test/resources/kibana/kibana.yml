@@ -11,9 +11,7 @@ logging:
 elasticsearch.hosts: "${ELASTICSEARCH_HOSTS}"
 elasticsearch.username: "${ELASTICSEARCH_USERNAME}"
 elasticsearch.password: "${ELASTICSEARCH_PASSWORD}"
-xpack.monitoring.ui.container.elasticsearch.enabled: true
 
-xpack.fleet.registryUrl: "https://epr-staging.elastic.co"
 xpack.fleet.agents.elasticsearch.host: "${ELASTICSEARCH_HOSTS}"
 xpack.fleet.agents.fleet_server.hosts: ["http://fleet-server:8220"]
 xpack.fleet.agents.kibana.hosts: ["http://kibana:5601"]
@@ -22,13 +20,6 @@ xpack.security.loginAssistanceMessage: "login admin:changeme"
 xpack.encryptedSavedObjects.encryptionKey: "12345678901234567890123456789012"
 xpack.security.encryptionKey: "12345678901234567890123456789012"
 xpack.fleet.agents.tlsCheckDisabled: true
-
-
-#xpack.fleet.outputs:
-#    - name: "Test output"
-#      type: "elasticsearch"
-#      id: "output-123"
-#      hosts: ["http://elasticsearch:9200"]
 
 xpack.security.authc.providers:
     basic.basic1:

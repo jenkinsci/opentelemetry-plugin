@@ -8,6 +8,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch.ilm.Actions;
 import co.elastic.clients.elasticsearch.ilm.GetLifecycleResponse;
 import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.ilm.Phases;
@@ -338,28 +339,12 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         if (phase == null) {
             return phaseName + " [phase not defined]";
         }
-        List<String> retentionPolicySpec = new ArrayList<>();
-        JsonData actions = phase.actions();
+        String retentionPolicySpec = "no actions";
+        Actions actions = phase.actions();
         if (actions != null){
-            JsonValue actionsAsJson = actions.toJson();
-            JsonObject hotPhaseActions = actionsAsJson.asJsonObject();
-            if (hotPhaseActions.containsKey("rollover")) {
-                JsonObject rollOver = hotPhaseActions.getJsonObject("rollover");
-                String maxSize = rollOver.getString("max_size", "not defined");
-                String maxAge = Optional
-                    .ofNullable(rollOver.getString("max_age", null))
-                    .map(a -> Time.of(b -> b.time(a))).map(Time::time).orElse("Not defined");
-                retentionPolicySpec.add("rollover[maxAge=" + maxAge + ", maxSize=" + maxSize + "]");
-            }
-            if (hotPhaseActions.containsKey("delete")) {
-                Time minAge2 = phase.minAge();
-                if(minAge2 != null){
-                    String minAge = minAge2.time();
-                    retentionPolicySpec.add("delete[min_age=" + minAge + "]");
-                }
-            }
+            retentionPolicySpec = actions.toString();
         }
-        return phaseName + "[" + String.join(",", retentionPolicySpec) + "]";
+        return phaseName + "[" + retentionPolicySpec + "]";
     }
 
     @Override

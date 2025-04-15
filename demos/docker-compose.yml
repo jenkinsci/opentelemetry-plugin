@@ -7,6 +7,8 @@ services:
       JAVA_OPTS: >-
         -Djenkins.install.runSetupWizard=false
         -Dhudson.model.UsageStatistics.disabled=true
+        -Dotel.instrumentation.jenkins.agent.enabled=true
+        -Dotel.instrumentation.jenkins.remoting.enabled=true
     healthcheck:
         disable: false
         test: [ "CMD-SHELL", "curl --fail http://localhost:8080/ || exit 1" ]
