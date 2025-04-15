@@ -109,23 +109,23 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
     public void createLogIndex() throws IOException {
         RestClient restClient = getBuilder().build();
         RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
-        ElasticsearchClient client = new ElasticsearchClient(elasticsearchTransport);
+        try(ElasticsearchClient client = new ElasticsearchClient(elasticsearchTransport)){
+            client.indices().create(new CreateIndexRequest.Builder().index(INDEX).build());
 
-        client.indices().create(new CreateIndexRequest.Builder().index(INDEX).build());
-
-        BulkRequest.Builder br = new BulkRequest.Builder();
-        for (int n = 0; n < 100; n++) {
-            String index = String.valueOf(n);
-            br.operations(op -> op
-                    .index(idx -> idx
-                            .index(INDEX)
-                            .document(
-                                    Map.of(
-                                            TemplateBindings.TRACE_ID, "foo" + index,
-                                            TemplateBindings.SPAN_ID, "bar" + index))));
+            BulkRequest.Builder br = new BulkRequest.Builder();
+            for (int n = 0; n < 100; n++) {
+                String index = String.valueOf(n);
+                br.operations(op -> op
+                        .index(idx -> idx
+                                .index(INDEX)
+                                .document(
+                                        Map.of(
+                                                TemplateBindings.TRACE_ID, "foo" + index,
+                                                TemplateBindings.SPAN_ID, "bar" + index))));
+            }
+            BulkResponse result = client.bulk(br.build());
+            assertFalse(result.errors());
         }
-        BulkResponse result = client.bulk(br.build());
-        assertFalse(result.errors());
     }
 
     public void configureElasticBackEnd() {

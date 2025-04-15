@@ -60,8 +60,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             logger.warning(MSG_ELASTICSEARCH_URL_IS_BLANK);
             throw new IllegalStateException(MSG_ELASTICSEARCH_URL_IS_BLANK);
         } else {
-            Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(
-                    () -> elasticsearchCredentialsId);
+            Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(elasticsearchCredentialsId);
             return new ElasticsearchLogStorageRetriever(
                     this.elasticsearchUrl, disableSslVerifications, credentials,
                     buildLogsVisualizationUrlTemplate, templateBindingsProvider);
@@ -150,11 +149,11 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             }
 
             return new StandardListBoxModel().includeEmptyValue()
-                    .includeAs(ACL.SYSTEM, context, StandardUsernameCredentials.class)
+                    .includeAs(ACL.SYSTEM2, context, StandardUsernameCredentials.class)
                     .includeCurrentValue(elasticsearchCredentialsId);
         }
 
-        @SuppressFBWarnings(value="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT", 
+        @SuppressFBWarnings(value="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT",
             justification="We don't care about the return value, we just want to check that the credentials are valid")
         public FormValidation doCheckElasticsearchCredentialsId(Item context,
                 @QueryParameter String elasticsearchCredentialsId) {
@@ -167,7 +166,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                 return FormValidation.error("Elasticsearch credentials are missing");
             }
             try {
-                new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId)
+                new JenkinsCredentialsToApacheHttpCredentialsAdapter(elasticsearchCredentialsId)
                         .getUserPrincipal().getName();
             } catch (CredentialsNotFoundException e) {
                 return FormValidation.error("Elasticsearch credentials are not valid");
@@ -181,7 +180,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             if (elasticsearchUrlValidation.kind != FormValidation.Kind.OK) {
                 return elasticsearchUrlValidation;
             }
-            Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(() -> elasticsearchCredentialsId);
+            Credentials credentials = new JenkinsCredentialsToApacheHttpCredentialsAdapter(elasticsearchCredentialsId);
             try (ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
                     elasticsearchUrl,
                     disableSslVerifications,
