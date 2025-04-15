@@ -15,6 +15,7 @@ import org.apache.commons.io.IOUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
@@ -25,6 +26,7 @@ import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 
+@Ignore("disabled until we update to EDOT")
 public class ElasticsearchBackendITTest extends ElasticStackIT {
 
     @Test
