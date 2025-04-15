@@ -23,7 +23,7 @@ services:
       file: elastic-stack.yml
       service: api-key
     depends_on:
-      elasticsearch:
+      kibana:
         condition: service_healthy
 
   edot:

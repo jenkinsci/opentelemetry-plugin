@@ -1,6 +1,9 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 ---
+extensions:
+  health_check:
+    endpoint: 127.0.0.1:13133
 connectors:
 receivers:
   otlp:
@@ -38,6 +41,7 @@ exporters:
     mapping:
       mode: otel
 service:
+  extensions: [health_check]
   pipelines:
     metrics/otel:
       receivers: [otlp]

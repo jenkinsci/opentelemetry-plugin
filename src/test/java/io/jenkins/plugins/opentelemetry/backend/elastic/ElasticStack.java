@@ -11,9 +11,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 
-import hudson.ExtensionList;
-import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.client.CredentialsProvider;
@@ -21,6 +18,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.containers.wait.strategy.DockerHealthcheckWaitStrategy;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
@@ -29,21 +27,25 @@ import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend.TemplateBindings;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
 
 /**
  * Elastic Stack containers used on the tests.
  */
 public class ElasticStack extends DockerComposeContainer<ElasticStack> {
+    public static final String EDOT_SERVICE = "edot_1";
+    public static final String KIBANA_SERVICE = "kibana_1";
+    public static final String ELASTICSEARCH_SERVICE = "elasticsearch_1";
     public static final String USER_NAME = "admin";
     public static final String PASSWORD = "changeme";
     public static final String INDEX = "logs-001";
-    public static final int ES_PORT = 9200;
 
-    public static final int OTEL_PORT = 8200;
+    public static final int OTEL_PORT = 4317;
     public static final int KIBANA_PORT = 5601;
     public static final int ELASTICSEARCH_PORT = 9200;
 
@@ -56,10 +58,11 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
 
     public ElasticStack() {
         super(new File("src/test/resources/docker-compose.yml"));
-        withExposedService("fleet-server_1", OTEL_PORT)
-                .withExposedService("kibana_1", KIBANA_PORT)
-                .withExposedService("elasticsearch_1", ELASTICSEARCH_PORT)
-                .withStartupTimeout(Duration.ofMinutes(10));
+        withExposedService(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT)
+        .withExposedService(KIBANA_SERVICE, KIBANA_PORT)
+        .withExposedService(EDOT_SERVICE, OTEL_PORT)
+        .waitingFor(EDOT_SERVICE, new DockerHealthcheckWaitStrategy())
+        .withStartupTimeout(Duration.ofMinutes(10));
     }
 
     /**
@@ -81,24 +84,24 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
      * @return The URL to access to the Elasticsearch Docker container.
      */
     public String getEsUrl() {
-        return "http://" + this.getServiceHost("elasticsearch_1", ELASTICSEARCH_PORT) + ":" + this
-                .getServicePort("elasticsearch_1", ELASTICSEARCH_PORT);
+        return "http://" + this.getServiceHost(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT) + ":" + this
+                .getServicePort(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT);
     }
 
     /**
      * @return The URL to access to the Kibana Docker container.
      */
     public String getKibanaUrl() {
-        return "http://" + this.getServiceHost("kibana_1", KIBANA_PORT) + ":" + this
-                .getServicePort("kibana_1", KIBANA_PORT);
+        return "http://" + this.getServiceHost(KIBANA_SERVICE, KIBANA_PORT) + ":" + this
+                .getServicePort(KIBANA_SERVICE, KIBANA_PORT);
     }
 
     /**
      * @return The URL to access to the OpenTelemetry Docker container.
      */
     public String getFleetUrl() {
-        return "http://" + this.getServiceHost("fleet-server_1", OTEL_PORT) + ":" + this
-                .getServicePort("fleet-server_1", OTEL_PORT);
+        return "http://" + this.getServiceHost(EDOT_SERVICE, OTEL_PORT) + ":" + this
+                .getServicePort(EDOT_SERVICE, OTEL_PORT);
     }
 
     /**

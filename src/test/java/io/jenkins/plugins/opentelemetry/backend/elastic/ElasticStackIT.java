@@ -23,7 +23,8 @@ public abstract class ElasticStackIT {
     @ConfiguredWithCode("jcasc-elastic-backend.yml")
     public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
 
-    public static ElasticStack elasticStack;
+    @ClassRule
+    public static ElasticStack elasticStack = new ElasticStack();
     private static boolean isInitialized = false;
 
     @ClassRule
@@ -45,8 +46,7 @@ public abstract class ElasticStackIT {
     @Before
     public void setUp() throws Exception {
         if (!isInitialized){
-            elasticStack = new ElasticStack();
-            elasticStack.start();
+            elasticStack.getServicePort(ElasticStack.EDOT_SERVICE, ElasticStack.OTEL_PORT);
             elasticStack.configureElasticBackEnd();
             isInitialized = true;
         }

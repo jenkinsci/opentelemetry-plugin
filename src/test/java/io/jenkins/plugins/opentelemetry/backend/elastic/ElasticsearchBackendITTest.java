@@ -15,7 +15,6 @@ import org.apache.commons.io.IOUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
@@ -26,7 +25,6 @@ import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 
-@Ignore("disabled until we update to EDOT")
 public class ElasticsearchBackendITTest extends ElasticStackIT {
 
     @Test
@@ -47,12 +45,12 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
         ElasticLogsBackendWithJenkinsVisualization visualization = elasticStack.getElasticStackConfiguration();
         ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor = (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization
                 .getDescriptor();
-        assertEquals(FormValidation.Kind.OK, descriptor.doCheckKibanaBaseUrl("http://kibana.example.com").kind);
-        assertEquals(FormValidation.Kind.OK,
+        assertEquals("Kibana URL should be valid", FormValidation.Kind.OK, descriptor.doCheckKibanaBaseUrl("http://kibana.example.com").kind);
+        assertEquals("Elasticsearch URL should be valid and the credentials valid", FormValidation.Kind.OK,
                 visDescriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.CRED_ID).kind);
-        assertEquals(FormValidation.Kind.ERROR,
+        assertEquals("Elasticsearch URL should be valid and the credentials invalid", FormValidation.Kind.ERROR,
                 visDescriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.WRONG_CREDS).kind);
-        assertEquals(FormValidation.Kind.ERROR, visDescriptor.doValidate("nowhere", true, ElasticStack.CRED_ID).kind);
+        assertEquals("Elasticsearch URL should be invalid", visDescriptor.doValidate("nowhere", true, ElasticStack.CRED_ID).kind, FormValidation.Kind.ERROR);
     }
 
     @Test
