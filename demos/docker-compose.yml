@@ -33,7 +33,7 @@ services:
       - jenkins
 
   jenkins-inbound-agent:
-    image: jenkins/inbound-agent:latest-jdk11
+    image: jenkins/inbound-agent:latest-jdk21
     entrypoint: java
     command: -jar /usr/share/jenkins/agent.jar -jnlpUrl http://jenkins:8080/computer/local/jenkins-agent.jnlp
     depends_on:
