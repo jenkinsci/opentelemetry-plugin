@@ -13,7 +13,7 @@ jenkins:
   - permanent:
       labelString: "local"
       launcher:
-        jnlp:
+        inbound:
           workDirSettings:
             disabled: true
             failIfWorkDirIsMissing: false

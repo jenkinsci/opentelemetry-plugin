@@ -1,5 +1,4 @@
 ---
-version: "2.4"
 networks:
     default:
         name: integration-testing
@@ -20,7 +19,7 @@ services:
             - "xpack.security.authc.api_key.enabled=true"
             - "logger.org.elasticsearch=${ES_LOG_LEVEL:-error}"
             - "action.destructive_requires_name=false"
-        image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-8.11.2}
+        image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-8.18.0}
         ports:
             - "9200"
         healthcheck:
@@ -39,7 +38,7 @@ services:
             ELASTICSEARCH_USERNAME: "${KIBANA_ES_USER:-kibana_system_user}"
             ELASTICSEARCH_PASSWORD: "${KIBANA_ES_PASS:-changeme}"
             STATUS_ALLOWANONYMOUS: 'true'
-        image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-8.11.2}
+        image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION:-8.18.0}
         ports:
             - "5601:5601"
         volumes:
@@ -50,7 +49,7 @@ services:
             test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q 'All services are available'"]
 
     fleet-server:
-        image: docker.elastic.co/beats/elastic-agent:${ELASTIC_STACK_VERSION:-8.11.2}
+        image: docker.elastic.co/elastic-agent/elastic-agent:${ELASTIC_STACK_VERSION:-8.18.0}
         privileged: true
         entrypoint: "/bin/bash"
         command:
@@ -59,7 +58,7 @@ services:
             - "elastic-agent container"
         ports:
             - "8220"
-            - "8200:8200"
+            - "8200"
         healthcheck:
             test: ["CMD-SHELL", "curl -s -k http://localhost:8220/api/status | grep -q 'HEALTHY'"]
             retries: 300
