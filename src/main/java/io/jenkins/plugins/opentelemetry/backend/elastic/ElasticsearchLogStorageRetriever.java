@@ -293,44 +293,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         validations.add(FormValidation.ok("Verify existence of the Index Lifecycle Management (ILM) Policy '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' associated with the Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME +
             "' to define the time to live of the Jenkins pipeline logs in Elasticsearch..."));
 
-        GetLifecycleResponse getLifecycleResponse;
-        try {
-            getLifecycleResponse = esClient.ilm().getLifecycle(b -> b.name(ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME));
-        } catch (ElasticsearchException e) {
-            ErrorCause errorCause = e.error();
-            int status = e.status();
-            if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
-                if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
-                    validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
-                } else if (status == HttpURLConnection.HTTP_FORBIDDEN) {
-                    validations.add(FormValidation.ok(
-                        "Time to live of the pipeline logs in Elasticsearch " + elasticsearchUrl + "not available. " +
-                            "The Index Lifecycle Management (ILM) policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' is not readable by the Elasticsearch user '" + elasticsearchUsername + ". " +
-                            " Details: " + errorCause.type() + " - " + errorCause.reason() + "."));
-                } else {
-                    validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
-                }
-            } else {
-                validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
-            }
-            return validations;
-        } catch (IOException e) {
-            validations.add(FormValidation.warning("Exception accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "'.", e));
-            return validations;
-        }
-        Lifecycle lifecyclePolicy = getLifecycleResponse.get(ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME);
-        if (lifecyclePolicy == null) {
-            validations.add(FormValidation.warning("Index Lifecycle Policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' NOT found."));
-        } else {
-            validations.add(FormValidation.ok("Index Lifecycle Policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' found."));
-            Phases phases = lifecyclePolicy.policy().phases();
-            List<String> retentionPolicy = new ArrayList<>();
-            retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.hot(), "hot"));
-            retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.warm(), "warm"));
-            retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.cold(), "cold"));
-            retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.delete(), "delete"));
-            validations.add(FormValidation.ok("Logs retention policy: " + String.join(", ", retentionPolicy) + "."));
-        }
         return validations;
     }
 

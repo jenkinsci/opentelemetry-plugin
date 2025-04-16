@@ -21,13 +21,8 @@ public interface ElasticsearchFields {
     String FIELD_CI_PIPELINE_ID = "labels." + ExtendedJenkinsAttributes.CI_PIPELINE_ID.getKey().replace('.', '_');
     String FIELD_CI_PIPELINE_RUN_NUMBER = "numeric_labels." + ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER.getKey().replace('.', '_');
     String FIELD_JENKINS_STEP_ID = "labels." + ExtendedJenkinsAttributes.JENKINS_STEP_ID.getKey().replace('.', '_');
-    String INDEX_TEMPLATE_PATTERNS = "logs-apm.app-*,.ds-logs-apm.app*";
-    String INDEX_TEMPLATE_NAME = "logs-apm.app";
-    /**
-     * Waiting to fix https://github.com/jenkinsci/opentelemetry-plugin/issues/336 , we hard code the policy name
-     */
-    String INDEX_LIFECYCLE_POLICY_NAME = "logs-apm.app_logs-default_policy";
-
+    String INDEX_TEMPLATE_PATTERNS = "logs-generic.*,logs-apm.app-*,.ds-logs-apm.app*,.ds-logs-generic.*";
+    String INDEX_TEMPLATE_NAME = "logs-generic.*,logs-apm.app";
 
     /**
      * @see co.elastic.clients.elasticsearch._types.ErrorCause#type()
