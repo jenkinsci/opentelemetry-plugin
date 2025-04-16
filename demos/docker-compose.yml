@@ -9,6 +9,7 @@ services:
         -Dhudson.model.UsageStatistics.disabled=true
         -Dotel.instrumentation.jenkins.agent.enabled=true
         -Dotel.instrumentation.jenkins.remoting.enabled=true
+        -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000
     healthcheck:
         disable: false
         test: [ "CMD-SHELL", "curl --fail http://localhost:8080/ || exit 1" ]
@@ -31,6 +32,7 @@ services:
     ports:
       - "8080:8080"
       - "50000:50000"
+      - "8000:8000"
     networks:
       - jenkins
 

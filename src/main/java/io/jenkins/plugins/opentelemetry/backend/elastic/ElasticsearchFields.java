@@ -22,7 +22,7 @@ public interface ElasticsearchFields {
     String FIELD_CI_PIPELINE_RUN_NUMBER = "numeric_labels." + ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER.getKey().replace('.', '_');
     String FIELD_JENKINS_STEP_ID = "labels." + ExtendedJenkinsAttributes.JENKINS_STEP_ID.getKey().replace('.', '_');
     String INDEX_TEMPLATE_PATTERNS = "logs-generic.*,logs-apm.app-*,.ds-logs-apm.app*,.ds-logs-generic.*";
-    String INDEX_TEMPLATE_NAME = "logs-generic.*,logs-apm.app";
+    String INDEX_TEMPLATE_NAME = "logs-apm.app";
 
     /**
      * @see co.elastic.clients.elasticsearch._types.ErrorCause#type()

@@ -4,20 +4,46 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.Principal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.net.ssl.SSLContext;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustAllStrategy;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.elasticsearch.client.RestClient;
+import org.kohsuke.stapler.framework.io.ByteBuffer;
+
+import com.google.errorprone.annotations.MustBeClosed;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.ErrorCause;
-import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.ilm.Actions;
-import co.elastic.clients.elasticsearch.ilm.GetLifecycleResponse;
 import co.elastic.clients.elasticsearch.ilm.Phase;
-import co.elastic.clients.elasticsearch.ilm.Phases;
-import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
-import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import groovy.text.Template;
@@ -38,36 +64,6 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonValue;
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.TrustAllStrategy;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.elasticsearch.client.RestClient;
-import org.kohsuke.stapler.framework.io.ByteBuffer;
-
-import javax.net.ssl.SSLContext;
-import java.io.Closeable;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.Principal;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -259,6 +255,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         try {
             indexTemplateExists = indicesClient.existsIndexTemplate(b -> b.name(ElasticsearchFields.INDEX_TEMPLATE_NAME)).value();
         } catch (ElasticsearchException e) {
+            logger.fine(e.getLocalizedMessage());
             ErrorCause errorCause = e.error();
             int status = e.status();
             if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
@@ -279,6 +276,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             }
             return validations;
         } catch (IOException e) {
+            logger.fine(e.getLocalizedMessage());
             validations.add(FormValidation.warning("Exception accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
             return validations;
         }
