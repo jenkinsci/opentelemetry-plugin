@@ -8,7 +8,6 @@ package io.jenkins.plugins.opentelemetry.backend;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -32,11 +31,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.GlobalConfiguration;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
 
 public class ElasticBackend extends ObservabilityBackend {
 
@@ -115,10 +114,10 @@ public class ElasticBackend extends ObservabilityBackend {
             "?rangeFrom=${startTime.minusSeconds(600)}" +
             "&rangeTo=${startTime.plusSeconds(600)}" +
             "&transactionName=${rootSpanName}" +
-            "&transactionType=job" + // see io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE
-            "&latencyAggregationType=avg" +
-            "&traceId=${traceId}" +
-            "&transactionId=${spanId}";
+            "&transactionType=unknown" + // see io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE
+            "&comparisonEnabled=true" +
+            "&transactionId=${spanId}" +
+            "&traceId=${traceId}";
     }
 
     @CheckForNull

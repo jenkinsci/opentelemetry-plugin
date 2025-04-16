@@ -9,6 +9,7 @@ services:
         -Dhudson.model.UsageStatistics.disabled=true
         -Dotel.instrumentation.jenkins.agent.enabled=true
         -Dotel.instrumentation.jenkins.remoting.enabled=true
+        -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000
     healthcheck:
         disable: false
         test: [ "CMD-SHELL", "curl --fail http://localhost:8080/ || exit 1" ]
@@ -31,6 +32,7 @@ services:
     ports:
       - "8080:8080"
       - "50000:50000"
+      - "8000:8000"
     networks:
       - jenkins
 
@@ -44,17 +46,24 @@ services:
     networks:
       - jenkins
 
-  fleet-server:
+  api-key:
     extends:
       file: ../src/test/resources/elastic-stack.yml
-      service: fleet-server
+      service: api-key
     networks:
       - jenkins
     depends_on:
-      elasticsearch:
-        condition: service_healthy
       kibana:
         condition: service_healthy
+  edot:
+    extends:
+      file: ../src/test/resources/elastic-stack.yml
+      service: edot
+    networks:
+      - jenkins
+    depends_on:
+      api-key:
+        condition: service_completed_successfully
 
   elasticsearch:
     extends:
@@ -114,7 +123,7 @@ services:
     depends_on:
       - jaeger-all-in-one
       - zipkin-all-in-one
-      - fleet-server
+      - edot
       - prometheus
     networks:
       - jenkins
@@ -123,6 +132,8 @@ volumes:
   jenkins:
     driver: local
   esdata:
+    driver: local
+  edot-config:
     driver: local
 
 networks:

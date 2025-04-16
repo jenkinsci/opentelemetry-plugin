@@ -61,10 +61,15 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
             } else {
                 kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/${spaceIdentifier}";
             }
-
-            String urlTemplate = kibanaSpaceBaseUrl + "/app/logs/stream?" +
-                "logPosition=(end:now,start:now-40d,streamLive:!f)&" +
-                "logFilter=(language:kuery,query:%27trace.id:${traceId}%27)&";
+            String urlTemplate = kibanaSpaceBaseUrl + "/app/discover#/" +
+                "?_a=(" +
+                "columns:!(message)," +
+                "dataSource:(dataViewId:discover-observability-solution-all-logs,type:dataView)," +
+                "filters:!((" +
+                    "meta:(alias:!n,disabled:!f,field:trace.id,index:discover-observability-solution-all-logs,key:trace.id,negate:!f,params:(query:%27${traceId}%27),type:phrase)," +
+                    "query:(match_phrase:(trace.id:%27${traceId}%27))" +
+                    ")))" +
+                "&_g=(filters:!(),time:(from:now-40d,to:now))";
             GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
             try {
                 this.buildLogsVisualizationUrlGTemplate = gStringTemplateEngine.createTemplate(urlTemplate);

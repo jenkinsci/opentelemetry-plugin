@@ -26,7 +26,7 @@ import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 
-@Ignore("disabled until we update to EDOT")
+@Ignore("This test is ignored because it causes a java.lang.LinkageError: loader constraint violation in test and debug mode")
 public class ElasticsearchBackendITTest extends ElasticStackIT {
 
     @Test
@@ -47,12 +47,15 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
         ElasticLogsBackendWithJenkinsVisualization visualization = elasticStack.getElasticStackConfiguration();
         ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor = (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization
                 .getDescriptor();
-        assertEquals(FormValidation.Kind.OK, descriptor.doCheckKibanaBaseUrl("http://kibana.example.com").kind);
-        assertEquals(FormValidation.Kind.OK,
+        assertEquals("Kibana URL should be valid", FormValidation.Kind.OK,
+                descriptor.doCheckKibanaBaseUrl("http://kibana.example.com").kind);
+        assertEquals("Elasticsearch URL should be valid and the credentials valid :" + elasticStack.getEsUrl(),
+                FormValidation.Kind.OK,
                 visDescriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.CRED_ID).kind);
-        assertEquals(FormValidation.Kind.ERROR,
+        assertEquals("Elasticsearch URL should be valid and the credentials invalid", FormValidation.Kind.ERROR,
                 visDescriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.WRONG_CREDS).kind);
-        assertEquals(FormValidation.Kind.ERROR, visDescriptor.doValidate("nowhere", true, ElasticStack.CRED_ID).kind);
+        assertEquals("Elasticsearch URL should be invalid",
+                visDescriptor.doValidate("nowhere", true, ElasticStack.CRED_ID).kind, FormValidation.Kind.ERROR);
     }
 
     @Test

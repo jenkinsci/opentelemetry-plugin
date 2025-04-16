@@ -2,7 +2,7 @@ unclassified:
   openTelemetry:
     authentication: "noAuthentication"
     #configurationProperties: "otel.logs.mirror_to_disk=true"
-    endpoint: "http://fleet-server:8200"
+    endpoint: "http://edot:4317"
     exportOtelConfigurationAsEnvironmentVariables: true
     ignoredSteps: "dir,echo,isUnix,pwd,properties"
     observabilityBackends:
@@ -16,7 +16,7 @@ unclassified:
         name: "Elastic Observability"
     serviceName: "jenkins"
     serviceNamespace: "jenkins"
-        
+
 ## Credentials for the git username lookup Integration Tests
 credentials:
   system:
