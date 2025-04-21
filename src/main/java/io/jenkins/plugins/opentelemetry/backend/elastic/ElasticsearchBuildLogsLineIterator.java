@@ -5,6 +5,20 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -16,12 +30,11 @@ import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Iterators;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
-import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
+import io.jenkins.plugins.opentelemetry.job.log.LogLine;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -30,49 +43,39 @@ import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
 import net.sf.json.JSONArray;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * https://www.elastic.co/guide/en/elasticsearch/reference/7.17/point-in-time-api.html
  */
-public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeable {
+public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>, Closeable {
     private final static Logger logger = Logger.getLogger(ElasticsearchBuildLogsLineIterator.class.getName());
 
     public static final Time POINT_IN_TIME_KEEP_ALIVE = Time.of(builder -> builder.time("30s"));
     public static final int PAGE_SIZE = 200;
-    public final static int MAX_LINES = 10_000;
+    public final static int MAX_LINES_PAGINATED = 10_000;
 
     final String jobFullName;
     final int runNumber;
+    long lineNumber;
     @Nullable
     final String flowNodeId;
     final String traceId;
     final ElasticsearchClient esClient;
     final Tracer tracer;
-    long readLines;
     String pointInTimeId;
 
     @VisibleForTesting
     int queryCounter;
 
-    Iterator<String> delegate;
+    Iterator<LogLine<Long>> delegate;
     boolean endOfStream;
 
-    public ElasticsearchBuildLogsLineIterator(@NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull ElasticsearchClient esClient, @NonNull Tracer tracer) {
+    public ElasticsearchBuildLogsLineIterator(@NonNull String jobFullName, int runNumber, @NonNull String traceId,
+            @NonNull ElasticsearchClient esClient, @NonNull Tracer tracer) {
         this(jobFullName, runNumber, traceId, null, esClient, tracer);
     }
 
-    public ElasticsearchBuildLogsLineIterator(@NonNull String jobFullName, int runNumber, @NonNull String traceId, @Nullable String flowNodeId, @NonNull ElasticsearchClient esClient, @NonNull Tracer tracer) {
+    public ElasticsearchBuildLogsLineIterator(@NonNull String jobFullName, int runNumber, @NonNull String traceId,
+            @Nullable String flowNodeId, @NonNull ElasticsearchClient esClient, @NonNull Tracer tracer) {
         this.tracer = tracer;
         this.jobFullName = jobFullName;
         this.runNumber = runNumber;
@@ -84,11 +87,12 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
     String lazyLoadPointInTimeId() throws IOException {
         if (pointInTimeId == null) {
             Span esOpenPitSpan = tracer.spanBuilder("ElasticsearchLogsSearchIterator.openPointInTime")
-                .setAttribute("query.index", ElasticsearchFields.INDEX_TEMPLATE_PATTERNS)
-                .setAttribute("query.keepAlive", POINT_IN_TIME_KEEP_ALIVE.time())
-                .startSpan();
+                    .setAttribute("query.index", ElasticsearchFields.INDEX_TEMPLATE_PATTERNS)
+                    .setAttribute("query.keepAlive", POINT_IN_TIME_KEEP_ALIVE.time())
+                    .startSpan();
             try (Scope ignored = esOpenPitSpan.makeCurrent()) {
-                pointInTimeId = esClient.openPointInTime(pit -> pit.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS).keepAlive(POINT_IN_TIME_KEEP_ALIVE)).id();
+                pointInTimeId = esClient.openPointInTime(pit -> pit.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS)
+                        .keepAlive(POINT_IN_TIME_KEEP_ALIVE)).id();
                 esOpenPitSpan.setAttribute("pitId", pointInTimeId);
             } finally {
                 esOpenPitSpan.end();
@@ -98,7 +102,7 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
     }
 
     @NonNull
-    Iterator<String> getCurrentIterator() {
+    Iterator<LogLine<Long>> getCurrentIterator() {
         try {
             if (endOfStream) {
                 // don't try to load more
@@ -111,10 +115,7 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
                 return delegate;
             }
             delegate = loadNextFormattedLogLines();
-            if (readLines > MAX_LINES) {
-                delegate = Iterators.concat(delegate, Collections.singleton("...").iterator());
-                endOfStream = true;
-            } else if (!delegate.hasNext()) {
+            if (!delegate.hasNext()) {
                 endOfStream = true;
             }
             return delegate;
@@ -127,9 +128,9 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
     public void close() throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchBuildLogsLineIterator.close")
-            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
-            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
-            .setAttribute("pointInTimeId", pointInTimeId);
+                .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
+                .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+                .setAttribute("pointInTimeId", pointInTimeId);
         if (flowNodeId != null) {
             spanBuilder.setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, flowNodeId);
         }
@@ -137,8 +138,8 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
         try (Scope ignored = closeSpan.makeCurrent()) {
             if (pointInTimeId != null) {
                 Span esClosePitSpan = this.tracer.spanBuilder("Elasticsearch.closePointInTime")
-                    .setAttribute("query.pointInTimeId", pointInTimeId)
-                    .startSpan();
+                        .setAttribute("query.pointInTimeId", pointInTimeId)
+                        .startSpan();
                 try (Scope ignored2 = esClosePitSpan.makeCurrent()) {
                     esClient.closePointInTime(builder -> builder.id(pointInTimeId));
                 } finally {
@@ -157,53 +158,62 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
     }
 
     @Override
-    public String next() {
-        readLines++;
+    public LogLine<Long> next() {
         return getCurrentIterator().next();
     }
 
-    protected Iterator<String> loadNextFormattedLogLines() throws IOException {
-        if (readLines > Integer.MAX_VALUE) {
-            // TODO should we support reading more than max int lines?
-            logger.log(Level.INFO, () -> "Skip more than Integer.MAX_VALUE, return empty result"); // FIXME
+    protected Iterator<LogLine<Long>> loadNextFormattedLogLines() throws IOException {
+        if (queryCounter > Integer.MAX_VALUE) {
+            logger.log(Level.INFO, () -> "Skip more than Integer.MAX_VALUE pages, return empty result");
+            return Collections.emptyIterator();
+        }
+        if (this.lineNumber > MAX_LINES_PAGINATED) {
+            logger.log(Level.INFO, () -> "Skip more than " + MAX_LINES_PAGINATED + " pages, return empty result");
             return Collections.emptyIterator();
         }
         String loadPointInTimeId = this.lazyLoadPointInTimeId();
 
         Span esSearchSpan = tracer.spanBuilder("ElasticsearchLogsSearchIterator.search")
-            .startSpan();
+                .startSpan();
         try (Scope ignoredEsSearchSpanScope = esSearchSpan.makeCurrent()) {
             esSearchSpan
-                .setAttribute("query.pointInTimeId", lazyLoadPointInTimeId())
-                .setAttribute("query.from", readLines)
-                .setAttribute("query.size", PAGE_SIZE)
-                .setAttribute("query.match.traceId", traceId)
-                .setAttribute("query.match.jobFullName", jobFullName)
-                .setAttribute("query.match.runNumber", runNumber);
+                    .setAttribute("query.pointInTimeId", lazyLoadPointInTimeId())
+                    .setAttribute("query.from", queryCounter)
+                    .setAttribute("query.size", PAGE_SIZE)
+                    .setAttribute("query.match.traceId", traceId)
+                    .setAttribute("query.match.jobFullName", jobFullName)
+                    .setAttribute("query.match.runNumber", runNumber);
 
             BoolQuery.Builder queryBuilder = QueryBuilders.bool()
-                .must(
-                    QueryBuilders.match().field(ElasticsearchFields.FIELD_TRACE_ID).query(FieldValue.of(traceId)).build()._toQuery(),
-                    QueryBuilders.match().field(ElasticsearchFields.FIELD_CI_PIPELINE_ID).query(FieldValue.of(jobFullName)).build()._toQuery(),
-                    QueryBuilders.match().field(ElasticsearchFields.FIELD_CI_PIPELINE_RUN_NUMBER).query(FieldValue.of(runNumber)).build()._toQuery()
-                );
+                    .must(
+                            QueryBuilders.match().field(ElasticsearchFields.FIELD_TRACE_ID)
+                                    .query(FieldValue.of(traceId)).build()._toQuery(),
+                            QueryBuilders.match().field(ExtendedJenkinsAttributes.CI_PIPELINE_ID.getKey())
+                                    .query(FieldValue.of(jobFullName)).build()._toQuery(),
+                            QueryBuilders.match().field(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER.getKey())
+                                    .query(FieldValue.of(runNumber)).build()._toQuery());
             if (flowNodeId != null) {
                 esSearchSpan.setAttribute("query.match.flowNodeId", flowNodeId);
-                queryBuilder.must(QueryBuilders.match().field(ElasticsearchFields.FIELD_JENKINS_STEP_ID).query(FieldValue.of(flowNodeId)).build()._toQuery());
+                queryBuilder.must(QueryBuilders.match().field(ExtendedJenkinsAttributes.JENKINS_STEP_ID.getKey())
+                        .query(FieldValue.of(flowNodeId)).build()._toQuery());
             }
             Query query = queryBuilder.build()._toQuery();
 
             SearchRequest searchRequest = new SearchRequest.Builder()
-                .pit(pit -> pit.id(loadPointInTimeId).keepAlive(POINT_IN_TIME_KEEP_ALIVE))
-                .from((int) readLines)
-                .size(PAGE_SIZE)
-                .sort(s -> s.field(f -> f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
-                .query(query)
-                .build();
+                    .pit(pit -> pit.id(loadPointInTimeId).keepAlive(POINT_IN_TIME_KEEP_ALIVE))
+                    .from((int) this.lineNumber)
+                    .size(PAGE_SIZE)
+                    .sort(s -> s.field(f -> f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
+                    .query(query)
+                    .build();
             SearchResponse<ObjectNode> searchResponse = this.esClient.search(searchRequest, ObjectNode.class);
 
             List<Hit<ObjectNode>> hits = searchResponse.hits().hits();
             esSearchSpan.setAttribute("response.size", hits.size());
+            this.lineNumber += hits.size();
+            if (hits.size() == 0) {
+                endOfStream = true;
+            }
             return hits.stream().map(new ElasticsearchHitToFormattedLogLine()).filter(Objects::nonNull).iterator();
         } catch (ElasticsearchException e) {
             esSearchSpan.recordException(e);
@@ -214,17 +224,83 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
         }
     }
 
+    static class ElasticsearchHitToFormattedLogLine implements Function<Hit<ObjectNode>, LogLine<Long>> {
+        /**
+         * Returns the formatted log line or {@code null} if the given Elasticsearch
+         * document doesn't contain a {@code message} field.
+         */
+        @Nullable
+        @Override
+        public LogLine<Long> apply(Hit<ObjectNode> hit) {
+            ObjectNode source = hit.source();
+            if (source == null) {
+                logger.log(Level.FINE, () -> "Skip log with no source (document id: " + hit.id() + ")");
+                return null;
+            }
+            String message = extractMessage(source);
+            ObjectNode labels = (ObjectNode) source.findValue("labels");
+            String annotatedMessage = composeAnnotatedMessage(message, labels);
+            JsonNode timestampAsJsonNode = source.findValue(ElasticsearchFields.FIELD_TIMESTAMP);
+            if (timestampAsJsonNode == null) {
+                logger.log(Level.FINE, () -> "Skip log with no timestamp (document id: " + hit.id() + ")");
+                return null;
+            }
+            long timestamp = java.time.Instant.parse(timestampAsJsonNode.asText()).toEpochMilli();
+            LogLine<Long> logLine = new LogLine<Long>(timestamp, annotatedMessage);
+            logger.log(Level.FINEST, () -> "Write: " + logLine + " for document.id: " + hit.id());
+            return logLine;
+        }
+
+        /**
+         * Compose the message with the Jenkins annotations.
+         * @param message
+         * @param labels
+         * @return the message with the Jenkins annotations
+         */
+        private String composeAnnotatedMessage(@NonNull String message,@Nullable ObjectNode labels) {
+            JSONArray annotations;
+            if (labels == null) {
+                annotations = null;
+            } else {
+                JsonNode annotationsAsText = labels.get(ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS.getKey());
+                if (annotationsAsText == null) {
+                    annotations = null;
+                } else {
+                    annotations = JSONArray.fromObject(annotationsAsText.asText());
+                }
+            }
+            String annotatedMessage = ConsoleNotes.readFormattedMessage(message, annotations);
+            return annotatedMessage;
+        }
+
+        /**
+         * Extracts the message from the given Elasticsearch document.
+         *
+         * @param source the Elasticsearch document
+         * @return the message or {@code null} if not found
+         */
+        @Nullable
+        private String extractMessage(ObjectNode source) {
+            JsonNode messageAsJsonNode = source.findValue(ElasticsearchFields.FIELD_MESSAGE);
+            if (messageAsJsonNode == null) {
+                logger.log(Level.FINE, () -> "Skip log with no " + ElasticsearchFields.FIELD_MESSAGE + " (document : " + source + ")");
+                return null;
+            }
+            return messageAsJsonNode.get("text").asText();
+        }
+    }
+
     @Override
-    public void skipLines(long skipLines) {
+    public void skipLines(Long skipLines) {
         Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
         SpanBuilder spanBuilder = tracer.spanBuilder("ElasticsearchBuildLogsLineIterator.skip")
-            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
-            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
-            .setAttribute("pointInTimeId", pointInTimeId)
-            .setAttribute("skipLines", skipLines);
+                .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
+                .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
+                .setAttribute("pointInTimeId", pointInTimeId)
+                .setAttribute("skipLines", skipLines);
         Span span = spanBuilder.startSpan();
         try {
-            this.readLines = skipLines;
+            this.lineNumber = skipLines;
             if (this.delegate == null) {
                 span.setAttribute("skippedLines", -1);
             } else {
@@ -232,11 +308,16 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
                  * Happens when invoked by:
                  * GET /job/:jobFullName/:runNumber/consoleText
                  * |- org.jenkinsci.plugins.workflow.job.WorkflowRun.doConsoleText
-                 *    |- io.jenkins.plugins.opentelemetry.job.log.OverallLog.writeLogTo(long, java.io.OutputStream)
-                 *       |- org.kohsuke.stapler.framework.io.LargeText.writeLogTo(long, java.io.OutputStream)
-                 * GET /blue/rest/organizations/:organization/pipelines/:pipeline/branches/:branch/runs/:runNumber/log?start=0
+                 * |- io.jenkins.plugins.opentelemetry.job.log.OverallLog.writeLogTo(long,
+                 * java.io.OutputStream)
+                 * |- org.kohsuke.stapler.framework.io.LargeText.writeLogTo(long,
+                 * java.io.OutputStream)
+                 * GET
+                 * /blue/rest/organizations/:organization/pipelines/:pipeline/branches/:branch/
+                 * runs/:runNumber/log?start=0
                  *
-                 * When invoked by "/job/:jobFullName/:runNumber/consoleText", it's the second call to LargeText.writeLogTo() and it's EOF
+                 * When invoked by "/job/:jobFullName/:runNumber/consoleText", it's the second
+                 * call to LargeText.writeLogTo() and it's EOF
                  */
                 int counter = 0;
                 for (int i = 0; i < skipLines; i++) {
@@ -251,43 +332,6 @@ public class ElasticsearchBuildLogsLineIterator implements LineIterator, Closeab
             }
         } finally {
             span.end();
-        }
-    }
-
-    static class ElasticsearchHitToFormattedLogLine implements Function<Hit<ObjectNode>, String> {
-        /**
-         * Returns the formatted log line or {@code null} if the given Elasticsearch document doesn't contain a {@code message} field.
-         */
-        @Nullable
-        @Override
-        public String apply(Hit<ObjectNode> hit) {
-            ObjectNode source = hit.source();
-            if (source == null) {
-                logger.log(Level.FINE, () -> "Skip log with no source (document id: " + hit.id() + ")");
-                return null;
-            }
-            JsonNode messageAsJsonNode = source.findValue(ElasticsearchFields.FIELD_MESSAGE);
-            if (messageAsJsonNode == null) {
-                logger.log(Level.FINE, () -> "Skip log with no message (document id: " + hit.id() + ")");
-                return null;
-            }
-            ObjectNode labels = (ObjectNode) source.findValue("labels");
-
-            String message = messageAsJsonNode.asText();
-            JSONArray annotations;
-            if (labels == null) {
-                annotations = null;
-            } else {
-                JsonNode annotationsAsText = labels.get(ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS.getKey());
-                if (annotationsAsText == null) {
-                    annotations = null;
-                } else {
-                    annotations = JSONArray.fromObject(annotationsAsText.asText());
-                }
-            }
-            String formattedMessage = ConsoleNotes.readFormattedMessage(message, annotations);
-            logger.log(Level.FINEST, () -> "Write: " + formattedMessage + " for document.id: " + hit.id());
-            return formattedMessage;
         }
     }
 }

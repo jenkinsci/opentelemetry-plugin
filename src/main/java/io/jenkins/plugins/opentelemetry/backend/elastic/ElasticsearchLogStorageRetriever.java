@@ -6,6 +6,7 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +43,7 @@ import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch.ilm.Actions;
 import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
+import co.elastic.clients.elasticsearch.indices.GetIndexResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -57,8 +59,8 @@ import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import io.jenkins.plugins.opentelemetry.job.log.util.InputStreamByteBuffer;
-import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
-import io.jenkins.plugins.opentelemetry.job.log.util.LineIteratorInputStream;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIteratorInputStream;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -158,11 +160,11 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
         Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
-            LineIterator logLines = new ElasticsearchBuildLogsLineIterator(
+            LogLineIterator<Long> logLines = new ElasticsearchBuildLogsLineIterator(
                 jobFullName, runNumber, traceId, esClient, getTracer());
 
-            LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter = new LineIterator.JenkinsHttpSessionLineBytesToLineNumberConverter(jobFullName, runNumber, null);
-            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, getTracer());
+            LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<Long> lineBytesToLineNumberConverter = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, null);
+            InputStream lineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, lineBytesToLineNumberConverter, getTracer());
             ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
 
             Map<String, Object> localBindings = Map.of(
@@ -197,13 +199,13 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
         try (Scope scope = span.makeCurrent()) {
 
-            LineIterator logLines = new ElasticsearchBuildLogsLineIterator(
+            LogLineIterator<Long> logLines = new ElasticsearchBuildLogsLineIterator(
                 jobFullName, runNumber, traceId, flowNodeId,
                 esClient, getTracer());
-            LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter = new LineIterator.JenkinsHttpSessionLineBytesToLineNumberConverter(jobFullName, runNumber, flowNodeId);
 
-            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, getTracer());
-            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
+            LogLineIterator.LogLineBytesToLogLineIdMapper<Long> logLineBytesToLogLineIdMapper = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, flowNodeId);
+            InputStream logLineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, logLineBytesToLogLineIdMapper, getTracer());
+            ByteBuffer byteBuffer = new InputStreamByteBuffer(logLineIteratorInputStream, getTracer());
 
             Map<String, Object> localBindings = new HashMap<>();
             localBindings.put(ObservabilityBackend.TemplateBindings.TRACE_ID, traceId);
@@ -228,12 +230,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     /**
      * Example of a successful check:
      * <pre>{@code
-     * OK: Verify existence of the Elasticsearch Index Template 'logs-apm.app' used to store Jenkins pipeline logs...
      * OK: Connected to Elasticsearch https://***.es.example.com with user 'jenkins'.
-     * OK: Index Template 'logs-apm.app' found.
-     * OK: Verify existence of the Index Lifecycle Management (ILM) Policy 'logs-apm.app' associated with the Index Template 'logs-apm.app' to define the time to live of the Jenkins pipeline logs in Elasticsearch...
-     * OK: Index Lifecycle Policy 'logs-apm.app_logs-default_policy' found.
-     * OK: Logs retention policy: hot[rollover[maxAge=30d, maxSize=50gb]], warm [phase not defined], cold [phase not defined], delete[delete[min_age=10d]].
+     * OK: Indices 'logs-*' found.
      * }</pre>
      */
     public List<FormValidation> checkElasticsearchSetup() {
@@ -247,33 +245,16 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             return validations;
         }
 
-        // we just check the existence of the Index Template and assume the Index Lifecycle Policy is "logs-apm.app_logs-default_policy"
-
-        validations.add(FormValidation.ok("Verify existence of the Elasticsearch Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' used to store Jenkins pipeline logs..."));
-
-        boolean indexTemplateExists;
         try {
-            indexTemplateExists = indicesClient.existsIndexTemplate(b -> b.name(ElasticsearchFields.INDEX_TEMPLATE_NAME)).value();
+            GetIndexResponse indices = indicesClient.get(b -> b.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS));
+            if (indices == null || indices.result() == null || indices.result().isEmpty()) {
+                validations.add(FormValidation.warning("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' NOT found."));
+            } else {
+                validations.add(FormValidation.ok("Indices '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' found."));
+            }
         } catch (ElasticsearchException e) {
             logger.fine(e.getLocalizedMessage());
-            ErrorCause errorCause = e.error();
-            int status = e.status();
-            if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
-                if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
-                    validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
-                } else if (status == HttpURLConnection.HTTP_FORBIDDEN) {
-                    validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
-                    validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "'. " +
-                        "Elasticsearch user '" + elasticsearchUsername + "' doesn't have read permission to the index template metadata - " + errorCause.reason() + "."));
-                } else {
-                    validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
-                    validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
-                        "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
-                }
-            } else {
-                validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
-                    "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
-            }
+            validations.addAll(findEsErrorCause(elasticsearchUsername, e));
             return validations;
         } catch (IOException e) {
             logger.fine(e.getLocalizedMessage());
@@ -281,16 +262,36 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             return validations;
         }
         validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+        return validations;
+    }
 
-        if (indexTemplateExists) {
-            validations.add(FormValidation.ok("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' found."));
+    /**
+     * Find the cause of the error in the Elasticsearch exception.
+     * @param elasticsearchUsername the username used to connect to Elasticsearch
+     * @param e the Elasticsearch exception
+     * @return a list of FormValidation objects representing the error cause
+     */
+    @NonNull
+    private List<FormValidation>  findEsErrorCause(@NonNull String elasticsearchUsername, @NonNull ElasticsearchException e) {
+        List<FormValidation> validations = new ArrayList<>();
+        ErrorCause errorCause = e.error();
+        int status = e.status();
+        if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
+            if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
+                validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
+            } else if (status == HttpURLConnection.HTTP_FORBIDDEN) {
+                validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+                validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' on '" + elasticsearchUrl + "'. " +
+                    "Elasticsearch user '" + elasticsearchUsername + "' doesn't have read permission to the index template metadata - " + errorCause.reason() + "."));
+            } else {
+                validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+                validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' on '" + elasticsearchUrl + "' with " +
+                    "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
+            }
         } else {
-            validations.add(FormValidation.warning("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' NOT found."));
+            validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' on '" + elasticsearchUrl + "' with " +
+                "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
         }
-
-        validations.add(FormValidation.ok("Verify existence of the Index Lifecycle Management (ILM) Policy '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' associated with the Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME +
-            "' to define the time to live of the Jenkins pipeline logs in Elasticsearch..."));
-
         return validations;
     }
 

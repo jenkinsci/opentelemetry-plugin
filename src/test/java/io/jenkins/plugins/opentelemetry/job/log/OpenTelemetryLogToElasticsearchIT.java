@@ -14,6 +14,8 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchFields;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.logs.Logger;
@@ -102,8 +104,8 @@ public class OpenTelemetryLogToElasticsearchIT {
             SearchRequest searchRequest = new SearchRequest.Builder()
                 .index("logs-apm.app-*")
                 .size(500)
-                .sort(s -> s.field(f -> f.field("@timestamp").order(SortOrder.Asc)))
-                .query(q -> q.match(m -> m.field("trace.id").query(FieldValue.of(traceId))))
+                .sort(s -> s.field(f -> f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
+                .query(q -> q.match(m -> m.field(ElasticsearchFields.FIELD_TRACE_ID).query(FieldValue.of(traceId))))
                 .build();
             SearchResponse<ObjectNode> searchResponse = elasticsearchClient.search(searchRequest, ObjectNode.class);
             List<Hit<ObjectNode>> hits = searchResponse.hits().hits();
@@ -115,7 +117,7 @@ public class OpenTelemetryLogToElasticsearchIT {
 
                 ObjectNode source = hit.source();
                 Assert.assertNull(source);
-                
+
                 ObjectNode labels = (ObjectNode) source.findValue("labels");
                 ObjectNode numericLabels = (ObjectNode) source.findValue("numeric_labels");
 
