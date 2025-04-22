@@ -5,26 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.backend;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ComparisonChain;
-import com.google.errorprone.annotations.MustBeClosed;
-import groovy.lang.MissingPropertyException;
-import groovy.text.GStringTemplateEngine;
-import groovy.text.Template;
-import hudson.DescriptorExtensionList;
-import hudson.ExtensionPoint;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
-import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
-import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import io.opentelemetry.sdk.resources.Resource;
-import jenkins.model.Jenkins;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.apache.commons.codec.net.URLCodec;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
-
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
@@ -33,6 +13,27 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import org.kohsuke.stapler.DataBoundSetter;
+
+import com.google.common.base.Strings;
+import com.google.common.collect.ComparisonChain;
+import com.google.errorprone.annotations.MustBeClosed;
+
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import groovy.lang.MissingPropertyException;
+import groovy.text.GStringTemplateEngine;
+import groovy.text.Template;
+import hudson.DescriptorExtensionList;
+import hudson.ExtensionPoint;
+import hudson.model.Describable;
+import hudson.model.Descriptor;
+import io.jenkins.plugins.opentelemetry.OtelUtils;
+import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
+import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import io.opentelemetry.sdk.resources.Resource;
+import jenkins.model.Jenkins;
 
 public abstract class ObservabilityBackend implements Describable<ObservabilityBackend>, ExtensionPoint, TemplateBindingsProvider {
     private final static Logger LOGGER = Logger.getLogger(ObservabilityBackend.class.getName());
@@ -148,6 +149,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
     @Override
     public abstract Map<String, Object> getBindings();
 
+    @SuppressWarnings("unchecked")
     @Override
     public Descriptor<ObservabilityBackend> getDescriptor() {
         return Jenkins.get().getDescriptorOrDie(getClass());

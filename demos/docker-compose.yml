@@ -4,6 +4,13 @@ services:
     build: config/
     environment:
       CASC_JENKINS_CONFIG: /var/jenkins_home/jcasc
+      JENKINS_URL: ${JENKINS_URL:-http://localhost:8080}
+      KIBANA_HOST: "${KIBANA_HOST:-http://kibana:5601}"
+      ELASTICSEARCH_HOST: "${ELASTICSEARCH_HOST:-http://elasticsearch:9200}"
+      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-jenkins_logs_user}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-changeme}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS}
       JAVA_OPTS: >-
         -Djenkins.install.runSetupWizard=false
         -Dhudson.model.UsageStatistics.disabled=true
@@ -40,6 +47,8 @@ services:
     image: jenkins/inbound-agent:latest-jdk21
     entrypoint: java
     command: -jar /usr/share/jenkins/agent.jar -jnlpUrl http://jenkins:8080/computer/local/jenkins-agent.jnlp
+    environment:
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS}
     depends_on:
         jenkins:
             condition: service_healthy
@@ -109,7 +118,7 @@ services:
       - jenkins
 
   otel-collector:
-    image: ${OTELCOL_IMG}
+    image: ${OTELCOL_IMG:-"otel/opentelemetry-collector-contrib-dev:latest"}
     command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
     volumes:
       - ./config/otel-collector-config.yaml:/etc/otel-collector-config.yaml

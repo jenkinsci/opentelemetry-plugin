@@ -4,9 +4,8 @@
   ~ SPDX-License-Identifier: Apache-2.0
   -->
 <j:jelly xmlns:j="jelly:core">
-    <i>
-    Pipeline logs are no longer stored in the Jenkins home, they are sent through OpenTelemetry to Elastic, stored in
-    Elasticsearch, and visible in Kibana. <br/>
-    In jenkins pipeline logs screens, an hyperlink to the logs visualization in Kibana is displayed as a replacement to the logs.
-    </i>
+    <i> Pipeline logs are no longer stored in the Jenkins home, they are sent through OpenTelemetry
+        to Elastic, stored in Elasticsearch, and visible in Kibana. <br /> In jenkins pipeline logs
+        screens, an hyperlink to the logs visualization in Kibana is displayed as a replacement to
+        the logs. </i>
 </j:jelly>

@@ -75,7 +75,7 @@ services:
       retries: 300
       interval: 1s
     environment:
-      ELASTIC_ENDPOINT: http://elasticsearch:9200
+      ELASTIC_ENDPOINT: ${ELASTICSEARCH_HOSTS:-http://elasticsearch:9200}
 
   api-key:
     image: alpine/curl
@@ -83,7 +83,7 @@ services:
     command:
       - /api-key.sh
     environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: ${ELASTICSEARCH_HOSTS:-http://elasticsearch:9200}
       ELASTICSEARCH_USERNAME: "${ELASTICSEARCH_USERNAME:-admin}"
       ELASTICSEARCH_PASSWORD: "${ELASTICSEARCH_PASSWORD:-changeme}"
     volumes:

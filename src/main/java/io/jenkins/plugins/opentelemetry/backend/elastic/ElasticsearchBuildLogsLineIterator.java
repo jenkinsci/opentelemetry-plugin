@@ -32,6 +32,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.job.log.ConsoleNotes;
 import io.jenkins.plugins.opentelemetry.job.log.LogLine;
 import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
@@ -62,6 +63,7 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
     final ElasticsearchClient esClient;
     final Tracer tracer;
     String pointInTimeId;
+    boolean enableEDOT;
 
     @VisibleForTesting
     int queryCounter;
@@ -72,6 +74,7 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
     public ElasticsearchBuildLogsLineIterator(@NonNull String jobFullName, int runNumber, @NonNull String traceId,
             @NonNull ElasticsearchClient esClient, @NonNull Tracer tracer) {
         this(jobFullName, runNumber, traceId, null, esClient, tracer);
+        setEDOTMode();
     }
 
     public ElasticsearchBuildLogsLineIterator(@NonNull String jobFullName, int runNumber, @NonNull String traceId,
@@ -82,6 +85,18 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
         this.traceId = traceId;
         this.flowNodeId = flowNodeId;
         this.esClient = esClient;
+        setEDOTMode();
+    }
+
+    /**
+     * Set the EDOT mode based on the backend configuration.
+     */
+    private void setEDOTMode() {
+        if(ElasticBackend.get().isPresent()) {
+            this.enableEDOT = ElasticBackend.get().get().isEnableEDOT();
+        } else {
+            this.enableEDOT = false;
+        }
     }
 
     String lazyLoadPointInTimeId() throws IOException {
@@ -184,20 +199,7 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
                     .setAttribute("query.match.jobFullName", jobFullName)
                     .setAttribute("query.match.runNumber", runNumber);
 
-            BoolQuery.Builder queryBuilder = QueryBuilders.bool()
-                    .must(
-                            QueryBuilders.match().field(ElasticsearchFields.FIELD_TRACE_ID)
-                                    .query(FieldValue.of(traceId)).build()._toQuery(),
-                            QueryBuilders.match().field(ExtendedJenkinsAttributes.CI_PIPELINE_ID.getKey())
-                                    .query(FieldValue.of(jobFullName)).build()._toQuery(),
-                            QueryBuilders.match().field(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER.getKey())
-                                    .query(FieldValue.of(runNumber)).build()._toQuery());
-            if (flowNodeId != null) {
-                esSearchSpan.setAttribute("query.match.flowNodeId", flowNodeId);
-                queryBuilder.must(QueryBuilders.match().field(ExtendedJenkinsAttributes.JENKINS_STEP_ID.getKey())
-                        .query(FieldValue.of(flowNodeId)).build()._toQuery());
-            }
-            Query query = queryBuilder.build()._toQuery();
+            Query query = getQuery(esSearchSpan);
 
             SearchRequest searchRequest = new SearchRequest.Builder()
                     .pit(pit -> pit.id(loadPointInTimeId).keepAlive(POINT_IN_TIME_KEEP_ALIVE))
@@ -214,7 +216,7 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
             if (hits.size() == 0) {
                 endOfStream = true;
             }
-            return hits.stream().map(new ElasticsearchHitToFormattedLogLine()).filter(Objects::nonNull).iterator();
+            return hits.stream().map(new ElasticsearchHitToFormattedLogLine(getAttributesField())).filter(Objects::nonNull).iterator();
         } catch (ElasticsearchException e) {
             esSearchSpan.recordException(e);
             throw e;
@@ -224,7 +226,45 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
         }
     }
 
+    private String getAttributesField(){
+        return this.enableEDOT ? "attributes" : "labels";
+    }
+
+    private Query getQuery(Span esSearchSpan) {
+        String fieldTraceID = ElasticsearchFields.FIELD_TRACE_ID;
+        String fieldJobFullName = ExtendedJenkinsAttributes.CI_PIPELINE_ID.getKey();
+        String fieldRunNumber = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER.getKey();
+        String fieldFlowNodeId = ExtendedJenkinsAttributes.JENKINS_STEP_ID.getKey();
+        // Legacy APM ingestion
+        if (!enableEDOT) {
+            fieldJobFullName = ElasticsearchFields.LEGACY_FIELD_CI_PIPELINE_ID;
+            fieldRunNumber = ElasticsearchFields.LEGACY_FIELD_CI_PIPELINE_RUN_NUMBER;
+            fieldFlowNodeId = ElasticsearchFields.LEGACY_FIELD_JENKINS_STEP_ID;
+        }
+        BoolQuery.Builder queryBuilder = QueryBuilders.bool()
+                .must(
+                        QueryBuilders.match().field(fieldTraceID)
+                                .query(FieldValue.of(traceId)).build()._toQuery(),
+                        QueryBuilders.match().field(fieldJobFullName)
+                                .query(FieldValue.of(jobFullName)).build()._toQuery(),
+                        QueryBuilders.match().field(fieldRunNumber)
+                                .query(FieldValue.of(runNumber)).build()._toQuery());
+        if (flowNodeId != null) {
+            esSearchSpan.setAttribute("query.match.flowNodeId", flowNodeId);
+            queryBuilder.must(QueryBuilders.match().field(fieldFlowNodeId)
+                    .query(FieldValue.of(flowNodeId)).build()._toQuery());
+        }
+        Query query = queryBuilder.build()._toQuery();
+        return query;
+    }
+
     static class ElasticsearchHitToFormattedLogLine implements Function<Hit<ObjectNode>, LogLine<Long>> {
+        private String annotationsField;
+
+        public ElasticsearchHitToFormattedLogLine(String annotationsField) {
+            this.annotationsField = annotationsField;
+        }
+
         /**
          * Returns the formatted log line or {@code null} if the given Elasticsearch
          * document doesn't contain a {@code message} field.
@@ -238,7 +278,7 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
                 return null;
             }
             String message = extractMessage(source);
-            ObjectNode labels = (ObjectNode) source.findValue("labels");
+            ObjectNode labels = (ObjectNode) source.findValue(this.annotationsField);
             String annotatedMessage = composeAnnotatedMessage(message, labels);
             JsonNode timestampAsJsonNode = source.findValue(ElasticsearchFields.FIELD_TIMESTAMP);
             if (timestampAsJsonNode == null) {
@@ -282,11 +322,19 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
         @Nullable
         private String extractMessage(ObjectNode source) {
             JsonNode messageAsJsonNode = source.findValue(ElasticsearchFields.FIELD_MESSAGE);
+            String msg = null;
+            // Legacy APM ingestion
             if (messageAsJsonNode == null) {
-                logger.log(Level.FINE, () -> "Skip log with no " + ElasticsearchFields.FIELD_MESSAGE + " (document : " + source + ")");
-                return null;
+                messageAsJsonNode = source.findValue("message");
+            } else {
+                messageAsJsonNode = messageAsJsonNode.get("text");
             }
-            return messageAsJsonNode.get("text").asText();
+            if (messageAsJsonNode != null) {
+                msg = messageAsJsonNode.asText();
+            } else {
+                logger.log(Level.FINE, () -> "Skip log with no " + ElasticsearchFields.FIELD_MESSAGE + " (document : " + source + ")");
+            }
+            return msg;
         }
     }
 

@@ -144,7 +144,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         public ListBoxModel doFillElasticsearchCredentialsIdItems(Item context,
                 @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
-                    || context != null && !context.hasPermission(context.CONFIGURE)) {
+                    || context != null && !context.hasPermission(Item.CONFIGURE)) {
                 return new StandardListBoxModel();
             }
 
@@ -158,7 +158,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         public FormValidation doCheckElasticsearchCredentialsId(Item context,
                 @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
-                    || context != null && !context.hasPermission(context.CONFIGURE)) {
+                    || context != null && !context.hasPermission(Item.CONFIGURE)) {
                 return FormValidation.ok();
             }
 

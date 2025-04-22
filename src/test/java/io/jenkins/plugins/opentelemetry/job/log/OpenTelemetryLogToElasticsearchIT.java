@@ -102,7 +102,7 @@ public class OpenTelemetryLogToElasticsearchIT {
             ElasticsearchClient elasticsearchClient = new ElasticsearchClient(elasticsearchTransport);
 
             SearchRequest searchRequest = new SearchRequest.Builder()
-                .index("logs-apm.app-*")
+                .index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS)
                 .size(500)
                 .sort(s -> s.field(f -> f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
                 .query(q -> q.match(m -> m.field(ElasticsearchFields.FIELD_TRACE_ID).query(FieldValue.of(traceId))))

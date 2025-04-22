@@ -5,17 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.action;
 
-import com.google.common.collect.ImmutableList;
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.model.Action;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
-import io.opentelemetry.context.Context;
-import io.opentelemetry.context.Scope;
-import io.opentelemetry.sdk.trace.ReadWriteSpan;
-import io.opentelemetry.sdk.trace.ReadableSpan;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +13,18 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class AbstractMonitoringAction implements Action, OtelMonitoringAction {
+import com.google.common.collect.ImmutableList;
+
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.trace.ReadWriteSpan;
+import io.opentelemetry.sdk.trace.ReadableSpan;
+
+public abstract class AbstractMonitoringAction implements OtelMonitoringAction {
     private final static Logger LOGGER = Logger.getLogger(AbstractMonitoringAction.class.getName());
 
     @CheckForNull

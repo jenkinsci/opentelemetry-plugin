@@ -84,6 +84,8 @@ public class ElasticBackend extends ObservabilityBackend {
 
     private ElasticLogsBackend elasticLogsBackend;
 
+    private boolean enableEDOT;
+
     @DataBoundConstructor
     public ElasticBackend() {
 
@@ -235,6 +237,15 @@ public class ElasticBackend extends ObservabilityBackend {
     @DataBoundSetter
     public void setDisplayKibanaDashboardLink(boolean displayKibanaDashboardLink) {
         this.displayKibanaDashboardLink = displayKibanaDashboardLink;
+    }
+
+    public boolean isEnableEDOT() {
+        return enableEDOT;
+    }
+
+    @DataBoundSetter
+    public void setEnableEDOT(boolean enableEDOT) {
+        this.enableEDOT = enableEDOT;
     }
 
     @Override
