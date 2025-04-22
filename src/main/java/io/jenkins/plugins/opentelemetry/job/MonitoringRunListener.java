@@ -93,6 +93,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
+    /**
+     * @deprecated use {@link #cicdPipelineRunActiveCounter}
+     */
+    @Deprecated
     private AtomicInteger activeRunGauge;
     private List<CauseHandler> causeHandlers;
     /**

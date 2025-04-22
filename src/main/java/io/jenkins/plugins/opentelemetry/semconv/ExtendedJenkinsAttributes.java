@@ -24,8 +24,11 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
     public static final AttributeKey<String> CI_PIPELINE_TYPE = AttributeKey.stringKey("ci.pipeline.type");
     public static final AttributeKey<String> CI_PIPELINE_MULTIBRANCH_TYPE = AttributeKey.stringKey("ci.pipeline.multibranch.type");
     /**
+     * FIXME should we use {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_NAME} for the jenkins job name or display name?
      * @see Job#getFullName()
+     * @deprecated use {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_NAME}
      */
+    @Deprecated
     public static final AttributeKey<String> CI_PIPELINE_ID = AttributeKey.stringKey("ci.pipeline.id");
     public static final AttributeKey<String> CI_PIPELINE_NAME = AttributeKey.stringKey("ci.pipeline.name");
     public static final AttributeKey<String> CI_PIPELINE_TEMPLATE_ID = AttributeKey.stringKey("ci.pipeline.template.id");
@@ -43,21 +46,40 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
     public static final AttributeKey<Boolean> CI_PIPELINE_RUN_COMPLETED = AttributeKey.booleanKey("ci.pipeline.run.completed");
     public static final AttributeKey<Long> CI_PIPELINE_RUN_DURATION_MILLIS = AttributeKey.longKey("ci.pipeline.run.durationMillis");
     public static final AttributeKey<String> CI_PIPELINE_RUN_DESCRIPTION = AttributeKey.stringKey("ci.pipeline.run.description");
+    /**
+     * @deprecated use {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_RUN_ID}
+     */
+    @Deprecated
     public static final AttributeKey<Long> CI_PIPELINE_RUN_NUMBER = AttributeKey.longKey("ci.pipeline.run.number");
     public static final AttributeKey<List<Boolean>> CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE = AttributeKey.booleanArrayKey("ci.pipeline.parameter.sensitive");
     public static final AttributeKey<List<String>> CI_PIPELINE_RUN_PARAMETER_NAME = AttributeKey.stringArrayKey("ci.pipeline.parameter.name");
     public static final AttributeKey<List<String>> CI_PIPELINE_RUN_PARAMETER_VALUE = AttributeKey.stringArrayKey("ci.pipeline.parameter.value");
     /**
      * @see Run#getResult()
+     * @deprecated use {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_RESULT}
      */
+    @Deprecated
     public static final AttributeKey<String> CI_PIPELINE_RUN_RESULT = AttributeKey.stringKey("ci.pipeline.run.result");
+    /**
+     * @deprecated use {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_RUN_URL_FULL}
+     */
+    @Deprecated
     public static final AttributeKey<String> CI_PIPELINE_RUN_URL = AttributeKey.stringKey("ci.pipeline.run.url");
     public static final AttributeKey<String> CI_PIPELINE_RUN_USER = AttributeKey.stringKey("ci.pipeline.run.user");
 
     public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_NAMES = AttributeKey.stringArrayKey("ci.pipeline.axis.names");
     public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_VALUES = AttributeKey.stringArrayKey("ci.pipeline.axis.values");
 
+    /**
+     * FIXME introduce {@link io.opentelemetry.semconv.incubating.VcsIncubatingAttributes#VCS_REPOSITORY_URL_FULL} and {@link io.opentelemetry.semconv.incubating.VcsIncubatingAttributes#VCS_OWNER_NAME}
+     * @deprecated use {@link io.opentelemetry.semconv.incubating.VcsIncubatingAttributes#VCS_REPOSITORY_NAME}
+     */
+    @Deprecated
     public static final AttributeKey<String> GIT_REPOSITORY = AttributeKey.stringKey("git.repository");
+    /**
+     * @deprecated use {@link io.opentelemetry.semconv.incubating.VcsIncubatingAttributes#VCS_REF_BASE_NAME} and {@link io.opentelemetry.semconv.incubating.VcsIncubatingAttributes#VCS_REF_BASE_TYPE}
+     */
+    @Deprecated
     public static final AttributeKey<String> GIT_BRANCH = AttributeKey.stringKey("git.branch");
     public static final AttributeKey<String> GIT_USERNAME = AttributeKey.stringKey("git.username");
     public static final AttributeKey<Long> GIT_CLONE_DEPTH = AttributeKey.longKey("git.clone.depth");
@@ -65,11 +87,15 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
 
     /**
      * @see StepDescriptor#getDisplayName()
+     * @deprecated use {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_TASK_NAME}
      */
+    @Deprecated
     public static final AttributeKey<String> JENKINS_STEP_NAME = AttributeKey.stringKey("jenkins.pipeline.step.name");
     /**
      * @see StepDescriptor#getFunctionName()
+     * @deprecated use {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_TASK_TYPE}
      */
+    @Deprecated
     public static final AttributeKey<String> JENKINS_STEP_TYPE = AttributeKey.stringKey("jenkins.pipeline.step.type");
     /**
      * @see org.jenkinsci.plugins.workflow.graph.FlowNode#getId()
