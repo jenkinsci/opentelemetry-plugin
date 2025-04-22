@@ -305,7 +305,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>cloudbees-disk-usage-simple</artifactId>
-            <version>232.v713eeed2e1f4</version>
+            <version>239.v6a_f1a_c1c8046</version>
             <optional>true</optional>
         </dependency>
         <dependency>
