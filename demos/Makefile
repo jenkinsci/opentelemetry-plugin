@@ -11,6 +11,11 @@ build:
 start:
 	@env docker compose --file docker-compose.yml up --detach --no-recreate
 
+.PHONY: start-edot
+start-edot: OTEL_EXPORTER_OTLP_ENDPOINT?=http://edot:4317
+start-edot:
+	@env docker compose --file docker-compose.yml up --detach --no-recreate jenkins jenkins-inbound-agent edot elasticsearch kibana
+
 .PHONY: stop
 stop:
 	@env docker compose --file docker-compose.yml stop

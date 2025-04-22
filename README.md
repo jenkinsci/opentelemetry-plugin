@@ -13,19 +13,21 @@ Monitor and observe Jenkins with OpenTelemetry.
 
 Visualize jobs and pipelines executions as distributed traces:
 
-<img alt="SpringBootPipeline Execution Trace" width="400px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-maven-execution-trace-jaeger.png" />
-<p style="font-size:0.75em; font-style: italic">Example pipeline execution trace of a SpringBoot Maven going application</p>
+![SpringBootPipeline Execution Trace](docs/images/jenkins-maven-execution-trace-jaeger.png)
 
+*Example pipeline execution trace of a SpringBoot Maven going application*
 
 Visualize Jenkins and pipeline health indicators:
 
-<img alt="Example Kibana dashboard of the Jenkins and CI jobs health" width="400px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/kibana_jenkins_overview_dashboard.png" />
-<p style="font-size:0.75em; font-style: italic">Example Kibana dashboard of the Jenkins and CI jobs health</p>
+![Example Kibana dashboard of the Jenkins and CI jobs health](docs/images/kibana_jenkins_overview_dashboard.png)
+
+*Example Kibana dashboard of the Jenkins and CI jobs health*
 
 Troubleshoot Jenkins performances with distributed tracing of HTTPs requests:
 
-<img alt="Jenkins HTTP request trace with Jaeger" width="400px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/http-tracing/jenkins-http-request-trace-jaeger.png" />
-<p style="font-size:0.75em; font-style: italic">Example Jenkins HTTP trace</p>
+![Jenkins HTTP request trace with Jaeger](docs/images/http-tracing/jenkins-http-request-trace-jaeger.png)
+
+*Example Jenkins HTTP trace*
 
 ## Architecture
 
@@ -37,7 +39,7 @@ Here are example architectures with Elastic, Jaeger, and Prometheus:
 
 | CI/CD Observability with Jaeger and Prometheus                                                                                                                                                                            | CI/CD Observability with Elastic                                                                                                                                                                                |
 |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <img alt="Jenkins monitoring with Jaeger and Prometheus" width="400" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-architecture-jaeger-prometheus.png" > | <img alt="Jenkins monitoring with Elastic Observability" width="400" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-architecture-elastic.png" > |
+| ![Jenkins monitoring with Jaeger and Prometheus](docs/images/jenkins-opentelemetry-architecture-jaeger-prometheus.png) | ![Jenkins monitoring with Elastic Observability](docs/images/jenkins-opentelemetry-architecture-elastic.png) |
 
 ## Getting started
 
@@ -63,9 +65,9 @@ Here are example architectures with Elastic, Jaeger, and Prometheus:
 * Set up Jenkins health dashboards on your OpenTelemetry metrics visualization solution. See details including guidance
   for Elastic Kibana [here](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/monitoring-metrics.md).
 
-<img alt="Sample Configuration" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-opentelemetry-plugin-configuration.png" />
+![Sample Configuration](docs/images/jenkins-opentelemetry-plugin-configuration.png)
 
-<p style="font-size:0.75em; font-style: italic">Example Jenkins OpenTelemetry configuration</p>
+*Example Jenkins OpenTelemetry configuration*
 
 ## Setup and Configuration
 
@@ -78,32 +80,28 @@ see [Setup and Configuration](https://github.com/jenkinsci/opentelemetry-plugin/
 For details on how to explore and troubleshoot jobs and pipelines builds as traces,
 see [Traces of Jobs and Pipeline Builds](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/job-traces.md).
 
-<img alt="SpringBootPipeline Execution Trace" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-maven-execution-trace-jaeger.png" />
-<p style="font-size:0.75em; font-style: italic">Example pipeline execution trace of a SpringBoot app built with Maven going through security checks with Snyk, deployed on a Maven repository and published as a Docker image</p>
+![SpringBootPipeline Execution Trace](docs/images/jenkins-maven-execution-trace-jaeger.png)
+
+*Example pipeline execution trace of a SpringBoot app built with Maven going through security checks with Snyk, deployed on a Maven repository and published as a Docker image*
 
 ## Troubleshooting pipeline plugins and the execution on the Jenkins build agents
 
 For details on the execution of pipeline plugin steps on the Jenkins build agents,
 activate tracing in the Jenkins build agents using:
 
-```
+```properties
 otel.instrumentation.jenkins.agent.enabled=true
 ```
 
 To activate detailed traces of the communication from the Jenkins Controller to the Jenkins Agents, activate the
 instrumentation of Jenkins remoting with:
 
-```
+```properties
 otel.instrumentation.jenkins.remoting.enabled=true
 ```
 
 Note that the instrumentation of Jenkins remoting is not feature complete and may not capture all the communication
 between the Jenkins Controller and the Jenkins Agents.
-
-<!--
-TODO add once image is merged is the `main` branch
-<img alt="Jenkins Remoting instrumentation" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-remoting-instrumentation.png" />
--->
 
 ## Troubleshooting Jenkins Performances Using Tracing on the HTTP Requests of the Jenkins Controller
 
@@ -123,8 +121,9 @@ attributes [here](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/
 For details on how to store Jenkins pipelines build logs in an Observability backend like Elastic or Loki,
 see [Storing Jenkins Pipeline Logs in an Observability Backend though OpenTelemetry](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/build-logs.md).
 
-<img alt="Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI" width="300px" src="https://raw.githubusercontent.com/jenkinsci/opentelemetry-plugin/master/docs/images/jenkins-pipeline-logs-elastic-with-visualization-through-jenkins.png" />
-<p style="font-size:0.75em; font-style: italic">Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI</p>
+![Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI](docs/images/jenkins-pipeline-logs-elastic-with-visualization-through-jenkins.png)
+
+*Storing Jenkins pipeline logs in Elasticsearch and visualizing logs both in Kibana and through Jenkins GUI*
 
 ## Other CI/CD Tools supporting OpenTelemetry traces
 
@@ -182,7 +181,7 @@ node {
 Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" section, add to the "Configuration
 Properties text area the following:
 
-```
+```properties
 otel.exporter.otlp.protocol=http/protobuf
 ```
 
@@ -192,17 +191,17 @@ No test have been done on disabling the Groovy Sandbox and accessing the Jenkins
 Jenkins OpenTelemetry Plugin for the following reasons:
 
 * Disabling the Groovy Sandbox is a very advanced use case due to the security implications of doing so
-* The surface of Jenkins pipeline logs capabilities exposed by disabling the Groovy sandbox is very broad and goes way
-  beyond the OpenTelemetyr plugin
+* The surface of Jenkins pipeline logs capabilities exposed by disabling the Groovy sandbox is very broad and goes way beyond the OpenTelemetry plugin
 
 If you are limited with the current capabilities of the Jenkins OpenTelemetry Plugin and consider opening up the Groovy
-sandbox to workaround these limitations, please prefer to reach out to us creating an enhancement request so we can work
-together at productizing the proper secured solution to your problem.
+sandbox to workaround these limitations, please prefer to reach out to us creating an enhancement request so we can work together at productizing the proper secured solution to your problem.
 
 ## Learn More
 
 * You can look at this video tutorial to get
-  started: [![Tracing Your Jenkins Pipelines With OpenTelemetry and Jaeger](https://img.youtube.com/vi/3XzVOxvNpGM/0.jpg)](https://www.youtube.com/watch?v=3XzVOxvNpGM)
+  started:
+  
+  [![Tracing Your Jenkins Pipelines With OpenTelemetry and Jaeger](https://img.youtube.com/vi/3XzVOxvNpGM/0.jpg)](https://www.youtube.com/watch?v=3XzVOxvNpGM)
 * [DevOpsWorld 2021 - Embracing Observability in Jenkins with OpenTelemetry](https://www.devopsworld.com/agenda/session/581459)
 
 ## Demos
@@ -216,5 +215,3 @@ Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob
 ## LICENSE
 
 Licensed under Apache Software License 2, see [LICENSE](LICENSE)
-
-

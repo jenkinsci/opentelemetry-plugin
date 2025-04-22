@@ -49,6 +49,7 @@ unclassified:
             elasticsearchUrl: "${ELASTICSEARCH_HOST}"
         kibanaBaseUrl: "${KIBANA_HOST}"
         name: "Elastic Observability"
+        enableEDOT: true
 jobs:
   - file: "/var/jenkins_home/config/ansible.dsl"
   - file: "/var/jenkins_home/config/gradle.dsl"

@@ -178,7 +178,7 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
     }
 
     protected Iterator<LogLine<Long>> loadNextFormattedLogLines() throws IOException {
-        if (queryCounter > Integer.MAX_VALUE) {
+        if (queryCounter == Integer.MAX_VALUE) {
             logger.log(Level.INFO, () -> "Skip more than Integer.MAX_VALUE pages, return empty result");
             return Collections.emptyIterator();
         }
