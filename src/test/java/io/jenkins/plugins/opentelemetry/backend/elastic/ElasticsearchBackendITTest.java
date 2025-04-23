@@ -26,7 +26,7 @@ import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 
-@Ignore("This test is ignored because it causes a java.lang.LinkageError: loader constraint violation in test and debug mode")
+//@Ignore("This test is ignored because it causes a java.lang.LinkageError: loader constraint violation in test and debug mode")
 public class ElasticsearchBackendITTest extends ElasticStackIT {
 
     @Test

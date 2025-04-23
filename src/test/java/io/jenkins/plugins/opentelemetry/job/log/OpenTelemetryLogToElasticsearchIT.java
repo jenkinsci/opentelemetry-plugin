@@ -5,6 +5,27 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.core5.http.HttpHost;
+import org.junit.Assert;
+import org.junit.Test;
+
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -12,9 +33,9 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchFields;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -25,16 +46,6 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.elasticsearch.client.RestClient;
-import org.junit.Assert;
-import org.junit.Test;
-
-import java.io.InputStream;
-import java.util.*;
 
 public class OpenTelemetryLogToElasticsearchIT {
     private final static Random RANDOM = new Random();
@@ -93,30 +104,39 @@ public class OpenTelemetryLogToElasticsearchIT {
             String elasticsearchPassword = configuration.get("elasticsearch.password");
 
             BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(elasticsearchUsername, elasticsearchPassword));
-
-            RestClient restClient = RestClient.builder(HttpHost.create(elasticsearchUrl))
-                .setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider))
+            UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(elasticsearchUsername, elasticsearchPassword.toCharArray());
+            try{
+                credentialsProvider.setCredentials(new AuthScope(HttpHost.create(elasticsearchUrl)), credentials);
+            } catch(URISyntaxException e) {
+                throw new IllegalArgumentException(e);
+            }
+            CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+                .setDefaultCredentialsProvider(credentialsProvider)
                 .build();
-            RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
-            ElasticsearchClient elasticsearchClient = new ElasticsearchClient(elasticsearchTransport);
 
-            SearchRequest searchRequest = new SearchRequest.Builder()
-                .index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS)
-                .size(500)
-                .sort(s -> s.field(f -> f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
-                .query(q -> q.match(m -> m.field(ElasticsearchFields.FIELD_TRACE_ID).query(FieldValue.of(traceId))))
-                .build();
-            SearchResponse<ObjectNode> searchResponse = elasticsearchClient.search(searchRequest, ObjectNode.class);
-            List<Hit<ObjectNode>> hits = searchResponse.hits().hits();
-            if (hits.size() != LOG_MESSAGE_COUNT) {
-                System.err.println("Invalid number of log messages: actual: " + hits.size() + ", expected: " + LOG_MESSAGE_COUNT);
+            Rest5ClientBuilder builder = Rest5Client.builder(URI.create(elasticsearchUrl))
+                .setHttpClient(httpclient);
+
+            Rest5ClientTransport elasticsearchTransport = new Rest5ClientTransport(builder.build(), new JacksonJsonpMapper());
+            List<Hit<ObjectNode>> hits = Collections.emptyList();
+            try(ElasticsearchClient elasticsearchClient = new ElasticsearchClient(elasticsearchTransport)){
+                SearchRequest searchRequest = new SearchRequest.Builder()
+                    .index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS)
+                    .size(500)
+                    .sort(s -> s.field(f -> f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
+                    .query(q -> q.match(m -> m.field(ElasticsearchFields.FIELD_TRACE_ID).query(FieldValue.of(traceId))))
+                    .build();
+                SearchResponse<ObjectNode> searchResponse = elasticsearchClient.search(searchRequest, ObjectNode.class);
+                hits = searchResponse.hits().hits();
+                if (hits.size() != LOG_MESSAGE_COUNT) {
+                    System.err.println("Invalid number of log messages: actual: " + hits.size() + ", expected: " + LOG_MESSAGE_COUNT);
+                }
             }
 
             for (Hit<ObjectNode> hit : hits) {
 
                 ObjectNode source = hit.source();
-                Assert.assertNull(source);
+                Assert.assertNotNull(source);
 
                 ObjectNode labels = (ObjectNode) source.findValue("labels");
                 ObjectNode numericLabels = (ObjectNode) source.findValue("numeric_labels");
