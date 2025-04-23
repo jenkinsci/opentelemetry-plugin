@@ -527,6 +527,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
                 TimeUnit.SECONDS.convert(run.getDuration(), TimeUnit.MILLISECONDS),
                 Attributes.of(
                     CicdIncubatingAttributes.CICD_PIPELINE_NAME, pipelineId,
+                    CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE, CicdIncubatingAttributes.CicdPipelineRunStateIncubatingValues.FINALIZING,
                     CicdIncubatingAttributes.CICD_PIPELINE_RESULT, CicdMetrics.fromJenkinsResultToOtelCicdPipelineResult(result)));
 
             cicdPipelineRunActiveCounter.add(-1, Attributes.of(
