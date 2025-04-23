@@ -112,11 +112,12 @@ public class ElasticBackend extends ObservabilityBackend {
     @CheckForNull
     @Override
     public String getTraceVisualisationUrlTemplate() {
+        String transactionType = enableEDOT ? "unknown" : "job" ;
         return "${kibanaBaseUrl}/app/apm/services/${serviceName}/transactions/view" +
             "?rangeFrom=${startTime.minusSeconds(600)}" +
             "&rangeTo=${startTime.plusSeconds(600)}" +
             "&transactionName=${rootSpanName}" +
-            "&transactionType=unknown" + // see io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE
+            "&transactionType=" + transactionType +// see io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE
             "&comparisonEnabled=true" +
             "&transactionId=${spanId}" +
             "&traceId=${traceId}";
