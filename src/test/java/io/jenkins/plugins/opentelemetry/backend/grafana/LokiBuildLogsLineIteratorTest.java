@@ -10,11 +10,11 @@ import io.opentelemetry.api.OpenTelemetry;
 
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.protocol.HttpContext;
 
 import org.junit.Test;
 
-import com.github.dockerjava.zerodep.shaded.org.apache.hc.client5.http.protocol.HttpClientContext;
 
 import java.io.InputStream;
 import java.time.Instant;
@@ -45,7 +45,7 @@ public class LokiBuildLogsLineIteratorTest {
             .build();
         try (LokiBuildLogsLineIterator lokiBuildLogsLineIterator = new LokiBuildLogsLineIterator(
             lokiQueryParameters, httpClient,
-            (HttpContext)HttpClientContext.create(),
+            HttpClientContext.create(),
             "http://localhost:3100",
             Optional.of(new org.apache.hc.client5.http.auth.UsernamePasswordCredentials("admin", "changeme".toCharArray())),
             Optional.empty(),

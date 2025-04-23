@@ -15,10 +15,10 @@ import org.apache.hc.client5.http.auth.Credentials;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.junit.Test;
 
-import com.github.dockerjava.zerodep.shaded.org.apache.hc.client5.http.protocol.HttpClientContext;
 
 import io.jenkins.plugins.opentelemetry.job.log.LogLine;
 import io.opentelemetry.api.OpenTelemetry;
@@ -57,7 +57,7 @@ public class LokiBuildLogsLineIteratorIT {
             .build();
         try (LokiBuildLogsLineIterator lokiBuildLogsLineIterator = new LokiBuildLogsLineIterator(
             lokiQueryParameters, httpClient,
-            (HttpContext)HttpClientContext.create(),
+            HttpClientContext.create(),
             lokiUrl,
             Optional.of(lokiCredentials),
             Optional.empty(),
