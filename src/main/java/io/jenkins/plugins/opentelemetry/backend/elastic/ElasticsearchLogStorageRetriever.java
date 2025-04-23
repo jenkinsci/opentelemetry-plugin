@@ -8,9 +8,14 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,16 +29,27 @@ import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.TrustAllStrategy;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.elasticsearch.client.RestClient;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.Credentials;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.TrustAllStrategy;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
+import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.apache.hc.core5.util.TimeValue;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
+import org.springframework.web.client.RestClient;
 
 import com.google.errorprone.annotations.MustBeClosed;
 
@@ -45,6 +61,9 @@ import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
 import co.elastic.clients.elasticsearch.indices.GetIndexResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.ElasticsearchTransportConfig;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -94,9 +113,9 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     @NonNull
     final String elasticsearchUrl;
     @NonNull
-    final RestClient restClient;
+    final Rest5Client restClient;
     @NonNull
-    final RestClientTransport elasticsearchTransport;
+    final Rest5ClientTransport elasticsearchTransport;
     @NonNull
     private final ElasticsearchClient esClient;
 
@@ -117,34 +136,65 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
         this.elasticsearchUrl = elasticsearchUrl;
         this.elasticsearchCredentials = elasticsearchCredentials;
-        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(AuthScope.ANY, elasticsearchCredentials);
+        BasicCredentialsProvider credentialsProvider = getCredentialsProvider(elasticsearchUrl,
+                elasticsearchCredentials);
 
-        this.restClient = RestClient.builder(HttpHost.create(elasticsearchUrl))
-            .setHttpClientConfigCallback(httpClientBuilder -> {
-                httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                httpClientBuilder.setDefaultIOReactorConfig(IOReactorConfig.custom()
-                    /* optionally perform some other configuration of IOReactorConfig here if needed */
-                    .setSoKeepAlive(KEEPALIVE)
-                    .build());
-                httpClientBuilder.setKeepAliveStrategy((response, context) -> KEEPALIVE_INTERVAL);
-                if (disableSslVerifications) {
-                    try {
-                        SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustAllStrategy()).build();
-                        httpClientBuilder.setSSLContext(sslContext);
-                    } catch (GeneralSecurityException e) {
-                        logger.log(Level.WARNING, "IllegalStateException: failure to disable SSL certs verification");
-                    }
-                    httpClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
-                }
-                return httpClientBuilder;
-            })
+        RequestConfig requestConfig = RequestConfig.custom()
+            .setConnectionKeepAlive(TimeValue.ofMilliseconds(KEEPALIVE_INTERVAL))
             .build();
-        this.elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+            .setDefaultRequestConfig(requestConfig)
+            .setDefaultCredentialsProvider(credentialsProvider)
+            .build();
+
+        if (disableSslVerifications) {
+            SSLContext sslContext;
+            try {
+                sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustAllStrategy()).build();
+            } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException e) {
+                throw new IllegalArgumentException(e);
+            }
+
+            TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create()
+                .setSslContext(sslContext)
+                .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                .build();
+            PoolingAsyncClientConnectionManager cm = PoolingAsyncClientConnectionManagerBuilder.create()
+                .setTlsStrategy(tlsStrategy)
+                .build();
+            httpclient = HttpAsyncClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credentialsProvider)
+                .build();
+        }
+
+        this.restClient = Rest5Client.builder(URI.create(elasticsearchUrl))
+            .setHttpClient(httpclient)
+            .build();
+
+        this.elasticsearchTransport = new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
         this.esClient = new ElasticsearchClient(elasticsearchTransport);
 
         this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
         this.templateBindingsProvider = templateBindingsProvider;
+    }
+
+    /**
+     * Get the credentials provider for the Elasticsearch client.
+     * @param elasticsearchUrl
+     * @param elasticsearchCredentials
+     * @return
+     */
+    private BasicCredentialsProvider getCredentialsProvider(String elasticsearchUrl,
+            Credentials elasticsearchCredentials) {
+        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        try{
+            credentialsProvider.setCredentials(new AuthScope(HttpHost.create(elasticsearchUrl)), elasticsearchCredentials);
+        } catch(URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+        return credentialsProvider;
     }
 
     @NonNull
@@ -246,8 +296,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         }
 
         try {
-            GetIndexResponse indices = indicesClient.get(b -> b.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS));
-            if (indices == null || indices.result() == null || indices.result().isEmpty()) {
+            final GetIndexResponse response = indicesClient.get(b -> b.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS));
+            if (response == null || response.indices() == null || response.indices().isEmpty()) {
                 validations.add(FormValidation.warning("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' NOT found."));
             } else {
                 validations.add(FormValidation.ok("Indices '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' found."));

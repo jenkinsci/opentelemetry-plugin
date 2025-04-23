@@ -5,7 +5,47 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.net.ssl.SSLContext;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.hc.client5.http.auth.AuthenticationException;
+import org.apache.hc.client5.http.auth.Credentials;
+import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.TrustAllStrategy;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.kohsuke.stapler.framework.io.ByteBuffer;
+
 import com.google.errorprone.annotations.MustBeClosed;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import groovy.text.Template;
 import hudson.util.FormValidation;
@@ -26,39 +66,7 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.instrumentation.apachehttpclient.v4_3.ApacheHttpClientTelemetry;
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.auth.AuthenticationException;
-import org.apache.http.auth.Credentials;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.TrustAllStrategy;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.util.EntityUtils;
-import org.kohsuke.stapler.framework.io.ByteBuffer;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.net.ssl.SSLContext;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import io.opentelemetry.instrumentation.apachehttpclient.v5_2.ApacheHttpClientTelemetry;
 
 
 public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
@@ -92,7 +100,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         this.serviceNamespace = serviceNamespace;
         this.lokiCredentials = lokiCredentials;
         this.lokiTenantId = lokiTenantId;
-        this.httpContext = new BasicHttpContext();
+        this.httpContext = HttpClientContext.create();
         this.openTelemetry = GlobalOpenTelemetry.get();
         this.tracer = openTelemetry.getTracer(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME);
 
@@ -100,11 +108,14 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         if (disableSslVerifications) {
             try {
                 SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustAllStrategy()).build();
-                httpClientBuilder.setSSLContext(sslContext);
+                SSLConnectionSocketFactory sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
+                PoolingHttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create()
+                    .setSSLSocketFactory(sslConnectionSocketFactory)
+                    .build();
+                httpClientBuilder.setConnectionManager(cm);
             } catch (GeneralSecurityException e) {
                 logger.log(Level.WARNING, "IllegalStateException: failure to disable SSL certs verification");
             }
-            httpClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
         }
 
         this.httpClient = httpClientBuilder.build();
@@ -235,24 +246,37 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         List<FormValidation> validations = new ArrayList<>();
 
         // `/ready`and `/loki/api/v1/status/buildinfo` return a 404 on Grafana Cloud, use the format_query request instead
-        HttpUriRequest lokiBuildInfoRequest = RequestBuilder.get().setUri(lokiUrl + "/loki/api/v1/format_query").addParameter("query", "{foo= \"bar\"}").build();
+        ClassicHttpRequest lokiBuildInfoRequest = ClassicRequestBuilder.get().setUri(lokiUrl + "/loki/api/v1/format_query").addParameter("query", "{foo= \"bar\"}").build();
 
         lokiCredentials.ifPresent(lokiCredentials -> {
             try {
                 // preemptive authentication due to a limitation of Grafana Cloud Logs (Loki) that doesn't return `WWW-Authenticate`
                 // header to trigger traditional authentication
-                lokiBuildInfoRequest.addHeader(new BasicScheme().authenticate(lokiCredentials, lokiBuildInfoRequest, httpContext));
+                BasicScheme basicScheme = new BasicScheme();
+                basicScheme.initPreemptive(lokiCredentials);
+                lokiBuildInfoRequest.addHeader("Authentication", new BasicScheme().generateAuthResponse(null, lokiBuildInfoRequest, httpContext));
             } catch (AuthenticationException e) {
                 throw new RuntimeException(e);
             }
         });
         lokiTenantId.ifPresent(tenantId -> lokiBuildInfoRequest.addHeader(new LokiTenantHeader(tenantId)));
-        try (CloseableHttpResponse lokiReadyResponse = httpClient.execute(lokiBuildInfoRequest, httpContext)) {
-            if (lokiReadyResponse.getStatusLine().getStatusCode() != 200) {
-                validations.add(FormValidation.error("Failure to access Loki (" + lokiBuildInfoRequest + "): " + EntityUtils.toString(lokiReadyResponse.getEntity())));
-            } else {
-                validations.add(FormValidation.ok("Loki connection successful"));
-            }
+        try {
+            validations.add(httpClient.execute(lokiBuildInfoRequest, httpContext, new HttpClientResponseHandler<FormValidation>() {
+                    @Override
+                    public FormValidation handleResponse(ClassicHttpResponse lokiReadyResponse) {
+                        FormValidation ret = FormValidation.ok("Loki connection successful");
+                        try{
+                            if (lokiReadyResponse.getCode() != 200) {
+                                ret = FormValidation.error("Failure to access Loki (" + lokiBuildInfoRequest + "): " + EntityUtils.toString(lokiReadyResponse.getEntity()));
+                            } else {
+                                ret = FormValidation.ok("Loki connection successful");
+                            }
+                        } catch(ParseException | IOException e) {
+                            ret = FormValidation.error("Failure to access Loki (" + lokiBuildInfoRequest + "): " + e.getMessage());
+                        }
+                        return ret;
+                    }
+                }));
         } catch (IOException e) {
             validations.add(FormValidation.error("Failure to access Loki (" + lokiBuildInfoRequest + "): " + e.getMessage()));
         }

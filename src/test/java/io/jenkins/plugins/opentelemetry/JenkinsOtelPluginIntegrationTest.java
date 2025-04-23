@@ -25,6 +25,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.steps.EchoStep;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.jupiter.api.Timeout;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
 import com.github.rutledgepaulv.prune.Tree;
@@ -296,6 +297,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @Timeout(300)
     public void testChainOfPipelines() throws Exception {
         jenkinsRule.createOnlineSlave();
 

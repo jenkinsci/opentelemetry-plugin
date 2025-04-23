@@ -5,20 +5,26 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.common.AttributesBuilder;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
+import static io.jenkins.plugins.opentelemetry.backend.grafana.LokiMetadata.LABEL_SERVICE_NAME;
+import static io.jenkins.plugins.opentelemetry.backend.grafana.LokiMetadata.LABEL_SERVICE_NAMESPACE;
+import static io.jenkins.plugins.opentelemetry.backend.grafana.LokiMetadata.META_DATA_CI_PIPELINE_ID;
+import static io.jenkins.plugins.opentelemetry.backend.grafana.LokiMetadata.META_DATA_CI_PIPELINE_RUN_NUMBER;
+import static io.jenkins.plugins.opentelemetry.backend.grafana.LokiMetadata.META_DATA_JENKINS_PIPELINE_STEP_ID;
+import static io.jenkins.plugins.opentelemetry.backend.grafana.LokiMetadata.META_DATA_TRACE_ID;
 
-import javax.annotation.Nonnull;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import static io.jenkins.plugins.opentelemetry.backend.grafana.LokiMetadata.*;
-import static io.jenkins.plugins.opentelemetry.backend.grafana.LokiMetadata.META_DATA_JENKINS_PIPELINE_STEP_ID;
+import javax.annotation.Nonnull;
+
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.common.AttributesBuilder;
 
 public class LokiGetJenkinsBuildLogsQueryParameters {
     @NonNull
@@ -48,7 +54,7 @@ public class LokiGetJenkinsBuildLogsQueryParameters {
         this.serviceNamespace = serviceNamespace;
     }
 
-    public HttpUriRequest toHttpRequest(@Nonnull String lokiUrl) {
+    public ClassicHttpRequest toHttpRequest(@Nonnull String lokiUrl) {
         // https://grafana.com/docs/loki/latest/reference/loki-http-api/#query-logs-within-a-range-of-time
 
         final StringBuilder logQl = new StringBuilder("{");
@@ -63,7 +69,7 @@ public class LokiGetJenkinsBuildLogsQueryParameters {
 
         logQl.append(" | keep __line__");
 
-        RequestBuilder lokiQueryRangeRequestBuilder = RequestBuilder
+        ClassicRequestBuilder lokiQueryRangeRequestBuilder = ClassicRequestBuilder
             .get()
             .setUri(lokiUrl + "/loki/api/v1/query_range")
             .addParameter("query", logQl.toString())
