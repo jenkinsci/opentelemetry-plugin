@@ -5,16 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import io.jenkins.plugins.opentelemetry.job.log.LogLine;
-import io.opentelemetry.api.OpenTelemetry;
-
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.protocol.HttpClientContext;
-import org.apache.hc.core5.http.protocol.HttpContext;
-
-import org.junit.Test;
-
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.io.InputStream;
 import java.time.Instant;
@@ -22,8 +14,13 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.junit.Test;
+
+import io.jenkins.plugins.opentelemetry.job.log.LogLine;
+import io.opentelemetry.api.OpenTelemetry;
 
 public class LokiBuildLogsLineIteratorTest {
 
