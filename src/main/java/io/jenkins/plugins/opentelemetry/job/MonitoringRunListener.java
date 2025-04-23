@@ -32,7 +32,9 @@ import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.incubator.metrics.ExtendedDoubleHistogramBuilder;
 import io.opentelemetry.api.metrics.DoubleHistogram;
+import io.opentelemetry.api.metrics.DoubleHistogramBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.Meter;
@@ -49,6 +51,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.semconv.ErrorAttributes;
 import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.incubating.CicdIncubatingAttributes;
 import jenkins.YesNoMaybe;
@@ -118,6 +121,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
 
     private DoubleHistogram cicdPipelineRunDurationHistogram;
     private LongUpDownCounter cicdPipelineRunActiveCounter;
+    private LongCounter cicdPipelineRunErrorsCounter;
+    private LongCounter cicdSystemErrorsCounter;
 
     @PostConstruct
     public void postConstruct() {
@@ -140,15 +145,26 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
         // METRICS
         activeRunGauge = new AtomicInteger();
 
-        runDurationHistogram = meter.histogramBuilder(JenkinsMetrics.CI_PIPELINE_RUN_DURATION)
+        DoubleHistogramBuilder runDurationHistogramBuilder = meter.histogramBuilder(JenkinsMetrics.CI_PIPELINE_RUN_DURATION)
             .setUnit("s")
-            .setExplicitBucketBoundariesAdvice(DURATION_SECONDS_BUCKETS)
-            .build();
+            .setExplicitBucketBoundariesAdvice(DURATION_SECONDS_BUCKETS);
+        if (runDurationHistogramBuilder instanceof ExtendedDoubleHistogramBuilder extendedBuilder) {
+            extendedBuilder.setAttributesAdvice(List.of(
+                ExtendedJenkinsAttributes.CI_PIPELINE_ID,
+                ExtendedJenkinsAttributes.CI_PIPELINE_RUN_RESULT
+            ));
+        }
+        runDurationHistogram = runDurationHistogramBuilder.build();
         runDurationHistogramAllowList = MATCH_ANYTHING; // allow all
         runDurationHistogramDenyList = MATCH_NOTHING; // deny nothing
 
         cicdPipelineRunDurationHistogram = CicdMetrics.newCiCdPipelineRunDurationHistogram(meter);
         cicdPipelineRunActiveCounter = CicdMetrics.newCiCdPipelineRunActiveCounter(meter);
+        cicdPipelineRunErrorsCounter = CicdMetrics.newCiCdPipelineRunErrorsCounter(meter);
+        /**
+         * FIXME when to qualify a build failure as a cicd system error?
+         */
+        cicdSystemErrorsCounter = CicdMetrics.newCiCdSystemErrorsCounter(meter);
 
         meter.gaugeBuilder(JenkinsMetrics.CI_PIPELINE_RUN_ACTIVE)
             .ofLongs()
@@ -451,8 +467,16 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
                     parentSpan.setAttribute(ExceptionAttributes.EXCEPTION_TYPE, "PIPELINE_" + runResult);
                     parentSpan.setAttribute(ExceptionAttributes.EXCEPTION_MESSAGE, "PIPELINE_" + runResult);
                     parentSpan.setStatus(StatusCode.ERROR, runResult.toString());
+                    cicdPipelineRunErrorsCounter.add(1, Attributes.of(
+                        CicdIncubatingAttributes.CICD_PIPELINE_NAME, PIPELINE_NAME_OTHER, // FIXME CARDINALITY PROTECTION
+                        ErrorAttributes.ERROR_TYPE, runResult.toString()
+                    ));
                 } else if (Result.ABORTED.equals(runResult) || Result.NOT_BUILT.equals(runResult)) {
                     parentSpan.setStatus(StatusCode.UNSET, runResult.toString());
+                    cicdPipelineRunErrorsCounter.add(1, Attributes.of(
+                        CicdIncubatingAttributes.CICD_PIPELINE_NAME, PIPELINE_NAME_OTHER, // FIXME CARDINALITY PROTECTION
+                        ErrorAttributes.ERROR_TYPE, runResult.toString()
+                    ));
                 }
             }
             // NODE

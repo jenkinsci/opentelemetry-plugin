@@ -13,10 +13,12 @@ import hudson.model.LoadStatistics;
 import hudson.model.Node;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.semconv.CicdMetrics;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.ObservableLongMeasurement;
+import io.opentelemetry.semconv.incubating.CicdIncubatingAttributes;
 import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 
@@ -53,6 +55,7 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
         final ObservableLongMeasurement totalExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_TOTAL).setUnit("${executors}").setDescription("Total executors").ofLongs().buildObserver();
         final ObservableLongMeasurement nodes = meter.gaugeBuilder(JENKINS_NODE).setUnit("${nodes}").setDescription("Nodes").ofLongs().buildObserver();
         final ObservableLongMeasurement executors = meter.gaugeBuilder(JENKINS_EXECUTOR).setUnit("${executors}").setDescription("Per label executors").ofLongs().buildObserver();
+        ObservableLongMeasurement cicdWorkers = CicdMetrics.newCiCdWorkerCounter(meter);
 
         // TODO the metrics below should be deprecated in favor of
         //  * `jenkins.executor` metric with the `status` and `label`attributes
@@ -78,6 +81,7 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
             // TOTAL EXECUTORS
             AtomicInteger totalExecutorsIdle = new AtomicInteger();
             AtomicInteger totalExecutorsBusy = new AtomicInteger();
+            AtomicInteger totalExecutorsOffline = new AtomicInteger();
             AtomicInteger nodeOnline = new AtomicInteger();
             AtomicInteger nodeOffline = new AtomicInteger();
 
@@ -105,12 +109,19 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
                             }
                         });
                 } else {
+                    totalExecutorsOffline.addAndGet(node.countExecutors());
                     nodeOffline.incrementAndGet();
                 }
             });
 
             totalExecutors.record(totalExecutorsBusy.get(), Attributes.of(STATUS, "busy"));
             totalExecutors.record(totalExecutorsIdle.get(), Attributes.of(STATUS, "idle"));
+            cicdWorkers.record(totalExecutorsBusy.get(),
+                Attributes.of(CicdIncubatingAttributes.CICD_WORKER_STATE, CicdIncubatingAttributes.CicdWorkerStateIncubatingValues.BUSY));
+            cicdWorkers.record(totalExecutorsIdle.get(),
+                Attributes.of(CicdIncubatingAttributes.CICD_WORKER_STATE, CicdIncubatingAttributes.CicdWorkerStateIncubatingValues.AVAILABLE));
+            cicdWorkers.record(totalExecutorsOffline.get(),
+                Attributes.of(CicdIncubatingAttributes.CICD_WORKER_STATE, CicdIncubatingAttributes.CicdWorkerStateIncubatingValues.OFFLINE));
             nodes.record(nodeOnline.get(), Attributes.of(STATUS, "online"));
             nodes.record(nodeOffline.get(), Attributes.of(STATUS, "offline"));
 
@@ -133,6 +144,6 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
                 definedExecutors.record(loadStatisticsSnapshot.getDefinedExecutors(), attributes);
                 connectingExecutors.record(loadStatisticsSnapshot.getConnectingExecutors(), attributes);
             });
-        }, availableExecutors, busyExecutors, idleExecutors, onlineExecutors, connectingExecutors, definedExecutors, totalExecutors, executors, nodes, queueLength);
+        }, availableExecutors, busyExecutors, idleExecutors, onlineExecutors, connectingExecutors, definedExecutors, totalExecutors, executors, nodes, queueLength, cicdWorkers);
     }
 }

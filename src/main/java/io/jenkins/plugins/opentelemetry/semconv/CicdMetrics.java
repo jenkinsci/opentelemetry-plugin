@@ -11,6 +11,7 @@ import io.opentelemetry.api.metrics.LongCounterBuilder;
 import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.LongUpDownCounterBuilder;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.semconv.ErrorAttributes;
 import io.opentelemetry.semconv.incubating.CicdIncubatingAttributes;
 
@@ -60,7 +61,10 @@ public class CicdMetrics {
         return cicdPipelineRunActiveCounterBuilder.build();
     }
 
-    public static LongUpDownCounter newCiCdWorkerCount(Meter meter) {
+    /**
+     * FIXME shouldn't it be a gauge rather than an upDownCounter?
+     */
+    public static ObservableLongMeasurement newCiCdWorkerCounter(Meter meter) {
         LongUpDownCounterBuilder cicdWorkerCountBuilder =
             meter
                 .upDownCounterBuilder("cicd.worker.count")
@@ -73,10 +77,10 @@ public class CicdMetrics {
                         CicdIncubatingAttributes.CICD_WORKER_STATE));
         }
 
-        return cicdWorkerCountBuilder.build();
+        return cicdWorkerCountBuilder.buildObserver();
     }
 
-    public static LongCounter newCiCdPipelineRunErrors(Meter meter) {
+    public static LongCounter newCiCdPipelineRunErrorsCounter(Meter meter) {
         LongCounterBuilder cicdPipelineRunErrorsBuilder =
             meter
                 .counterBuilder("cicd.pipeline.run.errors")
@@ -93,7 +97,7 @@ public class CicdMetrics {
         return cicdPipelineRunErrorsBuilder.build();
     }
 
-    public static LongCounter newCiCdSystemErrors(Meter meter) {
+    public static LongCounter newCiCdSystemErrorsCounter(Meter meter) {
         LongCounterBuilder cicdSystemErrorsBuilder =
             meter
                 .counterBuilder("cicd.system.errors")
