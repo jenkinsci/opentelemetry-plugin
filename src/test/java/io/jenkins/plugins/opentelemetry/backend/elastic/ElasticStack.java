@@ -4,7 +4,7 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import static junit.framework.TestCase.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.io.File;
 import java.io.IOException;
