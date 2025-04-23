@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
@@ -17,6 +18,8 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.apache.commons.lang3.SystemUtils;
+
+import io.opentelemetry.api.GlobalOpenTelemetry;
 
 /**
  * Base class for integration tests using an Elastic Stack.
@@ -41,5 +44,10 @@ public abstract class ElasticStackIT {
     static void beforeAll() {
         assumeTrue(SystemUtils.IS_OS_MAC || SystemUtils.IS_OS_LINUX);
         assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+    }
+
+    @AfterAll
+    static void afterAll() {
+       GlobalOpenTelemetry.resetForTest();
     }
 }
