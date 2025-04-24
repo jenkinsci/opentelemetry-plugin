@@ -24,11 +24,11 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
     public static final AttributeKey<String> CI_PIPELINE_TYPE = AttributeKey.stringKey("ci.pipeline.type");
     public static final AttributeKey<String> CI_PIPELINE_MULTIBRANCH_TYPE = AttributeKey.stringKey("ci.pipeline.multibranch.type");
     /**
-     * FIXME should we use {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_NAME} for the jenkins job name or display name?
+     * Full Jenkins job name, different from the low cardinality
+     * {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_NAME} that relies on
+     * {@link io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler#getPipelineShortName(Run)}
      * @see Job#getFullName()
-     * @deprecated use {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_NAME}
      */
-    @Deprecated
     public static final AttributeKey<String> CI_PIPELINE_ID = AttributeKey.stringKey("ci.pipeline.id");
     public static final AttributeKey<String> CI_PIPELINE_NAME = AttributeKey.stringKey("ci.pipeline.name");
     public static final AttributeKey<String> CI_PIPELINE_TEMPLATE_ID = AttributeKey.stringKey("ci.pipeline.template.id");

@@ -80,7 +80,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Verify.verifyNotNull;
 
 /**
- * TODO support reconfiguration
+ * TODO support reconfiguration. allow & deny lists are NOT reconfigurable at runtime for the moment.
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringRunListener extends OtelContextAwareAbstractRunListener implements OpenTelemetryLifecycleListener {
@@ -249,23 +249,30 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
             CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE, CicdIncubatingAttributes.CicdPipelineRunStateIncubatingValues.PENDING
         ));
 
-        RunHandler runHandler = getRunHandlers().stream().filter(rh -> rh.canCreateSpanBuilder(run)).findFirst()
+        RunHandler runHandler = getRunHandlers().stream().filter(rh -> rh.matches(run)).findFirst()
             .orElseThrow((Supplier<RuntimeException>) () -> new IllegalStateException("No RunHandler found for run " + run.getClass() + " - " + run));
-        SpanBuilder rootSpanBuilder = runHandler.createSpanBuilder(run, getTracer());
-
+        String pipelineShortName = runHandler.getPipelineShortName(run);
+        SpanBuilder rootSpanBuilder = getTracer().spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + pipelineShortName);
+        runHandler.enrichPipelineRunSpan(run, rootSpanBuilder);
         rootSpanBuilder.setSpanKind(SpanKind.SERVER);
-        String runUrl = Objects.toString(Jenkins.get().getRootUrl(), "") + run.getUrl();
+        String runUrl = Optional.ofNullable(Jenkins.get().getRootUrl()).orElse("") + run.getUrl();
 
         // TODO move this to a pluggable span enrichment API with implementations for different observability backends
         rootSpanBuilder
             .setAttribute(ExtendedJenkinsAttributes.ELASTIC_TRANSACTION_TYPE, "job");
 
         rootSpanBuilder
+            .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_NAME, pipelineShortName)
+            .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_RUN_URL_FULL, runUrl)
+            .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_RUN_ID, String.valueOf(run.getNumber()))
+
             .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, run.getParent().getFullName())
             .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_NAME, run.getParent().getFullDisplayName())
+            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run))
+
             .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_URL, runUrl)
             .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
-            .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
+        ;
 
         // CULPRITS
         Set<User> culpritIds;
@@ -338,8 +345,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
                             // unclear why this could happen. Maybe during the installation of the plugin if the plugin is
                             // installed while a parent job triggers a downstream job
                             w3cTraceContext = Collections.emptyMap();
-                        } else if (upstreamCause instanceof BuildUpstreamCause) {
-                            BuildUpstreamCause buildUpstreamCause = (BuildUpstreamCause) cause;
+                        } else if (upstreamCause instanceof BuildUpstreamCause buildUpstreamCause) {
                             String upstreamNodeId = buildUpstreamCause.getNodeId();
                             w3cTraceContext = monitoringAction.getW3cTraceContext(upstreamNodeId);
                         } else {
@@ -509,12 +515,15 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
                 this.runAbortedCounter.add(1);
             }
 
-            String jobFullName = run.getParent().getFullName();
+            // TODO perf optimization, reuse resolution done in `#_onInitialize(run)`
+            String pipelineShortName = getRunHandlers().stream().filter(rh -> rh.matches(run)).findFirst()
+                .orElseThrow((Supplier<RuntimeException>) () -> new IllegalStateException("No RunHandler found for run " + run.getClass() + " - " + run))
+                .getPipelineShortName(run);
             String pipelineId =
-                runDurationHistogramAllowList.matcher(jobFullName).matches()
+                runDurationHistogramAllowList.matcher(pipelineShortName).matches()
                     &&
-                    !runDurationHistogramDenyList.matcher(jobFullName).matches() ?
-                    jobFullName : PIPELINE_NAME_OTHER;
+                    !runDurationHistogramDenyList.matcher(pipelineShortName).matches() ?
+                    pipelineShortName : PIPELINE_NAME_OTHER;
             runDurationHistogram.record(
                 TimeUnit.SECONDS.convert(run.getDuration(), TimeUnit.MILLISECONDS),
                 Attributes.of(
