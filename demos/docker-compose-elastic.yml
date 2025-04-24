@@ -2,15 +2,24 @@
 services:
   jenkins:
     extends:
-      file: docker-compose-elastic.yml
+      file: services.yml
       service: jenkins
+    networks:
+      - jenkins
     environment:
+      KIBANA_HOST: ${KIBANA_HOST:-http://localhost:5601}
       ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:-http://elasticsearch:9200}
       ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-jenkins_logs_user}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-changeme}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
-    networks:
-      - jenkins
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://edot:4317}
+    volumes:
+      - type: bind
+        source: ./config/jenkins-elastic.yml
+        target: /var/jenkins_home/jcasc/jenkins.yml
+        read_only: true
+    depends_on:
+      edot:
+        condition: service_healthy
 
   jenkins-inbound-agent:
     extends:
@@ -54,41 +63,6 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-
-  prometheus:
-    extends:
-      file: services.yml
-      service: prometheus
-    networks:
-      - jenkins
-
-  jaeger-all-in-one:
-    extends:
-      file: services.yml
-      service: jaeger-all-in-one
-    networks:
-      - jenkins
-
-  zipkin-all-in-one:
-    extends:
-      file: services.yml
-      service: zipkin-all-in-one
-    networks:
-      - jenkins
-
-  otel-collector:
-    extends:
-      file: services.yml
-      service: otel-collector
-    volumes:
-      - ./config/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    networks:
-      - jenkins
-    depends_on:
-      - jaeger-all-in-one
-      - zipkin-all-in-one
-      - prometheus
-      - edot
 
 volumes:
   jenkins:

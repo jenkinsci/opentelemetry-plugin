@@ -1,0 +1,39 @@
+---
+services:
+  jenkins:
+    extends:
+      file: services.yml
+      service: jenkins
+    networks:
+      - jenkins
+    environment:
+      KIBANA_HOST: ${KIBANA_HOST}
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST}
+      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS}
+    volumes:
+      - type: bind
+        source: ./config/jenkins-elastic.yml
+        target: /var/jenkins_home/jcasc/jenkins.yml
+        read_only: true
+
+  jenkins-inbound-agent:
+    extends:
+      file: services.yml
+      service: jenkins-inbound-agent
+    networks:
+      - jenkins
+
+volumes:
+  jenkins:
+    driver: local
+  esdata:
+    driver: local
+  edot-config:
+    driver: local
+
+networks:
+  jenkins:
+    driver: bridge
