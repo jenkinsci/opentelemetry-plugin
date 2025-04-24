@@ -28,7 +28,7 @@ exporters:
       insecure: true
 
   otlp/elastic:
-    endpoint: "edot:4317"
+    endpoint: "fleet-server:8200"
     tls:
       insecure: true
 

@@ -5,10 +5,8 @@ services:
     environment:
       CASC_JENKINS_CONFIG: /var/jenkins_home/jcasc
       JENKINS_URL: ${JENKINS_URL:-http://localhost:8080}
-      KIBANA_HOST: ${KIBANA_HOST:-http://kibana:5601}
-      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:-http://elasticsearch:9200}
-      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-jenkins_logs_user}
-      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-changeme}
+      GRAFANA_HOST: ${GRAFANA_HOST:-http://grafana:3000}
+      LOKI_HOST: ${LOKI_HOST:-http://loki:3100}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS}
       JAVA_OPTS: >-
@@ -33,7 +31,7 @@ services:
         target: /var/jenkins_home/config
         read_only: true
       - type: bind
-        source: ./config/jenkins-elastic.yml
+        source: ./config/jenkins-grafana.yml
         target: /var/jenkins_home/jcasc/jenkins.yml
         read_only: true
     ports:
@@ -54,43 +52,39 @@ services:
             condition: service_healthy
     networks:
       - jenkins
-
-  api-key:
-    extends:
-      file: ../src/test/resources/elastic-stack.yml
-      service: api-key
-    networks:
-      - jenkins
-    depends_on:
-      kibana:
-        condition: service_healthy
-  edot:
-    extends:
-      file: ../src/test/resources/elastic-stack.yml
-      service: edot
-    networks:
-      - jenkins
-    depends_on:
-      api-key:
-        condition: service_completed_successfully
-
-  elasticsearch:
-    extends:
-      file: ../src/test/resources/elastic-stack.yml
-      service: elasticsearch
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
     networks:
       - jenkins
 
-  kibana:
-    extends:
-      file: ../src/test/resources/elastic-stack.yml
-      service: kibana
+  grafana:
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_FEATURE_TOGGLES_ENABLE=alertingSimplifiedRouting,alertingQueryAndExpressionsStepMode
+    entrypoint:
+      - sh
+      - -euc
+      - /run.sh
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config/grafana-datasources.yml:/etc/grafana/provisioning/datasources/ds.yaml
     networks:
       - jenkins
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - jenkins
   jaeger-all-in-one:
     image: jaegertracing/all-in-one:latest
     ports:
@@ -101,27 +95,11 @@ services:
     networks:
       - jenkins
 
-  zipkin-all-in-one:
-    image: openzipkin/zipkin:latest
-    ports:
-      - "9411:9411"
-    networks:
-      - jenkins
-
-  prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
-    networks:
-      - jenkins
-
   otel-collector:
     image: ${OTELCOL_IMG:-otel/opentelemetry-collector-contrib-dev:latest}
     command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
     volumes:
-      - ./config/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ./config/otel-collector-grafana.yaml:/etc/otel-collector-config.yaml
     ports:
       - "1888:1888"   # pprof extension
       - "8888:8888"   # Prometheus metrics exposed by the collector
@@ -131,18 +109,13 @@ services:
       - "55670:55679" # zpages extension
     depends_on:
       - jaeger-all-in-one
-      - zipkin-all-in-one
-      - edot
       - prometheus
+      - loki
     networks:
       - jenkins
 
 volumes:
   jenkins:
-    driver: local
-  esdata:
-    driver: local
-  edot-config:
     driver: local
 
 networks:
