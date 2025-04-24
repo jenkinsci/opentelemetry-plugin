@@ -1,6 +1,7 @@
 # Storing Jenkins Pipeline Logs in an Observability Backend though OpenTelemetry (version 2.0.0+)
 
 Jenkins pipeline build logs can be sent through OpenTelemetry Protocol in order to be stored in an observability backend alongside the traces of the pipeline builds and the health metrics of Jenkins. Doing so provides the following benefits
+
 * Better observability, monitoring, alerting, and troubleshooting of the Jenkins instance thanks to the unification of all the signals in the observability backend
 * Better traceability and audit of the Software Delivery Lifecycle having better control on the long term storage of the builds
 * Better scalability and reliability of Jenkins greatly reducing the quantity of data stored in Jenkins home and limiting the well known file system performance challenges of Jenkins when storing a large history of builds
@@ -56,9 +57,6 @@ The Jenkins OpenTelemetry can also store of pipeline logs in Elasticsearch provi
    alt="Configuration - Elastic Observability Backend - Advanced configuration"
    src="./images/jenkins-pipeline-build-console-with-hlink-elastic-and-logs-zoom.png" />
 
-
-This more advanced setup requires connecting from the Jenkins Controller to Elasticsearch with read permissions on the `logs-apm.app` and preferably on the Metadata of the ILM policy of this index template (by default it's the `logs-apm.app_logs-default_policy` policy).
-
 Please use the "Validate Elasticsearch configuration" to verify the setup.
 
 > :warning: If you add some Jenkins Logging for the OpenTelemetry plugin then the build logs won't be shown in Elastic.
@@ -86,7 +84,6 @@ In order to retrieve the logs from Elasticsearch you can configure an Elastic us
 alt="Configuration - Role creation in Kibana"
 src="./images/jenkins-pipeline-logs-elastic-kibana-role.png" />
 
-
 2. Create the user `jenkins_logs_user` in your Kibana instance
 
 <img width="400px"
@@ -102,12 +99,11 @@ To store pipeline logs in Loki,
 * Set the Grafana URL
 * In the section "Pipeline logs storage in Loki", select the desired strategy:
   * "Don't store logs in Loki" to continue storing logs exclusively in Jenkins
-  * "Store pipeline logs in Loki and mirror them in Jenkins" to store logs in Loki and also store them in the Jenkins 
-    home. Logs can be visualized from the Jenkins GUI retrieving them from the Jenkins home storage, and from Grafana retrieving them from Loki   
-  * "Store pipeline logs In Loki and visualize logs exclusively in Grafana (logs no longer visible through Jenkins 
-    screens)" to store logs exclusively in Loki. Pipeline logs are no longer visible through Jenkins screens, 
+  * "Store pipeline logs in Loki and mirror them in Jenkins" to store logs in Loki and also store them in the Jenkins
+    home. Logs can be visualized from the Jenkins GUI retrieving them from the Jenkins home storage, and from Grafana retrieving them from Loki  
+  * "Store pipeline logs In Loki and visualize logs exclusively in Grafana (logs no longer visible through Jenkins
+    screens)" to store logs exclusively in Loki. Pipeline logs are no longer visible through Jenkins screens,
     an hyperlink to Grafana is displayed in the Jenkins pipeline build console.
-
 
 ## FAQ
 
@@ -170,13 +166,12 @@ To enable sending pipeline logs to an observability backend for which the Jenkin
 
 <img width="400px" src="images/jenkins-pipeline-logs-custom-config.png" />
 
-
 **Known limitation:** The definition of the link to visualize pipeline logs is not yet supported (screenshot below). Users should navigate to the pipeline logs through the pipeline trace link defined in the Custom Observability Visualization Backend configuration.
-
 
 <img width="400px" src="images/jenkins-pipeline-logs-custom-visualization.png" />
 
 ### Can build logs be saved in the build folder locally?
+
 Yes, by adding the configuration property `otel.logs.mirror_to_disk=true` in the "Configuration properties" of the plugin ("Advanced" section) of the plugin.
 With this property, logs will be sent to the otel endpoint and also be stored in the Jenkins build folder.
 Build console log will display the log from the build folder. If no log file is available then configured backend visualization will be displayed.

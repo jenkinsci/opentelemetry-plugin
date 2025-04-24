@@ -4,51 +4,50 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
-import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
-import io.jenkins.plugins.opentelemetry.rules.CheckIsDockerAvailable;
-import io.jenkins.plugins.opentelemetry.rules.CheckIsLinuxOrMac;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Timeout;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.org.apache.commons.lang3.SystemUtils;
+
 import io.opentelemetry.api.GlobalOpenTelemetry;
 
 /**
  * Base class for integration tests using an Elastic Stack.
  */
+@Timeout(value = 10, unit = TimeUnit.MINUTES)
+@WithJenkins
+@Testcontainers(disabledWithoutDocker = true)
 public abstract class ElasticStackIT {
-    @ClassRule
-    @ConfiguredWithCode("jcasc-elastic-backend.yml")
-    public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
+    @Container
+    public static ElasticStack elasticStack = new ElasticStack();
 
-    public static ElasticStack elasticStack;
-    private static boolean isInitialized = false;
+    protected JenkinsRule j;
 
-    @ClassRule
-    public static CheckIsLinuxOrMac isLinuxOrMac = new CheckIsLinuxOrMac();
-
-    @ClassRule
-    public static CheckIsDockerAvailable isDockerAvailable = new CheckIsDockerAvailable();
-
-    @BeforeClass
-    public static void beforeClass() {
-        GlobalOpenTelemetry.resetForTest();
+    @BeforeEach
+    void beforeEach(JenkinsRule j) {
+        this.j = j;
+        this.j.timeout = 0;
+        elasticStack.getServicePort(ElasticStack.EDOT_SERVICE, ElasticStack.OTEL_PORT);
     }
 
-    @AfterClass
-    public static void afterClass() {
-        GlobalOpenTelemetry.resetForTest();
+    @BeforeAll
+    static void beforeAll() {
+        assumeTrue(SystemUtils.IS_OS_MAC || SystemUtils.IS_OS_LINUX);
+        assumeTrue(DockerClientFactory.instance().isDockerAvailable());
     }
 
-    @Before
-    public void setUp() throws Exception {
-        if (!isInitialized){
-            elasticStack = new ElasticStack();
-            elasticStack.start();
-            elasticStack.configureElasticBackEnd();
-            isInitialized = true;
-        }
+    @AfterAll
+    static void afterAll() {
+       GlobalOpenTelemetry.resetForTest();
     }
 }

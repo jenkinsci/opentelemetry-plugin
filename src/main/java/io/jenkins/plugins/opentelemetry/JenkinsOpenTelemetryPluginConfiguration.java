@@ -5,12 +5,64 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
+import static io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend.ICONS_PREFIX;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_CERTIFICATE;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_ENDPOINT;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_INSECURE;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_TIMEOUT;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_METRIC_EXPORT_INTERVAL;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_TRACES_EXPORTER;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+
+import org.jenkins.ui.icon.Icon;
+import org.jenkins.ui.icon.IconSet;
+import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.structs.SymbolLookup;
+import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.steps.CoreStep;
+import org.jenkinsci.plugins.workflow.support.steps.StageStepExecution;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest2;
+
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
+
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import groovy.text.GStringTemplateEngine;
 import hudson.Extension;
 import hudson.PluginWrapper;
@@ -39,48 +91,6 @@ import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
 import net.jcip.annotations.Immutable;
 import net.sf.json.JSONObject;
-import org.jenkins.ui.icon.Icon;
-import org.jenkins.ui.icon.IconSet;
-import org.jenkinsci.Symbol;
-import org.jenkinsci.plugins.structs.SymbolLookup;
-import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
-import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.steps.CoreStep;
-import org.jenkinsci.plugins.workflow.support.steps.StageStepExecution;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest2;
-
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.StringReader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.*;
-import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
-import static io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend.ICONS_PREFIX;
 
 @Extension(ordinal = Integer.MAX_VALUE - 1 /* initialize OTel ASAP, just after loading JenkinsControllerOpenTelemetry as GlobalOpenTelemetry */)
 @Symbol("openTelemetry")
@@ -471,6 +481,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return descriptor;
     }
 
+    @SuppressWarnings("unchecked")
     @Nullable
     private Descriptor<? extends Describable<?>> getBuildStepDescriptor(@NonNull BuildStep buildStep) {
         return Jenkins.get().getDescriptor((Class<? extends Describable<?>>) buildStep.getClass());
@@ -671,14 +682,14 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         if (endpoint == null || endpoint.isEmpty()) {
             return FormValidation.ok();
         }
-        URL endpointAsUrl;
+        URI endpointAsUrl;
         try {
-            endpointAsUrl = new URL(endpoint);
-        } catch (MalformedURLException e) {
+            endpointAsUrl = new URI(endpoint);
+        } catch (URISyntaxException e) {
             return FormValidation.error("Invalid URL: " + e.getMessage() + ".");
         }
-        if (!"http".equals(endpointAsUrl.getProtocol()) && !"https".equals(endpointAsUrl.getProtocol())) {
-            return FormValidation.error("Unsupported protocol '" + endpointAsUrl.getProtocol() + "'. Expect 'https' or 'http' protocol.");
+        if (!"http".equals(endpointAsUrl.getScheme()) && !"https".equals(endpointAsUrl.getScheme())) {
+            return FormValidation.error("Unsupported protocol '" + endpointAsUrl.getScheme() + "'. Expect 'https' or 'http' protocol.");
         }
         List<String> localhosts = Arrays.asList("localhost", "127.0.0.1", "0:0:0:0:0:0:0:1");
         for (String localhost : localhosts) {

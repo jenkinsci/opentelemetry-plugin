@@ -4,20 +4,67 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.net.ssl.SSLContext;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.Credentials;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.TrustAllStrategy;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
+import org.apache.hc.core5.reactor.IOReactorConfig;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.apache.hc.core5.util.TimeValue;
+import org.kohsuke.stapler.framework.io.ByteBuffer;
+import org.springframework.web.client.RestClient;
+
+import com.google.errorprone.annotations.MustBeClosed;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.ErrorCause;
-import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.ilm.Actions;
-import co.elastic.clients.elasticsearch.ilm.GetLifecycleResponse;
 import co.elastic.clients.elasticsearch.ilm.Phase;
-import co.elastic.clients.elasticsearch.ilm.Phases;
-import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesClient;
-import co.elastic.clients.json.JsonData;
+import co.elastic.clients.elasticsearch.indices.GetIndexResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.ElasticsearchTransportConfig;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import groovy.text.Template;
@@ -31,43 +78,13 @@ import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import io.jenkins.plugins.opentelemetry.job.log.util.InputStreamByteBuffer;
-import io.jenkins.plugins.opentelemetry.job.log.util.LineIterator;
-import io.jenkins.plugins.opentelemetry.job.log.util.LineIteratorInputStream;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIteratorInputStream;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonValue;
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.Credentials;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.TrustAllStrategy;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.elasticsearch.client.RestClient;
-import org.kohsuke.stapler.framework.io.ByteBuffer;
-
-import javax.net.ssl.SSLContext;
-import java.io.Closeable;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.Principal;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -96,9 +113,9 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     @NonNull
     final String elasticsearchUrl;
     @NonNull
-    final RestClient restClient;
+    final Rest5Client restClient;
     @NonNull
-    final RestClientTransport elasticsearchTransport;
+    final Rest5ClientTransport elasticsearchTransport;
     @NonNull
     private final ElasticsearchClient esClient;
 
@@ -119,34 +136,65 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
         this.elasticsearchUrl = elasticsearchUrl;
         this.elasticsearchCredentials = elasticsearchCredentials;
-        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(AuthScope.ANY, elasticsearchCredentials);
+        BasicCredentialsProvider credentialsProvider = getCredentialsProvider(elasticsearchUrl,
+                elasticsearchCredentials);
 
-        this.restClient = RestClient.builder(HttpHost.create(elasticsearchUrl))
-            .setHttpClientConfigCallback(httpClientBuilder -> {
-                httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                httpClientBuilder.setDefaultIOReactorConfig(IOReactorConfig.custom()
-                    /* optionally perform some other configuration of IOReactorConfig here if needed */
-                    .setSoKeepAlive(KEEPALIVE)
-                    .build());
-                httpClientBuilder.setKeepAliveStrategy((response, context) -> KEEPALIVE_INTERVAL);
-                if (disableSslVerifications) {
-                    try {
-                        SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustAllStrategy()).build();
-                        httpClientBuilder.setSSLContext(sslContext);
-                    } catch (GeneralSecurityException e) {
-                        logger.log(Level.WARNING, "IllegalStateException: failure to disable SSL certs verification");
-                    }
-                    httpClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
-                }
-                return httpClientBuilder;
-            })
+        RequestConfig requestConfig = RequestConfig.custom()
+            .setConnectionKeepAlive(TimeValue.ofMilliseconds(KEEPALIVE_INTERVAL))
             .build();
-        this.elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+            .setDefaultRequestConfig(requestConfig)
+            .setDefaultCredentialsProvider(credentialsProvider)
+            .build();
+
+        if (disableSslVerifications) {
+            SSLContext sslContext;
+            try {
+                sslContext = new SSLContextBuilder().loadTrustMaterial(null, new TrustAllStrategy()).build();
+            } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException e) {
+                throw new IllegalArgumentException(e);
+            }
+
+            TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create()
+                .setSslContext(sslContext)
+                .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                .build();
+            PoolingAsyncClientConnectionManager cm = PoolingAsyncClientConnectionManagerBuilder.create()
+                .setTlsStrategy(tlsStrategy)
+                .build();
+            httpclient = HttpAsyncClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .setConnectionManager(cm)
+                .setDefaultCredentialsProvider(credentialsProvider)
+                .build();
+        }
+
+        this.restClient = Rest5Client.builder(URI.create(elasticsearchUrl))
+            .setHttpClient(httpclient)
+            .build();
+
+        this.elasticsearchTransport = new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
         this.esClient = new ElasticsearchClient(elasticsearchTransport);
 
         this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
         this.templateBindingsProvider = templateBindingsProvider;
+    }
+
+    /**
+     * Get the credentials provider for the Elasticsearch client.
+     * @param elasticsearchUrl
+     * @param elasticsearchCredentials
+     * @return
+     */
+    private BasicCredentialsProvider getCredentialsProvider(String elasticsearchUrl,
+            Credentials elasticsearchCredentials) {
+        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        try{
+            credentialsProvider.setCredentials(new AuthScope(HttpHost.create(elasticsearchUrl)), elasticsearchCredentials);
+        } catch(URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+        return credentialsProvider;
     }
 
     @NonNull
@@ -162,11 +210,11 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
         Span span = spanBuilder.startSpan();
         try (Scope scope = span.makeCurrent()) {
-            LineIterator logLines = new ElasticsearchBuildLogsLineIterator(
+            LogLineIterator<Long> logLines = new ElasticsearchBuildLogsLineIterator(
                 jobFullName, runNumber, traceId, esClient, getTracer());
 
-            LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter = new LineIterator.JenkinsHttpSessionLineBytesToLineNumberConverter(jobFullName, runNumber, null);
-            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, getTracer());
+            LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<Long> lineBytesToLineNumberConverter = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, null);
+            InputStream lineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, lineBytesToLineNumberConverter, getTracer());
             ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
 
             Map<String, Object> localBindings = Map.of(
@@ -201,13 +249,13 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
         try (Scope scope = span.makeCurrent()) {
 
-            LineIterator logLines = new ElasticsearchBuildLogsLineIterator(
+            LogLineIterator<Long> logLines = new ElasticsearchBuildLogsLineIterator(
                 jobFullName, runNumber, traceId, flowNodeId,
                 esClient, getTracer());
-            LineIterator.LineBytesToLineNumberConverter lineBytesToLineNumberConverter = new LineIterator.JenkinsHttpSessionLineBytesToLineNumberConverter(jobFullName, runNumber, flowNodeId);
 
-            LineIteratorInputStream lineIteratorInputStream = new LineIteratorInputStream(logLines, lineBytesToLineNumberConverter, getTracer());
-            ByteBuffer byteBuffer = new InputStreamByteBuffer(lineIteratorInputStream, getTracer());
+            LogLineIterator.LogLineBytesToLogLineIdMapper<Long> logLineBytesToLogLineIdMapper = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, flowNodeId);
+            InputStream logLineIteratorInputStream = new LogLineIteratorInputStream<>(logLines, logLineBytesToLogLineIdMapper, getTracer());
+            ByteBuffer byteBuffer = new InputStreamByteBuffer(logLineIteratorInputStream, getTracer());
 
             Map<String, Object> localBindings = new HashMap<>();
             localBindings.put(ObservabilityBackend.TemplateBindings.TRACE_ID, traceId);
@@ -232,12 +280,8 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     /**
      * Example of a successful check:
      * <pre>{@code
-     * OK: Verify existence of the Elasticsearch Index Template 'logs-apm.app' used to store Jenkins pipeline logs...
      * OK: Connected to Elasticsearch https://***.es.example.com with user 'jenkins'.
-     * OK: Index Template 'logs-apm.app' found.
-     * OK: Verify existence of the Index Lifecycle Management (ILM) Policy 'logs-apm.app' associated with the Index Template 'logs-apm.app' to define the time to live of the Jenkins pipeline logs in Elasticsearch...
-     * OK: Index Lifecycle Policy 'logs-apm.app_logs-default_policy' found.
-     * OK: Logs retention policy: hot[rollover[maxAge=30d, maxSize=50gb]], warm [phase not defined], cold [phase not defined], delete[delete[min_age=10d]].
+     * OK: Indices 'logs-*' found.
      * }</pre>
      */
     public List<FormValidation> checkElasticsearchSetup() {
@@ -251,85 +295,52 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             return validations;
         }
 
-        // we just check the existence of the Index Template and assume the Index Lifecycle Policy is "logs-apm.app_logs-default_policy"
-
-        validations.add(FormValidation.ok("Verify existence of the Elasticsearch Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' used to store Jenkins pipeline logs..."));
-
-        boolean indexTemplateExists;
         try {
-            indexTemplateExists = indicesClient.existsIndexTemplate(b -> b.name(ElasticsearchFields.INDEX_TEMPLATE_NAME)).value();
-        } catch (ElasticsearchException e) {
-            ErrorCause errorCause = e.error();
-            int status = e.status();
-            if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
-                if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
-                    validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
-                } else if (status == HttpURLConnection.HTTP_FORBIDDEN) {
-                    validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
-                    validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "'. " +
-                        "Elasticsearch user '" + elasticsearchUsername + "' doesn't have read permission to the index template metadata - " + errorCause.reason() + "."));
-                } else {
-                    validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
-                    validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
-                        "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
-                }
+            final GetIndexResponse response = indicesClient.get(b -> b.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS));
+            if (response == null || response.indices() == null || response.indices().isEmpty()) {
+                validations.add(FormValidation.warning("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' NOT found."));
             } else {
-                validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' on '" + elasticsearchUrl + "' with " +
-                    "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
+                validations.add(FormValidation.ok("Indices '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' found."));
             }
+        } catch (ElasticsearchException e) {
+            logger.fine(e.getLocalizedMessage());
+            validations.addAll(findEsErrorCause(elasticsearchUsername, e));
             return validations;
         } catch (IOException e) {
+            logger.fine(e.getLocalizedMessage());
             validations.add(FormValidation.warning("Exception accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
             return validations;
         }
         validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+        return validations;
+    }
 
-        if (indexTemplateExists) {
-            validations.add(FormValidation.ok("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' found."));
-        } else {
-            validations.add(FormValidation.warning("Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' NOT found."));
-        }
-
-        validations.add(FormValidation.ok("Verify existence of the Index Lifecycle Management (ILM) Policy '" + ElasticsearchFields.INDEX_TEMPLATE_NAME + "' associated with the Index Template '" + ElasticsearchFields.INDEX_TEMPLATE_NAME +
-            "' to define the time to live of the Jenkins pipeline logs in Elasticsearch..."));
-
-        GetLifecycleResponse getLifecycleResponse;
-        try {
-            getLifecycleResponse = esClient.ilm().getLifecycle(b -> b.name(ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME));
-        } catch (ElasticsearchException e) {
-            ErrorCause errorCause = e.error();
-            int status = e.status();
-            if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
-                if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
-                    validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
-                } else if (status == HttpURLConnection.HTTP_FORBIDDEN) {
-                    validations.add(FormValidation.ok(
-                        "Time to live of the pipeline logs in Elasticsearch " + elasticsearchUrl + "not available. " +
-                            "The Index Lifecycle Management (ILM) policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' is not readable by the Elasticsearch user '" + elasticsearchUsername + ". " +
-                            " Details: " + errorCause.type() + " - " + errorCause.reason() + "."));
-                } else {
-                    validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
-                }
+    /**
+     * Find the cause of the error in the Elasticsearch exception.
+     * @param elasticsearchUsername the username used to connect to Elasticsearch
+     * @param e the Elasticsearch exception
+     * @return a list of FormValidation objects representing the error cause
+     */
+    @NonNull
+    private List<FormValidation>  findEsErrorCause(@NonNull String elasticsearchUsername, @NonNull ElasticsearchException e) {
+        List<FormValidation> validations = new ArrayList<>();
+        ErrorCause errorCause = e.error();
+        int status = e.status();
+        if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
+            if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
+                validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
+            } else if (status == HttpURLConnection.HTTP_FORBIDDEN) {
+                validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+                validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' on '" + elasticsearchUrl + "'. " +
+                    "Elasticsearch user '" + elasticsearchUsername + "' doesn't have read permission to the index template metadata - " + errorCause.reason() + "."));
             } else {
-                validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "': " + errorCause.reason() + "."));
+                validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+                validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' on '" + elasticsearchUrl + "' with " +
+                    "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
             }
-            return validations;
-        } catch (IOException e) {
-            validations.add(FormValidation.warning("Exception accessing lifecycle policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "'.", e));
-            return validations;
-        }
-        Lifecycle lifecyclePolicy = getLifecycleResponse.get(ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME);
-        if (lifecyclePolicy == null) {
-            validations.add(FormValidation.warning("Index Lifecycle Policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' NOT found."));
         } else {
-            validations.add(FormValidation.ok("Index Lifecycle Policy '" + ElasticsearchFields.INDEX_LIFECYCLE_POLICY_NAME + "' found."));
-            Phases phases = lifecyclePolicy.policy().phases();
-            List<String> retentionPolicy = new ArrayList<>();
-            retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.hot(), "hot"));
-            retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.warm(), "warm"));
-            retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.cold(), "cold"));
-            retentionPolicy.add(ElasticsearchLogStorageRetriever.prettyPrintPhaseRetentionPolicy(phases.delete(), "delete"));
-            validations.add(FormValidation.ok("Logs retention policy: " + String.join(", ", retentionPolicy) + "."));
+            validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' on '" + elasticsearchUrl + "' with " +
+                "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
         }
         return validations;
     }

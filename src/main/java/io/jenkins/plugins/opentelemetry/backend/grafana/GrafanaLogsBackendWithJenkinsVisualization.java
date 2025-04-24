@@ -24,7 +24,7 @@ import io.jenkins.plugins.opentelemetry.jenkins.JenkinsCredentialsToApacheHttpCr
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.auth.Credentials;
+import org.apache.hc.client5.http.auth.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;

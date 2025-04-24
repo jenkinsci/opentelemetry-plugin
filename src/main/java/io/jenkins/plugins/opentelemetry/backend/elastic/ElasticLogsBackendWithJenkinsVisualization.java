@@ -13,7 +13,7 @@ import java.util.Objects;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.auth.Credentials;
+import org.apache.hc.client5.http.auth.Credentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -144,7 +144,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         public ListBoxModel doFillElasticsearchCredentialsIdItems(Item context,
                 @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
-                    || context != null && !context.hasPermission(context.CONFIGURE)) {
+                    || context != null && !context.hasPermission(Item.CONFIGURE)) {
                 return new StandardListBoxModel();
             }
 
@@ -158,7 +158,7 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         public FormValidation doCheckElasticsearchCredentialsId(Item context,
                 @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
-                    || context != null && !context.hasPermission(context.CONFIGURE)) {
+                    || context != null && !context.hasPermission(Item.CONFIGURE)) {
                 return FormValidation.ok();
             }
 
