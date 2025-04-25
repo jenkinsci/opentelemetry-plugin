@@ -4,9 +4,9 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -16,47 +16,63 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
+import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
+import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.casc.misc.junit.jupiter.WithJenkinsConfiguredWithCode;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 
-@Ignore("disabled until we update to EDOT")
+@Disabled("These tests are unstables, we need to review them")
+@WithJenkinsConfiguredWithCode
 public class ElasticsearchBackendITTest extends ElasticStackIT {
 
     @Test
-    public void test() throws Exception {
-        jenkinsRule.createOnlineSlave(new LabelAtom("remote"));
-        WorkflowJob p = jenkinsRule.jenkins.createProject(WorkflowJob.class, "p");
+    @ConfiguredWithCode("jcasc-elastic-backend.yml")
+    public void test(JenkinsConfiguredWithCodeRule j) throws Exception {
+        elasticStack.configureElasticBackEnd();
+        j.createOnlineSlave(new LabelAtom("remote"));
+        WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node('remote') {\n" + "  echo 'Hello'\n" + "}", true));
-        WorkflowRun run = jenkinsRule.buildAndAssertSuccess(p);
-        jenkinsRule.waitForCompletion(run);
+        WorkflowRun run = j.buildAndAssertSuccess(p);
+        j.waitForCompletion(run);
         waitForLogs(run);
-        jenkinsRule.assertLogContains("Hello", run);
+        j.assertLogContains("Hello", run);
     }
 
     @Test
-    public void testCredentialsDoValidate() {
+    @ConfiguredWithCode("jcasc-elastic-backend.yml")
+    public void testCredentialsDoValidate(JenkinsConfiguredWithCodeRule j) {
+        elasticStack.configureElasticBackEnd();
         ElasticBackend backend = elasticStack.getElasticBackendConfiguration();
         ElasticBackend.DescriptorImpl descriptor = (ElasticBackend.DescriptorImpl) backend.getDescriptor();
         ElasticLogsBackendWithJenkinsVisualization visualization = elasticStack.getElasticStackConfiguration();
         ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor = (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization
                 .getDescriptor();
-        assertEquals(FormValidation.Kind.OK, descriptor.doCheckKibanaBaseUrl("http://kibana.example.com").kind);
         assertEquals(FormValidation.Kind.OK,
-                visDescriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.CRED_ID).kind);
+                descriptor.doCheckKibanaBaseUrl("http://kibana.example.com").kind, "Kibana URL should be valid");
+        assertEquals(FormValidation.Kind.OK,
+                visDescriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.CRED_ID).kind,
+                "Elasticsearch URL should be valid and the credentials valid :" + elasticStack.getEsUrl());
         assertEquals(FormValidation.Kind.ERROR,
-                visDescriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.WRONG_CREDS).kind);
-        assertEquals(FormValidation.Kind.ERROR, visDescriptor.doValidate("nowhere", true, ElasticStack.CRED_ID).kind);
+                visDescriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.WRONG_CREDS).kind,
+                "Elasticsearch URL should be valid and the credentials invalid");
+        assertEquals(FormValidation.Kind.ERROR,
+                visDescriptor.doValidate("nowhere", true, ElasticStack.CRED_ID).kind,
+                "Elasticsearch URL should be invalid");
     }
 
     @Test
-    public void testDoFillCredentialsIdItems() {
+    @ConfiguredWithCode("jcasc-elastic-backend.yml")
+    public void testDoFillCredentialsIdItems(JenkinsConfiguredWithCodeRule j) {
+        elasticStack.configureElasticBackEnd();
         ElasticLogsBackendWithJenkinsVisualization visualization = elasticStack.getElasticStackConfiguration();
         ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor = (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization
                 .getDescriptor();
@@ -64,7 +80,9 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
     }
 
     @Test
-    public void testDoCheckCredentialsId() {
+    @ConfiguredWithCode("jcasc-elastic-backend.yml")
+    public void testDoCheckCredentialsId(JenkinsConfiguredWithCodeRule j) {
+        elasticStack.configureElasticBackEnd();
         ElasticLogsBackendWithJenkinsVisualization visualization = elasticStack.getElasticStackConfiguration();
         ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor = (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization
                 .getDescriptor();

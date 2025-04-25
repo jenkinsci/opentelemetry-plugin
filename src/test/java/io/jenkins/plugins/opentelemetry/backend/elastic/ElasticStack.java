@@ -4,46 +4,52 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import static junit.framework.TestCase.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Map;
 
-import hudson.ExtensionList;
-import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
-import io.opentelemetry.api.GlobalOpenTelemetry;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.core5.http.HttpHost;
 import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.containers.wait.strategy.DockerHealthcheckWaitStrategy;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
+import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend.TemplateBindings;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
 
 /**
  * Elastic Stack containers used on the tests.
  */
 public class ElasticStack extends DockerComposeContainer<ElasticStack> {
+    public static final String EDOT_SERVICE = "edot_1";
+    public static final String KIBANA_SERVICE = "kibana_1";
+    public static final String ELASTICSEARCH_SERVICE = "elasticsearch_1";
     public static final String USER_NAME = "admin";
     public static final String PASSWORD = "changeme";
     public static final String INDEX = "logs-001";
-    public static final int ES_PORT = 9200;
 
-    public static final int OTEL_PORT = 8200;
+    public static final int OTEL_PORT = 4317;
     public static final int KIBANA_PORT = 5601;
     public static final int ELASTICSEARCH_PORT = 9200;
 
@@ -56,24 +62,31 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
 
     public ElasticStack() {
         super(new File("src/test/resources/docker-compose.yml"));
-        withExposedService("fleet-server_1", OTEL_PORT)
-                .withExposedService("kibana_1", KIBANA_PORT)
-                .withExposedService("elasticsearch_1", ELASTICSEARCH_PORT)
-                .withStartupTimeout(Duration.ofMinutes(10));
+        withExposedService(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT)
+        .withExposedService(KIBANA_SERVICE, KIBANA_PORT)
+        .withExposedService(EDOT_SERVICE, OTEL_PORT)
+        .waitingFor(EDOT_SERVICE, new DockerHealthcheckWaitStrategy())
+        .withStartupTimeout(Duration.ofMinutes(10));
     }
 
     /**
      * @return the RestClientBuilder to create the Elasticsearch REST client.
      */
-    public RestClientBuilder getBuilder() {
-        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        org.apache.http.auth.UsernamePasswordCredentials credentials = new org.apache.http.auth.UsernamePasswordCredentials(
-                USER_NAME, PASSWORD);
-        credentialsProvider.setCredentials(AuthScope.ANY, credentials);
+    public Rest5ClientBuilder getBuilder() {
+        UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(USER_NAME, PASSWORD.toCharArray());
 
-        RestClientBuilder builder = RestClient.builder(HttpHost.create(getEsUrl()));
-        builder.setHttpClientConfigCallback(
-                httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        try{
+            credentialsProvider.setCredentials(new AuthScope(HttpHost.create(getEsUrl())), credentials);
+        } catch(URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+        CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
+            .setDefaultCredentialsProvider(credentialsProvider)
+            .build();
+
+        Rest5ClientBuilder builder = Rest5Client.builder(URI.create(getEsUrl()))
+            .setHttpClient(httpclient);
         return builder;
     }
 
@@ -81,24 +94,24 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
      * @return The URL to access to the Elasticsearch Docker container.
      */
     public String getEsUrl() {
-        return "http://" + this.getServiceHost("elasticsearch_1", ELASTICSEARCH_PORT) + ":" + this
-                .getServicePort("elasticsearch_1", ELASTICSEARCH_PORT);
+        return "http://" + this.getServiceHost(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT) + ":" + this
+                .getServicePort(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT);
     }
 
     /**
      * @return The URL to access to the Kibana Docker container.
      */
     public String getKibanaUrl() {
-        return "http://" + this.getServiceHost("kibana_1", KIBANA_PORT) + ":" + this
-                .getServicePort("kibana_1", KIBANA_PORT);
+        return "http://" + this.getServiceHost(KIBANA_SERVICE, KIBANA_PORT) + ":" + this
+                .getServicePort(KIBANA_SERVICE, KIBANA_PORT);
     }
 
     /**
      * @return The URL to access to the OpenTelemetry Docker container.
      */
     public String getFleetUrl() {
-        return "http://" + this.getServiceHost("fleet-server_1", OTEL_PORT) + ":" + this
-                .getServicePort("fleet-server_1", OTEL_PORT);
+        return "http://" + this.getServiceHost(EDOT_SERVICE, OTEL_PORT) + ":" + this
+                .getServicePort(EDOT_SERVICE, OTEL_PORT);
     }
 
     /**
@@ -107,8 +120,8 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
      * @throws IOException
      */
     public void createLogIndex() throws IOException {
-        RestClient restClient = getBuilder().build();
-        RestClientTransport elasticsearchTransport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+        Rest5Client restClient = getBuilder().build();
+        Rest5ClientTransport elasticsearchTransport = new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
         try(ElasticsearchClient client = new ElasticsearchClient(elasticsearchTransport)){
             client.indices().create(new CreateIndexRequest.Builder().index(INDEX).build());
 

@@ -5,29 +5,27 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanContext;
 
 public interface ElasticsearchFields {
     /**
      * Field used by the Elastic-Otel mapping to store the {@link io.opentelemetry.api.logs.LogRecordBuilder#setBody(String)}
      */
-    String FIELD_MESSAGE = "message";
+    String FIELD_MESSAGE = "body";
     /**
      * Mapping for {@link SpanContext#getTraceId()}
      */
     String FIELD_TRACE_ID = "trace.id";
     String FIELD_TIMESTAMP = "@timestamp";
-    String FIELD_CI_PIPELINE_ID = "labels." + ExtendedJenkinsAttributes.CI_PIPELINE_ID.getKey().replace('.', '_');
-    String FIELD_CI_PIPELINE_RUN_NUMBER = "numeric_labels." + ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER.getKey().replace('.', '_');
-    String FIELD_JENKINS_STEP_ID = "labels." + ExtendedJenkinsAttributes.JENKINS_STEP_ID.getKey().replace('.', '_');
-    String INDEX_TEMPLATE_PATTERNS = "logs-apm.app-*,.ds-logs-apm.app*";
-    String INDEX_TEMPLATE_NAME = "logs-apm.app";
-    /**
-     * Waiting to fix https://github.com/jenkinsci/opentelemetry-plugin/issues/336 , we hard code the policy name
-     */
-    String INDEX_LIFECYCLE_POLICY_NAME = "logs-apm.app_logs-default_policy";
+    String INDEX_TEMPLATE_PATTERNS = "logs-*";
 
+    /**
+     * Legacy APM field names
+     */
+    String LEGACY_FIELD_TRACE_ID = "trace.id";
+    String LEGACY_FIELD_CI_PIPELINE_ID = "labels.ci_pipeline_id";
+    String LEGACY_FIELD_CI_PIPELINE_RUN_NUMBER = "numeric_labels.ci_pipeline_run_number";
+    String LEGACY_FIELD_JENKINS_STEP_ID = "labels.jenkins_pipeline_step_id";
 
     /**
      * @see co.elastic.clients.elasticsearch._types.ErrorCause#type()

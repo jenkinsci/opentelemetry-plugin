@@ -5,10 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import org.apache.http.Header;
-import org.apache.http.message.BasicHeader;
+import org.apache.hc.core5.http.message.BasicHeader;
 
-public class LokiTenantHeader extends BasicHeader implements Header {
+public class LokiTenantHeader extends BasicHeader {
     public LokiTenantHeader(String tenantId) {
         super("X-Scope-OrgID", tenantId);
     }

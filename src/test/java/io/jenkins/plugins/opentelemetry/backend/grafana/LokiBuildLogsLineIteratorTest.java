@@ -5,13 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import io.jenkins.plugins.opentelemetry.job.log.LogLine;
-import io.opentelemetry.api.OpenTelemetry;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.protocol.BasicHttpContext;
-import org.junit.Test;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.io.InputStream;
 import java.time.Instant;
@@ -19,14 +14,19 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.junit.Test;
+
+import io.jenkins.plugins.opentelemetry.job.log.LogLine;
+import io.opentelemetry.api.OpenTelemetry;
 
 public class LokiBuildLogsLineIteratorTest {
 
     @Test
     public void testLoadLokiQueryResponse() {
-        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+        CloseableHttpClient httpClient = HttpClients.custom().build();
 
         Instant pipelineStartTime = Instant.ofEpochMilli(TimeUnit.MILLISECONDS.convert(1718111754515426000L, TimeUnit.NANOSECONDS));
 
@@ -42,9 +42,9 @@ public class LokiBuildLogsLineIteratorTest {
             .build();
         try (LokiBuildLogsLineIterator lokiBuildLogsLineIterator = new LokiBuildLogsLineIterator(
             lokiQueryParameters, httpClient,
-            new BasicHttpContext(),
+            HttpClientContext.create(),
             "http://localhost:3100",
-            Optional.of(new UsernamePasswordCredentials("jenkins", "jenkins")),
+            Optional.of(new org.apache.hc.client5.http.auth.UsernamePasswordCredentials("admin", "changeme".toCharArray())),
             Optional.empty(),
             OpenTelemetry.noop().getTracer("io.jenkins")
         )) {

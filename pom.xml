@@ -10,7 +10,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>5.10</version>
+        <version>5.11</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -29,7 +29,7 @@
         <opentelemetry-semconv.version>1.32.0</opentelemetry-semconv.version>
         <opentelemetry-contrib.version>1.46.0-alpha</opentelemetry-contrib.version>
         <useBeta>true</useBeta>
-        <elasticstack.version>8.17.4</elasticstack.version>
+        <elasticstack.version>9.0.0</elasticstack.version>
         <error-prone.version>2.36.0</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
@@ -46,7 +46,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-${jenkins.baseline}.x</artifactId>
-                <version>4583.v0a_f4df179fa_b_</version>
+                <version>4628.v2b_234a_1a_20d0</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -110,6 +110,14 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-api</artifactId>
+            </dependency>
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-api-incubator</artifactId>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <dependencies>
@@ -117,18 +125,6 @@
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>opentelemetry-api</artifactId>
             <version>${jenkins-opentelemetry.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-api</artifactId>
-            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-api-incubator</artifactId>
-            <!-- provided by io.jenkins.plugins:opentelemetry-api -->
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
@@ -178,7 +174,7 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-apache-httpclient-4.3</artifactId>
+            <artifactId>opentelemetry-apache-httpclient-5.2</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
@@ -273,6 +269,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>jackson2-api</artifactId>
+            <version>2.18.3-399.v74c9ce452ea_8</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -293,19 +290,26 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-basic-steps</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jenkins-ci.plugins</groupId>
+                    <artifactId>apache-httpcomponents-client-4-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>apache-httpcomponents-client-4-api</artifactId>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>apache-httpcomponents-client-5-api</artifactId>
+            <version>5.4-136.v5a_21779c63f8</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>cloudbees-disk-usage-simple</artifactId>
-            <version>232.v713eeed2e1f4</version>
+            <version>239.v6a_f1a_c1c8046</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -345,13 +349,8 @@
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>matrix-project</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>job-dsl</artifactId>
-            <version>1.90</version>
+            <version>1.92</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -360,14 +359,15 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>com.coravy.hudson.plugins.github</groupId>
-            <artifactId>github</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>gitlab-plugin</artifactId>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jenkins-ci.plugins</groupId>
+                    <artifactId>apache-httpcomponents-client-4-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -381,9 +381,9 @@
             <version>${elasticstack.version}</version>
             <exclusions>
                 <exclusion>
-                    <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-4-api -->
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpasyncclient</artifactId>
+                    <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-5-api -->
+                    <groupId>org.apache.httpcomponents.client5</groupId>
+                    <artifactId>httpclient5</artifactId>
                 </exclusion>
                 <!-- Jenkins does not use JSR 305 annotations -->
                 <exclusion>
@@ -404,10 +404,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>bouncycastle-api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>jenkins-test-harness-tools</artifactId>
             <version>2.2</version>
@@ -426,15 +422,16 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
-                    <!--
-                    jenkins-test-harness:1589.vc23fca066d5c requires commons-net 3.8.0 when maven-plugin:3.9 requires commons-net:3.8
-                    -->
                     <groupId>commons-net</groupId>
                     <artifactId>commons-net</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>javax.annotation</groupId>
                     <artifactId>javax.annotation-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jenkins-ci.plugins</groupId>
+                    <artifactId>apache-httpcomponents-client-4-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -448,16 +445,6 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>scm-api</artifactId>
             <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jenkins</groupId>
-            <artifactId>configuration-as-code</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>ssh-slaves</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -481,11 +468,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
@@ -498,7 +480,7 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
+            <artifactId>junit-jupiter</artifactId>
             <version>1.20.6</version>
             <scope>test</scope>
             <exclusions>
@@ -520,36 +502,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.jenkins-ci.tools</groupId>
-                <artifactId>maven-hpi-plugin</artifactId>
-                <configuration>
-                    <loggers>
-                        <io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>INFO</io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration>
-                        <io.jenkins.plugins.opentelemetry.job.log>INFO</io.jenkins.plugins.opentelemetry.job.log>
-                        <io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringPipelineListener>
-                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
-                        <io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>INFO</io.jenkins.plugins.opentelemetry.init.JenkinsExecutorMonitoringInitializer>
-                        <io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>INFO</io.jenkins.plugins.opentelemetry.job.MonitoringRunListener>
-                        <io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>FINE</io.jenkins.plugins.opentelemetry.opentelemetry.ReconfigurableMeterProvider>
-                        <io.jenkins.plugins.opentelemetry.opentelemetry.resources.JenkinsResourceProvider>FINEST</io.jenkins.plugins.opentelemetry.opentelemetry.resources.JenkinsResourceProvider>
-                    </loggers>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <jenkins.test.timeout>600</jenkins.test.timeout>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>

@@ -10,13 +10,14 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import hudson.security.ACL;
 import jenkins.model.Jenkins;
-import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.auth.Credentials;
 
 import java.security.Principal;
 import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
+
+import org.apache.hc.client5.http.auth.BasicUserPrincipal;
+import org.apache.hc.client5.http.auth.Credentials;
 
 /**
  * Adapter to convert Jenkins credentials to Apache HTTP credentials.
@@ -44,8 +45,8 @@ public class JenkinsCredentialsToApacheHttpCredentialsAdapter implements Credent
     }
 
     @Override
-    public String getPassword() throws CredentialsNotFoundException {
-        return getJenkinsUsernamePasswordCredentials().getPassword().getPlainText();
+    public char[] getPassword() throws CredentialsNotFoundException {
+        return getJenkinsUsernamePasswordCredentials().getPassword().getPlainText().toCharArray();
     }
 
     UsernamePasswordCredentials getJenkinsUsernamePasswordCredentials() throws CredentialsNotFoundException {

@@ -30,25 +30,26 @@ credentials:
       - usernamePassword:
           description: "elasticsearch-logs"
           id: "elasticsearch-logs"
-          password: "changeme"
+          password: "${ELASTICSEARCH_PASSWORD}"
           scope: GLOBAL
-          username: "jenkins_logs_user"
+          username: "${ELASTICSEARCH_USERNAME}"
 unclassified:
   location:
-    url: "http://jenkins:8080/"
+    url: ${JENKINS_URL}
   openTelemetry:
     authentication: "noAuthentication"
-    endpoint: "http://otel-collector:4317"
+    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
     exportOtelConfigurationAsEnvironmentVariables: true  # Note that OpenTelemetry credentials, if configured, will be exposed as environment variables
     observabilityBackends:
-    - elastic:
-        displayKibanaDashboardLink: true
-        elasticLogsBackend:
-          elasticLogsBackendWithJenkinsVisualization:
-            elasticsearchCredentialsId: "elasticsearch-logs"
-            elasticsearchUrl: "http://elasticsearch:9200"
-        kibanaBaseUrl: "http://localhost:5601"
-        name: "Elastic Observability"
+      - elastic:
+          displayKibanaDashboardLink: true
+          elasticLogsBackend:
+            elasticLogsBackendWithJenkinsVisualization:
+              elasticsearchCredentialsId: "elasticsearch-logs"
+              elasticsearchUrl: ${ELASTICSEARCH_HOST}
+          kibanaBaseUrl: ${KIBANA_HOST}
+          name: "Elastic Observability"
+          enableEDOT: true
 jobs:
   - file: "/var/jenkins_home/config/ansible.dsl"
   - file: "/var/jenkins_home/config/gradle.dsl"
@@ -57,3 +58,4 @@ jobs:
   - file: "/var/jenkins_home/config/otel-cli-make.dsl"
   - file: "/var/jenkins_home/config/import_dashboard.dsl"
   - file: "/var/jenkins_home/config/pytest-otel.dsl"
+  - file: "/var/jenkins_home/config/hello-world.dsl"

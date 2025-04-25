@@ -5,27 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.jayway.jsonpath.JsonPath;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import io.jenkins.plugins.opentelemetry.job.log.LogLine;
-import io.jenkins.plugins.opentelemetry.job.log.util.CloseableIterator;
-import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerProvider;
-import io.opentelemetry.context.Scope;
-import org.apache.http.HttpEntity;
-import org.apache.http.auth.AuthenticationException;
-import org.apache.http.auth.Credentials;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
-
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -35,16 +14,42 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.Nonnull;
+
+import org.apache.hc.client5.http.auth.AuthenticationException;
+import org.apache.hc.client5.http.auth.Credentials;
+import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.protocol.HttpContext;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.jayway.jsonpath.JsonPath;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+import io.jenkins.plugins.opentelemetry.job.log.LogLine;
+import io.jenkins.plugins.opentelemetry.job.log.util.CloseableIterator;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.TracerProvider;
+import io.opentelemetry.context.Scope;
+
 /*
  * HttpClient can't do preemptive auth and Loki doesn't return `WWW-Authenticate` header when authentication is
  * needed so use Apache HTTP Client instead.
  */
 public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoCloseable {
 
-    private final static Logger logger = Logger.getLogger(LokiBuildLogsLineIterator.class.getName());
+    protected final static Logger logger = Logger.getLogger(LokiBuildLogsLineIterator.class.getName());
     public final static int MAX_QUERIES = 100;
 
-    final LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters;
+    protected final LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters;
 
     final String lokiUrl;
     final Optional<Credentials> lokiCredentials;
@@ -121,13 +126,14 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
             .startSpan();
         try (Scope loadNextLogLinesScope = loadNextLogLinesSpan.makeCurrent()) {
 
-
-            HttpUriRequest lokiQueryRangeRequest = this.lokiQueryParameters.toHttpRequest(lokiUrl);
+            ClassicHttpRequest lokiQueryRangeRequest = this.lokiQueryParameters.toHttpRequest(lokiUrl);
             lokiCredentials.ifPresent(credentials -> {
                 // preemptive authentication due to a limitation of Grafana Cloud Logs (Loki) that doesn't return
                 // `WWW-Authenticate` header to trigger traditional authentication
                 try {
-                    lokiQueryRangeRequest.addHeader(new BasicScheme().authenticate(credentials, lokiQueryRangeRequest, httpContext));
+                    BasicScheme basicScheme = new BasicScheme();
+                    basicScheme.initPreemptive(lokiCredentials.get());
+                    lokiQueryRangeRequest.addHeader("Authentication", new BasicScheme().generateAuthResponse(null, lokiQueryRangeRequest, httpContext));
                 } catch (AuthenticationException e) {
                     throw new RuntimeException(e);
                 }
@@ -135,18 +141,27 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
             lokiTenantId.ifPresent(tenantId -> lokiQueryRangeRequest.addHeader(new LokiTenantHeader(tenantId)));
 
             queryCounter++;
-            try (CloseableHttpResponse lokiQueryRangeResponse = httpClient.execute(lokiQueryRangeRequest, this.httpContext)) {
-                if (lokiQueryRangeResponse.getStatusLine().getStatusCode() != 200) {
-                    throw new IOException("Loki logs query failure: " + lokiQueryRangeResponse.getStatusLine() + " - " + EntityUtils.toString(lokiQueryRangeResponse.getEntity()));
+            return httpClient.execute(lokiQueryRangeRequest, this.httpContext, new HttpClientResponseHandler<Iterator<LogLine<Long>>>() {
+                @Override
+                public Iterator<LogLine<Long>> handleResponse(ClassicHttpResponse lokiQueryRangeResponse) throws IOException {
+                    try {
+                        if (lokiQueryRangeResponse.getCode() != 200) {
+                            throw new IOException("Loki logs query failure: " +
+                                lokiQueryRangeResponse.getReasonPhrase() + " - " +
+                                EntityUtils.toString(lokiQueryRangeResponse.getEntity()));
+                        }
+                        HttpEntity entity = lokiQueryRangeResponse.getEntity();
+                        if (entity == null) {
+                            logger.log(Level.INFO, "No content in response for " + lokiQueryParameters);
+                            return Collections.emptyIterator();
+                        }
+                        InputStream lokiQueryLogsResponseStream = entity.getContent();
+                        return loadLogLines(lokiQueryLogsResponseStream);
+                    } catch (ParseException e) {
+                        throw new IOException(e);
+                    }
                 }
-                HttpEntity entity = lokiQueryRangeResponse.getEntity();
-                if (entity == null) {
-                    logger.log(Level.INFO, () -> "No content in response for " + this.lokiQueryParameters);
-                    return Collections.emptyIterator();
-                }
-                InputStream lokiQueryLogsResponseStream = entity.getContent();
-                return loadLogLines(lokiQueryLogsResponseStream);
-            }
+            });
         }
     }
 
