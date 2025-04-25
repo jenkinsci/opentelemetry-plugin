@@ -9,7 +9,6 @@ import java.util.UUID;
 
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.message.BasicHeader;
-import org.apache.tools.ant.types.CharSet;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 
