@@ -11,13 +11,12 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.hc.client5.http.auth.Credentials;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.junit.Test;
 
+import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.jenkins.plugins.opentelemetry.job.log.LogLine;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.internal.JavaVersionSpecific;
@@ -32,8 +31,6 @@ public class LokiBuildLogsLineIteratorIT {
         properties.load(env);
         String lokiUser = properties.getProperty("loki.user");
         String lokiPassword = properties.getProperty("loki.apiKey");
-        Credentials lokiCredentials = new UsernamePasswordCredentials(lokiUser, lokiPassword.toCharArray());
-
         String lokiUrl = properties.getProperty("loki.url");
 
         System.out.println(lokiUrl);
@@ -57,7 +54,7 @@ public class LokiBuildLogsLineIteratorIT {
             lokiQueryParameters, httpClient,
             HttpClientContext.create(),
             lokiUrl,
-            Optional.of(lokiCredentials),
+            HttpAuthHeaderFactory.createFactoryUsernamePassword(lokiUser, lokiPassword),
             Optional.empty(),
             OpenTelemetry.noop().getTracer("io.jenkins")
         )) {

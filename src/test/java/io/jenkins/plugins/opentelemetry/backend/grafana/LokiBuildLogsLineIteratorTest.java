@@ -19,6 +19,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.junit.Test;
 
+import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.jenkins.plugins.opentelemetry.job.log.LogLine;
 import io.opentelemetry.api.OpenTelemetry;
 
@@ -44,7 +45,7 @@ public class LokiBuildLogsLineIteratorTest {
             lokiQueryParameters, httpClient,
             HttpClientContext.create(),
             "http://localhost:3100",
-            Optional.of(new org.apache.hc.client5.http.auth.UsernamePasswordCredentials("admin", "changeme".toCharArray())),
+            HttpAuthHeaderFactory.createFactoryUsernamePassword("admin","changeme"),
             Optional.empty(),
             OpenTelemetry.noop().getTracer("io.jenkins")
         )) {

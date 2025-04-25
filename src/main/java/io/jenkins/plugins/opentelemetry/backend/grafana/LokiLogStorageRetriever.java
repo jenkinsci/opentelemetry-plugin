@@ -23,9 +23,6 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.hc.client5.http.auth.AuthenticationException;
-import org.apache.hc.client5.http.auth.Credentials;
-import org.apache.hc.client5.http.impl.auth.BasicScheme;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
@@ -52,6 +49,7 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.GrafanaBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
+import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
@@ -79,7 +77,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
     private final String lokiUrl;
     private final String serviceName;
     private final Optional<String> serviceNamespace;
-    private final Optional<Credentials> lokiCredentials;
+    private final Optional<HttpAuthHeaderFactory> httpAuthHeaderFactory;
     private final Optional<String> lokiTenantId;
     private final CloseableHttpClient httpClient;
     private final HttpContext httpContext;
@@ -88,7 +86,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
 
     @MustBeClosed
     public LokiLogStorageRetriever(@Nonnull String lokiUrl, boolean disableSslVerifications,
-                                   @Nonnull Optional<Credentials> lokiCredentials,
+                                   @Nonnull Optional<HttpAuthHeaderFactory> httpAuthHeaderFactory,
                                    @Nonnull Optional<String> lokiTenantId,
                                    @NonNull Template buildLogsVisualizationUrlTemplate, @NonNull TemplateBindingsProvider templateBindingsProvider,
                                    @Nonnull String serviceName, @Nonnull Optional<String> serviceNamespace) {
@@ -98,7 +96,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         this.lokiUrl = lokiUrl;
         this.serviceName = serviceName;
         this.serviceNamespace = serviceNamespace;
-        this.lokiCredentials = lokiCredentials;
+        this.httpAuthHeaderFactory = httpAuthHeaderFactory;
         this.lokiTenantId = lokiTenantId;
         this.httpContext = HttpClientContext.create();
         this.openTelemetry = GlobalOpenTelemetry.get();
@@ -127,7 +125,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
 
     @Nonnull
     @Override
-    public LogsQueryResult overallLog(@Nonnull String jobFullName, int runNumber, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nonnull Instant startTime, @Nullable Instant endTime) {
+    public LogsQueryResult overallLog(String jobFullName, int runNumber, String traceId, String spanId, boolean complete, Instant startTime, @Nullable Instant endTime) {
         SpanBuilder spanBuilder = tracer.spanBuilder("LokiLogStorageRetriever.overallLog")
             .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
@@ -148,8 +146,11 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
                 .build();
             LogLineIterator<Long> logLines = new LokiBuildLogsLineIterator(
                 lokiQueryParameters,
-                httpClient, httpContext,
-                lokiUrl, lokiCredentials, lokiTenantId,
+                httpClient,
+                httpContext,
+                lokiUrl,
+                httpAuthHeaderFactory,
+                lokiTenantId,
                 openTelemetry.getTracer( ExtendedJenkinsAttributes.INSTRUMENTATION_NAME));
 
             LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<Long> lineBytesToLineNumberConverter = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, null);
@@ -185,7 +186,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
 
     @Nonnull
     @Override
-    public LogsQueryResult stepLog(@Nonnull String jobFullName, int runNumber, @Nonnull String flowNodeId, @Nonnull String traceId, @Nonnull String spanId, boolean complete, @Nonnull Instant startTime, @Nullable Instant endTime) {
+    public LogsQueryResult stepLog(String jobFullName, int runNumber, String flowNodeId, String traceId, String spanId, boolean complete, Instant startTime, @Nullable Instant endTime) {
         SpanBuilder spanBuilder = tracer.spanBuilder("LokiLogStorageRetriever.stepLog")
             .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_ID, jobFullName)
             .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) runNumber)
@@ -207,8 +208,12 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
                 .setServiceNamespace(serviceNamespace)
                 .build();
             LogLineIterator<Long> logLines = new LokiBuildLogsLineIterator(
-                lokiQueryParameters, httpClient, httpContext,
-                lokiUrl, lokiCredentials, lokiTenantId,
+                lokiQueryParameters,
+                httpClient,
+                httpContext,
+                lokiUrl,
+                httpAuthHeaderFactory,
+                lokiTenantId,
                 openTelemetry.getTracer("io.jenkins"));
 
             LogLineIterator.LogLineBytesToLogLineIdMapper<Long> logLineBytesToLogLineIdMapper = new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(jobFullName, runNumber, null);
@@ -248,16 +253,10 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         // `/ready`and `/loki/api/v1/status/buildinfo` return a 404 on Grafana Cloud, use the format_query request instead
         ClassicHttpRequest lokiBuildInfoRequest = ClassicRequestBuilder.get().setUri(lokiUrl + "/loki/api/v1/format_query").addParameter("query", "{foo= \"bar\"}").build();
 
-        lokiCredentials.ifPresent(lokiCredentials -> {
-            try {
-                // preemptive authentication due to a limitation of Grafana Cloud Logs (Loki) that doesn't return `WWW-Authenticate`
-                // header to trigger traditional authentication
-                BasicScheme basicScheme = new BasicScheme();
-                basicScheme.initPreemptive(lokiCredentials);
-                lokiBuildInfoRequest.addHeader("Authentication", new BasicScheme().generateAuthResponse(null, lokiBuildInfoRequest, httpContext));
-            } catch (AuthenticationException e) {
-                throw new RuntimeException(e);
-            }
+        httpAuthHeaderFactory.ifPresent(factory -> {
+            // preemptive authentication due to a limitation of Grafana Cloud Logs (Loki) that doesn't return `WWW-Authenticate`
+            // header to trigger traditional authentication
+            lokiBuildInfoRequest.addHeader(factory.createAuthHeader());
         });
         lokiTenantId.ifPresent(tenantId -> lokiBuildInfoRequest.addHeader(new LokiTenantHeader(tenantId)));
         try {

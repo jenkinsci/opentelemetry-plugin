@@ -10,13 +10,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
-import org.apache.hc.client5.http.auth.Credentials;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.junit.Test;
 
 import groovy.text.GStringTemplateEngine;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
+import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.opentelemetry.sdk.internal.JavaVersionSpecific;
 
 public class LokiLogStorageRetrieverIT {
@@ -30,8 +29,6 @@ public class LokiLogStorageRetrieverIT {
         properties.load(env);
         String lokiUser = properties.getProperty("loki.user");
         String lokiPassword = properties.getProperty("loki.apiKey");
-        Optional<Credentials> lokiCredentials = Optional.of(new UsernamePasswordCredentials(lokiUser, lokiPassword.toCharArray()));
-
         String lokiUrl = properties.getProperty("loki.url");
 
         System.out.println(lokiUrl);
@@ -40,7 +37,7 @@ public class LokiLogStorageRetrieverIT {
         try (LokiLogStorageRetriever lokiLogStorageRetriever = new LokiLogStorageRetriever(
             lokiUrl,
             false,
-            lokiCredentials,
+            HttpAuthHeaderFactory.createFactoryUsernamePassword(lokiUser, lokiPassword),
             Optional.empty(),
             new GStringTemplateEngine().createTemplate("mock"),
             TemplateBindingsProvider.empty(),

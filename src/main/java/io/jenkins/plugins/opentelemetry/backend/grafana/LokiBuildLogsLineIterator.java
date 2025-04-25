@@ -16,9 +16,6 @@ import java.util.logging.Logger;
 
 import javax.annotation.Nonnull;
 
-import org.apache.hc.client5.http.auth.AuthenticationException;
-import org.apache.hc.client5.http.auth.Credentials;
-import org.apache.hc.client5.http.impl.auth.BasicScheme;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
@@ -32,6 +29,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.jayway.jsonpath.JsonPath;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.jenkins.plugins.opentelemetry.job.log.LogLine;
 import io.jenkins.plugins.opentelemetry.job.log.util.CloseableIterator;
 import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
@@ -52,7 +50,7 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
     protected final LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters;
 
     final String lokiUrl;
-    final Optional<Credentials> lokiCredentials;
+    final Optional<HttpAuthHeaderFactory> httpAuthHeaderFactory;
     final Optional<String> lokiTenantId;
 
     final CloseableHttpClient httpClient;
@@ -75,14 +73,14 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
         @NonNull HttpContext httpContext,
 
         @NonNull String lokiUrl,
-        @NonNull Optional<Credentials> lokiCredentials,
+        @NonNull Optional<HttpAuthHeaderFactory> httpAuthHeaderFactory,
         @NonNull Optional<String> lokiTenantId,
         @NonNull Tracer tracer) {
 
         this.lokiQueryParameters = lokiQueryParameters;
 
         this.lokiUrl = lokiUrl;
-        this.lokiCredentials = lokiCredentials;
+        this.httpAuthHeaderFactory = httpAuthHeaderFactory;
         this.lokiTenantId = lokiTenantId;
 
         this.httpClient = httpClient;
@@ -127,16 +125,10 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
         try (Scope loadNextLogLinesScope = loadNextLogLinesSpan.makeCurrent()) {
 
             ClassicHttpRequest lokiQueryRangeRequest = this.lokiQueryParameters.toHttpRequest(lokiUrl);
-            lokiCredentials.ifPresent(credentials -> {
+            httpAuthHeaderFactory.ifPresent(factory -> {
                 // preemptive authentication due to a limitation of Grafana Cloud Logs (Loki) that doesn't return
                 // `WWW-Authenticate` header to trigger traditional authentication
-                try {
-                    BasicScheme basicScheme = new BasicScheme();
-                    basicScheme.initPreemptive(lokiCredentials.get());
-                    lokiQueryRangeRequest.addHeader("Authentication", new BasicScheme().generateAuthResponse(null, lokiQueryRangeRequest, httpContext));
-                } catch (AuthenticationException e) {
-                    throw new RuntimeException(e);
-                }
+                lokiQueryRangeRequest.addHeader(factory.createAuthHeader());
             });
             lokiTenantId.ifPresent(tenantId -> lokiQueryRangeRequest.addHeader(new LokiTenantHeader(tenantId)));
 
