@@ -80,7 +80,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Verify.verifyNotNull;
 
 /**
- * TODO support reconfiguration. allow & deny lists are NOT reconfigurable at runtime for the moment.
+ * TODO support reconfiguration. allow and deny lists are NOT reconfigurable at runtime for the moment.
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringRunListener extends OtelContextAwareAbstractRunListener implements OpenTelemetryLifecycleListener {
