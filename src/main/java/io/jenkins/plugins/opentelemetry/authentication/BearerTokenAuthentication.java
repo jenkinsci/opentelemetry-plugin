@@ -45,8 +45,11 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
 
     private String getAuthenticationHeaderValue() {
         StringCredentials credentials = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(StringCredentials.class, Jenkins.get(),
-                        ACL.SYSTEM, Collections.emptyList()),
+                CredentialsProvider.lookupCredentialsInItemGroup(
+                    StringCredentials.class,
+                    Jenkins.get(),
+                    ACL.SYSTEM2,
+                    Collections.emptyList()),
                 CredentialsMatchers.withId(this.tokenId));
         String authenticationTokenValue;
         if (credentials == null) {
@@ -107,7 +110,7 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
         return new StandardListBoxModel()
                 .includeEmptyValue()
                 .includeMatchingAs(
-                        ACL.SYSTEM,
+                        ACL.SYSTEM2,
                         Jenkins.get(),
                         StringCredentials.class,
                         Collections.emptyList(),
@@ -130,7 +133,7 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
             return new StandardListBoxModel()
                     .includeEmptyValue()
                     .includeMatchingAs(
-                            ACL.SYSTEM,
+                            ACL.SYSTEM2,
                             Jenkins.get(),
                             StringCredentials.class,
                             Collections.emptyList(),

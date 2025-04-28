@@ -18,10 +18,8 @@ import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_TRA
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

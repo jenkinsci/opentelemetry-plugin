@@ -27,6 +27,9 @@ import jenkins.security.MasterToSlaveCallable;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,7 +95,7 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener im
      * </p>
      */
     @Override
-    public void afterConfiguration(ConfigProperties configProperties) {
+    public void afterConfiguration(@NonNull ConfigProperties configProperties) {
 
         // Update the configuration of the Jenkins build agents
         OpenTelemetryConfiguration openTelemetryConfiguration = jenkinsOpenTelemetryPluginConfiguration.toOpenTelemetryConfiguration();

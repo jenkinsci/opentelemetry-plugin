@@ -5,12 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import com.github.rutledgepaulv.prune.Tree;
-import hudson.maven.MavenModuleSet;
-import hudson.maven.MavenModuleSetBuild;
-import hudson.model.Run;
-import hudson.tasks.Maven;
-import jenkins.mvn.DefaultSettingsProvider;
+import static org.junit.Assume.assumeFalse;
+
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -18,12 +14,14 @@ import org.junit.Test;
 import org.jvnet.hudson.test.ExtractResourceSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 
-import java.util.logging.Logger;
+import com.github.rutledgepaulv.prune.Tree;
 
-import static org.junit.Assume.assumeFalse;
+import hudson.maven.MavenModuleSet;
+import hudson.maven.MavenModuleSetBuild;
+import hudson.tasks.Maven;
+import jenkins.mvn.DefaultSettingsProvider;
 
 public class JenkinsOtelPluginMavenIntegrationTest extends BaseIntegrationTest {
-    private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     @Test
     public void testMavenJob() throws Exception {
