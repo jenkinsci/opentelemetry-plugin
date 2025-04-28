@@ -36,7 +36,7 @@ public class HttpAuthHeaderFactory {
     private static final String BASIC_AUTH_FORMAT = "Basic %s";
     private static final String API_KEY_FORMAT = "ApiKey %s";
     private static final String BEARER_FORMAT = "Bearer %s";
-    private static final String DIGGEST_FORMAT_STRING = "%s:%s";
+    private static final String DIGEST_FORMAT_STRING = "%s:%s";
 
     private final Boolean bearerMode;
     private com.cloudbees.plugins.credentials.Credentials jenkinsCredentials;
@@ -149,8 +149,8 @@ public class HttpAuthHeaderFactory {
         }
         String username = jenkinsCredentials.getUsername();
         String password = jenkinsCredentials.getPassword().getPlainText();
-        String diggest = Base64.getEncoder().encodeToString(String.format(DIGGEST_FORMAT_STRING, username, password).getBytes(StandardCharsets.UTF_8));
-        String value = String.format(BASIC_AUTH_FORMAT, diggest);
+        String digest = Base64.getEncoder().encodeToString(String.format(DIGEST_FORMAT_STRING, username, password).getBytes(StandardCharsets.UTF_8));
+        String value = String.format(BASIC_AUTH_FORMAT, digest);
         return new BasicHeader(AUTHORIZATION, value);
     }
 
