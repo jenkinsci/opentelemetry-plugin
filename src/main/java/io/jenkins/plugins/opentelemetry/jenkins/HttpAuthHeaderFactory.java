@@ -208,7 +208,7 @@ public class HttpAuthHeaderFactory {
                 com.cloudbees.plugins.credentials.Credentials credentials = new UsernamePasswordCredentialsImpl(
                         com.cloudbees.plugins.credentials.CredentialsScope.GLOBAL,
                         UUID.randomUUID().toString(),
-                        "temporaly created credentials",
+                        "temporarily created credentials",
                         username,
                         password);
                 ret = Optional.of(new HttpAuthHeaderFactory(credentials));
@@ -235,7 +235,7 @@ public class HttpAuthHeaderFactory {
             com.cloudbees.plugins.credentials.Credentials credentials = new StringCredentialsImpl(
                     com.cloudbees.plugins.credentials.CredentialsScope.GLOBAL,
                     UUID.randomUUID().toString(),
-                    "temporaly created credentials",
+                    "temporarily created credentials",
                     Secret.fromString(apiKey));
             ret = Optional.of(new HttpAuthHeaderFactory(credentials));
         }
@@ -258,7 +258,7 @@ public class HttpAuthHeaderFactory {
             com.cloudbees.plugins.credentials.Credentials credentials = new StringCredentialsImpl(
                     com.cloudbees.plugins.credentials.CredentialsScope.GLOBAL,
                     UUID.randomUUID().toString(),
-                    "temporaly created credentials",
+                    "temporarily created credentials",
                     Secret.fromString(bearerToken));
             ret = Optional.of(new HttpAuthHeaderFactory(credentials, true));
         }
