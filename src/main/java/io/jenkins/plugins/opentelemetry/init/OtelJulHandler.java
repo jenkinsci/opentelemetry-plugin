@@ -116,7 +116,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
             if (captureExperimentalAttributes) {
                 Thread currentThread = Thread.currentThread();
                 attributes.put(ThreadIncubatingAttributes.THREAD_NAME, currentThread.getName());
-                attributes.put(ThreadIncubatingAttributes.THREAD_ID, currentThread.threadId());
+                attributes.put(ThreadIncubatingAttributes.THREAD_ID, currentThread.getId());
             } else {
                 attributes.put(ThreadIncubatingAttributes.THREAD_ID, logRecord.getLongThreadID());
             }
