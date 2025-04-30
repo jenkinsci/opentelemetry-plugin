@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_QUEUE;
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_QUEUE_COUNT;
 
 /**
  * Monitor the Jenkins Build queue
@@ -61,7 +61,7 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
 
         Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
 
-        final ObservableLongMeasurement queueItems = meter.gaugeBuilder(JENKINS_QUEUE)
+        final ObservableLongMeasurement queueItems = meter.gaugeBuilder(JENKINS_QUEUE_COUNT)
             .ofLongs()
             .setDescription("Number of tasks in the queue")
             .setUnit("${tasks}")

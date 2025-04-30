@@ -52,7 +52,7 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
         final ObservableLongMeasurement queueLength = meter.gaugeBuilder(JENKINS_EXECUTOR_QUEUE).setUnit("${items}").setDescription("Executors queue items").ofLongs().buildObserver();
         final ObservableLongMeasurement totalExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_TOTAL).setUnit("${executors}").setDescription("Total executors").ofLongs().buildObserver();
         final ObservableLongMeasurement nodes = meter.gaugeBuilder(JENKINS_NODE).setUnit("${nodes}").setDescription("Nodes").ofLongs().buildObserver();
-        final ObservableLongMeasurement executors = meter.gaugeBuilder(JENKINS_EXECUTOR).setUnit("${executors}").setDescription("Per label executors").ofLongs().buildObserver();
+        final ObservableLongMeasurement executors = meter.gaugeBuilder(JENKINS_EXECUTOR_COUNT).setUnit("${executors}").setDescription("Count of executors per label").ofLongs().buildObserver();
 
         // TODO the metrics below should be deprecated in favor of
         //  * `jenkins.executor` metric with the `status` and `label`attributes
