@@ -6,7 +6,7 @@ git
 filesystem_scm
 jdk-tool
 job-dsl
-opentelemetry::https://repo.jenkins-ci.org/incrementals/io/jenkins/plugins/opentelemetry/3.1527.vd26606274117/opentelemetry-3.1527.vd26606274117.hpi
+opentelemetry::https://repo.jenkins-ci.org/incrementals/io/jenkins/plugins/opentelemetry/3.1525.v69f30e6435a_c/opentelemetry-3.1525.v69f30e6435a_c.hpi
 pipeline-model-definition
 swarm
 workflow-aggregator
