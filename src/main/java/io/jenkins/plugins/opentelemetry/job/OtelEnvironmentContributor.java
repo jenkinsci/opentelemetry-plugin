@@ -13,14 +13,12 @@ import hudson.model.TaskListener;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
-import java.util.logging.Logger;
 
 /**
  * Inject OpenTelemetry environment variables in shell steps: {@code TRACEPARENT}, {@code OTEL_EXPORTER_OTLP_ENDPOINT}...
  */
 @Extension
 public class OtelEnvironmentContributor extends EnvironmentContributor {
-    private final static Logger LOGGER = Logger.getLogger(OtelEnvironmentContributor.class.getName());
 
     private OtelEnvironmentContributorService otelEnvironmentContributorService;
 

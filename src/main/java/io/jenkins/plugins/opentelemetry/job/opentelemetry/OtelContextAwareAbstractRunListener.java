@@ -24,15 +24,12 @@ import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.logging.Logger;
 
 /**
  * {@link RunListener} that setups the OpenTelemetry {@link io.opentelemetry.context.Context}
  * with the current {@link Span}.
  */
 public abstract class OtelContextAwareAbstractRunListener extends RunListener<Run<?, ?>> {
-
-    private final static Logger LOGGER = Logger.getLogger(OtelContextAwareAbstractRunListener.class.getName());
 
     private OtelTraceService otelTraceService;
     private Tracer tracer;

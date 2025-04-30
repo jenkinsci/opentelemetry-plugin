@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -26,13 +25,13 @@ public class TeeOutputStream extends OutputStream {
     }
 
     @Override
-    public void write(@Nonnull byte[] b) throws IOException {
+    public void write(byte[] b) throws IOException {
         primary.write(b);
         secondary.write(b);
     }
 
     @Override
-    public void write(@Nonnull byte[] b, int off, int len) throws IOException {
+    public void write(byte[] b, int off, int len) throws IOException {
         primary.write(b, off, len);
         secondary.write(b, off, len);
     }

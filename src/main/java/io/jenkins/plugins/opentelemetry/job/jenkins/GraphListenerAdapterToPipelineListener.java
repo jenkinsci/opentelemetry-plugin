@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * Adapter to simplify the implementation of pipeline {@link org.jenkinsci.plugins.workflow.steps.Step} listeners.
  */
 @Extension
-public class GraphListenerAdapterToPipelineListener implements StepListener, GraphListener, GraphListener.Synchronous {
+public class GraphListenerAdapterToPipelineListener implements StepListener, GraphListener.Synchronous {
     private final static Logger LOGGER = Logger.getLogger(GraphListenerAdapterToPipelineListener.class.getName());
 
     @Override

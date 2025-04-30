@@ -24,7 +24,9 @@ public class GlobalOpenTelemetrySdkTest {
     @Test
     public void testNotSdkConfigured() {
         try {
+            @SuppressWarnings("unused")
             ReconfigurableOpenTelemetry openTelemetry = GlobalOpenTelemetrySdk.get();
+            @SuppressWarnings("unused")
             Logger otelLogger = GlobalOpenTelemetrySdk.getOtelLogger();
         } finally {
             GlobalOpenTelemetrySdk.get().close();

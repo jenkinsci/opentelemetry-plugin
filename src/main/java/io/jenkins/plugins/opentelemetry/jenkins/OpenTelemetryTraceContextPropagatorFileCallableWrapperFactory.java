@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.jenkins;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.FilePath;
@@ -63,7 +64,7 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
     }
 
     @Override
-    public void afterConfiguration(ConfigProperties configProperties) {
+    public void afterConfiguration(@NonNull ConfigProperties configProperties) {
         this.buildAgentsInstrumentationEnabled.set(configProperties.getBoolean(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED.asProperty(), false));
         this.remotingTracingEnabled.set(configProperties.getBoolean(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_REMOTING_ENABLED.asProperty(), false));
     }

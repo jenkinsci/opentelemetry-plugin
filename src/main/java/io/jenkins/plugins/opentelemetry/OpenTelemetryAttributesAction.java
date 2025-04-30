@@ -5,12 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import hudson.model.InvisibleAction;
-import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
-import io.opentelemetry.api.common.AttributeKey;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -19,15 +13,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.model.InvisibleAction;
+import io.opentelemetry.api.common.AttributeKey;
 
 /**
  * @see io.opentelemetry.api.common.AttributeKey
  * @see io.opentelemetry.api.common.AttributeType
  */
 public class OpenTelemetryAttributesAction extends InvisibleAction implements Serializable {
-    private final static Logger LOGGER = Logger.getLogger(MonitoringAction.class.getName());
 
     @Serial
     private static final long serialVersionUID = 5488506456727905116L;

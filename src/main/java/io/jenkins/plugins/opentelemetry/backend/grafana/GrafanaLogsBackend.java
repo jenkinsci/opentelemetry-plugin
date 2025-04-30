@@ -13,7 +13,6 @@ import groovy.text.Template;
 import hudson.DescriptorExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.AbstractDescribableImpl;
-import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
@@ -36,7 +35,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<GrafanaLogsBackend> implements Describable<GrafanaLogsBackend>, ExtensionPoint {
+public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<GrafanaLogsBackend> implements ExtensionPoint {
     public enum LokiOTelLogFormat {
         LOKI_V2_JSON_OTEL_FORMAT ("Loki V2 OTel logs format as JSON"),
         LOKI_V3_OTEL_FORMAT("Loki V3 OTel logs format using Loki labels and structured metadata");
@@ -142,10 +141,6 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
 
     public Map<String, String> getOtelConfigurationProperties() {
         return Collections.singletonMap("otel.logs.exporter", "otlp");
-    }
-
-    private String getLogsGrafanaDataSource() {
-        return "";
     }
 
     @Override
