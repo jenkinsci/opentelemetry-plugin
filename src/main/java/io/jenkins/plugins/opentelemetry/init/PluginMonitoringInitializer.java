@@ -23,7 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes.STATUS;
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_PLUGINS;
+import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_PLUGINS_COUNT;
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_PLUGINS_UPDATES;
 
 /**
@@ -50,7 +50,7 @@ public class PluginMonitoringInitializer implements OpenTelemetryLifecycleListen
         Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
 
         final ObservableLongMeasurement plugins = meter
-            .gaugeBuilder(JENKINS_PLUGINS)
+            .gaugeBuilder(JENKINS_PLUGINS_COUNT)
             .setUnit("${plugins}")
             .setDescription("Jenkins plugins")
             .ofLongs()
