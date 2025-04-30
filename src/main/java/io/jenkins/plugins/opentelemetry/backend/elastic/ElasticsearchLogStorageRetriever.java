@@ -43,6 +43,7 @@ import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.client5.http.ssl.TrustAllStrategy;
+import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.reactor.IOReactorConfig;
@@ -74,6 +75,7 @@ import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.jenkins.CredentialsNotFoundException;
+import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
@@ -109,7 +111,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     private final TemplateBindingsProvider templateBindingsProvider;
 
     @NonNull
-    final Credentials elasticsearchCredentials;
+    final String elasticsearchCredentialsId;
     @NonNull
     final String elasticsearchUrl;
     @NonNull
@@ -127,7 +129,7 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     @MustBeClosed
     public ElasticsearchLogStorageRetriever(
         @NonNull String elasticsearchUrl, boolean disableSslVerifications,
-        @NonNull Credentials elasticsearchCredentials,
+        @NonNull String elasticsearchCredentialsId,
         @NonNull Template buildLogsVisualizationUrlTemplate, @NonNull TemplateBindingsProvider templateBindingsProvider) {
 
         if (StringUtils.isBlank(elasticsearchUrl)) {
@@ -135,16 +137,13 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         }
 
         this.elasticsearchUrl = elasticsearchUrl;
-        this.elasticsearchCredentials = elasticsearchCredentials;
-        BasicCredentialsProvider credentialsProvider = getCredentialsProvider(elasticsearchUrl,
-                elasticsearchCredentials);
+        this.elasticsearchCredentialsId = elasticsearchCredentialsId;
 
         RequestConfig requestConfig = RequestConfig.custom()
             .setConnectionKeepAlive(TimeValue.ofMilliseconds(KEEPALIVE_INTERVAL))
             .build();
         CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
             .setDefaultRequestConfig(requestConfig)
-            .setDefaultCredentialsProvider(credentialsProvider)
             .build();
 
         if (disableSslVerifications) {
@@ -165,12 +164,14 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             httpclient = HttpAsyncClients.custom()
                 .setDefaultRequestConfig(requestConfig)
                 .setConnectionManager(cm)
-                .setDefaultCredentialsProvider(credentialsProvider)
                 .build();
         }
 
+        HttpAuthHeaderFactory httpAuthHeaderFactory = new HttpAuthHeaderFactory(elasticsearchCredentialsId);
+        Header[] headers = {httpAuthHeaderFactory.createAuthHeader()};
         this.restClient = Rest5Client.builder(URI.create(elasticsearchUrl))
             .setHttpClient(httpclient)
+            .setDefaultHeaders(headers)
             .build();
 
         this.elasticsearchTransport = new Rest5ClientTransport(restClient, new JacksonJsonpMapper());
@@ -178,23 +179,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
         this.buildLogsVisualizationUrlTemplate = buildLogsVisualizationUrlTemplate;
         this.templateBindingsProvider = templateBindingsProvider;
-    }
-
-    /**
-     * Get the credentials provider for the Elasticsearch client.
-     * @param elasticsearchUrl
-     * @param elasticsearchCredentials
-     * @return
-     */
-    private BasicCredentialsProvider getCredentialsProvider(String elasticsearchUrl,
-            Credentials elasticsearchCredentials) {
-        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        try{
-            credentialsProvider.setCredentials(new AuthScope(HttpHost.create(elasticsearchUrl)), elasticsearchCredentials);
-        } catch(URISyntaxException e) {
-            throw new IllegalArgumentException(e);
-        }
-        return credentialsProvider;
     }
 
     @NonNull
@@ -287,14 +271,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     public List<FormValidation> checkElasticsearchSetup() {
         List<FormValidation> validations = new ArrayList<>();
         ElasticsearchIndicesClient indicesClient = this.esClient.indices();
-        String elasticsearchUsername;
-        try {
-            elasticsearchUsername = Optional.ofNullable(elasticsearchCredentials.getUserPrincipal()).map(Principal::getName).orElse("No username for credentials type " + elasticsearchCredentials.getClass().getSimpleName());
-        } catch (CredentialsNotFoundException e) {
-            validations.add(FormValidation.error("No credentials defined"));
-            return validations;
-        }
-
         try {
             final GetIndexResponse response = indicesClient.get(b -> b.index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS));
             if (response == null || response.indices() == null || response.indices().isEmpty()) {
@@ -304,14 +280,14 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
             }
         } catch (ElasticsearchException e) {
             logger.fine(e.getLocalizedMessage());
-            validations.addAll(findEsErrorCause(elasticsearchUsername, e));
+            validations.addAll(findEsErrorCause(e));
             return validations;
         } catch (IOException e) {
             logger.fine(e.getLocalizedMessage());
-            validations.add(FormValidation.warning("Exception accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
+            validations.add(FormValidation.warning("Exception accessing Elasticsearch " + elasticsearchUrl + " with credentials '" + elasticsearchCredentialsId + "'.", e));
             return validations;
         }
-        validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+        validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with credentials '" + elasticsearchCredentialsId + "'."));
         return validations;
     }
 
@@ -322,25 +298,25 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
      * @return a list of FormValidation objects representing the error cause
      */
     @NonNull
-    private List<FormValidation>  findEsErrorCause(@NonNull String elasticsearchUsername, @NonNull ElasticsearchException e) {
+    private List<FormValidation>  findEsErrorCause(@NonNull ElasticsearchException e) {
         List<FormValidation> validations = new ArrayList<>();
         ErrorCause errorCause = e.error();
         int status = e.status();
         if (ElasticsearchFields.ERROR_CAUSE_TYPE_SECURITY_EXCEPTION.equals(errorCause.type())) {
             if (status == HttpURLConnection.HTTP_UNAUTHORIZED) {
-                validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'.", e));
+                validations.add(FormValidation.error("Authentication failure " + "/" + status + " accessing Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchCredentialsId + "'.", e));
             } else if (status == HttpURLConnection.HTTP_FORBIDDEN) {
-                validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+                validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with credentials '" + elasticsearchCredentialsId + "'."));
                 validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' on '" + elasticsearchUrl + "'. " +
-                    "Elasticsearch user '" + elasticsearchUsername + "' doesn't have read permission to the index template metadata - " + errorCause.reason() + "."));
+                    "Elasticsearch credentials '" + elasticsearchCredentialsId + "' doesn't have read permission to the index template metadata - " + errorCause.reason() + "."));
             } else {
-                validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with user '" + elasticsearchUsername + "'."));
+                validations.add(FormValidation.ok("Connected to Elasticsearch " + elasticsearchUrl + " with credentials '" + elasticsearchCredentialsId + "'."));
                 validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' on '" + elasticsearchUrl + "' with " +
-                    "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
+                    "Elasticsearch credentials '" + elasticsearchCredentialsId + "' - " + errorCause.reason() + "."));
             }
         } else {
             validations.add(FormValidation.warning(errorCause.type() + "/" + status + " accessing index template '" + ElasticsearchFields.INDEX_TEMPLATE_PATTERNS + "' on '" + elasticsearchUrl + "' with " +
-                "Elasticsearch user '" + elasticsearchUsername + "' - " + errorCause.reason() + "."));
+                "Elasticsearch credentials '" + elasticsearchCredentialsId + "' - " + errorCause.reason() + "."));
         }
         return validations;
     }
