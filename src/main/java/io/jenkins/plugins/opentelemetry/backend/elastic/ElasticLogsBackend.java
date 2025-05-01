@@ -53,13 +53,7 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
         // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
 
         if (this.buildLogsVisualizationUrlGTemplate == null) {
-            String kibanaSpaceBaseUrl;
-            String spaceIdentifier = this.getKibanaSpaceIdentifier();
-            if (StringUtils.isBlank(spaceIdentifier)) {
-                kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
-            } else {
-                kibanaSpaceBaseUrl = "${kibanaBaseUrl}/s/${spaceIdentifier}";
-            }
+            String kibanaSpaceBaseUrl = this.getEffectiveKibanaURL();
             String urlTemplate = kibanaSpaceBaseUrl + "/app/discover#/" +
                 "?_a=(" +
                 "columns:!(message)," +
@@ -84,12 +78,12 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
         return Collections.singletonMap("otel.logs.exporter", "otlp");
     }
 
-    private String getKibanaSpaceIdentifier() {
+    private String getEffectiveKibanaURL() {
         String ret = "";
         Optional<ElasticBackend> backend = ElasticBackend.get();
         if (!backend.isEmpty()) {
             ElasticBackend elasticLogsBackend = backend.get();
-            ret = elasticLogsBackend.getKibanaSpaceIdentifier();
+            ret = elasticLogsBackend.getEffectiveKibanaURL();
         }
         return ret;
     }
