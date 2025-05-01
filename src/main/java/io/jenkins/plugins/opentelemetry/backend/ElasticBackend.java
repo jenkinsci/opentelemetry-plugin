@@ -251,11 +251,11 @@ public class ElasticBackend extends ObservabilityBackend {
      */
     @NonNull
     public String getEffectiveKibanaURL(){
-        String ret = this.getKibanaBaseUrl();
+        String effectiveUrl = this.getKibanaBaseUrl();
         if (StringUtils.isNotBlank(this.getKibanaSpaceIdentifier())) {
-            ret += "/s/" + this.getKibanaSpaceIdentifier();
+            effectiveUrl += "/s/" + this.getKibanaSpaceIdentifier();
         }
-        return ret;
+        return effectiveUrl;
     }
 
     @Override
