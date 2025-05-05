@@ -1,112 +1,61 @@
 ---
 services:
   jenkins:
-    build: config/
+    extends:
+      file: services.yml
+      service: jenkins
+    networks:
+      - jenkins
     environment:
-      CASC_JENKINS_CONFIG: /var/jenkins_home/jcasc
-      JENKINS_URL: ${JENKINS_URL:-http://localhost:8080}
-      GRAFANA_HOST: ${GRAFANA_HOST:-http://grafana:3000}
+      GRAFANA_HOST: ${GRAFANA_HOST:-http://localhost:3000}
       LOKI_HOST: ${LOKI_HOST:-http://loki:3100}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
-      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS}
-      JAVA_OPTS: >-
-        -Djenkins.install.runSetupWizard=false
-        -Dhudson.model.UsageStatistics.disabled=true
-        -Dotel.instrumentation.jenkins.agent.enabled=true
-        -Dotel.instrumentation.jenkins.remoting.enabled=true
-        -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000
-    healthcheck:
-        disable: false
-        test: [ "CMD-SHELL", "curl --fail http://localhost:8080/ || exit 1" ]
-        interval: 40s
-        timeout: 30s
-        retries: 10
-        start_period: 60s
     volumes:
-      - type: volume
-        source: jenkins
-        target: /var/jenkins_home
-      - type: bind
-        source: ./config
-        target: /var/jenkins_home/config
-        read_only: true
       - type: bind
         source: ./config/jenkins-grafana.yml
         target: /var/jenkins_home/jcasc/jenkins.yml
         read_only: true
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-      - "8000:8000"
+
+  jenkins-inbound-agent:
+    extends:
+      file: services.yml
+      service: jenkins-inbound-agent
     networks:
       - jenkins
 
-  jenkins-inbound-agent:
-    image: jenkins/inbound-agent:latest-jdk21
-    entrypoint: java
-    command: -jar /usr/share/jenkins/agent.jar -jnlpUrl http://jenkins:8080/computer/local/jenkins-agent.jnlp
-    environment:
-      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS}
-    depends_on:
-        jenkins:
-            condition: service_healthy
-    networks:
-      - jenkins
   loki:
-    image: grafana/loki:latest
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    extends:
+      file: services.yml
+      service: loki
     networks:
       - jenkins
 
   grafana:
-    environment:
-      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_FEATURE_TOGGLES_ENABLE=alertingSimplifiedRouting,alertingQueryAndExpressionsStepMode
-    entrypoint:
-      - sh
-      - -euc
-      - /run.sh
-    image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./config/grafana-datasources.yml:/etc/grafana/provisioning/datasources/ds.yaml
+    extends:
+      file: services.yml
+      service: grafana
     networks:
       - jenkins
+
   prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
+    extends:
+      file: services.yml
+      service: prometheus
     networks:
       - jenkins
+
   jaeger-all-in-one:
-    image: jaegertracing/all-in-one:latest
-    ports:
-      - "16686:16686"
-      - "14268"
-      - "14250"
-      - "4317"
+    extends:
+      file: services.yml
+      service: jaeger-all-in-one
     networks:
       - jenkins
 
   otel-collector:
-    image: ${OTELCOL_IMG:-otel/opentelemetry-collector-contrib-dev:latest}
-    command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
+    extends:
+      file: services.yml
+      service: otel-collector
     volumes:
       - ./config/otel-collector-grafana.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "1888:1888"   # pprof extension
-      - "8888:8888"   # Prometheus metrics exposed by the collector
-      - "8889:8889"   # Prometheus exporter metrics
-      - "13133:13133" # health_check extension
-      - "4317:4317"        # OTLP gRPC receiver
-      - "55670:55679" # zpages extension
     depends_on:
       - jaeger-all-in-one
       - prometheus

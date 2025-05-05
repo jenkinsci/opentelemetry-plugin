@@ -22,7 +22,10 @@ processors:
   # [Elastic Trace Processor](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elastictraceprocessor)
   elastictrace: {} # The processor enriches traces with elastic specific requirements.
 exporters:
-  debug: {}
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
   # [Elasticsearch exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/elasticsearchexporter/README.md)
   elasticsearch/otel:
     # List of Elasticsearch endpoints.
