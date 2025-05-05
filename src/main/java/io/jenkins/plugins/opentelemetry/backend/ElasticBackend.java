@@ -113,7 +113,7 @@ public class ElasticBackend extends ObservabilityBackend {
     @Override
     public String getTraceVisualisationUrlTemplate() {
         String transactionType = enableEDOT ? "unknown" : "job" ;
-        return "${kibanaBaseUrl}/app/apm/services/${serviceName}/transactions/view" +
+        return getEffectiveKibanaURL() + "/app/apm/services/${serviceName}/transactions/view" +
             "?rangeFrom=${startTime.minusSeconds(600)}" +
             "&rangeTo=${startTime.plusSeconds(600)}" +
             "&transactionName=${rootSpanName}" +
@@ -161,12 +161,7 @@ public class ElasticBackend extends ObservabilityBackend {
             return null;
         }
         // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
-        String kibanaSpaceBaseUrl = "${kibanaBaseUrl}";
-        if (StringUtils.isBlank(this.getKibanaSpaceIdentifier())) {
-            kibanaSpaceBaseUrl += "/app/kibana#/dashboards?";
-        } else {
-            kibanaSpaceBaseUrl += "/s/${kibanaSpaceIdentifier}/app/kibana#/dashboards?";
-        }
+        String kibanaSpaceBaseUrl = getEffectiveKibanaURL() + "/app/kibana#/dashboards?";
         kibanaSpaceBaseUrl += this.getKibanaDashboardUrlParameters();
         return kibanaSpaceBaseUrl;
     }
@@ -247,6 +242,20 @@ public class ElasticBackend extends ObservabilityBackend {
     @DataBoundSetter
     public void setEnableEDOT(boolean enableEDOT) {
         this.enableEDOT = enableEDOT;
+    }
+
+    /**
+     * Returns the effective Kibana URL, including the space identifier if it is set.
+     *
+     * @return the effective Kibana URL
+     */
+    @NonNull
+    public String getEffectiveKibanaURL(){
+        String effectiveUrl = this.getKibanaBaseUrl();
+        if (StringUtils.isNotBlank(this.getKibanaSpaceIdentifier())) {
+            effectiveUrl += "/s/" + this.getKibanaSpaceIdentifier();
+        }
+        return effectiveUrl;
     }
 
     @Override
