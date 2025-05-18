@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "Creating API key..."
+echo "Creating API key ${ELASTICSEARCH_HOSTS} ..."
 
 curl -X POST -kL --retry 5 --retry-max-time 120 --retry-all-errors \
     -u "${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}" \

@@ -118,7 +118,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
                 attributes.put(ThreadIncubatingAttributes.THREAD_NAME, currentThread.getName());
                 attributes.put(ThreadIncubatingAttributes.THREAD_ID, currentThread.getId());
             } else {
-                attributes.put(ThreadIncubatingAttributes.THREAD_ID, logRecord.getThreadID());
+                attributes.put(ThreadIncubatingAttributes.THREAD_ID, logRecord.getLongThreadID());
             }
 
             logBuilder = logBuilder
@@ -127,7 +127,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
 
             logBuilder.emit();
         } catch (RuntimeException e) {
-            // directly use `System.err` rather than the `logger` 
+            // directly use `System.err` rather than the `logger`
             // because the OTelJulHandler is a handler of this logger, risking an infinite loop
             System.err.println("Exception sending logs to OTLP endpoint, disable OTelJulHandler");
             e.printStackTrace();

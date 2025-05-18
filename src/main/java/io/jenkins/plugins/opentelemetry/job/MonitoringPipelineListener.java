@@ -21,7 +21,6 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
-import io.jenkins.plugins.opentelemetry.job.jenkins.PipelineListener;
 import io.jenkins.plugins.opentelemetry.job.step.SetSpanAttributesStep;
 import io.jenkins.plugins.opentelemetry.job.step.SpanAttribute;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
@@ -76,7 +75,7 @@ import static com.google.common.base.Verify.verifyNotNull;
 
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringPipelineListener extends AbstractPipelineListener implements PipelineListener, StepListener, OpenTelemetryLifecycleListener {
+public class MonitoringPipelineListener extends AbstractPipelineListener implements StepListener, OpenTelemetryLifecycleListener {
     private final static Logger LOGGER = Logger.getLogger(MonitoringPipelineListener.class.getName());
 
     private OtelTraceService otelTraceService;
@@ -206,7 +205,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener impleme
 
         verifyNotNull(encapsulatingNodeScope, "%s - No span found for node %s", run, node);
 
-        String principal = Objects.toString(node.getExecution().getAuthentication().getPrincipal(), "#null#");
+        String principal = Objects.toString(node.getExecution().getAuthentication2().getPrincipal(), "#null#");
 
         StepHandler stepHandler = getStepHandlers().stream().filter(sh -> sh.canCreateSpanBuilder(node, run)).findFirst()
             .orElseThrow((Supplier<RuntimeException>) () ->

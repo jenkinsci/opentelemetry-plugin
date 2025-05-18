@@ -5,24 +5,22 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import com.github.rutledgepaulv.prune.Tree;
-import hudson.matrix.AxisList;
-import hudson.matrix.MatrixBuild;
-import hudson.matrix.MatrixProject;
-import hudson.matrix.TextAxis;
-import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
+import static org.junit.Assume.assumeFalse;
+
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
-import java.util.logging.Logger;
+import com.github.rutledgepaulv.prune.Tree;
 
-import static org.junit.Assume.assumeFalse;
+import hudson.matrix.AxisList;
+import hudson.matrix.MatrixBuild;
+import hudson.matrix.MatrixProject;
+import hudson.matrix.TextAxis;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 
 public class JenkinsOtelPluginMatrixIntegrationTest extends BaseIntegrationTest {
-    private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     @Test
     public void testMatrixJob() throws Exception {

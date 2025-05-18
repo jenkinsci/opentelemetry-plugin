@@ -5,7 +5,19 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Item;
@@ -13,26 +25,8 @@ import hudson.model.ItemGroup;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import io.opentelemetry.api.common.AttributeType;
-import org.jenkinsci.plugins.workflow.steps.Step;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
-import org.jenkinsci.plugins.workflow.steps.StepExecution;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public class SetSpanAttributesStep extends Step {
-    private final static Logger logger = Logger.getLogger(SetSpanAttributesStep.class.getName());
-
     List<SpanAttribute> spanAttributes;
 
     @DataBoundConstructor

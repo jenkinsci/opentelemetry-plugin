@@ -23,11 +23,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class WithSpanAttributesStep extends Step {
-    private final static Logger logger = Logger.getLogger(WithSpanAttributesStep.class.getName());
 
     List<SpanAttribute> spanAttributes;
 

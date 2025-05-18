@@ -10,7 +10,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>5.11</version>
+        <version>5.15</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -30,7 +30,7 @@
         <opentelemetry-contrib.version>1.46.0-alpha</opentelemetry-contrib.version>
         <useBeta>true</useBeta>
         <elasticstack.version>9.0.0</elasticstack.version>
-        <error-prone.version>2.36.0</error-prone.version>
+        <error-prone.version>2.38.0</error-prone.version>
     </properties>
     <name>OpenTelemetry Plugin</name>
     <description>Monitor, troubleshoot and observe Jenkins with OpenTelemetry.
@@ -46,7 +46,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-${jenkins.baseline}.x</artifactId>
-                <version>4628.v2b_234a_1a_20d0</version>
+                <version>4710.v016f0a_07e34d</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -269,7 +269,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>jackson2-api</artifactId>
-            <version>2.18.3-399.v74c9ce452ea_8</version>
+            <version>2.18.3-402.v74c4eb_f122b_2</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -304,12 +304,12 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>apache-httpcomponents-client-5-api</artifactId>
-            <version>5.4-136.v5a_21779c63f8</version>
+            <version>5.4.4-144.vc483d91903d2</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>cloudbees-disk-usage-simple</artifactId>
-            <version>239.v6a_f1a_c1c8046</version>
+            <version>241.v0ea_d9a_a_96ee8</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -372,7 +372,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>bitbucket</artifactId>
-            <version>263.v7f6ef03c9ef8</version>
+            <version>270.vdb_c342a_178b_f</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -418,7 +418,7 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
-            <version>3.25</version>
+            <version>3.26</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -481,7 +481,7 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>1.20.6</version>
+            <version>1.21.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>

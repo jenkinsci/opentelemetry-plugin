@@ -17,7 +17,7 @@ This demo uses an aditional OpenTelemetry collector that dispatches data to the 
 To run the demo you can use the following command:
 
 ```shell
-make -C demo start-edot
+make -C demo start-elastic
 ```
 
 This command will start the demo using docker-compose. The demo will start a Jenkins instance with the OpenTelemetry Jenkins plugin installed and configured to use the EDOT mode.
@@ -37,7 +37,7 @@ OTEL_EXPORTER_OTLP_HEADERS="Authorization=ApiKey AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 Then you can run the docker-compose command:
 
 ```shell
-make -C demo start-edot
+make -C demo start-elastic-cloud
 ```
 
 This will start the demo using your Elastic Stack configuration. The demo will start a Jenkins instance with the OpenTelemetry Jenkins plugin installed and configured to use the EDOT mode.
