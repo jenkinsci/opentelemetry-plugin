@@ -57,7 +57,7 @@ public class SemconvStability implements OpenTelemetryLifecycleListener {
         emitOldCicdSemconv = oldCicd;
         emitStableCicdSemconv = stableCicd;
         configurationCounter.incrementAndGet();
-        logger.log(Level.INFO, () -> "SemconvStability: emitOldCicdSemconv=" + emitOldCicdSemconv + ", emitStableCicdSemconv=" + emitStableCicdSemconv);
+        logger.log(Level.FINE, () -> "SemconvStability: emitOldCicdSemconv=" + emitOldCicdSemconv + ", emitStableCicdSemconv=" + emitStableCicdSemconv);
     }
 
     @Override

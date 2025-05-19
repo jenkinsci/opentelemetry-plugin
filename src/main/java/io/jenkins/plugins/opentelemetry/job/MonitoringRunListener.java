@@ -26,11 +26,13 @@ import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
 import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
+import io.jenkins.plugins.opentelemetry.opentelemetry.SemconvStability;
 import io.jenkins.plugins.opentelemetry.queue.RemoteSpanAction;
 import io.jenkins.plugins.opentelemetry.semconv.CicdMetrics;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.incubator.metrics.ExtendedDoubleHistogramBuilder;
 import io.opentelemetry.api.metrics.DoubleHistogram;
@@ -101,18 +103,43 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
      */
     @Deprecated
     private AtomicInteger activeRunGauge;
-    private List<CauseHandler> causeHandlers;
     /**
      * @deprecated use {@link #cicdPipelineRunDurationHistogram}
      */
     @Deprecated
     private DoubleHistogram runDurationHistogram;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runLaunchedCounter;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runStartedCounter;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runCompletedCounter;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runAbortedCounter;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runSuccessCounter;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runFailedCounter;
+
+    private List<CauseHandler> causeHandlers;
     private List<RunHandler> runHandlers;
     @VisibleForTesting
     Pattern runDurationHistogramAllowList;
@@ -129,6 +156,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins build executions...");
         Meter meter = getMeter();
         ConfigProperties configProperties = getConfigProperties();
+        SemconvStability semconvStability = new SemconvStability();
+        semconvStability.afterConfiguration(configProperties);
+        Meter newSemConventionsMeter = semconvStability.emitStableCicdSemconv() ? meter : OpenTelemetry.noop().getMeter("jenkins.opentelemetry");
 
         // CAUSE HANDLERS
         List<CauseHandler> causeHandlers = new ArrayList<>(ExtensionList.lookup(CauseHandler.class));
@@ -143,9 +173,24 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
         this.runHandlers = runHandlers;
 
         // METRICS
+        runDurationHistogramAllowList = MATCH_ANYTHING; // allow all
+        runDurationHistogramDenyList = MATCH_NOTHING; // deny nothing
+
+        cicdPipelineRunDurationHistogram = CicdMetrics.newCiCdPipelineRunDurationHistogram(newSemConventionsMeter);
+        cicdPipelineRunActiveCounter = CicdMetrics.newCiCdPipelineRunActiveCounter(newSemConventionsMeter);
+        cicdPipelineRunErrorsCounter = CicdMetrics.newCiCdPipelineRunErrorsCounter(newSemConventionsMeter);
+        // TODO when to qualify a build failure as a cicd system error?
+        cicdSystemErrorsCounter = CicdMetrics.newCiCdSystemErrorsCounter(newSemConventionsMeter);
+
+        createOldSemanticConventionsMeasurements(semconvStability, meter);
+    }
+
+    private void createOldSemanticConventionsMeasurements(SemconvStability semconvStability, Meter meter) {
+        Meter oldSemConventionsMeter = semconvStability.emitOldCicdSemconv() ? meter : OpenTelemetry.noop().getMeter("jenkins.opentelemetry");
+
         activeRunGauge = new AtomicInteger();
 
-        DoubleHistogramBuilder runDurationHistogramBuilder = meter.histogramBuilder(JenkinsMetrics.CI_PIPELINE_RUN_DURATION)
+        DoubleHistogramBuilder runDurationHistogramBuilder = oldSemConventionsMeter.histogramBuilder(JenkinsMetrics.CI_PIPELINE_RUN_DURATION)
             .setUnit("s")
             .setExplicitBucketBoundariesAdvice(DURATION_SECONDS_BUCKETS);
         if (runDurationHistogramBuilder instanceof ExtendedDoubleHistogramBuilder extendedBuilder) {
@@ -155,49 +200,38 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener i
             ));
         }
         runDurationHistogram = runDurationHistogramBuilder.build();
-        runDurationHistogramAllowList = MATCH_ANYTHING; // allow all
-        runDurationHistogramDenyList = MATCH_NOTHING; // deny nothing
-
-        cicdPipelineRunDurationHistogram = CicdMetrics.newCiCdPipelineRunDurationHistogram(meter);
-        cicdPipelineRunActiveCounter = CicdMetrics.newCiCdPipelineRunActiveCounter(meter);
-        cicdPipelineRunErrorsCounter = CicdMetrics.newCiCdPipelineRunErrorsCounter(meter);
-        /**
-         * FIXME when to qualify a build failure as a cicd system error?
-         */
-        cicdSystemErrorsCounter = CicdMetrics.newCiCdSystemErrorsCounter(meter);
-
-        meter.gaugeBuilder(JenkinsMetrics.CI_PIPELINE_RUN_ACTIVE)
+        oldSemConventionsMeter.gaugeBuilder(JenkinsMetrics.CI_PIPELINE_RUN_ACTIVE)
             .ofLongs()
             .setDescription("Gauge of active jobs")
             .setUnit("{jobs}")
             .buildWithCallback(valueObserver -> valueObserver.record(this.activeRunGauge.get()));
         runLaunchedCounter =
-            meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_LAUNCHED)
+            oldSemConventionsMeter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_LAUNCHED)
                 .setDescription("Job launched")
                 .setUnit("{jobs}")
                 .build();
         runStartedCounter =
-            meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_STARTED)
+            oldSemConventionsMeter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_STARTED)
                 .setDescription("Job started")
                 .setUnit("{jobs}")
                 .build();
         runSuccessCounter =
-            meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_SUCCESS)
+            oldSemConventionsMeter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_SUCCESS)
                 .setDescription("Job succeed")
                 .setUnit("{jobs}")
                 .build();
         runFailedCounter =
-            meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_FAILED)
+            oldSemConventionsMeter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_FAILED)
                 .setDescription("Job failed")
                 .setUnit("{jobs}")
                 .build();
         runAbortedCounter =
-            meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_ABORTED)
+            oldSemConventionsMeter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_ABORTED)
                 .setDescription("Job aborted")
                 .setUnit("{jobs}")
                 .build();
         runCompletedCounter =
-            meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_COMPLETED)
+            oldSemConventionsMeter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_COMPLETED)
                 .setDescription("Job completed")
                 .setUnit("{jobs}")
                 .build();
