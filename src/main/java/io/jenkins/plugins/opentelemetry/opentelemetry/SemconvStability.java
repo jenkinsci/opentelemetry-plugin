@@ -33,7 +33,7 @@ public class SemconvStability implements OpenTelemetryLifecycleListener {
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
         boolean oldCicd = true;
-        boolean stableCicd = false;
+        boolean stableCicd = true;
 
         String value = configProperties.getString("otel.semconv-stability.opt-in");
         if (value != null) {
