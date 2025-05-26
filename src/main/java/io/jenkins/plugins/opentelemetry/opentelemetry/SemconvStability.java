@@ -20,7 +20,7 @@ public class SemconvStability implements OpenTelemetryLifecycleListener {
     private final AtomicInteger configurationCounter = new AtomicInteger(0);
 
     private boolean emitOldCicdSemconv = true;
-    private boolean emitStableCicdSemconv = false;
+    private boolean emitStableCicdSemconv = true;
 
     public boolean emitOldCicdSemconv() {
         return emitOldCicdSemconv;
@@ -38,14 +38,16 @@ public class SemconvStability implements OpenTelemetryLifecycleListener {
         String value = configProperties.getString("otel.semconv-stability.opt-in");
         if (value != null) {
             Set<String> values = new HashSet<>(Arrays.asList(value.split(",")));
-            if (values.contains("cicd")) {
-                oldCicd = false;
-                stableCicd = true;
-            }
-            // no else -- technically it's possible to set "cicd,cicd/dup", in which case we
-            // should emit both sets of attributes
+
+            // technically it's possible to set "cicd,cicd/dup" or "cicd,cicd/old"
             if (values.contains("cicd/dup")) {
                 oldCicd = true;
+                stableCicd = true;
+            } else if (values.contains("cicd/old")) {
+                oldCicd = true;
+                stableCicd = false;
+            } else if (values.contains("cicd")) {
+                oldCicd = false;
                 stableCicd = true;
             }
         }
