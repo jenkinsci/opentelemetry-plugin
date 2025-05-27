@@ -372,7 +372,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>bitbucket</artifactId>
-            <version>270.vdb_c342a_178b_f</version>
+            <version>273.v7b_535e8f11c2</version>
             <optional>true</optional>
         </dependency>
         <dependency>
