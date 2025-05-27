@@ -304,7 +304,7 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>apache-httpcomponents-client-5-api</artifactId>
-            <version>5.4.4-144.vc483d91903d2</version>
+            <version>5.5-150.veb_76e719855b_</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
