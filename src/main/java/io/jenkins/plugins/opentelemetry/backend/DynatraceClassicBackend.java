@@ -19,10 +19,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class DynatraceBackend extends ObservabilityBackend {
+public class DynatraceClassicBackend extends ObservabilityBackend {
 
     public static final String OTEL_DYNATRACE_URL = "OTEL_DYNATRACE_URL";
-    public static final String DEFAULT_NAME = "Dynatrace";
+    public static final String DEFAULT_NAME = "Dynatrace Classic";
     private final String url;
     private String managementZoneId;
 
@@ -31,29 +31,29 @@ public class DynatraceBackend extends ObservabilityBackend {
 
     static {
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-dynatrace icon-sm",
-                ICONS_PREFIX + "dynatrace.svg",
-                Icon.ICON_SMALL_STYLE));
+                new Icon(
+                        "icon-otel-dynatrace icon-sm",
+                        ICONS_PREFIX + "dynatrace.svg",
+                        Icon.ICON_SMALL_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-dynatrace icon-md",
-                ICONS_PREFIX + "dynatrace.svg",
-                Icon.ICON_MEDIUM_STYLE));
+                new Icon(
+                        "icon-otel-dynatrace icon-md",
+                        ICONS_PREFIX + "dynatrace.svg",
+                        Icon.ICON_MEDIUM_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-dynatrace icon-lg",
-                ICONS_PREFIX + "dynatrace.svg",
-                Icon.ICON_LARGE_STYLE));
+                new Icon(
+                        "icon-otel-dynatrace icon-lg",
+                        ICONS_PREFIX + "dynatrace.svg",
+                        Icon.ICON_LARGE_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-dynatrace icon-xlg",
-                ICONS_PREFIX + "dynatrace.svg",
-                Icon.ICON_XLARGE_STYLE));
+                new Icon(
+                        "icon-otel-dynatrace icon-xlg",
+                        ICONS_PREFIX + "dynatrace.svg",
+                        Icon.ICON_XLARGE_STYLE));
     }
 
     @DataBoundConstructor
-    public DynatraceBackend(String url) {
+    public DynatraceClassicBackend(String url) {
         if (url != null && !url.endsWith("/")) {
             url = url + "/";
         }
@@ -148,7 +148,7 @@ public class DynatraceBackend extends ObservabilityBackend {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DynatraceBackend that = (DynatraceBackend) o;
+        DynatraceClassicBackend that = (DynatraceClassicBackend) o;
         return Objects.equals(url, that.url);
     }
 
@@ -160,8 +160,9 @@ public class DynatraceBackend extends ObservabilityBackend {
     @Override
     public Map<String, Object> getBindings() {
         return Map.of(
-            ObservabilityBackend.TemplateBindings.BACKEND_NAME, getName(),
-            ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/svgs/dynatrace.svg");
+                ObservabilityBackend.TemplateBindings.BACKEND_NAME, getName(),
+                ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL,
+                "/plugin/opentelemetry/images/svgs/dynatrace.svg");
     }
 
     @Extension
