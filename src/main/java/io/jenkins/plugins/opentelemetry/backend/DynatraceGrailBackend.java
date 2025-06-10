@@ -8,26 +8,20 @@ package io.jenkins.plugins.opentelemetry.backend;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import hudson.Util;
 import org.jenkins.ui.icon.Icon;
 import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class DynatraceClassicBackend extends ObservabilityBackend {
+public class DynatraceGrailBackend extends ObservabilityBackend {
 
     public static final String OTEL_DYNATRACE_URL = "OTEL_DYNATRACE_URL";
-    public static final String DEFAULT_NAME = "Dynatrace Classic";
+    public static final String DEFAULT_NAME = "Dynatrace (Grail)";
     private final String url;
-    private String managementZoneId;
-
-    private String dashboardId;
-    private String dashboardTimeRange;
 
     static {
         IconSet.icons.addIcon(
@@ -53,69 +47,36 @@ public class DynatraceClassicBackend extends ObservabilityBackend {
     }
 
     @DataBoundConstructor
-    public DynatraceClassicBackend(String url) {
+    public DynatraceGrailBackend(String url) {
         if (url != null && !url.endsWith("/")) {
             url = url + "/";
         }
         this.url = url;
     }
 
-    public String getManagementZoneId() {
-        return managementZoneId;
-    }
-
-    @DataBoundSetter
-    public void setManagementZoneId(String managementZoneId) {
-        this.managementZoneId = managementZoneId;
-    }
-
-    public String getDashboardId() {
-        return dashboardId;
-    }
-
-    @DataBoundSetter
-    public void setDashboardId(String dashboardId) {
-        this.dashboardId = dashboardId;
-    }
-
-    public String getDashboardTimeRange() {
-        return dashboardTimeRange;
-    }
-
-    @DataBoundSetter
-    public void setDashboardTimeRange(String dashboardTimeRange) {
-        this.dashboardTimeRange = dashboardTimeRange;
-    }
-
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
         mergedBindings.put("dynatraceBaseUrl", this.url);
-        String zoneId = Util.fixEmpty(getManagementZoneId()) != null ? getManagementZoneId() : "all";
-        mergedBindings.put("managementZoneId", zoneId);
-
-        mergedBindings.put("dashboardId", Util.fixEmpty(dashboardId));
-
-        String timeRange = Util.fixEmpty(getDashboardTimeRange()) != null ? getDashboardTimeRange() : "today";
-        mergedBindings.put("dashboardTimeRange", Util.fixEmpty(timeRange));
-
         return mergedBindings;
     }
 
     @NonNull
     @Override
     public String getTraceVisualisationUrlTemplate() {
-        return "${dynatraceBaseUrl}#trace;gf=${managementZoneId};traceId=${traceId}";
+        // all jenkins traces
+        // "ui/apps/dynatrace.distributedtracing/explorer?v=spans&filter=dt.entity.service.entity.name+%3D+jenkins"
+        return "${dynatraceBaseUrl}ui/apps/dynatrace.distributedtracing/explorer?v=spans&filter=trace.id+%3D+${traceId}&traceId=${traceId}&cv=a%2Cfalse&sidebar=a%2Cfalse";
     }
 
     @Override
     @CheckForNull
     public String getMetricsVisualizationUrlTemplate() {
-        if (Util.fixEmpty(getDashboardId()) == null) {
-            return null;
-        }
 
-        return "${dynatraceBaseUrl}#dashboard;id=${dashboardId};gf=${managementZoneId};gtf=${dashboardTimeRange}";
+        String filtersAndColumns = "ui/apps/dynatrace.distributedtracing/explorer?" +
+                "filter=ci.pipeline.name+%3D+*+OR+jenkins.pipeline.step.name+%3D+*&" +
+                "columns=start_time%2Cspan.name%2Cduration%2Crequest.status_code%2Cci.pipeline.name%2Cci.pipeline.run.cause%2Cci.pipeline.run.durationMillis%2Cjenkins.pipeline.step.plugin.name%2Cjenkins.pipeline.step.name%2Cjenkins.pipeline.step.result%2Cci.pipeline.run.user%2Cjenkins.url&sidebar=u%2Cfalse&v=spans&tf=-7d%3Bnow";
+        return "${dynatraceBaseUrl}" + filtersAndColumns;
     }
 
     public String getUrl() {
@@ -148,7 +109,7 @@ public class DynatraceClassicBackend extends ObservabilityBackend {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DynatraceClassicBackend that = (DynatraceClassicBackend) o;
+        DynatraceGrailBackend that = (DynatraceGrailBackend) o;
         return Objects.equals(url, that.url);
     }
 
