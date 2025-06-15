@@ -1,0 +1,8 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:entry title="Use this configuration for SaaS environments with Traces on Grail enabled.">
+    </f:entry>  
+    <f:entry title="${%Dynatrace URL}" field="url" description="e.g. 'https://environmentId.apps.dynatrace.com/'">
+        <f:textbox/>
+    </f:entry>
+</j:jelly>
