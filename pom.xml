@@ -99,9 +99,8 @@
                 <version>1.1.7</version>
             </dependency>
             <dependency>
-                <groupId>com.jayway.jsonpath</groupId>
-                <artifactId>json-path</artifactId>
-                <version>2.9.0</version>
+                <groupId>io.jenkins.plugins</groupId>
+                <artifactId>json-path-api</artifactId>
             </dependency>
             <dependency>
                 <groupId>io.prometheus</groupId>
@@ -269,7 +268,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>jackson2-api</artifactId>
-            <version>2.19.0-404.vb_b_0fd2fea_e10</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -304,7 +302,6 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>apache-httpcomponents-client-5-api</artifactId>
-            <version>5.5-150.veb_76e719855b_</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -350,7 +347,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>job-dsl</artifactId>
-            <version>1.93</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -400,7 +396,6 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>ant</artifactId>
-            <version>513.vde9e7b_a_0da_0f</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -418,7 +413,6 @@
         <dependency>
             <groupId>org.jenkins-ci.main</groupId>
             <artifactId>maven-plugin</artifactId>
-            <version>3.26</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
