@@ -22,8 +22,7 @@ public class DynatraceBackendTest {
         Resource resource = Resource.builder().put(ServiceAttributes.SERVICE_NAME, "jenkins").build();
 
         String actual = backend.getMetricsVisualizationUrl(resource);
-        assertThat(actual, is(
-                "https://{your-environment-id}.live.dynatrace.com/#dashboard;id=311fa105-1f09-4005-926d-8d27bc33a717;gf=all;gtf=today"));
+        assertThat(actual, is("https://{your-environment-id}.live.dynatrace.com/#dashboard;id=311fa105-1f09-4005-926d-8d27bc33a717;gf=all;gtf=today"));
     }
 
     @Test
