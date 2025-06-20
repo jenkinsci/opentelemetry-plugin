@@ -196,6 +196,86 @@ Jenkins OpenTelemetry Plugin for the following reasons:
 If you are limited with the current capabilities of the Jenkins OpenTelemetry Plugin and consider opening up the Groovy
 sandbox to workaround these limitations, please prefer to reach out to us creating an enhancement request so we can work together at productizing the proper secured solution to your problem.
 
+## JCasC configuration reference
+JCasC configuration can be defined with the following fields:
+```yaml
+unclassified:
+  openTelemetry:
+    authentication: "noAuthentication"
+    configurationProperties: "otel.exporter.otlp.protocol=grpc"
+    disabledResourceProviders: "io.opentelemetry.instrumentation.resources.ProcessResourceProvider"
+    endpoint: "http://otel-collector-contrib:4317"
+    exportOtelConfigurationAsEnvironmentVariables: false
+    ignoredSteps: "dir,echo,isUnix,pwd,properties"
+    observabilityBackends:
+      - elastic:
+          name: "My Elastic"
+          kibanaBaseUrl: "http://localhost:5601"
+      - jaeger:
+          jaegerBaseUrl: "http://localhost:16686"
+          name: "My Jaeger"
+      - customObservabilityBackend:
+          metricsVisualizationUrlTemplate: "foo"
+          name: "My Custom"
+          traceVisualisationUrlTemplate: "http://example.com"
+      - zipkin:
+          name: "My Zipkin"
+          zipkinBaseUrl: "http://localhost:9411/"
+    serviceName: "my-jenkins"
+    serviceNamespace: "ci"
+```
+
+Authentication configuration:
+- with domain credentials
+```yaml
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+        - string:
+            description: "Server Token"
+            id: "server-token"
+            scope: GLOBAL
+            secret: "password"
+unclassified:
+  openTelemetry:
+    authentication:
+      bearerTokenAuthentication:
+        tokenId: "server-token"
+```
+
+- with username/password:
+```yaml
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              description: Some user/pass
+              id: some-logs-creds
+              password: my-pass
+              scope: GLOBAL
+              username: my-user
+unclassified:
+  openTelemetry:
+    observabilityBackends:
+      - elastic:
+          name: "My Elastic"
+          elasticLogsBackend:
+            elasticLogsBackendWithJenkinsVisualization:
+              elasticsearchUrl: "http://localhost:9200"
+              elasticsearchCredentialsId: "some-logs-creds"
+              disableSslVerifications: false
+      - jaeger:
+          name: "My Grafana"
+          grafanaLogsBackend:
+            grafanaLogsBackendWithJenkinsVisualization:
+              lokiUrl: "http://localhost:3100"
+              disableSslVerifications: false
+              lokiCredentialsId: "some-logs-creds"
+              lokiTenantId: "potentialTenant"          
+```
+
 ## Learn More
 
 * You can look at this video tutorial to get
