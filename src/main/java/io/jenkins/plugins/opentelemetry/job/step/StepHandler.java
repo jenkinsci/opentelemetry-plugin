@@ -5,13 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface StepHandler extends Comparable<StepHandler> {
     boolean canCreateSpanBuilder(@NonNull FlowNode flowNode, @NonNull WorkflowRun run);

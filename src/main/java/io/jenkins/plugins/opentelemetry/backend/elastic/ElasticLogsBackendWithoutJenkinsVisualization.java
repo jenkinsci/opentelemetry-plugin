@@ -15,9 +15,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class ElasticLogsBackendWithoutJenkinsVisualization extends ElasticLogsBackend {
 
     @DataBoundConstructor
-    public ElasticLogsBackendWithoutJenkinsVisualization() {
-
-    }
+    public ElasticLogsBackendWithoutJenkinsVisualization() {}
 
     @Override
     @MustBeClosed
@@ -36,11 +34,9 @@ public class ElasticLogsBackendWithoutJenkinsVisualization extends ElasticLogsBa
         return ElasticLogsBackendWithoutJenkinsVisualization.class.hashCode();
     }
 
-
     @Override
     public String toString() {
-        return "ElasticLogsBackendWithoutJenkinsVisualization{" +
-            '}';
+        return "ElasticLogsBackendWithoutJenkinsVisualization{" + '}';
     }
 
     @Extension(ordinal = 50)

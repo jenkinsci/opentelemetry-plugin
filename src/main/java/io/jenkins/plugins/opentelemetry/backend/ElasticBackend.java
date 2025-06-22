@@ -5,26 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend;
 
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
-import org.apache.commons.lang.StringUtils;
-import org.jenkins.ui.icon.Icon;
-import org.jenkins.ui.icon.IconSet;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-
 import com.google.errorprone.annotations.MustBeClosed;
-
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -35,7 +16,23 @@ import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import jenkins.model.GlobalConfiguration;
+import org.apache.commons.lang.StringUtils;
+import org.jenkins.ui.icon.Icon;
+import org.jenkins.ui.icon.IconSet;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 public class ElasticBackend extends ObservabilityBackend {
 
@@ -43,30 +40,18 @@ public class ElasticBackend extends ObservabilityBackend {
     public static final String DEFAULT_BACKEND_NAME = "Elastic Observability";
     public static final String DEFAULT_KIBANA_DASHBOARD_TITLE = "Jenkins Overview";
     public static final String DEFAULT_KIBANA_SPACE_IDENTIFIER = "";
-    public static final String DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS = "title=${kibanaDashboardTitle}&" +
-        "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
+    public static final String DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS = "title=${kibanaDashboardTitle}&"
+            + "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
 
     static {
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-elastic icon-sm",
-                ICONS_PREFIX + "elastic.svg",
-                Icon.ICON_SMALL_STYLE));
+                new Icon("icon-otel-elastic icon-sm", ICONS_PREFIX + "elastic.svg", Icon.ICON_SMALL_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-elastic icon-md",
-                ICONS_PREFIX + "elastic.svg",
-                Icon.ICON_MEDIUM_STYLE));
+                new Icon("icon-otel-elastic icon-md", ICONS_PREFIX + "elastic.svg", Icon.ICON_MEDIUM_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-elastic icon-lg",
-                ICONS_PREFIX + "elastic.svg",
-                Icon.ICON_LARGE_STYLE));
+                new Icon("icon-otel-elastic icon-lg", ICONS_PREFIX + "elastic.svg", Icon.ICON_LARGE_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-elastic icon-xlg",
-                ICONS_PREFIX + "elastic.svg",
-                Icon.ICON_XLARGE_STYLE));
+                new Icon("icon-otel-elastic icon-xlg", ICONS_PREFIX + "elastic.svg", Icon.ICON_XLARGE_STYLE));
     }
 
     private boolean displayKibanaDashboardLink;
@@ -87,9 +72,7 @@ public class ElasticBackend extends ObservabilityBackend {
     private boolean enableEDOT;
 
     @DataBoundConstructor
-    public ElasticBackend() {
-
-    }
+    public ElasticBackend() {}
 
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
@@ -112,21 +95,23 @@ public class ElasticBackend extends ObservabilityBackend {
     @CheckForNull
     @Override
     public String getTraceVisualisationUrlTemplate() {
-        String transactionType = enableEDOT ? "unknown" : "job" ;
-        return getEffectiveKibanaURL() + "/app/apm/services/${serviceName}/transactions/view" +
-            "?rangeFrom=${startTime.minusSeconds(600)}" +
-            "&rangeTo=${startTime.plusSeconds(600)}" +
-            "&transactionName=${rootSpanName}" +
-            "&transactionType=" + transactionType +// see io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE
-            "&comparisonEnabled=true" +
-            "&transactionId=${spanId}" +
-            "&traceId=${traceId}";
+        String transactionType = enableEDOT ? "unknown" : "job";
+        return getEffectiveKibanaURL() + "/app/apm/services/${serviceName}/transactions/view"
+                + "?rangeFrom=${startTime.minusSeconds(600)}"
+                + "&rangeTo=${startTime.plusSeconds(600)}"
+                + "&transactionName=${rootSpanName}"
+                + "&transactionType="
+                + transactionType
+                + // see io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes.ELASTIC_TRANSACTION_TYPE
+                "&comparisonEnabled=true"
+                + "&transactionId=${spanId}"
+                + "&traceId=${traceId}";
     }
 
     @CheckForNull
     public String getKibanaBaseUrl() {
         if (kibanaBaseUrl != null && kibanaBaseUrl.endsWith("/")) {
-            kibanaBaseUrl = kibanaBaseUrl.substring(0, kibanaBaseUrl.length()-1);
+            kibanaBaseUrl = kibanaBaseUrl.substring(0, kibanaBaseUrl.length() - 1);
         }
         return kibanaBaseUrl;
     }
@@ -250,7 +235,7 @@ public class ElasticBackend extends ObservabilityBackend {
      * @return the effective Kibana URL
      */
     @NonNull
-    public String getEffectiveKibanaURL(){
+    public String getEffectiveKibanaURL() {
         String effectiveUrl = this.getKibanaBaseUrl();
         if (StringUtils.isNotBlank(this.getKibanaSpaceIdentifier())) {
             effectiveUrl += "/s/" + this.getKibanaSpaceIdentifier();
@@ -263,17 +248,23 @@ public class ElasticBackend extends ObservabilityBackend {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ElasticBackend that = (ElasticBackend) o;
-        return displayKibanaDashboardLink == that.displayKibanaDashboardLink &&
-            Objects.equals(kibanaBaseUrl, that.kibanaBaseUrl) &&
-            Objects.equals(kibanaSpaceIdentifier, that.kibanaSpaceIdentifier) &&
-            Objects.equals(kibanaDashboardTitle, that.kibanaDashboardTitle) &&
-            Objects.equals(kibanaDashboardUrlParameters, that.kibanaDashboardUrlParameters)
-            && Objects.equals(elasticLogsBackend, that.elasticLogsBackend);
+        return displayKibanaDashboardLink == that.displayKibanaDashboardLink
+                && Objects.equals(kibanaBaseUrl, that.kibanaBaseUrl)
+                && Objects.equals(kibanaSpaceIdentifier, that.kibanaSpaceIdentifier)
+                && Objects.equals(kibanaDashboardTitle, that.kibanaDashboardTitle)
+                && Objects.equals(kibanaDashboardUrlParameters, that.kibanaDashboardUrlParameters)
+                && Objects.equals(elasticLogsBackend, that.elasticLogsBackend);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(displayKibanaDashboardLink, kibanaBaseUrl, kibanaSpaceIdentifier, kibanaDashboardTitle, kibanaDashboardUrlParameters, elasticLogsBackend);
+        return Objects.hash(
+                displayKibanaDashboardLink,
+                kibanaBaseUrl,
+                kibanaSpaceIdentifier,
+                kibanaDashboardTitle,
+                kibanaDashboardUrlParameters,
+                elasticLogsBackend);
     }
 
     @Extension
@@ -314,18 +305,20 @@ public class ElasticBackend extends ObservabilityBackend {
     /**
      * List the attribute keys of the template bindings exposed by {@link ObservabilityBackend#getBindings()}
      */
-    public interface TemplateBindings extends ObservabilityBackend.TemplateBindings{
+    public interface TemplateBindings extends ObservabilityBackend.TemplateBindings {
         String KIBANA_BASE_URL = "kibanaBaseUrl";
         String KIBANA_DASHBOARD_TITLE = "kibanaDashboardTitle";
         String KIBANA_SPACE_IDENTIFIER = "kibanaSpaceIdentifier";
     }
 
-
-    public static Optional<ElasticBackend> get(){
+    public static Optional<ElasticBackend> get() {
         Optional<ElasticBackend> ret = null;
-        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+        final JenkinsOpenTelemetryPluginConfiguration configuration =
+                GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
         if (configuration != null) {
-            Optional<ObservabilityBackend> backend = configuration.getObservabilityBackends().stream().filter(x -> x instanceof ElasticBackend).findFirst();
+            Optional<ObservabilityBackend> backend = configuration.getObservabilityBackends().stream()
+                    .filter(x -> x instanceof ElasticBackend)
+                    .findFirst();
             if (!backend.isEmpty()) {
                 ret = Optional.of((ElasticBackend) backend.get());
             }

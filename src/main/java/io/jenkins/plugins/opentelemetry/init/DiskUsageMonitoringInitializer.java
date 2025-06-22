@@ -13,15 +13,14 @@ import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.metrics.Meter;
-import jenkins.YesNoMaybe;
-import jenkins.model.Jenkins;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import jenkins.YesNoMaybe;
+import jenkins.model.Jenkins;
 
 /**
  * Capture disk usage metrics relying on the {@link QuickDiskUsagePlugin}
@@ -29,7 +28,7 @@ import java.util.logging.Logger;
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class DiskUsageMonitoringInitializer implements OpenTelemetryLifecycleListener {
 
-    private final static Logger LOGGER = Logger.getLogger(DiskUsageMonitoringInitializer.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(DiskUsageMonitoringInitializer.class.getName());
 
     /**
      * Don't inject the `quickDiskUsagePlugin` using @{@link  Inject} because the injected instance is not the right one.
@@ -46,11 +45,10 @@ public class DiskUsageMonitoringInitializer implements OpenTelemetryLifecycleLis
 
         Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
         meter.gaugeBuilder(JenkinsMetrics.JENKINS_DISK_USAGE_BYTES)
-            .ofLongs()
-            .setDescription("Disk usage of first level folder in JENKINS_HOME.")
-            .setUnit("byte")
-            .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes()));
-
+                .ofLongs()
+                .setDescription("Disk usage of first level folder in JENKINS_HOME.")
+                .setUnit("byte")
+                .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes()));
     }
 
     private long calculateDiskUsageInBytes() {
@@ -66,11 +64,10 @@ public class DiskUsageMonitoringInitializer implements OpenTelemetryLifecycleLis
     private long calculateDiskUsageInBytes(@NonNull QuickDiskUsagePlugin diskUsagePlugin) {
         LOGGER.log(Level.FINE, "calculateDiskUsageInBytes");
         try {
-            DiskItem disk = diskUsagePlugin.getDirectoriesUsages()
-                .stream()
-                .filter(diskItem -> diskItem.getDisplayName().equals("JENKINS_HOME"))
-                .findFirst()
-                .orElse(null);
+            DiskItem disk = diskUsagePlugin.getDirectoriesUsages().stream()
+                    .filter(diskItem -> diskItem.getDisplayName().equals("JENKINS_HOME"))
+                    .findFirst()
+                    .orElse(null);
             if (disk == null) {
                 return 0;
             } else {

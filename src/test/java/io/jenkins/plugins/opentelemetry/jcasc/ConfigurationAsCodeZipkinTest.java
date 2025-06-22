@@ -5,6 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.jcasc;
 
+import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
+import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
+import static io.jenkins.plugins.casc.misc.Util.toYamlString;
+import static org.hamcrest.CoreMatchers.instanceOf;
+
 import io.jenkins.plugins.casc.ConfigurationContext;
 import io.jenkins.plugins.casc.ConfiguratorRegistry;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
@@ -20,11 +25,6 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.*;
 
-import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
-import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
-import static io.jenkins.plugins.casc.misc.Util.toYamlString;
-import static org.hamcrest.CoreMatchers.instanceOf;
-
 public class ConfigurationAsCodeZipkinTest {
 
     @ClassRule
@@ -33,12 +33,14 @@ public class ConfigurationAsCodeZipkinTest {
 
     @Test
     public void should_support_configuration_as_code() {
-        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+        final JenkinsOpenTelemetryPluginConfiguration configuration =
+                GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
         MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(1));
 
-        ZipkinBackend zipkin = (ZipkinBackend) configuration.getObservabilityBackends().get(0);
+        ZipkinBackend zipkin =
+                (ZipkinBackend) configuration.getObservabilityBackends().get(0);
         MatcherAssert.assertThat(zipkin.getZipkinBaseUrl(), CoreMatchers.is("http://my-zipkin.acme.com:9411/"));
         MatcherAssert.assertThat(zipkin.getName(), CoreMatchers.is("My Zipkin"));
 

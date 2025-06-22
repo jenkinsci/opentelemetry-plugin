@@ -5,14 +5,13 @@
 
 package io.jenkins.plugins.opentelemetry.job.cause;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.Cause;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 public interface CauseHandler extends Comparable<CauseHandler> {
 
-    default void configure(ConfigProperties config){}
+    default void configure(ConfigProperties config) {}
 
     boolean isSupported(@NonNull Cause cause);
 
@@ -39,6 +38,4 @@ public interface CauseHandler extends Comparable<CauseHandler> {
             return Integer.compare(this.ordinal(), other.ordinal());
         }
     }
-
-
 }

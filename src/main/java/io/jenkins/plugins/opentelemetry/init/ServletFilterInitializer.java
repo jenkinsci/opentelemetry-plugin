@@ -11,15 +11,14 @@ import hudson.util.PluginServletFilter;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.servlet.StaplerInstrumentationServletFilter;
 import io.jenkins.plugins.opentelemetry.servlet.TraceContextServletFilter;
-import jenkins.YesNoMaybe;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
 import jakarta.servlet.Filter;
 import jakarta.servlet.ServletException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import jenkins.YesNoMaybe;
 
 /**
  * TODO Register the {@link StaplerInstrumentationServletFilter} earlier in the chain of {@link Filter} of the Jenkins webapp,
@@ -61,9 +60,9 @@ public class ServletFilterInitializer implements OpenTelemetryLifecycleListener 
                 PluginServletFilter.addFilter(filter);
                 logger.log(Level.FINE, () -> filter.getClass().getName() + " enabled");
             } catch (ServletException ex) {
-                logger.log(Level.WARNING, "Failure to enable " + filter.getClass().getName(), ex);
+                logger.log(
+                        Level.WARNING, "Failure to enable " + filter.getClass().getName(), ex);
             }
         }
     }
-
 }

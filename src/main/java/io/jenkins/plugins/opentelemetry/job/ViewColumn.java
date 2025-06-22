@@ -11,10 +11,9 @@ import hudson.model.Run;
 import hudson.views.ListViewColumn;
 import hudson.views.ListViewColumnDescriptor;
 import io.jenkins.plugins.opentelemetry.Messages;
-import org.kohsuke.stapler.DataBoundConstructor;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class ViewColumn extends ListViewColumn {
 
@@ -38,8 +37,7 @@ public class ViewColumn extends ListViewColumn {
     @Extension
     public static class DescriptorImpl extends ListViewColumnDescriptor {
 
-        public DescriptorImpl() {
-        }
+        public DescriptorImpl() {}
 
         @Override
         public String getDisplayName() {

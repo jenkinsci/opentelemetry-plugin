@@ -5,27 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
-
-import org.apache.hc.client5.http.auth.AuthScope;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
-import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
-import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
-import org.apache.hc.core5.http.HttpHost;
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -36,6 +15,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchFields;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -46,9 +26,26 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.core5.http.HttpHost;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class OpenTelemetryLogToElasticsearchIT {
-    private final static Random RANDOM = new Random();
+    private static final Random RANDOM = new Random();
 
     @Test
     public void test() throws Exception {
@@ -67,7 +64,8 @@ public class OpenTelemetryLogToElasticsearchIT {
         // PRODUCE OPEN TELEMETRY LOG MESSAGES
         {
             AutoConfiguredOpenTelemetrySdk autoConfiguredOpenTelemetrySdk = AutoConfiguredOpenTelemetrySdk.builder()
-                .addPropertiesSupplier(() -> configuration).build();
+                    .addPropertiesSupplier(() -> configuration)
+                    .build();
             try {
                 OpenTelemetrySdk sdk = autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk();
                 Tracer tracer = sdk.getTracer("test");
@@ -76,14 +74,15 @@ public class OpenTelemetryLogToElasticsearchIT {
                 try (Scope scope = span.makeCurrent()) {
                     for (int i = 0; i < LOG_MESSAGE_COUNT; i++) {
                         otelLogger
-                            .logRecordBuilder()
-                            .setContext(Context.current())
-                            .setBody("Log Message " + i)
-                            .setAllAttributes(
-                                Attributes.of(
-                                    AttributeKey.stringKey("myStringAttribute"), "Value " + i,
-                                    AttributeKey.longKey("myNumericAttribute"), (long) i))
-                            .emit();
+                                .logRecordBuilder()
+                                .setContext(Context.current())
+                                .setBody("Log Message " + i)
+                                .setAllAttributes(Attributes.of(
+                                        AttributeKey.stringKey("myStringAttribute"),
+                                        "Value " + i,
+                                        AttributeKey.longKey("myNumericAttribute"),
+                                        (long) i))
+                                .emit();
                         Thread.sleep(RANDOM.nextInt(100));
                     }
                 } finally {
@@ -91,8 +90,14 @@ public class OpenTelemetryLogToElasticsearchIT {
                 }
                 traceId = span.getSpanContext().getTraceId();
             } finally {
-                autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkLoggerProvider().close();
-                autoConfiguredOpenTelemetrySdk.getOpenTelemetrySdk().getSdkTracerProvider().close();
+                autoConfiguredOpenTelemetrySdk
+                        .getOpenTelemetrySdk()
+                        .getSdkLoggerProvider()
+                        .close();
+                autoConfiguredOpenTelemetrySdk
+                        .getOpenTelemetrySdk()
+                        .getSdkTracerProvider()
+                        .close();
             }
         }
 
@@ -104,32 +109,37 @@ public class OpenTelemetryLogToElasticsearchIT {
             String elasticsearchPassword = configuration.get("elasticsearch.password");
 
             BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(elasticsearchUsername, elasticsearchPassword.toCharArray());
-            try{
+            UsernamePasswordCredentials credentials =
+                    new UsernamePasswordCredentials(elasticsearchUsername, elasticsearchPassword.toCharArray());
+            try {
                 credentialsProvider.setCredentials(new AuthScope(HttpHost.create(elasticsearchUrl)), credentials);
-            } catch(URISyntaxException e) {
+            } catch (URISyntaxException e) {
                 throw new IllegalArgumentException(e);
             }
             CloseableHttpAsyncClient httpclient = HttpAsyncClients.custom()
-                .setDefaultCredentialsProvider(credentialsProvider)
-                .build();
-
-            Rest5ClientBuilder builder = Rest5Client.builder(URI.create(elasticsearchUrl))
-                .setHttpClient(httpclient);
-
-            Rest5ClientTransport elasticsearchTransport = new Rest5ClientTransport(builder.build(), new JacksonJsonpMapper());
-            List<Hit<ObjectNode>> hits = Collections.emptyList();
-            try(ElasticsearchClient elasticsearchClient = new ElasticsearchClient(elasticsearchTransport)){
-                SearchRequest searchRequest = new SearchRequest.Builder()
-                    .index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS)
-                    .size(500)
-                    .sort(s -> s.field(f -> f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
-                    .query(q -> q.match(m -> m.field(ElasticsearchFields.FIELD_TRACE_ID).query(FieldValue.of(traceId))))
+                    .setDefaultCredentialsProvider(credentialsProvider)
                     .build();
+
+            Rest5ClientBuilder builder =
+                    Rest5Client.builder(URI.create(elasticsearchUrl)).setHttpClient(httpclient);
+
+            Rest5ClientTransport elasticsearchTransport =
+                    new Rest5ClientTransport(builder.build(), new JacksonJsonpMapper());
+            List<Hit<ObjectNode>> hits = Collections.emptyList();
+            try (ElasticsearchClient elasticsearchClient = new ElasticsearchClient(elasticsearchTransport)) {
+                SearchRequest searchRequest = new SearchRequest.Builder()
+                        .index(ElasticsearchFields.INDEX_TEMPLATE_PATTERNS)
+                        .size(500)
+                        .sort(s -> s.field(f ->
+                                f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
+                        .query(q -> q.match(
+                                m -> m.field(ElasticsearchFields.FIELD_TRACE_ID).query(FieldValue.of(traceId))))
+                        .build();
                 SearchResponse<ObjectNode> searchResponse = elasticsearchClient.search(searchRequest, ObjectNode.class);
                 hits = searchResponse.hits().hits();
                 if (hits.size() != LOG_MESSAGE_COUNT) {
-                    System.err.println("Invalid number of log messages: actual: " + hits.size() + ", expected: " + LOG_MESSAGE_COUNT);
+                    System.err.println("Invalid number of log messages: actual: " + hits.size() + ", expected: "
+                            + LOG_MESSAGE_COUNT);
                 }
             }
 
@@ -143,9 +153,12 @@ public class OpenTelemetryLogToElasticsearchIT {
 
                 try {
                     String message = source.findValue("message").asText();
-                    String myStringAttribute = labels.findValue("myStringAttribute").asText();
-                    long myNumericAttribute = numericLabels.findValue("myNumericAttribute").longValue();
-                    System.out.println(hit.id() + "\tmessage:'" + message + "', \tmyStringAttribute: '" + myStringAttribute + "', myNumericAttribute: " + myNumericAttribute);
+                    String myStringAttribute =
+                            labels.findValue("myStringAttribute").asText();
+                    long myNumericAttribute =
+                            numericLabels.findValue("myNumericAttribute").longValue();
+                    System.out.println(hit.id() + "\tmessage:'" + message + "', \tmyStringAttribute: '"
+                            + myStringAttribute + "', myNumericAttribute: " + myNumericAttribute);
                 } catch (Exception e) {
                     System.err.println("Error parsing " + source);
                 }

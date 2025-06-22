@@ -5,17 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.apache.commons.lang.StringUtils;
-
 import com.google.errorprone.annotations.MustBeClosed;
-
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import groovy.text.GStringTemplateEngine;
 import groovy.text.Template;
@@ -27,10 +17,16 @@ import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 
 public abstract class ElasticLogsBackend extends AbstractDescribableImpl<ElasticLogsBackend> implements ExtensionPoint {
-    private final static Logger logger = Logger.getLogger(ElasticLogsBackend.class.getName());
+    private static final Logger logger = Logger.getLogger(ElasticLogsBackend.class.getName());
 
     private transient Template buildLogsVisualizationUrlGTemplate;
 
@@ -44,7 +40,7 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
     public Template getBuildLogsVisualizationMessageTemplate() {
         try {
             return new GStringTemplateEngine().createTemplate("View build logs in ${backendName}");
-        } catch (ClassNotFoundException|IOException e) {
+        } catch (ClassNotFoundException | IOException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -54,15 +50,14 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
 
         if (this.buildLogsVisualizationUrlGTemplate == null) {
             String kibanaSpaceBaseUrl = this.getEffectiveKibanaURL();
-            String urlTemplate = kibanaSpaceBaseUrl + "/app/discover#/" +
-                "?_a=(" +
-                "columns:!(message)," +
-                "dataSource:(dataViewId:discover-observability-solution-all-logs,type:dataView)," +
-                "filters:!((" +
-                    "meta:(alias:!n,disabled:!f,field:trace.id,index:discover-observability-solution-all-logs,key:trace.id,negate:!f,params:(query:%27${traceId}%27),type:phrase)," +
-                    "query:(match_phrase:(trace.id:%27${traceId}%27))" +
-                    ")))" +
-                "&_g=(filters:!(),time:(from:now-40d,to:now))";
+            String urlTemplate = kibanaSpaceBaseUrl + "/app/discover#/" + "?_a=("
+                    + "columns:!(message),"
+                    + "dataSource:(dataViewId:discover-observability-solution-all-logs,type:dataView),"
+                    + "filters:!(("
+                    + "meta:(alias:!n,disabled:!f,field:trace.id,index:discover-observability-solution-all-logs,key:trace.id,negate:!f,params:(query:%27${traceId}%27),type:phrase),"
+                    + "query:(match_phrase:(trace.id:%27${traceId}%27))"
+                    + ")))"
+                    + "&_g=(filters:!(),time:(from:now-40d,to:now))";
             GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
             try {
                 this.buildLogsVisualizationUrlGTemplate = gStringTemplateEngine.createTemplate(urlTemplate);
@@ -100,7 +95,5 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
         return Jenkins.get().getDescriptorList(ElasticLogsBackend.class);
     }
 
-    public abstract static class DescriptorImpl extends Descriptor<ElasticLogsBackend> {
-
-    }
+    public abstract static class DescriptorImpl extends Descriptor<ElasticLogsBackend> {}
 }

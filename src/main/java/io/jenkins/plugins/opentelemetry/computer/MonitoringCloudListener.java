@@ -15,16 +15,15 @@ import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
-import jenkins.YesNoMaybe;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import jenkins.YesNoMaybe;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringCloudListener extends CloudProvisioningListener implements OpenTelemetryLifecycleListener {
-    private final static Logger LOGGER = Logger.getLogger(MonitoringCloudListener.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(MonitoringCloudListener.class.getName());
 
     private LongCounter failureCloudCounter;
     private LongCounter totalCloudCount;
@@ -38,14 +37,13 @@ public class MonitoringCloudListener extends CloudProvisioningListener implement
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller cloud agent provisioning...");
 
         failureCloudCounter = meter.counterBuilder(JenkinsMetrics.JENKINS_CLOUD_AGENTS_FAILURE)
-            .setDescription("Number of failed cloud agents when provisioning")
-            .setUnit("{agents}")
-            .build();
+                .setDescription("Number of failed cloud agents when provisioning")
+                .setUnit("{agents}")
+                .build();
         totalCloudCount = meter.counterBuilder(JenkinsMetrics.JENKINS_CLOUD_AGENTS_COMPLETED)
-            .setDescription("Number of provisioned cloud agents")
-            .setUnit("{agents}")
-            .build();
-
+                .setDescription("Number of provisioned cloud agents")
+                .setUnit("{agents}")
+                .build();
     }
 
     @Override
@@ -55,8 +53,7 @@ public class MonitoringCloudListener extends CloudProvisioningListener implement
     }
 
     @Override
-    public void onRollback(@NonNull NodeProvisioner.PlannedNode plannedNode, @NonNull Node node,
-                           @NonNull Throwable t) {
+    public void onRollback(@NonNull NodeProvisioner.PlannedNode plannedNode, @NonNull Node node, @NonNull Throwable t) {
         failureCloudCounter.add(1);
         LOGGER.log(Level.FINE, () -> "onRollback(" + plannedNode + ")");
     }

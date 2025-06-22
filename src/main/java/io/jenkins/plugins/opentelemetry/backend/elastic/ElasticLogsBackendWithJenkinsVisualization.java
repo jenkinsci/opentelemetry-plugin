@@ -5,23 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.logging.Logger;
-
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.interceptor.RequirePOST;
-
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.errorprone.annotations.MustBeClosed;
-
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import groovy.text.Template;
 import hudson.Extension;
@@ -35,21 +21,31 @@ import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.jenkins.CredentialsNotFoundException;
 import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.logging.Logger;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBackend {
-    private static final String MSG_ELASTICSEARCH_URL_IS_BLANK = "Elasticsearch URL is blank, logs will not be stored in Elasticsearch";
+    private static final String MSG_ELASTICSEARCH_URL_IS_BLANK =
+            "Elasticsearch URL is blank, logs will not be stored in Elasticsearch";
 
-    private final static Logger logger = Logger.getLogger(ElasticLogsBackendWithJenkinsVisualization.class.getName());
+    private static final Logger logger = Logger.getLogger(ElasticLogsBackendWithJenkinsVisualization.class.getName());
 
     private String elasticsearchUrl;
     private boolean disableSslVerifications;
     private String elasticsearchCredentialsId;
 
     @DataBoundConstructor
-    public ElasticLogsBackendWithJenkinsVisualization() {
-
-    }
+    public ElasticLogsBackendWithJenkinsVisualization() {}
 
     @Override
     @MustBeClosed
@@ -60,8 +56,11 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             throw new IllegalStateException(MSG_ELASTICSEARCH_URL_IS_BLANK);
         } else {
             return new ElasticsearchLogStorageRetriever(
-                    this.elasticsearchUrl, disableSslVerifications, elasticsearchCredentialsId,
-                    buildLogsVisualizationUrlTemplate, templateBindingsProvider);
+                    this.elasticsearchUrl,
+                    disableSslVerifications,
+                    elasticsearchCredentialsId,
+                    buildLogsVisualizationUrlTemplate,
+                    templateBindingsProvider);
         }
     }
 
@@ -96,10 +95,8 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         ElasticLogsBackendWithJenkinsVisualization that = (ElasticLogsBackendWithJenkinsVisualization) o;
         return Objects.equals(elasticsearchUrl, that.elasticsearchUrl)
                 && Objects.equals(disableSslVerifications, that.disableSslVerifications)
@@ -113,11 +110,10 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
 
     @Override
     public String toString() {
-        return "ElasticLogsBackendWithVisualizationJenkins{" +
-                "elasticsearchUrl='" + elasticsearchUrl + '\'' +
-                ", disableSslVerifications='" + disableSslVerifications + '\'' +
-                ", elasticsearchCredentialsId='" + elasticsearchCredentialsId + '\'' +
-                '}';
+        return "ElasticLogsBackendWithVisualizationJenkins{" + "elasticsearchUrl='"
+                + elasticsearchUrl + '\'' + ", disableSslVerifications='"
+                + disableSslVerifications + '\'' + ", elasticsearchCredentialsId='"
+                + elasticsearchCredentialsId + '\'' + '}';
     }
 
     @Extension(ordinal = 0)
@@ -141,21 +137,22 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         }
 
         @RequirePOST
-        public ListBoxModel doFillElasticsearchCredentialsIdItems(Item context,
-                @QueryParameter String elasticsearchCredentialsId) {
+        public ListBoxModel doFillElasticsearchCredentialsIdItems(
+                Item context, @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
                     || context != null && !context.hasPermission(Item.CONFIGURE)) {
                 return new StandardListBoxModel();
             }
 
-            return new StandardListBoxModel().includeEmptyValue()
+            return new StandardListBoxModel()
+                    .includeEmptyValue()
                     .includeAs(ACL.SYSTEM2, context, StandardUsernameCredentials.class)
                     .includeCurrentValue(elasticsearchCredentialsId);
         }
 
         @RequirePOST
-        public FormValidation doCheckElasticsearchCredentialsId(Item context,
-                @QueryParameter String elasticsearchCredentialsId) {
+        public FormValidation doCheckElasticsearchCredentialsId(
+                Item context, @QueryParameter String elasticsearchCredentialsId) {
             if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
                     || context != null && !context.hasPermission(Item.CONFIGURE)) {
                 return FormValidation.ok();
@@ -173,18 +170,21 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         }
 
         @RequirePOST
-        public FormValidation doValidate(@QueryParameter String elasticsearchUrl,
-                @QueryParameter boolean disableSslVerifications, @QueryParameter String elasticsearchCredentialsId) {
+        public FormValidation doValidate(
+                @QueryParameter String elasticsearchUrl,
+                @QueryParameter boolean disableSslVerifications,
+                @QueryParameter String elasticsearchCredentialsId) {
             FormValidation elasticsearchUrlValidation = doCheckElasticsearchUrl(elasticsearchUrl);
             if (elasticsearchUrlValidation.kind != FormValidation.Kind.OK) {
                 return elasticsearchUrlValidation;
             }
-            try (ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever = new ElasticsearchLogStorageRetriever(
-                    elasticsearchUrl,
-                    disableSslVerifications,
-                    elasticsearchCredentialsId,
-                    ObservabilityBackend.ERROR_TEMPLATE,
-                    TemplateBindingsProvider.empty())) {
+            try (ElasticsearchLogStorageRetriever elasticsearchLogStorageRetriever =
+                    new ElasticsearchLogStorageRetriever(
+                            elasticsearchUrl,
+                            disableSslVerifications,
+                            elasticsearchCredentialsId,
+                            ObservabilityBackend.ERROR_TEMPLATE,
+                            TemplateBindingsProvider.empty())) {
 
                 return FormValidation.aggregate(elasticsearchLogStorageRetriever.checkElasticsearchSetup());
             } catch (NoSuchElementException e) {

@@ -17,12 +17,11 @@ import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.Experiment
 import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.ExperimentalCpu;
 import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.ExperimentalMemoryPools;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import jenkins.YesNoMaybe;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import jenkins.YesNoMaybe;
 
 /**
  * Inspired by io.opentelemetry.instrumentation.javaagent.runtimemetrics.RuntimeMetricsInstaller
@@ -31,7 +30,7 @@ import java.util.logging.Logger;
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
 public class JvmMonitoringInitializer implements OpenTelemetryLifecycleListener {
 
-    private final static Logger LOGGER = Logger.getLogger(JvmMonitoringInitializer.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(JvmMonitoringInitializer.class.getName());
 
     @Inject
     protected ReconfigurableOpenTelemetry openTelemetry;
@@ -41,7 +40,9 @@ public class JvmMonitoringInitializer implements OpenTelemetryLifecycleListener 
         ConfigProperties config = openTelemetry.getConfig();
         boolean defaultEnabled = config.getBoolean("otel.instrumentation.common.default-enabled", true);
         if (!config.getBoolean("otel.instrumentation.runtime-metrics.enabled", defaultEnabled)) {
-            LOGGER.log(Level.FINE, "Jenkins Controller JVM is disabled by config and reconfiguration requires restart ...");
+            LOGGER.log(
+                    Level.FINE,
+                    "Jenkins Controller JVM is disabled by config and reconfiguration requires restart ...");
             return;
         }
 

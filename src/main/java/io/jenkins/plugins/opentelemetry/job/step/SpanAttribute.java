@@ -8,13 +8,12 @@ import hudson.model.Descriptor;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.AttributeType;
 import io.opentelemetry.api.trace.Span;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-
 import java.io.ObjectStreamException;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implements ExtensionPoint, Serializable {
 
@@ -37,11 +36,11 @@ public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implem
 
     @DataBoundConstructor
     public SpanAttribute(String key, Object value, AttributeType attributeType, SpanAttributeTarget target) {
-		this.key = key;
-		this.value = value;
-		this.attributeType = attributeType;
-		this.target = Objects.requireNonNullElse(target, SpanAttributeTarget.CURRENT_SPAN);
-	}
+        this.key = key;
+        this.value = value;
+        this.attributeType = attributeType;
+        this.target = Objects.requireNonNullElse(target, SpanAttributeTarget.CURRENT_SPAN);
+    }
 
     // set transient fields on deserialization
     protected Object readResolve() throws ObjectStreamException {
@@ -60,7 +59,7 @@ public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implem
         if (value instanceof Boolean) {
             attributeType = isArray ? AttributeType.BOOLEAN_ARRAY : AttributeType.BOOLEAN;
         } else if (value instanceof Double || value instanceof Float) {
-            attributeType = isArray ? AttributeType.DOUBLE_ARRAY: AttributeType.DOUBLE;
+            attributeType = isArray ? AttributeType.DOUBLE_ARRAY : AttributeType.DOUBLE;
         } else if (value instanceof Long || value instanceof Integer) {
             attributeType = isArray ? AttributeType.LONG_ARRAY : AttributeType.LONG;
         } else {
@@ -76,7 +75,9 @@ public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implem
                 break;
             case DOUBLE:
                 attributeKey = AttributeKey.doubleKey(key);
-                convertedValue = value instanceof Double ? value : value instanceof Float ? ((Float) value).doubleValue() : Double.parseDouble(value.toString());
+                convertedValue = value instanceof Double
+                        ? value
+                        : value instanceof Float ? ((Float) value).doubleValue() : Double.parseDouble(value.toString());
                 break;
             case STRING:
                 attributeKey = AttributeKey.stringKey(key);
@@ -84,7 +85,9 @@ public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implem
                 break;
             case LONG:
                 attributeKey = AttributeKey.longKey(key);
-                convertedValue = value instanceof Long ?  value : value instanceof Integer ?  ((Integer) value).longValue() : Long.parseLong(value.toString());
+                convertedValue = value instanceof Long
+                        ? value
+                        : value instanceof Integer ? ((Integer) value).longValue() : Long.parseLong(value.toString());
                 break;
             case BOOLEAN_ARRAY:
                 attributeKey = AttributeKey.booleanArrayKey(key);
@@ -164,6 +167,5 @@ public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implem
         public String getDisplayName() {
             return "An individual span attribute key value pair";
         }
-
     }
 }

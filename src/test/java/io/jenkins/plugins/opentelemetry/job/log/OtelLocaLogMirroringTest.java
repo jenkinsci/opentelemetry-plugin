@@ -1,21 +1,19 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import static com.google.common.base.Verify.verify;
+import static java.util.Optional.of;
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeFalse;
+
 import hudson.ExtensionList;
 import hudson.model.Result;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
-import org.apache.commons.lang3.SystemUtils;
-import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.*;
-import org.jvnet.hudson.test.JenkinsRule;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.util.Collections;
@@ -25,11 +23,12 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static com.google.common.base.Verify.verify;
-import static java.util.Optional.of;
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeFalse;
+import org.apache.commons.lang3.SystemUtils;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.junit.*;
+import org.jvnet.hudson.test.JenkinsRule;
 
 public class OtelLocaLogMirroringTest {
 
@@ -44,7 +43,7 @@ public class OtelLocaLogMirroringTest {
     static WorkflowJob pipeline;
 
     static String printedLine = "message_testing_logs_mirroring";
-    final static AtomicInteger jobNameSuffix = new AtomicInteger();
+    static final AtomicInteger jobNameSuffix = new AtomicInteger();
 
     @BeforeClass
     public static void beforeClass() throws Exception {
@@ -55,13 +54,25 @@ public class OtelLocaLogMirroringTest {
 
         OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
         OtelTraceService.STRICT_MODE = true;
-        ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries = jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
-        verify(jenkinsOpenTelemetries.size() == 1, "Number of jenkinsControllerOpenTelemetrys: %s", jenkinsOpenTelemetries.size());
+        ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries =
+                jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
+        verify(
+                jenkinsOpenTelemetries.size() == 1,
+                "Number of jenkinsControllerOpenTelemetrys: %s",
+                jenkinsOpenTelemetries.size());
 
         openTelemetry = ExtensionList.lookup(ReconfigurableOpenTelemetry.class).get(0);
         jenkinsControllerOpenTelemetry = jenkinsOpenTelemetries.get(0);
-        jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptyMap()));
+        jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(
+                of("http://localhost:4317"),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Collections.emptyMap()));
     }
+
     @AfterClass
     public static void afterClass() throws Exception {
         ((AutoCloseable) openTelemetry).close();
@@ -81,28 +92,34 @@ public class OtelLocaLogMirroringTest {
     }
 
     private WorkflowRun runBuild() throws Exception {
-        String pipelineScript = "pipeline {\n" +
-            "  agent any\n" +
-            "  stages {\n" +
-            "    stage('foo') {\n" +
-            "      steps {\n" +
-            "        echo '" + printedLine + "' \n" +
-            "        script { \n" +
-            "          currentBuild.description = 'Bar' \n" +
-            "        } \n" +
-            "      }\n" +
-            "    }\n" +
-            "  }\n" +
-            "}";
-        pipeline = jenkinsRule.createProject(WorkflowJob.class, "test-logs-mirroring-" + jobNameSuffix.incrementAndGet());
+        String pipelineScript = "pipeline {\n" + "  agent any\n"
+                + "  stages {\n"
+                + "    stage('foo') {\n"
+                + "      steps {\n"
+                + "        echo '"
+                + printedLine + "' \n" + "        script { \n"
+                + "          currentBuild.description = 'Bar' \n"
+                + "        } \n"
+                + "      }\n"
+                + "    }\n"
+                + "  }\n"
+                + "}";
+        pipeline =
+                jenkinsRule.createProject(WorkflowJob.class, "test-logs-mirroring-" + jobNameSuffix.incrementAndGet());
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         return jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
     }
 
     private void reInitProvider(Map<String, String> configuration) {
-        jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(of("http://localhost:4317"), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), configuration));
+        jenkinsControllerOpenTelemetry.initialize(new OpenTelemetryConfiguration(
+                of("http://localhost:4317"),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                configuration));
     }
-
 
     @Test
     public void return_otel_log_text_when_otlp_enabled_and_no_log_file() throws Exception {
@@ -123,7 +140,6 @@ public class OtelLocaLogMirroringTest {
 
         assertTrue(Files.readString(build.getLogFile().toPath()).isEmpty());
     }
-
 
     @Test
     public void return_log_from_file_when_log_file_mirrored() throws Exception {
@@ -146,7 +162,6 @@ public class OtelLocaLogMirroringTest {
         assertEquals(Files.readString(build.getLogFile().toPath()), logText);
     }
 
-
     @Test
     public void return_log_from_file_when_log_file_added_before_otlp_enabled() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
@@ -167,4 +182,3 @@ public class OtelLocaLogMirroringTest {
         assertEquals(Files.readString(build.getLogFile().toPath()), logText);
     }
 }
-

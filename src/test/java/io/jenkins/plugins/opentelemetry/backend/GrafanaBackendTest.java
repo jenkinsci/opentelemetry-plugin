@@ -5,12 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.backend;
 
-import org.junit.Test;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.Test;
 
 public class GrafanaBackendTest {
 
@@ -22,7 +21,8 @@ public class GrafanaBackendTest {
         grafanaBackend.setTempoDataSourceIdentifier("grafanacloud-traces");
         grafanaBackend.setTempoQueryType("traceql");
 
-        LocalDateTime buildTime = LocalDateTime.parse("2023-02-05 23:31:52.610", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+        LocalDateTime buildTime =
+                LocalDateTime.parse("2023-02-05 23:31:52.610", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
 
         Map<String, Object> bindings = new HashMap<>();
         bindings.put("serviceName", "jenkins");

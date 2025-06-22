@@ -5,12 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.job.cause;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Cause;
 import jenkins.YesNoMaybe;
 import jenkins.branch.BranchIndexingCause;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class BranchIndexingCauseHandler implements CauseHandler {

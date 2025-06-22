@@ -54,15 +54,17 @@ public class LokiGetJenkinsBuildLogsQueryParametersBuilder {
     }
 
     public LokiGetJenkinsBuildLogsQueryParametersBuilder setServiceNamespace(String serviceNamespace) {
-        this.serviceNamespace =  Optional.ofNullable(serviceNamespace);
+        this.serviceNamespace = Optional.ofNullable(serviceNamespace);
         return this;
     }
+
     public LokiGetJenkinsBuildLogsQueryParametersBuilder setServiceNamespace(Optional<String> serviceNamespace) {
-        this.serviceNamespace =  serviceNamespace;
+        this.serviceNamespace = serviceNamespace;
         return this;
     }
 
     public LokiGetJenkinsBuildLogsQueryParameters build() {
-        return new LokiGetJenkinsBuildLogsQueryParameters(jobFullName, runNumber, traceId, flowNodeId, startTime, endTime, serviceName, serviceNamespace);
+        return new LokiGetJenkinsBuildLogsQueryParameters(
+                jobFullName, runNumber, traceId, flowNodeId, startTime, endTime, serviceName, serviceNamespace);
     }
 }

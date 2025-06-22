@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.init;
 
+import static io.jenkins.plugins.opentelemetry.semconv.GitHubAttributes.*;
+
 import com.google.common.base.Preconditions;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
@@ -13,6 +15,15 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Map;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import jenkins.YesNoMaybe;
 import org.jenkinsci.plugins.github_branch_source.Connector;
 import org.jenkinsci.plugins.github_branch_source.GitHubAppCredentials;
@@ -22,25 +33,13 @@ import org.kohsuke.github.GitHub;
 import org.kohsuke.github.authorization.AuthorizationProvider;
 import org.kohsuke.github.authorization.UserAuthorizationProvider;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.Map;
-import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import static io.jenkins.plugins.opentelemetry.semconv.GitHubAttributes.*;
-
 /**
  * This implementation of the monitoring of the GitHub client relies on a hack with Java reflection to access a private
  * field of the {@link Connector} class because we have not found any public API to observe the state of this GitHub client.
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class GitHubClientMonitoring implements OpenTelemetryLifecycleListener {
-    private final static Logger logger = Logger.getLogger(GitHubClientMonitoring.class.getName());
+    private static final Logger logger = Logger.getLogger(GitHubClientMonitoring.class.getName());
 
     private final Field gitHub_clientField;
     private final Class<?> gitHubClientClass;
@@ -61,7 +60,10 @@ public class GitHubClientMonitoring implements OpenTelemetryLifecycleListener {
         try {
             Field connector_reverseLookupField = Connector.class.getDeclaredField("reverseLookup");
             connector_reverseLookupField.setAccessible(true);
-            Preconditions.checkState(Modifier.isStatic(connector_reverseLookupField.getModifiers()), "Connector#reverseLookup is NOT a static field: %s", connector_reverseLookupField);
+            Preconditions.checkState(
+                    Modifier.isStatic(connector_reverseLookupField.getModifiers()),
+                    "Connector#reverseLookup is NOT a static field: %s",
+                    connector_reverseLookupField);
 
             gitHub_clientField = GitHub.class.getDeclaredField("client");
             gitHub_clientField.setAccessible(true);
@@ -70,22 +72,29 @@ public class GitHubClientMonitoring implements OpenTelemetryLifecycleListener {
             gitHubClient_authorizationProviderField = gitHubClientClass.getDeclaredField("authorizationProvider");
             gitHubClient_authorizationProviderField.setAccessible(true);
 
-            credentialsTokenProviderClass = Class.forName("org.jenkinsci.plugins.github_branch_source.GitHubAppCredentials$CredentialsTokenProvider");
+            credentialsTokenProviderClass = Class.forName(
+                    "org.jenkinsci.plugins.github_branch_source.GitHubAppCredentials$CredentialsTokenProvider");
             credentialsTokenProvider_credentialsField = credentialsTokenProviderClass.getDeclaredField("credentials");
             credentialsTokenProvider_credentialsField.setAccessible(true);
-            Preconditions.checkState(GitHubAppCredentials.class.isAssignableFrom(credentialsTokenProvider_credentialsField.getType()),
-                "Unsupported type for credentialsTokenProvider.credentials. Expected GitHubAppCredentials, current %s", credentialsTokenProvider_credentialsField);
+            Preconditions.checkState(
+                    GitHubAppCredentials.class.isAssignableFrom(credentialsTokenProvider_credentialsField.getType()),
+                    "Unsupported type for credentialsTokenProvider.credentials. Expected GitHubAppCredentials, current %s",
+                    credentialsTokenProvider_credentialsField);
 
-            dependentAuthorizationProvider_gitHubField = GitHub.DependentAuthorizationProvider.class.getDeclaredField("gitHub");
+            dependentAuthorizationProvider_gitHubField =
+                    GitHub.DependentAuthorizationProvider.class.getDeclaredField("gitHub");
             dependentAuthorizationProvider_gitHubField.setAccessible(true);
 
-            authorizationRefreshGitHubWrapperClass = Class.forName("org.kohsuke.github.GitHub$AuthorizationRefreshGitHubWrapper");
+            authorizationRefreshGitHubWrapperClass =
+                    Class.forName("org.kohsuke.github.GitHub$AuthorizationRefreshGitHubWrapper");
 
             reverseLookup = (Map<GitHub, ?>) connector_reverseLookupField.get(null);
         } catch (IllegalAccessException | NoSuchFieldException | ClassNotFoundException e) {
             throw new RuntimeException("Unsupported version of the Github Branch Source Plugin", e);
         } catch (SecurityException e) {
-            throw new RuntimeException("SecurityManager is activated, cannot monitor the GitHub Client as it requires Java reflection permissions", e);
+            throw new RuntimeException(
+                    "SecurityManager is activated, cannot monitor the GitHub Client as it requires Java reflection permissions",
+                    e);
         }
     }
 
@@ -96,55 +105,72 @@ public class GitHubClientMonitoring implements OpenTelemetryLifecycleListener {
         Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
 
         meter.gaugeBuilder(GITHUB_API_RATE_LIMIT_REMAINING_REQUESTS)
-            .ofLongs()
-            .setDescription("GitHub Repository API rate limit remaining requests")
-            .setUnit("{requests}")
-            .buildWithCallback(gauge -> {
-                logger.log(Level.FINE, () -> "Collect GitHub client API rate limit metrics");
-                reverseLookup.keySet().forEach(gitHub -> {
-                    GHRateLimit ghRateLimit = gitHub.lastRateLimit();
-                    try {
-                        AttributesBuilder attributesBuilder = Attributes.of(GITHUB_API_URL, gitHub.getApiUrl()).toBuilder();
-                        final String authentication;
-                        if (gitHub.isAnonymous()) {
-                            authentication = "anonymous";
-                        } else {
-                            Object gitHubClient = gitHub_clientField.get(gitHub);
-                            Preconditions.checkState(gitHubClientClass.isAssignableFrom(gitHubClient.getClass()));
-                            AuthorizationProvider authorizationProvider = (AuthorizationProvider) gitHubClient_authorizationProviderField.get(gitHubClient);
-                            if (authorizationProvider instanceof UserAuthorizationProvider) {
-                                String gitHubLogin = ((UserAuthorizationProvider) authorizationProvider).getLogin();
-                                if (gitHubLogin == null) {
-                                    gitHubLogin = gitHub.getMyself().getLogin();
-                                }
-                                attributesBuilder.put(EnduserIncubatingAttributes.ENDUSER_ID, gitHubLogin);
-                                authentication = "login:" + gitHubLogin;
-                            } else if (credentialsTokenProviderClass.isAssignableFrom(authorizationProvider.getClass())) {
-                                GitHub jwtTokenBasedGitHub = (GitHub) dependentAuthorizationProvider_gitHubField.get(authorizationProvider);
-                                if (authorizationRefreshGitHubWrapperClass.isAssignableFrom(jwtTokenBasedGitHub.getClass())) {
-                                    // The GitHub client lib uses a caching mechanism specified in org.jenkinsci.plugins.github_branch_source.Connector.connect()
-                                    GHApp gitHubApp = jwtTokenBasedGitHub.getApp();
-                                    attributesBuilder.put(GITHUB_APP_NAME, gitHubApp.getName());
-                                    attributesBuilder.put(GITHUB_APP_ID, gitHubApp.getId());
-                                    attributesBuilder.put(GITHUB_APP_OWNER, gitHubApp.getName());
-                                    authentication = "app:id=" + gitHubApp.getId() + ",name=\"" + gitHubApp.getName() + "\",owner=" + gitHubApp.getName();
-                                } else {
-                                    GitHubAppCredentials credentials = (GitHubAppCredentials) credentialsTokenProvider_credentialsField.get(authorizationProvider);
-                                    attributesBuilder.put(GITHUB_APP_ID, Long.valueOf(credentials.getAppID()));
-                                    authentication = "app:id=" + credentials.getAppID();
-                                    logger.log(Level.INFO, "Unexpected credentialsTokenProvider with internal GitHub of type " + jwtTokenBasedGitHub);
-                                }
+                .ofLongs()
+                .setDescription("GitHub Repository API rate limit remaining requests")
+                .setUnit("{requests}")
+                .buildWithCallback(gauge -> {
+                    logger.log(Level.FINE, () -> "Collect GitHub client API rate limit metrics");
+                    reverseLookup.keySet().forEach(gitHub -> {
+                        GHRateLimit ghRateLimit = gitHub.lastRateLimit();
+                        try {
+                            AttributesBuilder attributesBuilder =
+                                    Attributes.of(GITHUB_API_URL, gitHub.getApiUrl()).toBuilder();
+                            final String authentication;
+                            if (gitHub.isAnonymous()) {
+                                authentication = "anonymous";
                             } else {
-                                authentication = authorizationProvider.getClass() + ":" + System.identityHashCode(authorizationProvider);
+                                Object gitHubClient = gitHub_clientField.get(gitHub);
+                                Preconditions.checkState(gitHubClientClass.isAssignableFrom(gitHubClient.getClass()));
+                                AuthorizationProvider authorizationProvider = (AuthorizationProvider)
+                                        gitHubClient_authorizationProviderField.get(gitHubClient);
+                                if (authorizationProvider instanceof UserAuthorizationProvider) {
+                                    String gitHubLogin = ((UserAuthorizationProvider) authorizationProvider).getLogin();
+                                    if (gitHubLogin == null) {
+                                        gitHubLogin = gitHub.getMyself().getLogin();
+                                    }
+                                    attributesBuilder.put(EnduserIncubatingAttributes.ENDUSER_ID, gitHubLogin);
+                                    authentication = "login:" + gitHubLogin;
+                                } else if (credentialsTokenProviderClass.isAssignableFrom(
+                                        authorizationProvider.getClass())) {
+                                    GitHub jwtTokenBasedGitHub = (GitHub)
+                                            dependentAuthorizationProvider_gitHubField.get(authorizationProvider);
+                                    if (authorizationRefreshGitHubWrapperClass.isAssignableFrom(
+                                            jwtTokenBasedGitHub.getClass())) {
+                                        // The GitHub client lib uses a caching mechanism specified in
+                                        // org.jenkinsci.plugins.github_branch_source.Connector.connect()
+                                        GHApp gitHubApp = jwtTokenBasedGitHub.getApp();
+                                        attributesBuilder.put(GITHUB_APP_NAME, gitHubApp.getName());
+                                        attributesBuilder.put(GITHUB_APP_ID, gitHubApp.getId());
+                                        attributesBuilder.put(GITHUB_APP_OWNER, gitHubApp.getName());
+                                        authentication = "app:id=" + gitHubApp.getId() + ",name=\""
+                                                + gitHubApp.getName() + "\",owner=" + gitHubApp.getName();
+                                    } else {
+                                        GitHubAppCredentials credentials = (GitHubAppCredentials)
+                                                credentialsTokenProvider_credentialsField.get(authorizationProvider);
+                                        attributesBuilder.put(GITHUB_APP_ID, Long.valueOf(credentials.getAppID()));
+                                        authentication = "app:id=" + credentials.getAppID();
+                                        logger.log(
+                                                Level.INFO,
+                                                "Unexpected credentialsTokenProvider with internal GitHub of type "
+                                                        + jwtTokenBasedGitHub);
+                                    }
+                                } else {
+                                    authentication = authorizationProvider.getClass() + ":"
+                                            + System.identityHashCode(authorizationProvider);
+                                }
                             }
+                            Attributes attributes = attributesBuilder
+                                    .put(GITHUB_AUTHENTICATION, authentication)
+                                    .build();
+                            logger.log(
+                                    Level.FINER,
+                                    () -> "Collect GitHub API " + attributes + ": rateLimit.remaining:"
+                                            + ghRateLimit.getRemaining());
+                            gauge.record(ghRateLimit.getRemaining(), attributes);
+                        } catch (IllegalAccessException | IOException e) {
+                            throw new RuntimeException(e);
                         }
-                        Attributes attributes = attributesBuilder.put(GITHUB_AUTHENTICATION, authentication).build();
-                        logger.log(Level.FINER, () -> "Collect GitHub API " + attributes + ": rateLimit.remaining:" + ghRateLimit.getRemaining());
-                        gauge.record(ghRateLimit.getRemaining(), attributes);
-                    } catch (IllegalAccessException | IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                    });
                 });
-            });
     }
 }

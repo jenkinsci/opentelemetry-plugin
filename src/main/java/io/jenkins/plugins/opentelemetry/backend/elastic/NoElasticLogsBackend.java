@@ -9,15 +9,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import org.kohsuke.stapler.DataBoundConstructor;
-
 import java.util.Collections;
 import java.util.Map;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class NoElasticLogsBackend extends ElasticLogsBackend {
     @DataBoundConstructor
-    public NoElasticLogsBackend() {
-    }
+    public NoElasticLogsBackend() {}
 
     @Override
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {

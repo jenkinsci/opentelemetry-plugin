@@ -2,16 +2,14 @@ package io.jenkins.plugins.opentelemetry.servlet;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-
-import javax.inject.Inject;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import javax.inject.Inject;
 
 /**
  * Must be a {@link Filter}  rather than a {@link jenkins.util.HttpServletFilter} because it must wrap the invocation of
@@ -32,9 +31,10 @@ import java.util.regex.Pattern;
  */
 @Extension
 public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycleListener {
-    private final static Logger logger = Logger.getLogger(StaplerInstrumentationServletFilter.class.getName());
+    private static final Logger logger = Logger.getLogger(StaplerInstrumentationServletFilter.class.getName());
 
-    protected static final Pattern JENKINS_TRIGGER_BUILD_URL_PATTERN = Pattern.compile("^(/[^/]+)?/job/([\\w/-]+)/build(WithParameters)?$");
+    protected static final Pattern JENKINS_TRIGGER_BUILD_URL_PATTERN =
+            Pattern.compile("^(/[^/]+)?/job/([\\w/-]+)/build(WithParameters)?$");
 
     final AtomicBoolean w3cTraceContextPropagationEnabled = new AtomicBoolean(false);
 
@@ -42,7 +42,8 @@ public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycle
     ReconfigurableOpenTelemetry openTelemetry;
 
     @Override
-    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain) throws IOException, ServletException {
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain)
+            throws IOException, ServletException {
         if (servletRequest instanceof HttpServletRequest && servletResponse instanceof HttpServletResponse) {
             _doFilter((HttpServletRequest) servletRequest, (HttpServletResponse) servletResponse, chain);
         } else {
@@ -50,12 +51,13 @@ public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycle
         }
     }
 
-    public void _doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+    public void _doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
         if (w3cTraceContextPropagationEnabled.get() && isJenkinsRemoteBuildTriggerRequest(request)) {
             Context context = openTelemetry
-                .getPropagators()
-                .getTextMapPropagator()
-                .extract(Context.current(), request, new OtelUtils.HttpServletRequestTextMapGetter());
+                    .getPropagators()
+                    .getTextMapPropagator()
+                    .extract(Context.current(), request, new OtelUtils.HttpServletRequestTextMapGetter());
             try (Scope scope = context.makeCurrent()) {
                 chain.doFilter(request, response);
             }
@@ -68,16 +70,24 @@ public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycle
      * @return {@code true} if the given request is an HTTP request to trigger a Jenkins build
      */
     private boolean isJenkinsRemoteBuildTriggerRequest(@NonNull HttpServletRequest request) {
-        return Objects.equals(request.getMethod(), "POST") && JENKINS_TRIGGER_BUILD_URL_PATTERN.matcher(request.getRequestURI()).matches();
+        return Objects.equals(request.getMethod(), "POST")
+                && JENKINS_TRIGGER_BUILD_URL_PATTERN
+                        .matcher(request.getRequestURI())
+                        .matches();
     }
 
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
-        w3cTraceContextPropagationEnabled.set(configProperties.getBoolean(ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED.asProperty(), false));
+        w3cTraceContextPropagationEnabled.set(configProperties.getBoolean(
+                ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED.asProperty(), false));
 
         if (!w3cTraceContextPropagationEnabled.get()) {
-            logger.log(Level.INFO, () -> "Jenkins trace context propagation disabled on inbound HTTP requests (eg. build triggers). " +
-                "To enable it, set the property " + ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED.asProperty() + " to true.");
+            logger.log(
+                    Level.INFO,
+                    () -> "Jenkins trace context propagation disabled on inbound HTTP requests (eg. build triggers). "
+                            + "To enable it, set the property "
+                            + ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED.asProperty()
+                            + " to true.");
         }
     }
 
@@ -91,5 +101,4 @@ public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycle
     public int hashCode() {
         return TraceContextServletFilter.class.hashCode();
     }
-
 }

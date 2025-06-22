@@ -5,26 +5,24 @@
 
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
-import org.kohsuke.stapler.framework.io.ByteBuffer;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Nonnull;
+import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 /**
  * Readonly {@link ByteBuffer} backed by an {@link InputStream}
  */
 public class InputStreamByteBuffer extends ByteBuffer {
-    final static Logger logger = Logger.getLogger(InputStreamByteBuffer.class.getName());
+    static final Logger logger = Logger.getLogger(InputStreamByteBuffer.class.getName());
 
     @NonNull
     private final Tracer tracer;
@@ -39,12 +37,16 @@ public class InputStreamByteBuffer extends ByteBuffer {
 
     @Override
     public synchronized long length() {
-        Tracer tracer = logger.isLoggable(Level.FINER) ? this.tracer : TracerProvider.noop().get("noop");
+        Tracer tracer = logger.isLoggable(Level.FINER)
+                ? this.tracer
+                : TracerProvider.noop().get("noop");
         // See system property 'hudson.consoleTailKB'
         // workflow-job-2.41.jar!/org/jenkinsci/plugins/workflow/job/WorkflowRun/console.jelly
-        long length = Long.parseLong(System.getProperty("hudson.consoleTailKB", "150")) * 1024; // lower than 150KB -  FIXME verify
+        long length = Long.parseLong(System.getProperty("hudson.consoleTailKB", "150"))
+                * 1024; // lower than 150KB -  FIXME verify
         Span span = tracer.spanBuilder("InputStreamByteBuffer.length")
-            .setAttribute("response.length", length).startSpan();
+                .setAttribute("response.length", length)
+                .startSpan();
         try (Scope scope = span.makeCurrent()) {
             return length;
         } finally {
@@ -54,9 +56,10 @@ public class InputStreamByteBuffer extends ByteBuffer {
 
     @Override
     public InputStream newInputStream() {
-        Tracer tracer = logger.isLoggable(Level.FINEST) ? this.tracer : TracerProvider.noop().get("noop");
-        Span span = tracer.spanBuilder("InputStreamByteBuffer.newInputStream")
-            .startSpan();
+        Tracer tracer = logger.isLoggable(Level.FINEST)
+                ? this.tracer
+                : TracerProvider.noop().get("noop");
+        Span span = tracer.spanBuilder("InputStreamByteBuffer.newInputStream").startSpan();
         try (Scope scope = span.makeCurrent()) {
             return in;
         } finally {

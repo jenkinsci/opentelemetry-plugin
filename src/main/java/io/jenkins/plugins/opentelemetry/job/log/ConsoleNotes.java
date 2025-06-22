@@ -5,18 +5,16 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import com.google.common.collect.ImmutableMap;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import hudson.console.ConsoleNote;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
-
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import hudson.console.ConsoleNote;
-import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -26,8 +24,7 @@ import net.sf.json.JSONObject;
  */
 public class ConsoleNotes {
 
-    private ConsoleNotes() {
-    }
+    private ConsoleNotes() {}
 
     public static TextAndAnnotations parse(byte[] bytes, int len) {
         assert len > 0 && len <= bytes.length;
@@ -62,8 +59,11 @@ public class ConsoleNotes {
                     break;
                 }
                 buf.append(line, pos, preamble);
-                annotations.add(
-                    ImmutableMap.of(ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD, buf.length(), ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD, line.substring(endOfPreamble, postamble)));
+                annotations.add(ImmutableMap.of(
+                        ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD,
+                        buf.length(),
+                        ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD,
+                        line.substring(endOfPreamble, postamble)));
                 pos = postamble + ConsoleNote.POSTAMBLE_STR.length();
             }
             buf.append(line, pos, line.length()); // append tail
@@ -73,6 +73,7 @@ public class ConsoleNotes {
 
     static class TextAndAnnotations {
         final String text;
+
         @CheckForNull
         final JSONArray annotations;
 

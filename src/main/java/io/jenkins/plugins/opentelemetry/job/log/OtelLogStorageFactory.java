@@ -16,16 +16,15 @@ import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.trace.Tracer;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorageFactory;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Binds Otel Logs to Pipeline logs.
@@ -35,7 +34,7 @@ import java.util.logging.Logger;
 @Extension
 public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelemetryLifecycleListener {
 
-    private final static Logger logger = Logger.getLogger(OtelLogStorageFactory.class.getName());
+    private static final Logger logger = Logger.getLogger(OtelLogStorageFactory.class.getName());
 
     static {
         // Make sure JENKINS-52165 is enabled, or performance will be awful for remote shell steps.
@@ -82,16 +81,16 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
      * @return the LogStorage or null if no Opentelemetry data is found
      */
     @Nullable
-    private LogStorage forExec(@NonNull Queue.Executable exec){
+    private LogStorage forExec(@NonNull Queue.Executable exec) {
         LogStorage ret = null;
         if (exec instanceof Run<?, ?> run && run.getAction(MonitoringAction.class) != null) {
             // it's a pipeline with monitoring data
             logger.log(Level.FINEST, () -> "forExec(" + run + ")");
             ret = new OtelLogStorage(run, getOtelTraceService(), tracer);
-        } 
+        }
         return ret;
     }
-    
+
     /**
      * Workaround dependency injection problem. @Inject doesn't work here
      */
@@ -115,7 +114,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
     }
 
     @PostConstruct
-    public void postConstruct () {
+    public void postConstruct() {
         this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
     }
 }

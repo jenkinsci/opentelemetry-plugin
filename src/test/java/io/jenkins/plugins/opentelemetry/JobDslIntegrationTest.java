@@ -7,13 +7,12 @@ package io.jenkins.plugins.opentelemetry;
 
 import static org.junit.Assume.assumeFalse;
 
+import hudson.model.FreeStyleProject;
+import javaposse.jobdsl.plugin.ExecuteDslScripts;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
-
-import hudson.model.FreeStyleProject;
-import javaposse.jobdsl.plugin.ExecuteDslScripts;
 
 public class JobDslIntegrationTest extends BaseIntegrationTest {
     @Test
@@ -32,6 +31,5 @@ public class JobDslIntegrationTest extends BaseIntegrationTest {
 
         jenkinsRule.buildAndAssertSuccess(generatedJob);
         getBuildTrace();
-
     }
 }

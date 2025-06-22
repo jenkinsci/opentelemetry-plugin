@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 

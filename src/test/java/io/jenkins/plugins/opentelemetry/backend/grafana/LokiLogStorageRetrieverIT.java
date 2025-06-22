@@ -5,18 +5,16 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import java.io.InputStream;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
-
-import org.junit.Test;
-
 import groovy.text.GStringTemplateEngine;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.opentelemetry.sdk.internal.JavaVersionSpecific;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
+import org.junit.Test;
 
 public class LokiLogStorageRetrieverIT {
 
@@ -35,15 +33,14 @@ public class LokiLogStorageRetrieverIT {
         System.out.println(lokiUser);
 
         try (LokiLogStorageRetriever lokiLogStorageRetriever = new LokiLogStorageRetriever(
-            lokiUrl,
-            false,
-            HttpAuthHeaderFactory.createFactoryUsernamePassword(lokiUser, lokiPassword),
-            Optional.empty(),
-            new GStringTemplateEngine().createTemplate("mock"),
-            TemplateBindingsProvider.empty(),
-            "jenkins",
-             Optional.of("jenkins")
-        )) {
+                lokiUrl,
+                false,
+                HttpAuthHeaderFactory.createFactoryUsernamePassword(lokiUser, lokiPassword),
+                Optional.empty(),
+                new GStringTemplateEngine().createTemplate("mock"),
+                TemplateBindingsProvider.empty(),
+                "jenkins",
+                Optional.of("jenkins"))) {
             List<FormValidation> formValidations = lokiLogStorageRetriever.checkLokiSetup();
             System.out.println(formValidations);
         }

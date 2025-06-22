@@ -8,17 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-
-import org.apache.commons.io.IOUtils;
-import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.kohsuke.stapler.framework.io.ByteBuffer;
-
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
@@ -28,6 +17,15 @@ import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import org.apache.commons.io.IOUtils;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 @Disabled("These tests are unstables, we need to review them")
 @WithJenkinsConfiguredWithCode
@@ -53,17 +51,22 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
         ElasticBackend backend = elasticStack.getElasticBackendConfiguration();
         ElasticBackend.DescriptorImpl descriptor = (ElasticBackend.DescriptorImpl) backend.getDescriptor();
         ElasticLogsBackendWithJenkinsVisualization visualization = elasticStack.getElasticStackConfiguration();
-        ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor = (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization
-                .getDescriptor();
-        assertEquals(FormValidation.Kind.OK,
-                descriptor.doCheckKibanaBaseUrl("http://kibana.example.com").kind, "Kibana URL should be valid");
-        assertEquals(FormValidation.Kind.OK,
+        ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor =
+                (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization.getDescriptor();
+        assertEquals(
+                FormValidation.Kind.OK,
+                descriptor.doCheckKibanaBaseUrl("http://kibana.example.com").kind,
+                "Kibana URL should be valid");
+        assertEquals(
+                FormValidation.Kind.OK,
                 visDescriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.CRED_ID).kind,
                 "Elasticsearch URL should be valid and the credentials valid :" + elasticStack.getEsUrl());
-        assertEquals(FormValidation.Kind.ERROR,
+        assertEquals(
+                FormValidation.Kind.ERROR,
                 visDescriptor.doValidate(elasticStack.getEsUrl(), true, ElasticStack.WRONG_CREDS).kind,
                 "Elasticsearch URL should be valid and the credentials invalid");
-        assertEquals(FormValidation.Kind.ERROR,
+        assertEquals(
+                FormValidation.Kind.ERROR,
                 visDescriptor.doValidate("nowhere", true, ElasticStack.CRED_ID).kind,
                 "Elasticsearch URL should be invalid");
     }
@@ -73,9 +76,11 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
     public void testDoFillCredentialsIdItems(JenkinsConfiguredWithCodeRule j) {
         elasticStack.configureElasticBackEnd();
         ElasticLogsBackendWithJenkinsVisualization visualization = elasticStack.getElasticStackConfiguration();
-        ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor = (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization
-                .getDescriptor();
-        assertFalse(visDescriptor.doFillElasticsearchCredentialsIdItems(null, ElasticStack.CRED_ID).isEmpty());
+        ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor =
+                (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization.getDescriptor();
+        assertFalse(visDescriptor
+                .doFillElasticsearchCredentialsIdItems(null, ElasticStack.CRED_ID)
+                .isEmpty());
     }
 
     @Test
@@ -83,9 +88,10 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
     public void testDoCheckCredentialsId(JenkinsConfiguredWithCodeRule j) {
         elasticStack.configureElasticBackEnd();
         ElasticLogsBackendWithJenkinsVisualization visualization = elasticStack.getElasticStackConfiguration();
-        ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor = (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization
-                .getDescriptor();
-        assertEquals(FormValidation.Kind.OK,
+        ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor =
+                (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization.getDescriptor();
+        assertEquals(
+                FormValidation.Kind.OK,
                 visDescriptor.doCheckElasticsearchCredentialsId(null, ElasticStack.CRED_ID).kind);
         assertEquals(FormValidation.Kind.ERROR, visDescriptor.doCheckElasticsearchCredentialsId(null, "foo").kind);
     }
@@ -99,8 +105,14 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
         Instant startTime = Instant.ofEpochMilli(run.getStartTimeInMillis());
         do {
             try {
-                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(run.getParent().getFullName(),
-                        run.getNumber(), traceId, spanId, true, startTime, Instant.now());
+                LogsQueryResult logsQueryResult = elasticsearchRetriever.overallLog(
+                        run.getParent().getFullName(),
+                        run.getNumber(),
+                        traceId,
+                        spanId,
+                        true,
+                        startTime,
+                        Instant.now());
                 ByteBuffer byteBuffer = logsQueryResult.getByteBuffer();
                 if (byteBuffer.length() > 0) {
                     logContent = IOUtils.toString(byteBuffer.newInputStream(), StandardCharsets.UTF_8);
