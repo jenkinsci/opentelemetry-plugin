@@ -1,15 +1,13 @@
 package io.jenkins.plugins.opentelemetry.queue;
 
 import hudson.model.Action;
-
 import java.util.Map;
 
 public class RemoteSpanAction implements Action {
-    final private String traceId;
-    final private String spanId;
-    final private byte traceFlagsAsByte;
-    final private Map<String, String> traceStateMap;
-
+    private final String traceId;
+    private final String spanId;
+    private final byte traceFlagsAsByte;
+    private final Map<String, String> traceStateMap;
 
     public RemoteSpanAction(String traceId, String spanId, byte traceFlagsAsByte, Map<String, String> traceStateMap) {
         this.traceId = traceId;

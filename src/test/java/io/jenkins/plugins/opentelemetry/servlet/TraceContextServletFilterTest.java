@@ -1,8 +1,8 @@
 package io.jenkins.plugins.opentelemetry.servlet;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 
 public class TraceContextServletFilterTest {
 
@@ -16,6 +16,10 @@ public class TraceContextServletFilterTest {
     }
 
     private static void test_isJenkinsRemoteBuildURL(String uri) {
-        assertTrue(uri + " is remote build", TraceContextServletFilter.JENKINS_TRIGGER_BUILD_URL_PATTERN.matcher(uri).matches());
+        assertTrue(
+                uri + " is remote build",
+                TraceContextServletFilter.JENKINS_TRIGGER_BUILD_URL_PATTERN
+                        .matcher(uri)
+                        .matches());
     }
 }

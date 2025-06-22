@@ -5,6 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
+import static org.junit.Assume.assumeFalse;
+
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
@@ -17,6 +20,7 @@ import hudson.tasks.Shell;
 import hudson.tasks._ant.AntTargetNote;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
+import java.util.List;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -30,11 +34,6 @@ import org.jvnet.hudson.test.FlagRule;
 import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
-
-import java.util.List;
-
-import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
-import static org.junit.Assume.assumeFalse;
 
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
 
@@ -172,7 +171,9 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         Tree<SpanDataWrapper> spans = getBuildTrace();
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_CAUSE), CoreMatchers.is(List.of("UserIdCause:SYSTEM")));
+        MatcherAssert.assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_CAUSE),
+                CoreMatchers.is(List.of("UserIdCause:SYSTEM")));
     }
 
     @Test
@@ -181,7 +182,10 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "test-ant-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
-        project.setScm(new SingleFileSCM("build.xml", io.jenkins.plugins.opentelemetry.JenkinsOtelPluginFreestyleIntegrationTest.class.getResource("ant.xml")));
+        project.setScm(new SingleFileSCM(
+                "build.xml",
+                io.jenkins.plugins.opentelemetry.JenkinsOtelPluginFreestyleIntegrationTest.class.getResource(
+                        "ant.xml")));
         String antName = configureDefaultAnt().getName();
         project.getBuildersList().add(new Ant("foo", antName, null, null, null));
         final Node agent = jenkinsRule.createOnlineSlave();
@@ -206,7 +210,8 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         }
     }
 
-    // See https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
+    // See
+    // https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
     private Ant.AntInstallation configureDefaultAnt() throws Exception {
         return ToolInstallations.configureDefaultAnt(tmp);
     }
@@ -214,7 +219,8 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     @Test
     public void testFreestyleJob_with_culprits() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        // See https://github.com/abayer/jenkins/blob/914963c22317e7d72cf7e3e7d9ed8ab57709ccb0/test/src/test/java/hudson/model/AbstractBuildTest.java#L135-L150
+        // See
+        // https://github.com/abayer/jenkins/blob/914963c22317e7d72cf7e3e7d9ed8ab57709ccb0/test/src/test/java/hudson/model/AbstractBuildTest.java#L135-L150
 
         final String jobName = "test-freestyle-culprits-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
@@ -247,7 +253,8 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_COMMITTERS), CoreMatchers.is(List.of("bob")));
+        MatcherAssert.assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_COMMITTERS), CoreMatchers.is(List.of("bob")));
 
         assertFreestyleJobMetadata(build, spans);
     }

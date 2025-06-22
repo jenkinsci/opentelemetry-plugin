@@ -11,12 +11,11 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Context;
-import org.mockito.Mockito;
-
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.mockito.Mockito;
 
 /**
  * Mock class for {@link Span}. It exposes the attributes for unit testing.

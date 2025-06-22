@@ -5,26 +5,24 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.MarkupText;
 import hudson.console.ConsoleAnnotationOutputStream;
 import hudson.console.ConsoleAnnotator;
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest2;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.io.Writer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-
 public class LogsViewHeader {
-    final private static String messageFirstToken = " View logs in ";
-    final private String backendName;
-    final private String backendUrl;
-    final private String backendIconUrl;
-
+    private static final String messageFirstToken = " View logs in ";
+    private final String backendName;
+    private final String backendUrl;
+    private final String backendIconUrl;
 
     public LogsViewHeader(String backendName, String backendUrl, String backendIconUrl) {
         this.backendName = backendName;
@@ -49,12 +47,17 @@ public class LogsViewHeader {
                 }
 
                 text.addMarkup(0, 0, "<img src='" + iconRootContextRelativeUrl + "' />", "");
-                text.addMarkup(messageFirstToken.length(), messageFirstToken.length() + backendName.length(), "<a href='" + backendUrl + "' target='_blank'>", "</a>");
+                text.addMarkup(
+                        messageFirstToken.length(),
+                        messageFirstToken.length() + backendName.length(),
+                        "<a href='" + backendUrl + "' target='_blank'>",
+                        "</a>");
                 return this;
             }
         };
-        ConsoleAnnotationOutputStream<FlowExecutionOwner.Executable> caw = new ConsoleAnnotationOutputStream<>(w, consoleAnnotator, context, charset);
-        try(CountingOutputStream cos = new CountingOutputStream(caw)){
+        ConsoleAnnotationOutputStream<FlowExecutionOwner.Executable> caw =
+                new ConsoleAnnotationOutputStream<>(w, consoleAnnotator, context, charset);
+        try (CountingOutputStream cos = new CountingOutputStream(caw)) {
             cos.write((getMessage() + "\n").getBytes(StandardCharsets.UTF_8));
             cos.flush();
             return cos.getByteCount();

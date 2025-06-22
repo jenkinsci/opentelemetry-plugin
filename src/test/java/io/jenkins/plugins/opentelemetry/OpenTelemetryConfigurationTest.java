@@ -5,14 +5,13 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.Test;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.junit.Test;
 
 public class OpenTelemetryConfigurationTest {
 
@@ -25,7 +24,12 @@ public class OpenTelemetryConfigurationTest {
         String otlpEndpoint = "http://localhost:4317";
 
         Map<String, String> configurationProperties = new HashMap<>();
-        testOpenTelemetryExportersConfiguration(expectedTracesExporter, expectedMetricsExporter, expectedLogsExporter, otlpEndpoint, configurationProperties);
+        testOpenTelemetryExportersConfiguration(
+                expectedTracesExporter,
+                expectedMetricsExporter,
+                expectedLogsExporter,
+                otlpEndpoint,
+                configurationProperties);
     }
 
     @Test
@@ -36,8 +40,14 @@ public class OpenTelemetryConfigurationTest {
         // OTLP endpoint configured through the GUI
         String otlpEndpoint = "http://localhost:4317";
 
-        Map<String, String> configurationProperties = Collections.singletonMap("otel.metrics.exporter", "otlp,prometheus");
-        testOpenTelemetryExportersConfiguration(expectedTracesExporter, expectedMetricsExporter, expectedLogsExporter, otlpEndpoint, configurationProperties);
+        Map<String, String> configurationProperties =
+                Collections.singletonMap("otel.metrics.exporter", "otlp,prometheus");
+        testOpenTelemetryExportersConfiguration(
+                expectedTracesExporter,
+                expectedMetricsExporter,
+                expectedLogsExporter,
+                otlpEndpoint,
+                configurationProperties);
     }
 
     @Test
@@ -49,7 +59,12 @@ public class OpenTelemetryConfigurationTest {
         String otlpEndpoint = "http://localhost:4317";
 
         Map<String, String> configurationProperties = Collections.singletonMap("otel.metrics.exporter", "prometheus");
-        testOpenTelemetryExportersConfiguration(expectedTracesExporter, expectedMetricsExporter, expectedLogsExporter, otlpEndpoint, configurationProperties);
+        testOpenTelemetryExportersConfiguration(
+                expectedTracesExporter,
+                expectedMetricsExporter,
+                expectedLogsExporter,
+                otlpEndpoint,
+                configurationProperties);
     }
 
     @Test
@@ -61,7 +76,12 @@ public class OpenTelemetryConfigurationTest {
         String otlpEndpoint = "http://localhost:4317";
 
         Map<String, String> configurationProperties = Collections.singletonMap("otel.metrics.exporter", "none");
-        testOpenTelemetryExportersConfiguration(expectedTracesExporter, expectedMetricsExporter, expectedLogsExporter, otlpEndpoint, configurationProperties);
+        testOpenTelemetryExportersConfiguration(
+                expectedTracesExporter,
+                expectedMetricsExporter,
+                expectedLogsExporter,
+                otlpEndpoint,
+                configurationProperties);
     }
 
     @Test
@@ -73,7 +93,12 @@ public class OpenTelemetryConfigurationTest {
         String otlpEndpoint = "http://localhost:4317";
 
         Map<String, String> configurationProperties = Collections.singletonMap("otel.traces.exporter", "none");
-        testOpenTelemetryExportersConfiguration(expectedTracesExporter, expectedMetricsExporter, expectedLogsExporter, otlpEndpoint, configurationProperties);
+        testOpenTelemetryExportersConfiguration(
+                expectedTracesExporter,
+                expectedMetricsExporter,
+                expectedLogsExporter,
+                otlpEndpoint,
+                configurationProperties);
     }
 
     @Test
@@ -85,18 +110,28 @@ public class OpenTelemetryConfigurationTest {
         String otlpEndpoint = "http://localhost:4317";
 
         Map<String, String> configurationProperties = Collections.singletonMap("otel.logs.exporter", "none");
-        testOpenTelemetryExportersConfiguration(expectedTracesExporter, expectedMetricsExporter, expectedLogsExporter, otlpEndpoint, configurationProperties);
+        testOpenTelemetryExportersConfiguration(
+                expectedTracesExporter,
+                expectedMetricsExporter,
+                expectedLogsExporter,
+                otlpEndpoint,
+                configurationProperties);
     }
 
-    private static void testOpenTelemetryExportersConfiguration(String expectedTracesExporter, String expectedMetricsExporter, String expectedLogsExporter, String otlpEndpoint, Map<String, String> configurationProperties) {
+    private static void testOpenTelemetryExportersConfiguration(
+            String expectedTracesExporter,
+            String expectedMetricsExporter,
+            String expectedLogsExporter,
+            String otlpEndpoint,
+            Map<String, String> configurationProperties) {
         OpenTelemetryConfiguration configuration = new OpenTelemetryConfiguration(
-            Optional.ofNullable(otlpEndpoint),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.of("my-jenkins"),
-            Optional.empty(),
-            Optional.empty(),
-            configurationProperties);
+                Optional.ofNullable(otlpEndpoint),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.of("my-jenkins"),
+                Optional.empty(),
+                Optional.empty(),
+                configurationProperties);
 
         Map<String, String> actualOtelProperties = configuration.toOpenTelemetryProperties();
         String actualTracesExporter = actualOtelProperties.get("otel.traces.exporter");

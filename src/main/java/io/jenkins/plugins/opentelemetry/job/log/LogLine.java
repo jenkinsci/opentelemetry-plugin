@@ -40,9 +40,6 @@ public class LogLine<Id> {
 
     @Override
     public String toString() {
-        return "LogLine{" +
-            "id=" + id +
-            ", message='" + message + '\'' +
-            '}';
+        return "LogLine{" + "id=" + id + ", message='" + message + '\'' + '}';
     }
 }

@@ -9,7 +9,6 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.model.Action;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.trace.ReadableSpan;
-
 import java.util.Map;
 
 /**

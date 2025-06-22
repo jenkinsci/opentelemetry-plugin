@@ -5,13 +5,12 @@
 
 package io.opentelemetry.sdk.testing.trace;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.*;
 import io.opentelemetry.context.Context;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;

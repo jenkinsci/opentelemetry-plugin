@@ -21,9 +21,8 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-
-import javax.inject.Inject;
 import java.io.IOException;
+import javax.inject.Inject;
 
 /**
  * {@link RunListener} that setups the OpenTelemetry {@link io.opentelemetry.context.Context}
@@ -42,7 +41,8 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     }
 
     @Inject
-    public final void setJenkinsControllerOpenTelemetry(@NonNull JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
+    public final void setJenkinsControllerOpenTelemetry(
+            @NonNull JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
         this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
         this.meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
     }
@@ -60,8 +60,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         }
     }
 
-    public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
-    }
+    public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {}
 
     @Override
     public final void onFinalized(@NonNull Run<?, ?> run) {
@@ -71,17 +70,14 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         }
     }
 
-
-    public void _onFinalized(Run<?, ?> run) {
-    }
+    public void _onFinalized(Run<?, ?> run) {}
 
     @Override
     public final void onInitialize(@NonNull Run<?, ?> run) {
         this._onInitialize(run);
     }
 
-    public void _onInitialize(@NonNull Run<?, ?> run) {
-    }
+    public void _onInitialize(@NonNull Run<?, ?> run) {}
 
     @Override
     public final void onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
@@ -91,11 +87,12 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         }
     }
 
-    public void _onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
-    }
+    public void _onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {}
 
     @Override
-    public final Environment setUpEnvironment(@NonNull AbstractBuild build, @NonNull Launcher launcher, @NonNull BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
+    public final Environment setUpEnvironment(
+            @NonNull AbstractBuild build, @NonNull Launcher launcher, @NonNull BuildListener listener)
+            throws IOException, InterruptedException, Run.RunnerAbortedException {
         Span span = getTraceService().getSpan(build);
         try (Scope ignored = span.makeCurrent()) {
             return this._setUpEnvironment(build, launcher, listener);
@@ -103,9 +100,10 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     }
 
     @NonNull
-    public Environment _setUpEnvironment(@NonNull AbstractBuild build, @NonNull Launcher launcher, @NonNull BuildListener listener) throws IOException, InterruptedException, Run.RunnerAbortedException {
-        return new Environment() {
-        };
+    public Environment _setUpEnvironment(
+            @NonNull AbstractBuild build, @NonNull Launcher launcher, @NonNull BuildListener listener)
+            throws IOException, InterruptedException, Run.RunnerAbortedException {
+        return new Environment() {};
     }
 
     @Override
@@ -116,8 +114,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         }
     }
 
-    public void _onDeleted(@NonNull Run<?, ?> run) {
-    }
+    public void _onDeleted(@NonNull Run<?, ?> run) {}
 
     @NonNull
     public OtelTraceService getTraceService() {

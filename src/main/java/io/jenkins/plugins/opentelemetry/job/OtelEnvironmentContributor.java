@@ -5,13 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.EnvironmentContributor;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 
 /**

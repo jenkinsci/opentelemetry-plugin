@@ -8,12 +8,11 @@ package io.jenkins.plugins.opentelemetry.backend;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
+import java.util.Map;
+import java.util.Objects;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-
-import java.util.Map;
-import java.util.Objects;
 
 public class CustomObservabilityBackend extends ObservabilityBackend {
 
@@ -23,12 +22,11 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
      * TODO fix typo "visualisation" -> "visualization" but WARNING handle backward compatibility
      */
     private String traceVisualisationUrlTemplate;
+
     private String metricsVisualizationUrlTemplate;
 
     @DataBoundConstructor
-    public CustomObservabilityBackend() {
-
-    }
+    public CustomObservabilityBackend() {}
 
     @DataBoundSetter
     public void setTraceVisualisationUrlTemplate(String traceVisualisationUrlTemplate) {
@@ -77,10 +75,9 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
 
     @Override
     public String toString() {
-        return "CustomBackend{" +
-                "traceVisualisationUrlTemplate='" + traceVisualisationUrlTemplate + '\'' +
-                ", metricsVisualizationUrl='" + metricsVisualizationUrlTemplate + '\'' +
-                '}';
+        return "CustomBackend{" + "traceVisualisationUrlTemplate='"
+                + traceVisualisationUrlTemplate + '\'' + ", metricsVisualizationUrl='"
+                + metricsVisualizationUrlTemplate + '\'' + '}';
     }
 
     @Override
@@ -88,7 +85,8 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CustomObservabilityBackend that = (CustomObservabilityBackend) o;
-        return Objects.equals(traceVisualisationUrlTemplate, that.traceVisualisationUrlTemplate) && Objects.equals(metricsVisualizationUrlTemplate, that.metricsVisualizationUrlTemplate);
+        return Objects.equals(traceVisualisationUrlTemplate, that.traceVisualisationUrlTemplate)
+                && Objects.equals(metricsVisualizationUrlTemplate, that.metricsVisualizationUrlTemplate);
     }
 
     @Override
@@ -99,9 +97,10 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     @Override
     public Map<String, Object> getBindings() {
         return Map.of(
-            ObservabilityBackend.TemplateBindings.BACKEND_NAME, getName(),
-            ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/svgs/opentelemetry.svg"
-        );
+                ObservabilityBackend.TemplateBindings.BACKEND_NAME,
+                getName(),
+                ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL,
+                "/plugin/opentelemetry/images/svgs/opentelemetry.svg");
     }
 
     @Extension
@@ -121,5 +120,4 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
             return 10;
         }
     }
-
 }

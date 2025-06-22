@@ -12,28 +12,25 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
+import java.io.Serial;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
+import java.util.logging.Logger;
+import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.SynchronousStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
-import java.io.Serial;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Set;
-import java.util.logging.Logger;
-
 public class SpanContextPropagationSynchronousTestStep extends Step {
-    private final static Logger logger = Logger.getLogger(SpanContextPropagationSynchronousTestStep.class.getName());
+    private static final Logger logger = Logger.getLogger(SpanContextPropagationSynchronousTestStep.class.getName());
     transient OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
     transient Tracer tracer = openTelemetry.getTracer("io.jenkins.opentelemetry.test");
 
-
     @DataBoundConstructor
-    public SpanContextPropagationSynchronousTestStep() {
-    }
+    public SpanContextPropagationSynchronousTestStep() {}
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
@@ -67,7 +64,8 @@ public class SpanContextPropagationSynchronousTestStep extends Step {
         @Override
         protected Void run() throws Exception {
 
-            Span span = tracer.spanBuilder("SpanContextPropagationTestStep.execution").startSpan();
+            Span span = tracer.spanBuilder("SpanContextPropagationTestStep.execution")
+                    .startSpan();
             try (Scope ctx = span.makeCurrent()) {
                 TaskListener taskListener = Objects.requireNonNull(getContext().get(TaskListener.class));
                 taskListener.getLogger().println(getClass().getName());

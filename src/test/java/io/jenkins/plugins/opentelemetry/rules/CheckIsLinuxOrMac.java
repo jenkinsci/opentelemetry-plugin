@@ -12,8 +12,8 @@ import org.junit.rules.ExternalResource;
  * Rule to check the Operating system where the test run.
  */
 public class CheckIsLinuxOrMac extends ExternalResource {
-  @Override
-  protected void before() throws Throwable {
-    Assume.assumeTrue(SystemUtils.IS_OS_MAC || SystemUtils.IS_OS_LINUX);
-  }
+    @Override
+    protected void before() throws Throwable {
+        Assume.assumeTrue(SystemUtils.IS_OS_MAC || SystemUtils.IS_OS_LINUX);
+    }
 }

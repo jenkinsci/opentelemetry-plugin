@@ -9,17 +9,16 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.util.FormValidation;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import org.jenkins.ui.icon.Icon;
 import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
 public class JaegerBackend extends ObservabilityBackend {
 
@@ -29,32 +28,16 @@ public class JaegerBackend extends ObservabilityBackend {
     private String jaegerBaseUrl;
 
     static {
+        IconSet.icons.addIcon(new Icon("icon-otel-jaeger icon-sm", ICONS_PREFIX + "jaeger.svg", Icon.ICON_SMALL_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-jaeger icon-sm",
-                ICONS_PREFIX + "jaeger.svg",
-                Icon.ICON_SMALL_STYLE));
+                new Icon("icon-otel-jaeger icon-md", ICONS_PREFIX + "jaeger.svg", Icon.ICON_MEDIUM_STYLE));
+        IconSet.icons.addIcon(new Icon("icon-otel-jaeger icon-lg", ICONS_PREFIX + "jaeger.svg", Icon.ICON_LARGE_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-jaeger icon-md",
-                ICONS_PREFIX + "jaeger.svg",
-                Icon.ICON_MEDIUM_STYLE));
-        IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-jaeger icon-lg",
-                ICONS_PREFIX + "jaeger.svg",
-                Icon.ICON_LARGE_STYLE));
-        IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-jaeger icon-xlg",
-                ICONS_PREFIX + "jaeger.svg",
-                Icon.ICON_XLARGE_STYLE));
+                new Icon("icon-otel-jaeger icon-xlg", ICONS_PREFIX + "jaeger.svg", Icon.ICON_XLARGE_STYLE));
     }
 
     @DataBoundConstructor
-    public JaegerBackend() {
-
-    }
+    public JaegerBackend() {}
 
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
@@ -115,8 +98,10 @@ public class JaegerBackend extends ObservabilityBackend {
     @Override
     public Map<String, Object> getBindings() {
         return Map.of(
-            ObservabilityBackend.TemplateBindings.BACKEND_NAME, getName(),
-            ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/jaeger.png");
+                ObservabilityBackend.TemplateBindings.BACKEND_NAME,
+                getName(),
+                ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL,
+                "/plugin/opentelemetry/images/24x24/jaeger.png");
     }
 
     @Extension

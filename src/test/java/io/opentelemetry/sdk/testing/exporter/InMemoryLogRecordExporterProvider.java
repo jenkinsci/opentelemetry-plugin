@@ -4,7 +4,7 @@ import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 
-public class InMemoryLogRecordExporterProvider  implements ConfigurableLogRecordExporterProvider {
+public class InMemoryLogRecordExporterProvider implements ConfigurableLogRecordExporterProvider {
     public static InMemoryLogRecordExporter LAST_CREATED_INSTANCE;
 
     @Override

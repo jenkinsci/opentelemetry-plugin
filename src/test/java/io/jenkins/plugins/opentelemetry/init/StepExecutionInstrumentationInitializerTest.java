@@ -6,16 +6,16 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
-import org.junit.Test;
-
 import java.util.Collections;
+import org.junit.Test;
 
 public class StepExecutionInstrumentationInitializerTest {
 
     @Test
     public void testAfterConfiguration() {
-        StepExecutionInstrumentationInitializer stepExecutionInstrumentationInitializer = new StepExecutionInstrumentationInitializer();
-        stepExecutionInstrumentationInitializer.afterConfiguration(DefaultConfigProperties.createFromMap(Collections.emptyMap()));
+        StepExecutionInstrumentationInitializer stepExecutionInstrumentationInitializer =
+                new StepExecutionInstrumentationInitializer();
+        stepExecutionInstrumentationInitializer.afterConfiguration(
+                DefaultConfigProperties.createFromMap(Collections.emptyMap()));
     }
-
 }
