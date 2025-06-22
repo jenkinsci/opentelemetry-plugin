@@ -5,19 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.jenkinsci.plugins.workflow.steps.Step;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
-import org.jenkinsci.plugins.workflow.steps.StepExecution;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Item;
@@ -25,6 +12,17 @@ import hudson.model.ItemGroup;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import io.opentelemetry.api.common.AttributeType;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class SetSpanAttributesStep extends Step {
     List<SpanAttribute> spanAttributes;
@@ -40,12 +38,16 @@ public class SetSpanAttributesStep extends Step {
             return new StepExecution(context) {
                 @Override
                 public boolean start() {
-                    getContext().onFailure(new IllegalArgumentException("setSpanAttributes requires the spanAttributes parameter"));
+                    getContext()
+                            .onFailure(new IllegalArgumentException(
+                                    "setSpanAttributes requires the spanAttributes parameter"));
                     return true;
                 }
             };
         }
-        List<SpanAttribute> noValueSet = spanAttributes.stream().filter(spanAttribute -> spanAttribute.getValue() == null).collect(Collectors.toList());
+        List<SpanAttribute> noValueSet = spanAttributes.stream()
+                .filter(spanAttribute -> spanAttribute.getValue() == null)
+                .collect(Collectors.toList());
         if (!noValueSet.isEmpty()) {
             String keys = noValueSet.stream().map(SpanAttribute::getKey).reduce("", (accumulator, spanAttribute) -> {
                 if (accumulator.isEmpty()) {
@@ -57,7 +59,10 @@ public class SetSpanAttributesStep extends Step {
             return new StepExecution(context) {
                 @Override
                 public boolean start() {
-                    getContext().onFailure(new IllegalArgumentException("setSpanAttributes requires that all spanAttributes have a value set. The attribute(s) with the following keys violate this requirement: " + keys));
+                    getContext()
+                            .onFailure(new IllegalArgumentException(
+                                    "setSpanAttributes requires that all spanAttributes have a value set. The attribute(s) with the following keys violate this requirement: "
+                                            + keys));
                     return true;
                 }
             };
@@ -87,14 +92,17 @@ public class SetSpanAttributesStep extends Step {
         }
 
         public ListBoxModel doFillTypeItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
-            List<AttributeType> supportedAttributeTypes = Arrays.asList(AttributeType.STRING, AttributeType.LONG, AttributeType.BOOLEAN, AttributeType.DOUBLE);
-            return new ListBoxModel(supportedAttributeTypes.stream().map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
+            List<AttributeType> supportedAttributeTypes = Arrays.asList(
+                    AttributeType.STRING, AttributeType.LONG, AttributeType.BOOLEAN, AttributeType.DOUBLE);
+            return new ListBoxModel(supportedAttributeTypes.stream()
+                    .map(t -> new ListBoxModel.Option(t.name(), t.name()))
+                    .collect(Collectors.toList()));
         }
 
         public ListBoxModel doFillTargetItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
-            return new ListBoxModel(Arrays.stream(SpanAttributeTarget.values()).map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
+            return new ListBoxModel(Arrays.stream(SpanAttributeTarget.values())
+                    .map(t -> new ListBoxModel.Option(t.name(), t.name()))
+                    .collect(Collectors.toList()));
         }
-
     }
-
 }

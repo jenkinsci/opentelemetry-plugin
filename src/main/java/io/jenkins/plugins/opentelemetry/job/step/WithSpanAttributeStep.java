@@ -5,23 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import org.jenkinsci.plugins.workflow.steps.Step;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
-import org.jenkinsci.plugins.workflow.steps.StepExecution;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
@@ -30,10 +13,25 @@ import hudson.model.ItemGroup;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import io.opentelemetry.api.common.AttributeType;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 @Extension
 public class WithSpanAttributeStep extends Step {
-    private final static Logger logger = Logger.getLogger(WithSpanAttributeStep.class.getName());
+    private static final Logger logger = Logger.getLogger(WithSpanAttributeStep.class.getName());
 
     String key;
     Object value;
@@ -42,9 +40,7 @@ public class WithSpanAttributeStep extends Step {
     SpanAttributeTarget target;
 
     @DataBoundConstructor
-    public WithSpanAttributeStep() {
-
-    }
+    public WithSpanAttributeStep() {}
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
@@ -53,7 +49,9 @@ public class WithSpanAttributeStep extends Step {
             return new StepExecution(context) {
                 @Override
                 public boolean start() {
-                    getContext().onFailure(new IllegalArgumentException("withSpanAttribute requires the value parameter for key " + key));
+                    getContext()
+                            .onFailure(new IllegalArgumentException(
+                                    "withSpanAttribute requires the value parameter for key " + key));
                     return true;
                 }
             };
@@ -65,7 +63,7 @@ public class WithSpanAttributeStep extends Step {
             if (value instanceof Boolean) {
                 type = isArray ? AttributeType.BOOLEAN_ARRAY : AttributeType.BOOLEAN;
             } else if (value instanceof Double || value instanceof Float) {
-                type = isArray ? AttributeType.DOUBLE_ARRAY: AttributeType.DOUBLE;
+                type = isArray ? AttributeType.DOUBLE_ARRAY : AttributeType.DOUBLE;
             } else if (value instanceof Long || value instanceof Integer) {
                 type = isArray ? AttributeType.LONG_ARRAY : AttributeType.LONG;
             } else {
@@ -73,7 +71,8 @@ public class WithSpanAttributeStep extends Step {
             }
         }
 
-        return new SpanAttributeStepExecution(List.of(new SpanAttribute(key, value, type, target)), context.hasBody(), context);
+        return new SpanAttributeStepExecution(
+                List.of(new SpanAttribute(key, value, type, target)), context.hasBody(), context);
     }
 
     public String getKey() {
@@ -105,10 +104,11 @@ public class WithSpanAttributeStep extends Step {
     @DataBoundSetter
     public void setType(String type) {
         this.type = Optional.ofNullable(type)
-            .map(String::trim)
-            .filter(Predicate.not(String::isEmpty))
-            .map(String::toUpperCase)
-            .map(AttributeType::valueOf).orElse(null);
+                .map(String::trim)
+                .filter(Predicate.not(String::isEmpty))
+                .map(String::toUpperCase)
+                .map(AttributeType::valueOf)
+                .orElse(null);
     }
 
     /**
@@ -117,11 +117,11 @@ public class WithSpanAttributeStep extends Step {
     @DataBoundSetter
     public void setTarget(String target) {
         this.target = Optional.ofNullable(target)
-            .map(String::trim)
-            .filter(Predicate.not(String::isEmpty))
-            .map(String::toUpperCase)
-            .map(SpanAttributeTarget::valueOf)
-            .orElse(null);
+                .map(String::trim)
+                .filter(Predicate.not(String::isEmpty))
+                .map(String::toUpperCase)
+                .map(SpanAttributeTarget::valueOf)
+                .orElse(null);
     }
 
     @CheckForNull
@@ -150,14 +150,17 @@ public class WithSpanAttributeStep extends Step {
         }
 
         public ListBoxModel doFillTypeItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
-            List<AttributeType> supportedAttributeTypes = Arrays.asList(AttributeType.STRING, AttributeType.LONG, AttributeType.BOOLEAN, AttributeType.DOUBLE);
-            return new ListBoxModel(supportedAttributeTypes.stream().map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
+            List<AttributeType> supportedAttributeTypes = Arrays.asList(
+                    AttributeType.STRING, AttributeType.LONG, AttributeType.BOOLEAN, AttributeType.DOUBLE);
+            return new ListBoxModel(supportedAttributeTypes.stream()
+                    .map(t -> new ListBoxModel.Option(t.name(), t.name()))
+                    .collect(Collectors.toList()));
         }
 
         public ListBoxModel doFillTargetItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
-            return new ListBoxModel(Arrays.stream(SpanAttributeTarget.values()).map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
+            return new ListBoxModel(Arrays.stream(SpanAttributeTarget.values())
+                    .map(t -> new ListBoxModel.Option(t.name(), t.name()))
+                    .collect(Collectors.toList()));
         }
-
     }
-
 }

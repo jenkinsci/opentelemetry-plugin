@@ -5,12 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.job.cause;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Cause;
 import hudson.triggers.TimerTrigger;
 import jenkins.YesNoMaybe;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class TimerTriggerCauseHandler implements CauseHandler {

@@ -5,29 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.annotation.Nonnull;
-
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.ParseException;
-import org.apache.hc.core5.http.io.HttpClientResponseHandler;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.protocol.HttpContext;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.jayway.jsonpath.JsonPath;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.jenkins.plugins.opentelemetry.job.log.LogLine;
@@ -37,6 +16,23 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.Nonnull;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.protocol.HttpContext;
 
 /*
  * HttpClient can't do preemptive auth and Loki doesn't return `WWW-Authenticate` header when authentication is
@@ -44,8 +40,8 @@ import io.opentelemetry.context.Scope;
  */
 public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoCloseable {
 
-    protected final static Logger logger = Logger.getLogger(LokiBuildLogsLineIterator.class.getName());
-    public final static int MAX_QUERIES = 100;
+    protected static final Logger logger = Logger.getLogger(LokiBuildLogsLineIterator.class.getName());
+    public static final int MAX_QUERIES = 100;
 
     protected final LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters;
 
@@ -56,7 +52,6 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
     final CloseableHttpClient httpClient;
     final HttpContext httpContext;
 
-
     @VisibleForTesting
     int queryCounter;
 
@@ -66,16 +61,13 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
     boolean endOfStream;
 
     public LokiBuildLogsLineIterator(
-
-        @NonNull LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters,
-
-        @NonNull CloseableHttpClient httpClient,
-        @NonNull HttpContext httpContext,
-
-        @NonNull String lokiUrl,
-        @NonNull Optional<HttpAuthHeaderFactory> httpAuthHeaderFactory,
-        @NonNull Optional<String> lokiTenantId,
-        @NonNull Tracer tracer) {
+            @NonNull LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters,
+            @NonNull CloseableHttpClient httpClient,
+            @NonNull HttpContext httpContext,
+            @NonNull String lokiUrl,
+            @NonNull Optional<HttpAuthHeaderFactory> httpAuthHeaderFactory,
+            @NonNull Optional<String> lokiTenantId,
+            @NonNull Tracer tracer) {
 
         this.lokiQueryParameters = lokiQueryParameters;
 
@@ -114,14 +106,14 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
 
     protected Iterator<LogLine<Long>> loadNextLogLines() throws IOException {
         if (queryCounter > MAX_QUERIES) {
-            logger.log(Level.INFO, () -> "Circuit breaker: "
-                + queryCounter + " queries for " + this.lokiQueryParameters);
+            logger.log(
+                    Level.INFO, () -> "Circuit breaker: " + queryCounter + " queries for " + this.lokiQueryParameters);
             return Collections.emptyIterator();
         }
 
         Span loadNextLogLinesSpan = tracer.spanBuilder("LokiBuildLogsLineIterator.loadNextLogLines")
-            .setAllAttributes(this.lokiQueryParameters.toAttributes())
-            .startSpan();
+                .setAllAttributes(this.lokiQueryParameters.toAttributes())
+                .startSpan();
         try (Scope loadNextLogLinesScope = loadNextLogLinesSpan.makeCurrent()) {
 
             ClassicHttpRequest lokiQueryRangeRequest = this.lokiQueryParameters.toHttpRequest(lokiUrl);
@@ -133,55 +125,66 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
             lokiTenantId.ifPresent(tenantId -> lokiQueryRangeRequest.addHeader(new LokiTenantHeader(tenantId)));
 
             queryCounter++;
-            return httpClient.execute(lokiQueryRangeRequest, this.httpContext, new HttpClientResponseHandler<Iterator<LogLine<Long>>>() {
-                @Override
-                public Iterator<LogLine<Long>> handleResponse(ClassicHttpResponse lokiQueryRangeResponse) throws IOException {
-                    try {
-                        if (lokiQueryRangeResponse.getCode() != 200) {
-                            throw new IOException("Loki logs query failure: " +
-                                lokiQueryRangeResponse.getReasonPhrase() + " - " +
-                                EntityUtils.toString(lokiQueryRangeResponse.getEntity()));
+            return httpClient.execute(
+                    lokiQueryRangeRequest, this.httpContext, new HttpClientResponseHandler<Iterator<LogLine<Long>>>() {
+                        @Override
+                        public Iterator<LogLine<Long>> handleResponse(ClassicHttpResponse lokiQueryRangeResponse)
+                                throws IOException {
+                            try {
+                                if (lokiQueryRangeResponse.getCode() != 200) {
+                                    throw new IOException(
+                                            "Loki logs query failure: " + lokiQueryRangeResponse.getReasonPhrase()
+                                                    + " - " + EntityUtils.toString(lokiQueryRangeResponse.getEntity()));
+                                }
+                                HttpEntity entity = lokiQueryRangeResponse.getEntity();
+                                if (entity == null) {
+                                    logger.log(Level.INFO, "No content in response for " + lokiQueryParameters);
+                                    return Collections.emptyIterator();
+                                }
+                                InputStream lokiQueryLogsResponseStream = entity.getContent();
+                                return loadLogLines(lokiQueryLogsResponseStream);
+                            } catch (ParseException e) {
+                                throw new IOException(e);
+                            }
                         }
-                        HttpEntity entity = lokiQueryRangeResponse.getEntity();
-                        if (entity == null) {
-                            logger.log(Level.INFO, "No content in response for " + lokiQueryParameters);
-                            return Collections.emptyIterator();
-                        }
-                        InputStream lokiQueryLogsResponseStream = entity.getContent();
-                        return loadLogLines(lokiQueryLogsResponseStream);
-                    } catch (ParseException e) {
-                        throw new IOException(e);
-                    }
-                }
-            });
+                    });
         }
     }
 
     @Nonnull
     @VisibleForTesting
     protected Iterator<LogLine<Long>> loadLogLines(InputStream lokiQueryResponseInputStream) throws IOException {
-        Iterator<LogLine<Long>> logLineIterator = JsonPath.<List<List<String>>>read(lokiQueryResponseInputStream, "$.data.result[*].values[*]").stream().map(valueKeyPair -> {
-            long timestampInNanos = Long.parseLong(valueKeyPair.get(0));
-            String msg = valueKeyPair.get(1);
-            if (timestampInNanos < lokiQueryParameters.getStartTimeInNanos()) {
-                logger.log(Level.INFO, () -> "Unordered timestamps " + timestampInNanos + " < " + lokiQueryParameters.getStartTimeInNanos()
-                    + " for " + lokiQueryParameters);
-            } else {
-                lokiQueryParameters.setStartTimeInNanos(timestampInNanos + 1); // +1 because `start` is >=
-            }
-            return new LogLine<>(timestampInNanos, msg);
-        }).iterator();
+        Iterator<LogLine<Long>> logLineIterator =
+                JsonPath.<List<List<String>>>read(lokiQueryResponseInputStream, "$.data.result[*].values[*]").stream()
+                        .map(valueKeyPair -> {
+                            long timestampInNanos = Long.parseLong(valueKeyPair.get(0));
+                            String msg = valueKeyPair.get(1);
+                            if (timestampInNanos < lokiQueryParameters.getStartTimeInNanos()) {
+                                logger.log(
+                                        Level.INFO,
+                                        () -> "Unordered timestamps " + timestampInNanos + " < "
+                                                + lokiQueryParameters.getStartTimeInNanos() + " for "
+                                                + lokiQueryParameters);
+                            } else {
+                                lokiQueryParameters.setStartTimeInNanos(
+                                        timestampInNanos + 1); // +1 because `start` is >=
+                            }
+                            return new LogLine<>(timestampInNanos, msg);
+                        })
+                        .iterator();
 
         return new CloseableIterator<>(logLineIterator, lokiQueryResponseInputStream);
     }
 
     @Override
     public void skipLines(Long lastLogTimestampInNanos) {
-        Tracer tracer = logger.isLoggable(Level.FINE) ? this.tracer : TracerProvider.noop().get("noop");
+        Tracer tracer = logger.isLoggable(Level.FINE)
+                ? this.tracer
+                : TracerProvider.noop().get("noop");
         Span span = tracer.spanBuilder("LokiBuildLogsLineIterator.skip")
-            .setAllAttributes(this.lokiQueryParameters.toAttributes())
-            .setAttribute("lastLogTimestampInNanos", lastLogTimestampInNanos)
-            .startSpan();
+                .setAllAttributes(this.lokiQueryParameters.toAttributes())
+                .setAttribute("lastLogTimestampInNanos", lastLogTimestampInNanos)
+                .startSpan();
         long newStartTimeInNanos = lastLogTimestampInNanos + 1;
         try {
             if (this.delegate == null) {
@@ -232,5 +235,4 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
             throw new RuntimeException(e);
         }
     }
-
 }

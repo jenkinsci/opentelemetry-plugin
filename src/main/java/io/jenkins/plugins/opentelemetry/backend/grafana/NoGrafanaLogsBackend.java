@@ -8,16 +8,14 @@ package io.jenkins.plugins.opentelemetry.backend.grafana;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class NoGrafanaLogsBackend extends GrafanaLogsBackend {
     @DataBoundConstructor
-    public NoGrafanaLogsBackend() {
-    }
+    public NoGrafanaLogsBackend() {}
 
     @Override
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
