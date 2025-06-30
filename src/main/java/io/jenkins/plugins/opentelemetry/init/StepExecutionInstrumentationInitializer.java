@@ -6,43 +6,20 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
-import hudson.util.ClassLoaderSanityThreadFactory;
-import hudson.util.DaemonThreadFactory;
-import hudson.util.NamingThreadFactory;
-import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
-
-import javax.annotation.Nonnull;
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
 @Extension
-public class StepExecutionInstrumentationInitializer implements OpenTelemetryLifecycleListener {
+public class StepExecutionInstrumentationInitializer
+        implements SynchronousNonBlockingStepExecution.SynchronousNonBlockingStepExecutorServiceAugmentor {
 
-    final static Logger logger = Logger.getLogger(StepExecutionInstrumentationInitializer.class.getName());
+    static final Logger logger = Logger.getLogger(StepExecutionInstrumentationInitializer.class.getName());
 
-    @Override
-    public void afterConfiguration(@Nonnull ConfigProperties configProperties) {
-        try {
-            logger.log(Level.FINE, () -> "Instrumenting " + SynchronousNonBlockingStepExecution.class.getName() + "...");
-            Class<SynchronousNonBlockingStepExecution> synchronousNonBlockingStepExecutionClass = SynchronousNonBlockingStepExecution.class;
-            Arrays.stream(synchronousNonBlockingStepExecutionClass.getDeclaredFields()).forEach(field -> logger.log(Level.FINE, () -> "Field: " + field.getName()));
-            Field executorServiceField = synchronousNonBlockingStepExecutionClass.getDeclaredField("executorService");
-            executorServiceField.setAccessible(true);
-            ExecutorService executorService = (ExecutorService) Optional.ofNullable(executorServiceField.get(null)).orElseGet(() -> Executors.newCachedThreadPool(new NamingThreadFactory(new ClassLoaderSanityThreadFactory(new DaemonThreadFactory()), "org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution")));
-            ExecutorService instrumentedExecutorService = Context.taskWrapping(executorService);
-            executorServiceField.set(null, instrumentedExecutorService);
-
-            // org.jenkinsci.plugins.workflow.cps.CpsThreadGroup.runner
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+    public ExecutorService augment(ExecutorService executorService) {
+        logger.log(Level.FINE, () -> "Instrumenting " + SynchronousNonBlockingStepExecution.class.getName() + "...");
+        return Context.taskWrapping(executorService);
     }
 }

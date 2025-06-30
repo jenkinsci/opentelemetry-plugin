@@ -5,8 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assume.assumeFalse;
 
+import io.jenkins.plugins.opentelemetry.init.StepExecutionInstrumentationInitializer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +26,11 @@ import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.steps.EchoStep;
+import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.jupiter.api.Timeout;
+import org.jvnet.hudson.test.LogRecorder;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
 import com.github.rutledgepaulv.prune.Tree;
@@ -83,7 +88,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
+        assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
         // FIXME REPAIR METRICS TESTS
         /*
@@ -116,11 +121,11 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
         dumpMetrics(exportedMetrics);
         MetricData diskUsageData = exportedMetrics.get(JenkinsMetrics.JENKINS_DISK_USAGE_BYTES);
-        MatcherAssert.assertThat(diskUsageData, CoreMatchers.notNullValue());
+        assertThat(diskUsageData, CoreMatchers.notNullValue());
         // TODO TEST METRICS WITH PROPER RESET BETWEEN TESTS
-        MatcherAssert.assertThat(diskUsageData.getType(), CoreMatchers.is(MetricDataType.LONG_GAUGE));
+        assertThat(diskUsageData.getType(), CoreMatchers.is(MetricDataType.LONG_GAUGE));
         Collection<LongPointData> metricPoints = diskUsageData.getLongGaugeData().getPoints();
-        MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.notNullValue());
+        assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.notNullValue());
     }
 
     @Test
@@ -146,7 +151,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
             jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
             final Tree<SpanDataWrapper> spans = getBuildTrace();
-            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+            assertThat(spans.cardinality(), CoreMatchers.is(8L));
         }
     }
 
@@ -179,27 +184,27 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI, ExtendedJenkinsAttributes.AGENT_UI, "Stage: foo", "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
+        assertThat(spans.cardinality(), CoreMatchers.is(7L));
 
         Optional<Tree.Node<SpanDataWrapper>> executorNodeAllocation = spans.breadthFirstSearchNodes(node -> (ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI).equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(executorNodeAllocation, CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(executorNodeAllocation, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = executorNodeAllocation.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Optional<Tree.Node<SpanDataWrapper>> executorNode = spans.breadthFirstSearchNodes(node -> (ExtendedJenkinsAttributes.AGENT_UI).equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(executorNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(executorNode, CoreMatchers.is(CoreMatchers.notNullValue()));
         attributes = executorNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.WORKFLOW));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
+        assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.WORKFLOW));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
     }
 
     @Test
@@ -228,14 +233,14 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
+        assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
         Optional<Tree.Node<SpanDataWrapper>> stageNode = spans.breadthFirstSearchNodes(node -> "Stage: ze-stage1".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(stageNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(stageNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = stageNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
@@ -261,14 +266,14 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
+        assertThat(spans.cardinality(), CoreMatchers.is(11L));
 
         Optional<Tree.Node<SpanDataWrapper>> shellNode = spans.breadthFirstSearchNodes(node -> "shell-1".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(shellNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(shellNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = shellNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
@@ -293,7 +298,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "error", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
+        assertThat(spans.cardinality(), CoreMatchers.is(11L));
     }
 
     @Test
@@ -333,7 +338,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
             "Stage: trigger-child-pipeline",
             ExtendedJenkinsAttributes.AGENT_UI,
             "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(15L));
+        assertThat(spans.cardinality(), CoreMatchers.is(15L));
     }
 
     @Test
@@ -361,14 +366,14 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "shell-1", "Parallel branch: parallelBranch1", "Stage: ze-parallel-stage", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "shell-2", "Parallel branch: parallelBranch2", "Stage: ze-parallel-stage", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "shell-3", "Parallel branch: parallelBranch3", "Stage: ze-parallel-stage", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
+        assertThat(spans.cardinality(), CoreMatchers.is(13L));
 
         Optional<Tree.Node<SpanDataWrapper>> branchNode = spans.breadthFirstSearchNodes(node -> "Parallel branch: parallelBranch1".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(branchNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(branchNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = branchNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
@@ -418,15 +423,15 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "git: github.com/octocat/Hello-World", "Stage: foo", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         Optional<Tree.Node<SpanDataWrapper>> gitNode = spans.breadthFirstSearchNodes(node -> "git: github.com/octocat/Hello-World".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(gitNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(gitNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = gitNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_USERNAME), CoreMatchers.is(gitUserName));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_USERNAME), CoreMatchers.is(gitUserName));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     @Test
@@ -446,16 +451,16 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "checkout: github.com/octocat/Hello-World", "Stage: foo", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         Optional<Tree.Node<SpanDataWrapper>> checkoutNode = spans.breadthFirstSearchNodes(node -> "checkout: github.com/octocat/Hello-World".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(checkoutNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(checkoutNode, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         Attributes attributes = checkoutNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(true));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(2L));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(true));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(2L));
     }
 
     @Test
@@ -475,13 +480,13 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
         final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "checkout: github.com/octocat/Hello-World", "Stage: foo", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         Optional<Tree.Node<SpanDataWrapper>> checkoutNode = spans.breadthFirstSearchNodes(node -> "checkout: github.com/octocat/Hello-World".equals(node.getData().spanData.getName()));
         Attributes attributes = checkoutNode.get().getData().spanData.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
     }
 
     @Test
@@ -507,15 +512,15 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "sleep", "Parallel branch: branchThatWillBeInterrupted", "Stage: ze-parallel-stage", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
 
         SpanData sleepSpanData = spans.breadthFirstSearchNodes(node -> "sleep".equals(node.getData().spanData.getName())).get().getData().spanData;
-        MatcherAssert.assertThat(sleepSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
+        assertThat(sleepSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
 
         SpanData branchThatWillBeInterruptedSpanData = spans.breadthFirstSearchNodes(node -> "Parallel branch: branchThatWillBeInterrupted".equals(node.getData().spanData.getName())).get().getData().spanData;
-        MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
-        MatcherAssert.assertThat(branchThatWillBeInterruptedSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_INTERRUPTION_CAUSES), CoreMatchers.is(List.of("FailFastCause: Failed in branch failingBranch")));
+        assertThat(branchThatWillBeInterruptedSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
+        assertThat(branchThatWillBeInterruptedSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_INTERRUPTION_CAUSES), CoreMatchers.is(List.of("FailFastCause: Failed in branch failingBranch")));
 
         SpanData failingBranchSpanData = spans.breadthFirstSearchNodes(node -> "Parallel branch: failingBranch".equals(node.getData().spanData.getName())).get().getData().spanData;
-        MatcherAssert.assertThat(failingBranchSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.ERROR));
-        MatcherAssert.assertThat(failingBranchSpanData.getStatus().getDescription(), CoreMatchers.is("the failure that will cause the interruption of other branches"));
+        assertThat(failingBranchSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.ERROR));
+        assertThat(failingBranchSpanData.getStatus().getDescription(), CoreMatchers.is("the failure that will cause the interruption of other branches"));
     }
 
     @Test
@@ -559,7 +564,15 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        try (LogRecorder recorder = new LogRecorder()
+            .quiet()
+            .record(StepExecutionInstrumentationInitializer.class, Level.FINE)
+            .capture(10)
+        ) {
+            jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+            assertThat(recorder.getMessages(), hasItem("Instrumenting " + SynchronousNonBlockingStepExecution.class.getName() + "..."));
+        }
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
