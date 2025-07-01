@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
@@ -13,6 +12,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class OpenTelemetryConfigurationTest {
 
@@ -103,8 +104,26 @@ public class OpenTelemetryConfigurationTest {
         String actualMetricsExporter = actualOtelProperties.get("otel.metrics.exporter");
         String actualLogsExporter = actualOtelProperties.get("otel.logs.exporter");
 
-        MatcherAssert.assertThat(actualTracesExporter, Matchers.is(expectedTracesExporter));
-        MatcherAssert.assertThat(actualMetricsExporter, Matchers.is(expectedMetricsExporter));
-        MatcherAssert.assertThat(actualLogsExporter, Matchers.is(expectedLogsExporter));
+        assertThat(actualTracesExporter, Matchers.is(expectedTracesExporter));
+        assertThat(actualMetricsExporter, Matchers.is(expectedMetricsExporter));
+        assertThat(actualLogsExporter, Matchers.is(expectedLogsExporter));
+    }
+
+    @Test
+    public void testNoEndpointConfiguredDisablesExporters() {
+        OpenTelemetryConfiguration config = new OpenTelemetryConfiguration(
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            new HashMap<>()
+        );
+        Map<String, String> properties = config.toOpenTelemetryProperties();
+
+        assertThat(properties.get("otel.traces.exporter"), Matchers.is("none"));
+        assertThat(properties.get("otel.metrics.exporter"), Matchers.is("none"));
+        assertThat(properties.get("otel.logs.exporter"), Matchers.is("none"));
     }
 }

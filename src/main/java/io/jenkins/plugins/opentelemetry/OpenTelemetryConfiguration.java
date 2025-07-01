@@ -122,6 +122,8 @@ public class OpenTelemetryConfiguration {
             StringUtils.isBlank(OtelUtils.getSystemPropertyOrEnvironmentVariable("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"))) {
             // Change default of "otel.traces.exporter" from "otlp" to "none" unless "otel.exporter.otlp.endpoint" or "otel.exporter.otlp.traces.endpoint" is defined
             properties.put(OTEL_TRACES_EXPORTER.asProperty(), "none");
+            properties.put(OTEL_METRICS_EXPORTER.asProperty(), "none");
+            properties.put(OTEL_LOGS_EXPORTER.asProperty(), "none");
         }
 
         this.getTrustedCertificatesPem().ifPresent(
