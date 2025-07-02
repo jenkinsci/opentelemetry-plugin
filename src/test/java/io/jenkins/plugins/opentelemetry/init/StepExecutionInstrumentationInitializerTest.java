@@ -11,13 +11,10 @@ import static org.hamcrest.Matchers.is;
 
 import hudson.ExtensionList;
 import java.util.List;
-import java.util.logging.Level;
-import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution.SynchronousNonBlockingStepExecutorServiceAugmentor;
+import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution.ExecutorServiceAugmentor;
 import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.LoggerRule;
 
 public class StepExecutionInstrumentationInitializerTest {
 
@@ -26,8 +23,7 @@ public class StepExecutionInstrumentationInitializerTest {
 
     @Test
     public void test_executorServiceAugmentor() throws Exception {
-        List<SynchronousNonBlockingStepExecutorServiceAugmentor> extensions =
-                ExtensionList.lookup(SynchronousNonBlockingStepExecutorServiceAugmentor.class);
+        List<ExecutorServiceAugmentor> extensions = ExtensionList.lookup(ExecutorServiceAugmentor.class);
         assertThat(extensions.size(), is(1));
         assertThat(extensions.get(0), instanceOf(StepExecutionInstrumentationInitializer.class));
     }

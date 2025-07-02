@@ -61,6 +61,7 @@ import java.util.function.BiPredicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.jvnet.hudson.test.FlagRule;
 
 import static com.google.common.base.Verify.verify;
 import static java.util.Optional.empty;
@@ -70,11 +71,17 @@ import static org.junit.Assert.fail;
 public class BaseIntegrationTest {
     private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
-    static {
-        OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
-        OtelTraceService.STRICT_MODE = true;
-        GitSCM.ALLOW_LOCAL_CHECKOUT = true;
-    }
+    @Rule
+    public FlagRule<Boolean> reset_OpenTelemtryConfiguration_TestingInMemoryMode =
+        new FlagRule<>(() -> OpenTelemetryConfiguration.TESTING_INMEMORY_MODE, x -> OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = x);
+
+    @Rule
+    public FlagRule<Boolean> reset_OtelTraceService_StrictMode =
+        new FlagRule<>(() -> OtelTraceService.STRICT_MODE, x -> OtelTraceService.STRICT_MODE = x);
+
+    @Rule
+    public FlagRule<Boolean> reset_GitSCM_allowLocalCheckout =
+        new FlagRule<>(() -> GitSCM.ALLOW_LOCAL_CHECKOUT, x -> GitSCM.ALLOW_LOCAL_CHECKOUT = x);
 
     public final static AtomicInteger jobNameSuffix = new AtomicInteger();
 
@@ -103,6 +110,9 @@ public class BaseIntegrationTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
+        OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
+        OtelTraceService.STRICT_MODE = true;
+        GitSCM.ALLOW_LOCAL_CHECKOUT = true;
         LOGGER.log(Level.INFO, "beforeClass()");
         LOGGER.log(Level.INFO, "Wait for jenkins to start...");
         jenkinsRule.waitUntilNoActivity();
@@ -113,7 +123,6 @@ public class BaseIntegrationTest {
         jenkinsControllerOpenTelemetry = jenkinsOpenTelemetries.get(0);
 
         // verify(jenkinsControllerOpenTelemetry.openTelemetry == null, "JenkinsControllerOpenTelemetry has already been configured");
-        OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
         try {
             OpenTelemetryConfiguration configuration = new OpenTelemetryConfiguration(
                 of("http://localhost:4317"), empty(),

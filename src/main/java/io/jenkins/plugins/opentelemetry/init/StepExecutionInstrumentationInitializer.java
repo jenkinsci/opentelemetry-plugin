@@ -14,7 +14,7 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
 @Extension
 public class StepExecutionInstrumentationInitializer
-        implements SynchronousNonBlockingStepExecution.SynchronousNonBlockingStepExecutorServiceAugmentor {
+        implements SynchronousNonBlockingStepExecution.ExecutorServiceAugmentor {
 
     static final Logger logger = Logger.getLogger(StepExecutionInstrumentationInitializer.class.getName());
 

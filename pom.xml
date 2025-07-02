@@ -120,7 +120,7 @@
             <dependency>
                 <groupId>org.jenkins-ci.plugins.workflow</groupId>
                 <artifactId>workflow-step-api</artifactId>
-                <version>704.v83b_95dd41b_7b_</version>
+                <version>705.vd44f505b_0c5b_</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
