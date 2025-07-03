@@ -29,7 +29,6 @@ import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 
-@Disabled("These tests are unstables, we need to review them")
 @WithJenkinsConfiguredWithCode
 public class ElasticsearchBackendITTest extends ElasticStackIT {
 
