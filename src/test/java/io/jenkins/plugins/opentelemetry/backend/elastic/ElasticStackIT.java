@@ -6,17 +6,16 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.concurrent.TimeUnit;
+import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Timeout;
-import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+import java.util.logging.Level;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.jvnet.hudson.test.BuildWatcher;
+import org.jvnet.hudson.test.LoggerRule;
 import org.testcontainers.DockerClientFactory;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.apache.commons.lang3.SystemUtils;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -24,30 +23,36 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 /**
  * Base class for integration tests using an Elastic Stack.
  */
-@Timeout(value = 10, unit = TimeUnit.MINUTES)
-@WithJenkins
-@Testcontainers(disabledWithoutDocker = true)
 public abstract class ElasticStackIT {
-    @Container
+
     public static ElasticStack elasticStack = new ElasticStack();
 
-    protected JenkinsRule j;
+    @Rule
+    public JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
 
-    @BeforeEach
-    void beforeEach(JenkinsRule j) {
-        this.j = j;
-        this.j.timeout = 0;
+    @Rule
+    public LoggerRule loggerRule = new LoggerRule()
+        .record(ElasticsearchLogStorageRetriever.class, Level.FINE);
+
+    @Rule
+    public BuildWatcher buildWatcher = new BuildWatcher();
+
+    @Before
+    public void beforeEach() throws Exception {
         elasticStack.getServicePort(ElasticStack.EDOT_SERVICE, ElasticStack.OTEL_PORT);
     }
 
-    @BeforeAll
-    static void beforeAll() {
+    @BeforeClass
+    public static void beforeAll() throws Exception {
         assumeTrue(SystemUtils.IS_OS_MAC || SystemUtils.IS_OS_LINUX);
         assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+        elasticStack.start();
+        elasticStack.createLogIndex();
     }
 
-    @AfterAll
-    static void afterAll() {
-       GlobalOpenTelemetry.resetForTest();
+    @AfterClass
+    public static void afterAll() {
+        elasticStack.stop();
+        GlobalOpenTelemetry.resetForTest();
     }
 }
