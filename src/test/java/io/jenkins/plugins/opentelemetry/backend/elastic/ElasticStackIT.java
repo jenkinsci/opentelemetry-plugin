@@ -4,7 +4,7 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.Assume.assumeTrue;
 
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
 
