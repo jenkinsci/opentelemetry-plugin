@@ -25,7 +25,7 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
  */
 public abstract class ElasticStackIT {
 
-    public static ElasticStack elasticStack = new ElasticStack();
+    public static ElasticStack elasticStack;
 
     @Rule
     public JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
@@ -46,6 +46,7 @@ public abstract class ElasticStackIT {
     public static void beforeAll() throws Exception {
         assumeTrue(SystemUtils.IS_OS_MAC || SystemUtils.IS_OS_LINUX);
         assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+        elasticStack = new ElasticStack();
         elasticStack.start();
         elasticStack.createLogIndex();
     }
