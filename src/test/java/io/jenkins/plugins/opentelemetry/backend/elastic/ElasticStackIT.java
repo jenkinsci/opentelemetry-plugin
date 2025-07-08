@@ -53,7 +53,9 @@ public abstract class ElasticStackIT {
 
     @AfterClass
     public static void afterAll() {
-        elasticStack.stop();
+        if (elasticStack != null) {
+            elasticStack.stop();
+        }
         GlobalOpenTelemetry.resetForTest();
     }
 }
