@@ -53,10 +53,10 @@ public class ElasticStack extends ComposeContainer {
     public ElasticStack() {
         super(new File("src/test/resources/docker-compose.yml"));
         this.withExposedService(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT)
-            .withExposedService(KIBANA_SERVICE, KIBANA_PORT)
-            .withExposedService(EDOT_SERVICE, OTEL_PORT)
-            .waitingFor(EDOT_SERVICE, new DockerHealthcheckWaitStrategy())
-            .withStartupTimeout(Duration.ofMinutes(10));
+                .withExposedService(KIBANA_SERVICE, KIBANA_PORT)
+                .withExposedService(EDOT_SERVICE, OTEL_PORT)
+                .waitingFor(EDOT_SERVICE, new DockerHealthcheckWaitStrategy())
+                .withStartupTimeout(Duration.ofMinutes(10));
     }
 
     /**
@@ -86,25 +86,24 @@ public class ElasticStack extends ComposeContainer {
      * @throws IOException
      */
     public void createLogIndex() throws IOException {
-        try (ElasticsearchClient client = ElasticsearchClient.of(b -> b.host(getEsUrl())
-                                                                       .usernameAndPassword(USER_NAME, PASSWORD))) {
+        try (ElasticsearchClient client =
+                ElasticsearchClient.of(b -> b.host(getEsUrl()).usernameAndPassword(USER_NAME, PASSWORD))) {
+            boolean exists = client.indices().exists(e -> e.index(INDEX)).value();
+            if (exists) {
+                return;
+            }
+
             client.indices().create(c -> c.index(INDEX)
-                                          .mappings(m -> m
-                                              .properties("@timestamp", p -> p.date(d -> d))
-                                              .properties(TemplateBindings.TRACE_ID, p -> p.keyword(k -> k))
-                                              .properties(TemplateBindings.SPAN_ID, p -> p.keyword(k -> k))
-                                          )
-                                          .settings(settings -> settings.numberOfReplicas("0"))
-            );
+                    .mappings(m -> m.properties("@timestamp", p -> p.date(d -> d))
+                            .properties(TemplateBindings.TRACE_ID, p -> p.keyword(k -> k))
+                            .properties(TemplateBindings.SPAN_ID, p -> p.keyword(k -> k)))
+                    .settings(settings -> settings.numberOfReplicas("0")));
 
             BulkRequest.Builder br = new BulkRequest.Builder();
             for (int n = 0; n < 100; n++) {
                 String index = String.valueOf(n);
-                br.operations(op -> op
-                    .index(idx -> idx
-                        .index(INDEX)
-                        .document(
-                            Map.of(
+                br.operations(op -> op.index(idx -> idx.index(INDEX)
+                        .document(Map.of(
                                 TemplateBindings.TRACE_ID, "foo" + index,
                                 TemplateBindings.SPAN_ID, "bar" + index))));
             }
@@ -119,12 +118,12 @@ public class ElasticStack extends ComposeContainer {
         GlobalOpenTelemetry.resetForTest();
         GlobalOpenTelemetry.set(reconfigurableOpenTelemetry);
 
-        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all()
-                                                                                         .get(
-                                                                                             JenkinsOpenTelemetryPluginConfiguration.class);
-        elasticBackendConfiguration = (ElasticBackend) configuration.getObservabilityBackends().get(0);
-        elasticStackConfiguration = ((ElasticLogsBackendWithJenkinsVisualization) elasticBackendConfiguration
-            .getElasticLogsBackend());
+        final JenkinsOpenTelemetryPluginConfiguration configuration =
+                GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+        elasticBackendConfiguration =
+                (ElasticBackend) configuration.getObservabilityBackends().get(0);
+        elasticStackConfiguration =
+                ((ElasticLogsBackendWithJenkinsVisualization) elasticBackendConfiguration.getElasticLogsBackend());
 
         // overrides the configuration defined in jcasc-elastic-backend.yml
         configuration.setEndpoint(getFleetUrl());
