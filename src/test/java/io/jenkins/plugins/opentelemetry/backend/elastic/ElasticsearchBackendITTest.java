@@ -9,8 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import hudson.init.InitMilestone;
-import hudson.init.Initializer;
 import hudson.model.labels.LabelAtom;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
@@ -31,7 +29,6 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.jvnet.hudson.test.TestExtension;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 @Timeout(value = 10, unit = TimeUnit.MINUTES)
@@ -48,10 +45,9 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition(
                 """
-                  node('remote') {
-                      echo 'Hello'
-                  }""",
-                true));
+                node('remote') {
+                    echo 'Hello'
+                }""", true));
         WorkflowRun run = j.buildAndAssertSuccess(p);
         waitForLogs(run);
     }
@@ -161,17 +157,5 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
         assertTrue(logContent.contains("Hello"));
         assertTrue(logContent.contains("[Pipeline] }"));
         assertTrue(logContent.contains("Finished: SUCCESS"));
-    }
-
-    @TestExtension
-    public static class IndexInitializer {
-        /**
-         * Initializes the log index in the Elastic Stack.
-         * Declared as an initializer to ensure it runs after {@link io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry#init()} and avoids exception by {@link io.opentelemetry.api.GlobalOpenTelemetry#set(io.opentelemetry.api.OpenTelemetry)}
-         */
-        @Initializer(after = InitMilestone.SYSTEM_CONFIG_LOADED)
-        public void init() throws Exception {
-            elasticStack.createLogIndex();
-        }
     }
 }

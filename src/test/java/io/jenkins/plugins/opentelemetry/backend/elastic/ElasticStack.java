@@ -85,9 +85,14 @@ public class ElasticStack extends ComposeContainer {
      *
      * @throws IOException
      */
-    public void createLogIndex() throws IOException {
+    public void createLogIndexIfNeeded() throws IOException {
         try (ElasticsearchClient client =
                 ElasticsearchClient.of(b -> b.host(getEsUrl()).usernameAndPassword(USER_NAME, PASSWORD))) {
+            try {
+                client.ping();
+            } catch (Exception e) {
+                return;
+            }
             boolean exists = client.indices().exists(e -> e.index(INDEX)).value();
             if (exists) {
                 return;

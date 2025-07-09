@@ -6,6 +6,8 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,5 +39,14 @@ public abstract class ElasticStackIT {
     @AfterAll
     static void afterAll() {
         GlobalOpenTelemetry.resetForTest();
+    }
+
+    /**
+     * Initializes the log index in the Elastic Stack.
+     * Declared as an initializer to ensure it runs after {@link io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry#init()} and avoids exception by {@link io.opentelemetry.api.GlobalOpenTelemetry#set(io.opentelemetry.api.OpenTelemetry)}
+     */
+    @Initializer(after = InitMilestone.SYSTEM_CONFIG_LOADED)
+    public static void init() throws Exception {
+        elasticStack.createLogIndexIfNeeded();
     }
 }
