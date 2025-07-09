@@ -6,37 +6,27 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.concurrent.TimeUnit;
-
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Timeout;
-import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.apache.commons.lang3.SystemUtils;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
-
 /**
  * Base class for integration tests using an Elastic Stack.
  */
-@Timeout(value = 10, unit = TimeUnit.MINUTES)
-@WithJenkins
 @Testcontainers(disabledWithoutDocker = true)
 public abstract class ElasticStackIT {
     @Container
     public static ElasticStack elasticStack = new ElasticStack();
 
-    protected JenkinsRule j;
-
     @BeforeEach
-    void beforeEach(JenkinsRule j) {
-        this.j = j;
-        this.j.timeout = 0;
+    void beforeEach() {
         elasticStack.getServicePort(ElasticStack.EDOT_SERVICE, ElasticStack.OTEL_PORT);
     }
 
@@ -48,6 +38,15 @@ public abstract class ElasticStackIT {
 
     @AfterAll
     static void afterAll() {
-       GlobalOpenTelemetry.resetForTest();
+        GlobalOpenTelemetry.resetForTest();
+    }
+
+    /**
+     * Initializes the log index in the Elastic Stack.
+     * Declared as an initializer to ensure it runs after {@link io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry#init()} and avoids exception by {@link io.opentelemetry.api.GlobalOpenTelemetry#set(io.opentelemetry.api.OpenTelemetry)}
+     */
+    @Initializer(after = InitMilestone.SYSTEM_CONFIG_LOADED)
+    public static void init() throws Exception {
+        elasticStack.createLogIndexIfNeeded();
     }
 }

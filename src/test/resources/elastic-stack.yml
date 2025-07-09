@@ -23,7 +23,7 @@ services:
       - "action.destructive_requires_name=false"
     image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION:-9.0.0}
     ports:
-      - "9200"
+      - "9200:9200"
     healthcheck:
       interval: 20s
       retries: 10
@@ -65,7 +65,7 @@ services:
     volumes:
       - edot-config:/edot
     ports:
-      - "4317"
+      - "4317:4317"
     healthcheck:
       test:
         [
