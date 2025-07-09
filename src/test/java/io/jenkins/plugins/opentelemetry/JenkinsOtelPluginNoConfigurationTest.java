@@ -1,12 +1,14 @@
 package io.jenkins.plugins.opentelemetry;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.init.StepExecutionInstrumentationInitializer;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import org.hamcrest.Matchers;
@@ -63,5 +65,33 @@ public class JenkinsOtelPluginNoConfigurationTest {
 
         // without specific configuration, no spans should be exported
         assertThat(InMemorySpanExporterProvider.LAST_CREATED_INSTANCE, nullValue());
+    }
+
+    /**
+     * Make sure a standard pipeline with synchronous non-blocking steps works with {@link StepExecutionInstrumentationInitializer#augment(ExecutorService)}
+     */
+    @Test
+    public void test_standard_pipeline() throws Exception {
+        j.createOnlineSlave();
+        WorkflowJob pipeline = j.createProject(WorkflowJob.class);
+        pipeline.setDefinition(new CpsFlowDefinition(
+                """
+            node {
+                writeFile(file: 'file', text: 'Hello, World!')
+                archiveArtifacts('file')
+            }
+            """,
+                true));
+
+        try (LogRecorder recorder = new LogRecorder()
+                .quiet()
+                .record(StepExecutionInstrumentationInitializer.class, Level.FINE)
+                .capture(10)) {
+            var build = j.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+            assertThat(build.getArtifacts(), hasSize(1));
+            assertThat(
+                    recorder.getMessages(),
+                    Matchers.hasItem("Instrumenting " + SynchronousNonBlockingStepExecution.class.getName() + "..."));
+        }
     }
 }
