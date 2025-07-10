@@ -30,11 +30,17 @@ public class JenkinsOtelPluginNoConfigurationTest {
     public BuildWatcher buildWatcher = new BuildWatcher();
 
     /**
+     * As the JVM and classes are loaded only once for the whole test, {@link SynchronousNonBlockingStepExecution#getExecutorService()} augments only once. The current boolean keeps track of the augmentation status.
+     */
+    private static boolean augmented = false;
+
+    /**
      * Test that the StepExecutionInstrumentationInitializer does nothing when configuration is not set.
      * This test is similar to {@link JenkinsOtelPluginIntegrationTest#testSpanContextPropagationSynchronousNonBlockingTestStep()}
      */
     @Test
     public void test_noOp_when_not_configured() throws Exception {
+
         String pipelineScript =
                 """
             node() {
@@ -53,9 +59,7 @@ public class JenkinsOtelPluginNoConfigurationTest {
                 .record(StepExecutionInstrumentationInitializer.class, Level.FINE)
                 .capture(10)) {
             j.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
-            assertThat(
-                    recorder.getMessages(),
-                    Matchers.hasItem("Instrumenting " + SynchronousNonBlockingStepExecution.class.getName() + "..."));
+            checkAugmentation(recorder);
         }
         CompletableResultCode result = JenkinsControllerOpenTelemetry.get()
                 .getOpenTelemetrySdk()
@@ -89,9 +93,16 @@ public class JenkinsOtelPluginNoConfigurationTest {
                 .capture(10)) {
             var build = j.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
             assertThat(build.getArtifacts(), hasSize(1));
+            checkAugmentation(recorder);
+        }
+    }
+
+    private void checkAugmentation(LogRecorder recorder) {
+        if (!augmented) {
             assertThat(
                     recorder.getMessages(),
                     Matchers.hasItem("Instrumenting " + SynchronousNonBlockingStepExecution.class.getName() + "..."));
+            augmented = true;
         }
     }
 }
