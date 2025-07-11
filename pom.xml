@@ -71,7 +71,6 @@
     <useBeta>true</useBeta>
     <elasticstack.version>9.0.0</elasticstack.version>
     <error-prone.version>2.38.0</error-prone.version>
-    <spotless.check.skip>false</spotless.check.skip>
   </properties>
 
   <dependencyManagement>
@@ -162,10 +161,6 @@
         <exclusion>
           <groupId>com.google.code.findbugs</groupId>
           <artifactId>jsr305</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>io.opentelemetry</groupId>
-          <artifactId>opentelemetry-api</artifactId>
         </exclusion>
         <exclusion>
           <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-5-api -->
