@@ -5,27 +5,22 @@
 
 package io.jenkins.plugins.opentelemetry.authentication;
 
+import hudson.Extension;
 import java.util.Map;
-
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
-
-import hudson.Extension;
 
 @Extension
 public class NoAuthentication extends OtlpAuthentication {
 
     @DataBoundConstructor
-    public NoAuthentication() {
-    }
+    public NoAuthentication() {}
 
     @Override
-    public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {
-    }
+    public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {}
 
     @Override
-    public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
-    }
+    public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {}
 
     @Override
     public String toString() {

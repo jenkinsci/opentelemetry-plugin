@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry.job.action;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Scope;
-
 import java.util.List;
 
 /**

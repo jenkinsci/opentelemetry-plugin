@@ -6,12 +6,11 @@
 package io.jenkins.plugins.opentelemetry.job;
 
 import com.google.common.collect.ComparisonChain;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import net.jcip.annotations.Immutable;
 import java.util.Objects;
+import net.jcip.annotations.Immutable;
 
 @Immutable
 public class RunIdentifier implements Comparable<RunIdentifier> {
@@ -54,10 +53,7 @@ public class RunIdentifier implements Comparable<RunIdentifier> {
 
     @Override
     public String toString() {
-        return "RunIdentifier{" +
-            "jobName='" + jobName + '\'' +
-            ", runNumber=" + runNumber +
-            '}';
+        return "RunIdentifier{" + "jobName='" + jobName + '\'' + ", runNumber=" + runNumber + '}';
     }
 
     public String getJobName() {
@@ -70,6 +66,9 @@ public class RunIdentifier implements Comparable<RunIdentifier> {
 
     @Override
     public int compareTo(RunIdentifier o) {
-        return ComparisonChain.start().compare(this.jobName, o.jobName).compare(this.runNumber, o.runNumber).result();
+        return ComparisonChain.start()
+                .compare(this.jobName, o.jobName)
+                .compare(this.runNumber, o.runNumber)
+                .result();
     }
 }

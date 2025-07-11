@@ -6,8 +6,8 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.util.concurrent.TimeUnit;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,8 +18,6 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.apache.commons.lang3.SystemUtils;
-
-import io.opentelemetry.api.GlobalOpenTelemetry;
 
 /**
  * Base class for integration tests using an Elastic Stack.
@@ -48,6 +46,6 @@ public abstract class ElasticStackIT {
 
     @AfterAll
     static void afterAll() {
-       GlobalOpenTelemetry.resetForTest();
+        GlobalOpenTelemetry.resetForTest();
     }
 }
