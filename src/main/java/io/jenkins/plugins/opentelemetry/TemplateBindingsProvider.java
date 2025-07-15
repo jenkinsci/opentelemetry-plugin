@@ -18,6 +18,7 @@ public interface TemplateBindingsProvider {
     static TemplateBindingsProvider empty() {
         return Collections::emptyMap;
     }
+
     static TemplateBindingsProvider of(Map<String, Object> bindings) {
         return () -> bindings;
     }
@@ -25,6 +26,7 @@ public interface TemplateBindingsProvider {
     static TemplateBindingsProvider of(String key, String value) {
         return of(Collections.singletonMap(key, value));
     }
+
     static TemplateBindingsProvider of(String key1, String value1, String key2, String value2) {
         Map<String, Object> map = new LinkedHashMap<>(2);
         map.put(key1, value1);
@@ -35,7 +37,8 @@ public interface TemplateBindingsProvider {
     /**
      * Passed {@code bindings} overwrite the values of the passed {@code templateBindingsProvider}
      */
-    static TemplateBindingsProvider compose(TemplateBindingsProvider templateBindingsProvider, Map<String, Object> bindings) {
+    static TemplateBindingsProvider compose(
+            TemplateBindingsProvider templateBindingsProvider, Map<String, Object> bindings) {
         return () -> {
             Map<String, Object> newBindings = new HashMap<>(templateBindingsProvider.getBindings());
             newBindings.putAll(bindings);

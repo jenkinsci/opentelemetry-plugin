@@ -22,6 +22,11 @@ import io.opentelemetry.semconv.ClientAttributes;
 import io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.EventIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.UserIncubatingAttributes;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 import jenkins.YesNoMaybe;
 import jenkins.security.SecurityListener;
 import org.springframework.security.core.Authentication;
@@ -29,12 +34,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * TODO improve {@link io.jenkins.plugins.opentelemetry.init.ServletFilterInitializer} to ensure the
@@ -44,7 +43,7 @@ import java.util.logging.Logger;
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class AuditingSecurityListener extends SecurityListener implements OpenTelemetryLifecycleListener {
 
-    private final static Logger LOGGER = Logger.getLogger(AuditingSecurityListener.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(AuditingSecurityListener.class.getName());
 
     private LongCounter loginSuccessCounter;
     private LongCounter loginFailureCounter;
@@ -62,23 +61,19 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
 
         Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
 
-        loginSuccessCounter =
-            meter.counterBuilder(JenkinsMetrics.LOGIN_SUCCESS)
+        loginSuccessCounter = meter.counterBuilder(JenkinsMetrics.LOGIN_SUCCESS)
                 .setDescription("Successful logins")
                 .setUnit("${logins}")
                 .build();
-        loginFailureCounter =
-            meter.counterBuilder(JenkinsMetrics.LOGIN_FAILURE)
+        loginFailureCounter = meter.counterBuilder(JenkinsMetrics.LOGIN_FAILURE)
                 .setDescription("Failing logins")
                 .setUnit("${logins}")
                 .build();
 
-        loginCounter =
-            meter.counterBuilder(JenkinsMetrics.LOGIN)
+        loginCounter = meter.counterBuilder(JenkinsMetrics.LOGIN)
                 .setDescription("Logins")
                 .setUnit("${logins}")
                 .build();
-
     }
 
     @Override
@@ -99,12 +94,15 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         AttributesBuilder attributesBuilder = Attributes.builder();
         Optional<User> user = Optional.ofNullable(User.current());
         attributesBuilder
-            .put(EventIncubatingAttributes.EVENT_NAME, ExtendedJenkinsAttributes.EVENT_NAME_USER_LOGIN)
-            .put(ExtendedJenkinsAttributes.EVENT_CATEGORY, ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
-            .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.SUCCESS)
-            .put(EnduserIncubatingAttributes.ENDUSER_ID, user.map(User::getId).orElse(username))
-            .put(UserIncubatingAttributes.USER_ID, user.map(User::getId).orElse(username))
-        ;
+                .put(EventIncubatingAttributes.EVENT_NAME, ExtendedJenkinsAttributes.EVENT_NAME_USER_LOGIN)
+                .put(
+                        ExtendedJenkinsAttributes.EVENT_CATEGORY,
+                        ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
+                .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.SUCCESS)
+                .put(
+                        EnduserIncubatingAttributes.ENDUSER_ID,
+                        user.map(User::getId).orElse(username))
+                .put(UserIncubatingAttributes.USER_ID, user.map(User::getId).orElse(username));
 
         // Stapler.getCurrentRequest() returns null, it's not yet initialized
         SecurityContext securityContext = SecurityContextHolder.getContext();
@@ -112,19 +110,18 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
             Authentication authentication = securityContext.getAuthentication();
             Object details = authentication.getDetails();
             if (details instanceof WebAuthenticationDetails webAuthenticationDetails) {
-                attributesBuilder
-                    .put(ClientAttributes.CLIENT_ADDRESS, webAuthenticationDetails.getRemoteAddress());
+                attributesBuilder.put(ClientAttributes.CLIENT_ADDRESS, webAuthenticationDetails.getRemoteAddress());
                 message += " from " + webAuthenticationDetails.getRemoteAddress();
             }
         }
 
-        otelLogger.logRecordBuilder()
-            .setAllAttributes(attributesBuilder.build())
-            .setSeverity(Severity.INFO)
-            .setBody(message)
-            .emit();
+        otelLogger
+                .logRecordBuilder()
+                .setAllAttributes(attributesBuilder.build())
+                .setSeverity(Severity.INFO)
+                .setBody(message)
+                .emit();
     }
-
 
     @Override
     protected void failedToLogIn(@NonNull String username) {
@@ -134,20 +131,22 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
         String message = "Failed login of user '" + username + "'";
         AttributesBuilder attributesBuilder = Attributes.builder();
         attributesBuilder
-            .put(EventIncubatingAttributes.EVENT_NAME, ExtendedJenkinsAttributes.EVENT_NAME_USER_LOGIN)
-            .put(ExtendedJenkinsAttributes.EVENT_CATEGORY, ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
-            .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.FAILURE)
-            .put(EnduserIncubatingAttributes.ENDUSER_ID, username)
-            .put(UserIncubatingAttributes.USER_ID, username)
-        ;
+                .put(EventIncubatingAttributes.EVENT_NAME, ExtendedJenkinsAttributes.EVENT_NAME_USER_LOGIN)
+                .put(
+                        ExtendedJenkinsAttributes.EVENT_CATEGORY,
+                        ExtendedJenkinsAttributes.EventCategoryValues.AUTHENTICATION)
+                .put(ExtendedJenkinsAttributes.EVENT_OUTCOME, ExtendedJenkinsAttributes.EventOutcomeValues.FAILURE)
+                .put(EnduserIncubatingAttributes.ENDUSER_ID, username)
+                .put(UserIncubatingAttributes.USER_ID, username);
 
         // TODO find a solution to retrieve the remoteIpAddress
 
-        otelLogger.logRecordBuilder()
-            .setAllAttributes(attributesBuilder.build())
-            .setSeverity(Severity.WARN)
-            .setBody(message)
-            .emit();
+        otelLogger
+                .logRecordBuilder()
+                .setAllAttributes(attributesBuilder.build())
+                .setSeverity(Severity.WARN)
+                .setBody(message)
+                .emit();
     }
 
     @Inject

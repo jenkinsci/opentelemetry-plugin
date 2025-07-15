@@ -5,12 +5,19 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import static org.mockito.Mockito.mockStatic;
+
+import hudson.model.Computer;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.sdk.testing.trace.SpanMock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
+import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.Step;
@@ -24,14 +31,6 @@ import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import static org.mockito.Mockito.mockStatic;
-
-import hudson.model.Computer;
-import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.sdk.testing.trace.SpanMock;
-import jenkins.model.Jenkins;
 
 public class MonitoringPipelineListenerNonParameterizedTest {
 
@@ -97,7 +96,8 @@ public class MonitoringPipelineListenerNonParameterizedTest {
             Assert.assertEquals("testuser", testSpan.getAttributes().get(AttributeKey.stringKey("caller.name")));
 
             for (String component : Arrays.asList("computer", "child")) {
-                AttributeKey<String> attributeKey = AttributeKey.stringKey("attribute.from." + component + ".action.applied");
+                AttributeKey<String> attributeKey =
+                        AttributeKey.stringKey("attribute.from." + component + ".action.applied");
                 Assert.assertTrue(testSpan.getAttributes().containsKey(attributeKey));
                 Assert.assertEquals("true", testSpan.getAttributes().get(attributeKey));
             }
@@ -111,7 +111,8 @@ public class MonitoringPipelineListenerNonParameterizedTest {
 
         SpanMock shSpan = new SpanMock(SH_STEP_SPAN_NAME);
 
-        Assert.assertNotEquals(testSpan.getSpanContext().getSpanId(), shSpan.getSpanContext().getSpanId());
+        Assert.assertNotEquals(
+                testSpan.getSpanContext().getSpanId(), shSpan.getSpanContext().getSpanId());
 
         try (MockedStatic<Span> mockedStatic = mockStatic(Span.class)) {
             // Span.current() should return the mocked span.
@@ -143,7 +144,9 @@ public class MonitoringPipelineListenerNonParameterizedTest {
 
         // Computer AttributesAction stub.
         OpenTelemetryAttributesAction otelComputerAttributesAction = new OpenTelemetryAttributesAction();
-        otelComputerAttributesAction.getAttributes().put(AttributeKey.stringKey("attribute.from.computer.action.applied"), "true");
+        otelComputerAttributesAction
+                .getAttributes()
+                .put(AttributeKey.stringKey("attribute.from.computer.action.applied"), "true");
         Mockito.when(computer.getAction(OpenTelemetryAttributesAction.class)).thenReturn(otelComputerAttributesAction);
 
         // Child AttributesAction stub.
@@ -153,7 +156,9 @@ public class MonitoringPipelineListenerNonParameterizedTest {
             otelChildAttributesAction.addSpanIdToInheritanceAllowedList(id);
         }
 
-        otelChildAttributesAction.getAttributes().put(AttributeKey.stringKey("attribute.from.child.action.applied"), "true");
+        otelChildAttributesAction
+                .getAttributes()
+                .put(AttributeKey.stringKey("attribute.from.child.action.applied"), "true");
         Mockito.when(stepContext.get(OpenTelemetryAttributesAction.class)).thenReturn(otelChildAttributesAction);
     }
 }

@@ -8,7 +8,6 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.model.Run;
-
 import java.io.IOException;
 import java.time.Instant;
 
@@ -22,8 +21,15 @@ public interface LogStorageRetriever extends AutoCloseable {
      * @param endTime    {@code null} if the pipeline is still running. See {@link Run#getDuration()}
      */
     @NonNull
-    LogsQueryResult overallLog(@NonNull String jobFullName, int runNumber, @NonNull String traceId, @NonNull String spanId, boolean complete, @NonNull Instant startTime, @Nullable Instant endTime) throws IOException;
-
+    LogsQueryResult overallLog(
+            @NonNull String jobFullName,
+            int runNumber,
+            @NonNull String traceId,
+            @NonNull String spanId,
+            boolean complete,
+            @NonNull Instant startTime,
+            @Nullable Instant endTime)
+            throws IOException;
 
     /**
      * @param jobFullName see {@link hudson.model.AbstractItem#getFullName()}
@@ -33,6 +39,15 @@ public interface LogStorageRetriever extends AutoCloseable {
      * @param startTime   Pipeline run start time. See {@link Run#getStartTimeInMillis()}
      * @param endTime    {@code null} if the pipeline is still running. See {@link Run#getDuration()}
      */
-    @NonNull LogsQueryResult stepLog(@NonNull String jobFullName, int runNumber, @NonNull String flowNodeId, @NonNull String traceId, @NonNull String spanId, boolean complete, @NonNull Instant startTime, @Nullable Instant endTime) throws IOException;
-
+    @NonNull
+    LogsQueryResult stepLog(
+            @NonNull String jobFullName,
+            int runNumber,
+            @NonNull String flowNodeId,
+            @NonNull String traceId,
+            @NonNull String spanId,
+            boolean complete,
+            @NonNull Instant startTime,
+            @Nullable Instant endTime)
+            throws IOException;
 }
