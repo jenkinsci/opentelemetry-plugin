@@ -5,12 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
-import org.junit.Test;
-
-import java.util.Map;
-
 import static org.junit.Assert.*;
+
+import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
+import java.util.Map;
+import org.junit.Test;
 
 public class MonitoringRunListenerTest {
 
@@ -20,52 +19,87 @@ public class MonitoringRunListenerTest {
         Map<String, String> configProperties = Map.of();
         monitoringRunListener.afterConfiguration(DefaultConfigProperties.createFromMap(configProperties));
         String jobFullName = "my-team/my-war/main";
-        assertFalse(monitoringRunListener.runDurationHistogramAllowList.matcher(jobFullName).matches());
-        assertFalse(monitoringRunListener.runDurationHistogramDenyList.matcher(jobFullName).matches());
-
+        assertFalse(monitoringRunListener
+                .runDurationHistogramAllowList
+                .matcher(jobFullName)
+                .matches());
+        assertFalse(monitoringRunListener
+                .runDurationHistogramDenyList
+                .matcher(jobFullName)
+                .matches());
     }
 
     @Test
     public void test_deny_list_matching() {
         MonitoringRunListener monitoringRunListener = new MonitoringRunListener();
-        Map<String, String> configProperties = Map.of("otel.instrumentation.jenkins.run.metric.duration.allow_list", "my-team/.*",
-                "otel.instrumentation.jenkins.run.metric.duration.deny_list", ".*test.*");
+        Map<String, String> configProperties = Map.of(
+                "otel.instrumentation.jenkins.run.metric.duration.allow_list",
+                "my-team/.*",
+                "otel.instrumentation.jenkins.run.metric.duration.deny_list",
+                ".*test.*");
         monitoringRunListener.afterConfiguration(DefaultConfigProperties.createFromMap(configProperties));
         String jobFullName = "my-team/my-war/test-123";
-        assertTrue(monitoringRunListener.runDurationHistogramAllowList.matcher(jobFullName).matches());
-        assertTrue(monitoringRunListener.runDurationHistogramDenyList.matcher(jobFullName).matches());
+        assertTrue(monitoringRunListener
+                .runDurationHistogramAllowList
+                .matcher(jobFullName)
+                .matches());
+        assertTrue(monitoringRunListener
+                .runDurationHistogramDenyList
+                .matcher(jobFullName)
+                .matches());
     }
 
     @Test
     public void test_deny_list_not_matching() {
         MonitoringRunListener monitoringRunListener = new MonitoringRunListener();
-        Map<String, String> configProperties = Map.of("otel.instrumentation.jenkins.run.metric.duration.allow_list", "my-team/.*",
-                "otel.instrumentation.jenkins.run.metric.duration.deny_list", ".*test.*");
+        Map<String, String> configProperties = Map.of(
+                "otel.instrumentation.jenkins.run.metric.duration.allow_list",
+                "my-team/.*",
+                "otel.instrumentation.jenkins.run.metric.duration.deny_list",
+                ".*test.*");
         monitoringRunListener.afterConfiguration(DefaultConfigProperties.createFromMap(configProperties));
         String jobFullName = "my-team/my-war/main";
-        assertTrue(monitoringRunListener.runDurationHistogramAllowList.matcher(jobFullName).matches());
-        assertFalse(monitoringRunListener.runDurationHistogramDenyList.matcher(jobFullName).matches());
+        assertTrue(monitoringRunListener
+                .runDurationHistogramAllowList
+                .matcher(jobFullName)
+                .matches());
+        assertFalse(monitoringRunListener
+                .runDurationHistogramDenyList
+                .matcher(jobFullName)
+                .matches());
     }
-
 
     @Test
     public void test_allow_list_matching() {
         MonitoringRunListener monitoringRunListener = new MonitoringRunListener();
-        Map<String, String> configProperties = Map.of("otel.instrumentation.jenkins.run.metric.duration.allow_list", "my-team/.*");
+        Map<String, String> configProperties =
+                Map.of("otel.instrumentation.jenkins.run.metric.duration.allow_list", "my-team/.*");
         monitoringRunListener.afterConfiguration(DefaultConfigProperties.createFromMap(configProperties));
         String jobFullName = "my-team/my-war/main";
-        assertTrue(monitoringRunListener.runDurationHistogramAllowList.matcher(jobFullName).matches());
-        assertFalse(monitoringRunListener.runDurationHistogramDenyList.matcher(jobFullName).matches());
+        assertTrue(monitoringRunListener
+                .runDurationHistogramAllowList
+                .matcher(jobFullName)
+                .matches());
+        assertFalse(monitoringRunListener
+                .runDurationHistogramDenyList
+                .matcher(jobFullName)
+                .matches());
     }
 
     @Test
     public void test_allow_list_not_matching() {
         MonitoringRunListener monitoringRunListener = new MonitoringRunListener();
-        Map<String, String> configProperties = Map.of("otel.instrumentation.jenkins.run.metric.duration.allow_list", "my-team/.*");
+        Map<String, String> configProperties =
+                Map.of("otel.instrumentation.jenkins.run.metric.duration.allow_list", "my-team/.*");
         monitoringRunListener.afterConfiguration(DefaultConfigProperties.createFromMap(configProperties));
         String jobFullName = "another-team/my-war/main";
-        assertFalse(monitoringRunListener.runDurationHistogramAllowList.matcher(jobFullName).matches());
-        assertFalse(monitoringRunListener.runDurationHistogramDenyList.matcher(jobFullName).matches());
+        assertFalse(monitoringRunListener
+                .runDurationHistogramAllowList
+                .matcher(jobFullName)
+                .matches());
+        assertFalse(monitoringRunListener
+                .runDurationHistogramDenyList
+                .matcher(jobFullName)
+                .matches());
     }
-
 }

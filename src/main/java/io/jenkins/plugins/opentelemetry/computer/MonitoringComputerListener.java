@@ -20,12 +20,6 @@ import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
-import jenkins.YesNoMaybe;
-import jenkins.model.Jenkins;
-import jenkins.security.MasterToSlaveCallable;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -33,10 +27,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import jenkins.YesNoMaybe;
+import jenkins.model.Jenkins;
+import jenkins.security.MasterToSlaveCallable;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringComputerListener extends ComputerListener implements OpenTelemetryLifecycleListener {
-    private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
     private LongCounter failureAgentCounter;
 
@@ -54,40 +53,56 @@ public class MonitoringComputerListener extends ComputerListener implements Open
         } else if (controllerComputer.getAction(OpenTelemetryAttributesAction.class) != null) {
             // nothing to do.
             // why are we invoked a second time? plugin reload?
-            LOGGER.log(Level.FINER, () -> "Resources for Jenkins Controller computer " + controllerComputer + " have already been defined: " + controllerComputer.getAction(OpenTelemetryAttributesAction.class));
+            LOGGER.log(
+                    Level.FINER,
+                    () -> "Resources for Jenkins Controller computer " + controllerComputer
+                            + " have already been defined: "
+                            + controllerComputer.getAction(OpenTelemetryAttributesAction.class));
         } else {
             try {
                 OpenTelemetryAttributesAction openTelemetryAttributesAction = new OpenTelemetryAttributesAction();
                 Map<String, String> attributesAsMap = new GetComputerAttributes().call();
                 for (Map.Entry<String, String> attribute : attributesAsMap.entrySet()) {
-                    openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
+                    openTelemetryAttributesAction
+                            .getAttributes()
+                            .put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
                 }
-                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()), ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
-                LOGGER.log(Level.FINER, () -> "Resources for Jenkins Controller computer " + controllerComputer + ": " + openTelemetryAttributesAction);
+                openTelemetryAttributesAction
+                        .getAttributes()
+                        .put(
+                                AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()),
+                                ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
+                LOGGER.log(
+                        Level.FINER,
+                        () -> "Resources for Jenkins Controller computer " + controllerComputer + ": "
+                                + openTelemetryAttributesAction);
                 controllerComputer.addAction(openTelemetryAttributesAction);
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
+                LOGGER.log(
+                        Level.WARNING,
+                        "Failure getting attributes for Jenkins Controller computer " + controllerComputer,
+                        e);
             }
         }
         meter.gaugeBuilder(JenkinsMetrics.JENKINS_AGENTS_OFFLINE)
-            .ofLongs()
-            .setDescription("Number of offline agents")
-            .setUnit("{agents}")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount()));
+                .ofLongs()
+                .setDescription("Number of offline agents")
+                .setUnit("{agents}")
+                .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount()));
         meter.gaugeBuilder(JenkinsMetrics.JENKINS_AGENTS_ONLINE)
-            .ofLongs()
-            .setDescription("Number of online agents")
-            .setUnit("{agents}")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount()));
+                .ofLongs()
+                .setDescription("Number of online agents")
+                .setUnit("{agents}")
+                .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount()));
         meter.gaugeBuilder(JenkinsMetrics.JENKINS_AGENTS_TOTAL)
-            .ofLongs()
-            .setDescription("Number of agents")
-            .setUnit("{agents}")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount()));
+                .ofLongs()
+                .setDescription("Number of agents")
+                .setUnit("{agents}")
+                .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount()));
         failureAgentCounter = meter.counterBuilder(JenkinsMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
-            .setDescription("Number of ComputerLauncher failures")
-            .setUnit("{agents}")
-            .build();
+                .setDescription("Number of ComputerLauncher failures")
+                .setUnit("{agents}")
+                .build();
 
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins agents management...");
     }
@@ -117,14 +132,21 @@ public class MonitoringComputerListener extends ComputerListener implements Open
     }
 
     @Override
-    public void preOnline(Computer computer, Channel channel, FilePath root, TaskListener listener) throws IOException, InterruptedException {
+    public void preOnline(Computer computer, Channel channel, FilePath root, TaskListener listener)
+            throws IOException, InterruptedException {
         OpenTelemetryAttributesAction openTelemetryAttributesAction = new OpenTelemetryAttributesAction();
 
         Map<String, String> attributes = channel.call(new GetComputerAttributes());
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {
-            openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
+            openTelemetryAttributesAction
+                    .getAttributes()
+                    .put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
         }
-        openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
+        openTelemetryAttributesAction
+                .getAttributes()
+                .put(
+                        AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()),
+                        computer.getName());
 
         LOGGER.log(Level.FINE, () -> "preOnline(" + computer + "): " + openTelemetryAttributesAction);
         computer.addAction(openTelemetryAttributesAction);
@@ -150,9 +172,11 @@ public class MonitoringComputerListener extends ComputerListener implements Open
             } catch (IOException e) {
                 // as this code will go through Jenkins remoting, test isLoggable before transferring data
                 if (LOGGER.isLoggable(Level.FINER)) {
-                    MonitoringComputerListener.LOGGER.log(Level.FINER, "Exception retrieving the build agent host details", e);
+                    MonitoringComputerListener.LOGGER.log(
+                            Level.FINER, "Exception retrieving the build agent host details", e);
                 } else if (LOGGER.isLoggable(Level.FINE)) {
-                    MonitoringComputerListener.LOGGER.log(Level.FINE, () -> "Exception retrieving the build agent host details " + e.getMessage());
+                    MonitoringComputerListener.LOGGER.log(
+                            Level.FINE, () -> "Exception retrieving the build agent host details " + e.getMessage());
                 }
             }
             return attributes;

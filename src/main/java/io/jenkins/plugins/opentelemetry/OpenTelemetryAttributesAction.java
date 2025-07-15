@@ -5,6 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.model.InvisibleAction;
+import io.opentelemetry.api.common.AttributeKey;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -14,10 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.model.InvisibleAction;
-import io.opentelemetry.api.common.AttributeKey;
 
 /**
  * @see io.opentelemetry.api.common.AttributeKey
@@ -79,8 +78,10 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
 
     @Override
     public String toString() {
-        return "OpenTelemetryAttributesAction{" +
-                "attributes=" + getAttributes().entrySet().stream().map(e -> e.getKey().getKey() + "-" + e.getKey().getType() + " - " + e.getValue()).collect(Collectors.joining(", ")) +
-                '}';
+        return "OpenTelemetryAttributesAction{" + "attributes="
+                + getAttributes().entrySet().stream()
+                        .map(e -> e.getKey().getKey() + "-" + e.getKey().getType() + " - " + e.getValue())
+                        .collect(Collectors.joining(", "))
+                + '}';
     }
 }

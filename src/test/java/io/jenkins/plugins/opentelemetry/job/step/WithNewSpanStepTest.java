@@ -5,24 +5,23 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
+import static org.junit.Assume.assumeFalse;
+
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assume.assumeFalse;
 
 public class WithNewSpanStepTest extends BaseIntegrationTest {
 
@@ -40,21 +39,19 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
 
     @Test
     public void testLibCallWithUserDefinedSpan() throws Exception {
-        String pipelineScript =
-            "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-            "\n" +
-            "def runBuilds() {\n" +
-            "   withNewSpan(label: 'run-builds') {\n" +
-            "       xsh (label: 'build-mod1', script: 'echo building-module-1') \n" +
-            "       xsh (label: 'build-mod2', script: 'echo building-module-2') \n" +
-            "   }\n" +
-            "}\n" +
-            "\n" +
-            "node {\n" +
-            "   stage('build') {\n" +
-            "       runBuilds()" +
-            "   }\n" +
-            "}";
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "\n"
+                + "def runBuilds() {\n"
+                + "   withNewSpan(label: 'run-builds') {\n"
+                + "       xsh (label: 'build-mod1', script: 'echo building-module-1') \n"
+                + "       xsh (label: 'build-mod2', script: 'echo building-module-2') \n"
+                + "   }\n"
+                + "}\n"
+                + "\n"
+                + "node {\n"
+                + "   stage('build') {\n"
+                + "       runBuilds()"
+                + "   }\n"
+                + "}";
 
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
@@ -74,19 +71,17 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
 
     @Test
     public void testUserDefinedSpanWithAttributes() throws Exception {
-        String pipelineScript =
-            "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-            "node {\n" +
-            "   stage('build') {\n" +
-            "       withNewSpan(label: 'run-builds', attributes: ([\n" +
-            "           spanAttribute(key: 'modules-num', value: '2'),\n" +
-            "           spanAttribute(key: 'command', value: 'build')\n" +
-            "       ])) {\n" +
-            "           xsh (label: 'build-mod1', script: 'echo building-module-1') \n" +
-            "           echo 'building-module-2'\n" +
-            "       }\n" +
-            "   }\n" +
-            "}";
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node {\n"
+                + "   stage('build') {\n"
+                + "       withNewSpan(label: 'run-builds', attributes: ([\n"
+                + "           spanAttribute(key: 'modules-num', value: '2'),\n"
+                + "           spanAttribute(key: 'command', value: 'build')\n"
+                + "       ])) {\n"
+                + "           xsh (label: 'build-mod1', script: 'echo building-module-1') \n"
+                + "           echo 'building-module-2'\n"
+                + "       }\n"
+                + "   }\n"
+                + "}";
 
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
@@ -116,16 +111,14 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
 
     @Test
     public void testUserDefinedSpanWithChildren() throws Exception {
-        String pipelineScript =
-            "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-            "node {\n" +
-            "   stage('build') {\n" +
-            "       withNewSpan(label: 'run-builds') {\n" +
-            "           xsh (label: 'build-mod1', script: 'echo building-module-1') \n" +
-            "           xsh (label: 'build-mod2', script: 'echo building-module-2') \n" +
-            "       }\n" +
-            "   }\n" +
-            "}";
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node {\n"
+                + "   stage('build') {\n"
+                + "       withNewSpan(label: 'run-builds') {\n"
+                + "           xsh (label: 'build-mod1', script: 'echo building-module-1') \n"
+                + "           xsh (label: 'build-mod2', script: 'echo building-module-2') \n"
+                + "       }\n"
+                + "   }\n"
+                + "}";
 
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
@@ -149,16 +142,14 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
 
     @Test
     public void testUserDefinedSpanWithNoChildren() throws Exception {
-        String pipelineScript =
-            "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-            "node {\n" +
-            "   stage('build') {\n" +
-            "       withNewSpan(label: 'run-builds') {\n" +
-            "           echo 'building-module-1'\n" +
-            "           echo 'building-module-2'\n" +
-            "       }\n" +
-            "   }\n" +
-            "}";
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node {\n"
+                + "   stage('build') {\n"
+                + "       withNewSpan(label: 'run-builds') {\n"
+                + "           echo 'building-module-1'\n"
+                + "           echo 'building-module-2'\n"
+                + "       }\n"
+                + "   }\n"
+                + "}";
 
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
@@ -176,19 +167,17 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
 
     @Test
     public void testUserDefinedSpanWithAttributesNotPassedOnToChildren() throws Exception {
-        String pipelineScript =
-            "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" +
-            "node {\n" +
-            "   stage('build') {\n" +
-            "       withNewSpan(label: 'run-builds', attributes: ([\n" +
-            "           spanAttribute(key: 'modules-num', value: '2'),\n" +
-            "           spanAttribute(key: 'command', value: 'build')\n" +
-            "       ]), setAttributesOnlyOnParent: true) {\n" +
-            "           xsh (label: 'build-mod1', script: 'echo building-module-1') \n" +
-            "           echo 'building-module-2'\n" +
-            "       }\n" +
-            "   }\n" +
-            "}";
+        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node {\n"
+                + "   stage('build') {\n"
+                + "       withNewSpan(label: 'run-builds', attributes: ([\n"
+                + "           spanAttribute(key: 'modules-num', value: '2'),\n"
+                + "           spanAttribute(key: 'command', value: 'build')\n"
+                + "       ]), setAttributesOnlyOnParent: true) {\n"
+                + "           xsh (label: 'build-mod1', script: 'echo building-module-1') \n"
+                + "           echo 'building-module-2'\n"
+                + "       }\n"
+                + "   }\n"
+                + "}";
 
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
@@ -214,5 +203,4 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         Assert.assertNull(childAttributes.get(AttributeKey.stringKey("modules-num")));
         Assert.assertNull(childAttributes.get(AttributeKey.stringKey("command")));
     }
-
 }

@@ -7,8 +7,8 @@ package io.jenkins.plugins.opentelemetry.job;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import net.jcip.annotations.Immutable;
 import java.util.Objects;
+import net.jcip.annotations.Immutable;
 
 @Immutable
 public class RunFlowNodeIdentifier extends RunIdentifier {
@@ -35,10 +35,9 @@ public class RunFlowNodeIdentifier extends RunIdentifier {
 
     @Override
     public String toString() {
-        return "RunFlowNodeIdentifier{" +
-            "jobName='" + jobName + '\'' +
-            ", runNumber=" + runNumber +
-            ", flowNodeId='" + flowNodeId + '\'' +
-            '}';
+        return "RunFlowNodeIdentifier{" + "jobName='"
+                + jobName + '\'' + ", runNumber="
+                + runNumber + ", flowNodeId='"
+                + flowNodeId + '\'' + '}';
     }
 }

@@ -11,10 +11,9 @@ import hudson.model.Job;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
+import java.util.List;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
-
-import java.util.List;
 
 /**
  * @see io.opentelemetry.api.common.Attributes
@@ -22,14 +21,18 @@ import java.util.List;
  */
 public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
     public static final AttributeKey<String> CI_PIPELINE_TYPE = AttributeKey.stringKey("ci.pipeline.type");
-    public static final AttributeKey<String> CI_PIPELINE_MULTIBRANCH_TYPE = AttributeKey.stringKey("ci.pipeline.multibranch.type");
+    public static final AttributeKey<String> CI_PIPELINE_MULTIBRANCH_TYPE =
+            AttributeKey.stringKey("ci.pipeline.multibranch.type");
     /**
      * @see Job#getFullName()
      */
     public static final AttributeKey<String> CI_PIPELINE_ID = AttributeKey.stringKey("ci.pipeline.id");
+
     public static final AttributeKey<String> CI_PIPELINE_NAME = AttributeKey.stringKey("ci.pipeline.name");
-    public static final AttributeKey<String> CI_PIPELINE_TEMPLATE_ID = AttributeKey.stringKey("ci.pipeline.template.id");
-    public static final AttributeKey<String> CI_PIPELINE_TEMPLATE_URL = AttributeKey.stringKey("ci.pipeline.template.url");
+    public static final AttributeKey<String> CI_PIPELINE_TEMPLATE_ID =
+            AttributeKey.stringKey("ci.pipeline.template.id");
+    public static final AttributeKey<String> CI_PIPELINE_TEMPLATE_URL =
+            AttributeKey.stringKey("ci.pipeline.template.url");
     /**
      * @see hudson.model.Node#getNodeName()
      */
@@ -38,24 +41,36 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
      * @see hudson.model.Node#getDisplayName() ()
      */
     public static final AttributeKey<String> CI_PIPELINE_AGENT_NAME = AttributeKey.stringKey("ci.pipeline.agent.name");
-    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_COMMITTERS = AttributeKey.stringArrayKey("ci.pipeline.run.committers");
-    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_CAUSE = AttributeKey.stringArrayKey("ci.pipeline.run.cause");
-    public static final AttributeKey<Boolean> CI_PIPELINE_RUN_COMPLETED = AttributeKey.booleanKey("ci.pipeline.run.completed");
-    public static final AttributeKey<Long> CI_PIPELINE_RUN_DURATION_MILLIS = AttributeKey.longKey("ci.pipeline.run.durationMillis");
-    public static final AttributeKey<String> CI_PIPELINE_RUN_DESCRIPTION = AttributeKey.stringKey("ci.pipeline.run.description");
+
+    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_COMMITTERS =
+            AttributeKey.stringArrayKey("ci.pipeline.run.committers");
+    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_CAUSE =
+            AttributeKey.stringArrayKey("ci.pipeline.run.cause");
+    public static final AttributeKey<Boolean> CI_PIPELINE_RUN_COMPLETED =
+            AttributeKey.booleanKey("ci.pipeline.run.completed");
+    public static final AttributeKey<Long> CI_PIPELINE_RUN_DURATION_MILLIS =
+            AttributeKey.longKey("ci.pipeline.run.durationMillis");
+    public static final AttributeKey<String> CI_PIPELINE_RUN_DESCRIPTION =
+            AttributeKey.stringKey("ci.pipeline.run.description");
     public static final AttributeKey<Long> CI_PIPELINE_RUN_NUMBER = AttributeKey.longKey("ci.pipeline.run.number");
-    public static final AttributeKey<List<Boolean>> CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE = AttributeKey.booleanArrayKey("ci.pipeline.parameter.sensitive");
-    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_PARAMETER_NAME = AttributeKey.stringArrayKey("ci.pipeline.parameter.name");
-    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_PARAMETER_VALUE = AttributeKey.stringArrayKey("ci.pipeline.parameter.value");
+    public static final AttributeKey<List<Boolean>> CI_PIPELINE_RUN_PARAMETER_IS_SENSITIVE =
+            AttributeKey.booleanArrayKey("ci.pipeline.parameter.sensitive");
+    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_PARAMETER_NAME =
+            AttributeKey.stringArrayKey("ci.pipeline.parameter.name");
+    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_PARAMETER_VALUE =
+            AttributeKey.stringArrayKey("ci.pipeline.parameter.value");
     /**
      * @see Run#getResult()
      */
     public static final AttributeKey<String> CI_PIPELINE_RUN_RESULT = AttributeKey.stringKey("ci.pipeline.run.result");
+
     public static final AttributeKey<String> CI_PIPELINE_RUN_URL = AttributeKey.stringKey("ci.pipeline.run.url");
     public static final AttributeKey<String> CI_PIPELINE_RUN_USER = AttributeKey.stringKey("ci.pipeline.run.user");
 
-    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_NAMES = AttributeKey.stringArrayKey("ci.pipeline.axis.names");
-    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_VALUES = AttributeKey.stringArrayKey("ci.pipeline.axis.values");
+    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_NAMES =
+            AttributeKey.stringArrayKey("ci.pipeline.axis.names");
+    public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_VALUES =
+            AttributeKey.stringArrayKey("ci.pipeline.axis.values");
 
     public static final AttributeKey<String> GIT_REPOSITORY = AttributeKey.stringKey("git.repository");
     public static final AttributeKey<String> GIT_BRANCH = AttributeKey.stringKey("git.branch");
@@ -79,23 +94,28 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
      * @see org.jenkinsci.plugins.workflow.pipelinegraphanalysis.GenericStatus
      * @see org.jenkinsci.plugins.workflow.pipelinegraphanalysis.StatusAndTiming#computeChunkStatus2(org.jenkinsci.plugins.workflow.job.WorkflowRun,org.jenkinsci.plugins.workflow.graph.FlowNode,org.jenkinsci.plugins.workflow.graph.FlowNode,org.jenkinsci.plugins.workflow.graph.FlowNode,org.jenkinsci.plugins.workflow.graph.FlowNode)
      */
-    public static final AttributeKey<String> JENKINS_STEP_RESULT = AttributeKey.stringKey("jenkins.pipeline.step.result");
+    public static final AttributeKey<String> JENKINS_STEP_RESULT =
+            AttributeKey.stringKey("jenkins.pipeline.step.result");
     /**
      * @see PluginWrapper#getShortName()
      */
-    public static final AttributeKey<String> JENKINS_STEP_PLUGIN_NAME = AttributeKey.stringKey("jenkins.pipeline.step.plugin.name");
+    public static final AttributeKey<String> JENKINS_STEP_PLUGIN_NAME =
+            AttributeKey.stringKey("jenkins.pipeline.step.plugin.name");
     /**
      * @see PluginWrapper#getVersion()
      */
-    public static final AttributeKey<String> JENKINS_STEP_PLUGIN_VERSION = AttributeKey.stringKey("jenkins.pipeline.step.plugin.version");
+    public static final AttributeKey<String> JENKINS_STEP_PLUGIN_VERSION =
+            AttributeKey.stringKey("jenkins.pipeline.step.plugin.version");
     /**
      * @see Computer#getName()
      */
     public static final AttributeKey<String> JENKINS_COMPUTER_NAME = AttributeKey.stringKey("jenkins.computer.name");
 
-    public static final AttributeKey<String> JENKINS_STEP_AGENT_LABEL = AttributeKey.stringKey("jenkins.pipeline.step.agent.label");
+    public static final AttributeKey<String> JENKINS_STEP_AGENT_LABEL =
+            AttributeKey.stringKey("jenkins.pipeline.step.agent.label");
 
-    public static final AttributeKey<List<String>> JENKINS_STEP_INTERRUPTION_CAUSES = AttributeKey.stringArrayKey("jenkins.pipeline.step.interruption.causes");
+    public static final AttributeKey<List<String>> JENKINS_STEP_INTERRUPTION_CAUSES =
+            AttributeKey.stringArrayKey("jenkins.pipeline.step.interruption.causes");
 
     public static final AttributeKey<String> JENKINS_CREDENTIALS_ID = AttributeKey.stringKey("jenkins.credentials.id");
 
@@ -120,6 +140,7 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
      * Pipelines or Jobs.
      */
     public static final String AGENT = "agent";
+
     public static final String AGENT_UI = "Agent";
     public static final String AGENT_ALLOCATE = "agent.allocate";
     public static final String AGENT_ALLOCATION_UI = "Agent Allocation";
@@ -132,11 +153,13 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
      */
     public static final String STEP_NAME = "step";
 
-    public static final AttributeKey<String> JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION = AttributeKey.stringKey("jenkins.opentelemetry.plugin.version");
+    public static final AttributeKey<String> JENKINS_OPEN_TELEMETRY_PLUGIN_VERSION =
+            AttributeKey.stringKey("jenkins.opentelemetry.plugin.version");
 
     public static final AttributeKey<String> ELASTIC_TRANSACTION_TYPE = AttributeKey.stringKey("type");
 
-    public static final AttributeKey<String> JENKINS_ANSI_ANNOTATIONS = AttributeKey.stringKey("jenkins.ansi.annotations");
+    public static final AttributeKey<String> JENKINS_ANSI_ANNOTATIONS =
+            AttributeKey.stringKey("jenkins.ansi.annotations");
     public static final String JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD = "position";
     public static final String JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD = "note";
 
@@ -144,7 +167,8 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
      * Values in {@link EventCategoryValues}
      */
     public static final AttributeKey<String> EVENT_CATEGORY = AttributeKey.stringKey("event.category");
-    public final static String INSTRUMENTATION_NAME = "io.jenkins.opentelemetry";
+
+    public static final String INSTRUMENTATION_NAME = "io.jenkins.opentelemetry";
     public static final String EVENT_NAME_USER_LOGIN = "user_login";
 
     /**
@@ -156,7 +180,6 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
 
     public static final AttributeKey<String> STATUS = AttributeKey.stringKey("status");
     public static final AttributeKey<String> LABEL = AttributeKey.stringKey("label");
-
 
     /**
      * Values in {@link EventOutcomeValues}

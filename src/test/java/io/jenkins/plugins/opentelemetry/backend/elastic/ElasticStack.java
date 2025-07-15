@@ -4,7 +4,7 @@
  */
 package io.jenkins.plugins.opentelemetry.backend.elastic;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
@@ -52,7 +52,7 @@ public class ElasticStack extends ComposeContainer {
 
     public ElasticStack() {
         super(new File("src/test/resources/docker-compose.yml"));
-        this.withExposedService(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT)
+        withExposedService(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT)
                 .withExposedService(KIBANA_SERVICE, KIBANA_PORT)
                 .withExposedService(EDOT_SERVICE, OTEL_PORT)
                 .waitingFor(EDOT_SERVICE, new DockerHealthcheckWaitStrategy())

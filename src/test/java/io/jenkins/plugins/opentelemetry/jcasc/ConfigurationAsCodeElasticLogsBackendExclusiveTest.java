@@ -5,6 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.jcasc;
 
+import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
+import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
+import static io.jenkins.plugins.casc.misc.Util.toYamlString;
+import static org.hamcrest.CoreMatchers.instanceOf;
+
 import io.jenkins.plugins.casc.ConfigurationContext;
 import io.jenkins.plugins.casc.ConfiguratorRegistry;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
@@ -24,11 +29,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
-import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
-import static io.jenkins.plugins.casc.misc.Util.toYamlString;
-import static org.hamcrest.CoreMatchers.instanceOf;
-
 public class ConfigurationAsCodeElasticLogsBackendExclusiveTest {
 
     @ClassRule
@@ -37,15 +37,18 @@ public class ConfigurationAsCodeElasticLogsBackendExclusiveTest {
 
     @Test
     public void should_support_configuration_as_code() {
-        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+        final JenkinsOpenTelemetryPluginConfiguration configuration =
+                GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
 
-        ElasticBackend elastic = (ElasticBackend) configuration.getObservabilityBackends().get(0);
+        ElasticBackend elastic =
+                (ElasticBackend) configuration.getObservabilityBackends().get(0);
         MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://kibana.es.example.com"));
         MatcherAssert.assertThat(elastic.getName(), CoreMatchers.is("My Elastic"));
 
-        ElasticLogsBackendWithoutJenkinsVisualization elasticLogsBackend = (ElasticLogsBackendWithoutJenkinsVisualization) elastic.getElasticLogsBackend();
+        ElasticLogsBackendWithoutJenkinsVisualization elasticLogsBackend =
+                (ElasticLogsBackendWithoutJenkinsVisualization) elastic.getElasticLogsBackend();
         MatcherAssert.assertThat(elasticLogsBackend, CoreMatchers.is(CoreMatchers.notNullValue()));
 
         OtlpAuthentication authentication = configuration.getAuthentication();

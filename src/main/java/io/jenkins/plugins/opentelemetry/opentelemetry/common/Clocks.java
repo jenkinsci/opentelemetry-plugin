@@ -6,15 +6,13 @@
 package io.jenkins.plugins.opentelemetry.opentelemetry.common;
 
 import io.opentelemetry.sdk.common.Clock;
-
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Utils for {@link Clock}
  */
 public class Clocks {
-    private Clocks() {
-    }
+    private Clocks() {}
 
     public static Clock monotonicOffsetClock(long offsetInNanos) {
         return new MonotonicClock(new OffsetClock(offsetInNanos, Clock.getDefault()));
@@ -26,7 +24,6 @@ public class Clocks {
     public static Clock offsetClock(long offsetInNanos, Clock baseClock) {
         return new OffsetClock(offsetInNanos, baseClock);
     }
-
 
     public static Clock monotonicClock(Clock delegate) {
         return new MonotonicClock(delegate);
@@ -61,9 +58,7 @@ public class Clocks {
 
         @Override
         public String toString() {
-            return "OffsetClock{" +
-                "offsetInNanos=" + offsetInNanos +
-                '}';
+            return "OffsetClock{" + "offsetInNanos=" + offsetInNanos + '}';
         }
     }
 

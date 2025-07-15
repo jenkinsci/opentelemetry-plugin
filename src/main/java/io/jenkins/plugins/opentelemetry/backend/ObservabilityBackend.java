@@ -5,21 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry.backend;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import org.kohsuke.stapler.DataBoundSetter;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.ComparisonChain;
 import com.google.errorprone.annotations.MustBeClosed;
-
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import groovy.lang.MissingPropertyException;
@@ -33,10 +21,20 @@ import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.opentelemetry.sdk.resources.Resource;
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import jenkins.model.Jenkins;
+import org.kohsuke.stapler.DataBoundSetter;
 
-public abstract class ObservabilityBackend implements Describable<ObservabilityBackend>, ExtensionPoint, TemplateBindingsProvider {
-    private final static Logger LOGGER = Logger.getLogger(ObservabilityBackend.class.getName());
+public abstract class ObservabilityBackend
+        implements Describable<ObservabilityBackend>, ExtensionPoint, TemplateBindingsProvider {
+    private static final Logger LOGGER = Logger.getLogger(ObservabilityBackend.class.getName());
 
     public static final String ICONS_PREFIX = "plugin/opentelemetry/images/svgs/";
 
@@ -106,9 +104,13 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
         } else if (this.traceVisualisationUrlGTemplate == null) {
             GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
             try {
-                this.traceVisualisationUrlGTemplate = gStringTemplateEngine.createTemplate(this.getTraceVisualisationUrlTemplate());
+                this.traceVisualisationUrlGTemplate =
+                        gStringTemplateEngine.createTemplate(this.getTraceVisualisationUrlTemplate());
             } catch (IOException | ClassNotFoundException e) {
-                LOGGER.log(Level.WARNING, "Invalid Trace Visualisation URL Template '" + this.getTraceVisualisationUrlTemplate() + "'", e);
+                LOGGER.log(
+                        Level.WARNING,
+                        "Invalid Trace Visualisation URL Template '" + this.getTraceVisualisationUrlTemplate() + "'",
+                        e);
                 this.traceVisualisationUrlGTemplate = ERROR_TEMPLATE;
             }
         }
@@ -126,22 +128,30 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
         } else if (this.metricsVisualizationUrlGTemplate == null) {
             GStringTemplateEngine gStringTemplateEngine = new GStringTemplateEngine();
             try {
-                this.metricsVisualizationUrlGTemplate = gStringTemplateEngine.createTemplate(this.getMetricsVisualizationUrlTemplate());
+                this.metricsVisualizationUrlGTemplate =
+                        gStringTemplateEngine.createTemplate(this.getMetricsVisualizationUrlTemplate());
             } catch (IOException | ClassNotFoundException e) {
-                LOGGER.log(Level.WARNING, "Invalid Metrics Visualisation URL Template '" + this.getMetricsVisualizationUrlTemplate() + "'", e);
+                LOGGER.log(
+                        Level.WARNING,
+                        "Invalid Metrics Visualisation URL Template '" + this.getMetricsVisualizationUrlTemplate()
+                                + "'",
+                        e);
                 this.metricsVisualizationUrlGTemplate = ERROR_TEMPLATE;
             }
         }
-        Map<String, String> resourceMap =
-            resource.getAttributes().asMap().entrySet().stream()
-                .collect(Collectors.toMap(entry -> entry.getKey().getKey(), entry -> OtelUtils.urlEncode(Objects.toString(entry.getValue()))));
+        Map<String, String> resourceMap = resource.getAttributes().asMap().entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> entry.getKey().getKey(),
+                        entry -> OtelUtils.urlEncode(Objects.toString(entry.getValue()))));
         Map<String, Object> mergedBindings = mergeBindings(Collections.singletonMap("resource", resourceMap));
         try {
             return this.metricsVisualizationUrlGTemplate.make(mergedBindings).toString();
         } catch (MissingPropertyException e) {
             this.metricsVisualizationUrlGTemplate = ERROR_TEMPLATE;
-            LOGGER.log(Level.WARNING, "Failure to generate MetricsVisualizationUrl, missing binding for property '"
-                + e.getProperty() + "' in template " + getMetricsVisualizationUrlTemplate());
+            LOGGER.log(
+                    Level.WARNING,
+                    "Failure to generate MetricsVisualizationUrl, missing binding for property '" + e.getProperty()
+                            + "' in template " + getMetricsVisualizationUrlTemplate());
             return null;
         }
     }
@@ -179,7 +189,7 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
 
         String SERVICE_NAME = "serviceName";
         String SERVICE_NAMESPACE = "serviceNamespace";
-        String SERVICE_NAMESPACE_AND_NAME="serviceNamespaceAndName";
+        String SERVICE_NAMESPACE_AND_NAME = "serviceNamespaceAndName";
 
         String ROOT_SPAN_NAME = "rootSpanName";
         String TRACE_ID = "traceId";
@@ -195,7 +205,8 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
         String END_TIME = "endTime";
     }
 
-    public static abstract class ObservabilityBackendDescriptor extends Descriptor<ObservabilityBackend> implements Comparable<ObservabilityBackendDescriptor> {
+    public abstract static class ObservabilityBackendDescriptor extends Descriptor<ObservabilityBackend>
+            implements Comparable<ObservabilityBackendDescriptor> {
         /**
          * Enable displaying the {@link CustomObservabilityBackend} at the end when listing all available backend types
          *
@@ -207,11 +218,14 @@ public abstract class ObservabilityBackend implements Describable<ObservabilityB
 
         @Override
         public int compareTo(ObservabilityBackendDescriptor o) {
-            return ComparisonChain.start().compare(this.ordinal(), o.ordinal()).compare(this.getDisplayName(), o.getDisplayName()).result();
+            return ComparisonChain.start()
+                    .compare(this.ordinal(), o.ordinal())
+                    .compare(this.getDisplayName(), o.getDisplayName())
+                    .result();
         }
     }
 
-    public final static Template ERROR_TEMPLATE;
+    public static final Template ERROR_TEMPLATE;
 
     static {
         try {
