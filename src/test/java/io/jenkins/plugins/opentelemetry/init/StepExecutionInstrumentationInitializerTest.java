@@ -22,7 +22,7 @@ public class StepExecutionInstrumentationInitializerTest {
     public JenkinsRule j = new JenkinsRule();
 
     @Test
-    public void test_executorServiceAugmentor() throws Exception {
+    public void testExecutorServiceAugmentor() throws Exception {
         List<ExecutorServiceAugmentor> extensions = ExtensionList.lookup(ExecutorServiceAugmentor.class);
         assertThat(extensions.size(), is(1));
         assertThat(extensions.get(0), instanceOf(StepExecutionInstrumentationInitializer.class));

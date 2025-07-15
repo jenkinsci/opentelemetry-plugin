@@ -39,7 +39,7 @@ public class JenkinsOtelPluginNoConfigurationTest {
      * This test is similar to {@link JenkinsOtelPluginIntegrationTest#testSpanContextPropagationSynchronousNonBlockingTestStep()}
      */
     @Test
-    public void test_noOp_when_not_configured() throws Exception {
+    public void testNoOpWhenNotConfigured() throws Exception {
 
         String pipelineScript =
                 """
@@ -75,7 +75,7 @@ public class JenkinsOtelPluginNoConfigurationTest {
      * Make sure a standard pipeline with synchronous non-blocking steps works with {@link StepExecutionInstrumentationInitializer#augment(ExecutorService)}
      */
     @Test
-    public void test_standard_pipeline() throws Exception {
+    public void testStandardPipeline() throws Exception {
         j.createOnlineSlave();
         WorkflowJob pipeline = j.createProject(WorkflowJob.class);
         pipeline.setDefinition(new CpsFlowDefinition(
