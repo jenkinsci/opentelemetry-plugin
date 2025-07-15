@@ -50,6 +50,7 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
                 }""", true));
         WorkflowRun run = j.buildAndAssertSuccess(p);
         waitForLogs(run);
+        j.assertLogContains("Hello", run);
     }
 
     @Test

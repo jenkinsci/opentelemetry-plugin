@@ -63,21 +63,21 @@ public class ElasticStack extends ComposeContainer {
      * @return The URL to access to the Elasticsearch Docker container.
      */
     public String getEsUrl() {
-        return "http://localhost:" + ELASTICSEARCH_PORT;
+        return "http://localhost:" + this.getServicePort(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT);
     }
 
     /**
      * @return The URL to access to the Kibana Docker container.
      */
     public String getKibanaUrl() {
-        return "http://localhost:" + KIBANA_PORT;
+        return "http://localhost:" + this.getServicePort(KIBANA_SERVICE, KIBANA_PORT);
     }
 
     /**
      * @return The URL to access to the OpenTelemetry Docker container.
      */
     public String getFleetUrl() {
-        return "http://localhost:" + OTEL_PORT;
+        return "http://localhost:" + this.getServicePort(EDOT_SERVICE, OTEL_PORT);
     }
 
     /**
