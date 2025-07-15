@@ -9,15 +9,14 @@ import hudson.Extension;
 import hudson.model.AdministrativeMonitor;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
+import java.io.IOException;
+import javax.inject.Inject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.HttpResponse;
 import org.kohsuke.stapler.HttpResponses;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
-
-import javax.inject.Inject;
-import java.io.IOException;
 
 @Extension
 public class ElasticBackendKibanaBaseUrlNotSetAdministrativeMonitor extends AdministrativeMonitor {
@@ -31,10 +30,10 @@ public class ElasticBackendKibanaBaseUrlNotSetAdministrativeMonitor extends Admi
 
     @Override
     public boolean isActivated() {
-        return pluginConfiguration.getObservabilityBackends().stream().
-            filter(backend -> backend instanceof ElasticBackend).
-            map(backend -> (ElasticBackend) backend)
-            .anyMatch(backend -> StringUtils.isEmpty(backend.getKibanaBaseUrl()));
+        return pluginConfiguration.getObservabilityBackends().stream()
+                .filter(backend -> backend instanceof ElasticBackend)
+                .map(backend -> (ElasticBackend) backend)
+                .anyMatch(backend -> StringUtils.isEmpty(backend.getKibanaBaseUrl()));
     }
 
     /**
@@ -48,9 +47,9 @@ public class ElasticBackendKibanaBaseUrlNotSetAdministrativeMonitor extends Admi
         return HttpResponses.redirectViaContextPath("/configure");
     }
 
-
     @Inject
-    public void setJenkinsOpenTelemetryPluginConfiguration(JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration) {
+    public void setJenkinsOpenTelemetryPluginConfiguration(
+            JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration) {
         this.pluginConfiguration = jenkinsOpenTelemetryPluginConfiguration;
     }
 }

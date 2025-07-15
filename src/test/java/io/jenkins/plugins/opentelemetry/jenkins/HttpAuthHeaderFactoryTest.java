@@ -11,13 +11,20 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.cloudbees.plugins.credentials.BaseCredentials;
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.cloudbees.plugins.credentials.domains.Domain;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import hudson.model.Descriptor.FormException;
+import hudson.util.Secret;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.apache.hc.core5.http.Header;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
@@ -25,16 +32,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
-
-import com.cloudbees.plugins.credentials.BaseCredentials;
-import com.cloudbees.plugins.credentials.Credentials;
-import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
-import com.cloudbees.plugins.credentials.domains.Domain;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-
-import hudson.model.Descriptor.FormException;
-import hudson.util.Secret;
 
 @WithJenkins
 public class HttpAuthHeaderFactoryTest {
@@ -53,10 +50,10 @@ public class HttpAuthHeaderFactoryTest {
     private String createUsernamePasswordCredentials() {
         String credentialsId = UUID.randomUUID().toString();
         try {
-            Credentials credentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, credentialsId,
-                    "test", USERNAME, PASSWORD);
-            Map<Domain, List<Credentials>> domainCredentialsMap = SystemCredentialsProvider.getInstance()
-                    .getDomainCredentialsMap();
+            Credentials credentials = new UsernamePasswordCredentialsImpl(
+                    CredentialsScope.GLOBAL, credentialsId, "test", USERNAME, PASSWORD);
+            Map<Domain, List<Credentials>> domainCredentialsMap =
+                    SystemCredentialsProvider.getInstance().getDomainCredentialsMap();
             domainCredentialsMap.put(Domain.global(), Collections.singletonList(credentials));
         } catch (FormException e) {
             assertNull(e, "FormException should not be thrown");
@@ -66,10 +63,10 @@ public class HttpAuthHeaderFactoryTest {
 
     private String createSecretStringCredentials() {
         String credentialsId = UUID.randomUUID().toString();
-        Credentials credentials = new StringCredentialsImpl(CredentialsScope.GLOBAL, credentialsId, "test",
-                Secret.fromString(TOKEN));
-        Map<Domain, List<Credentials>> domainCredentialsMap = SystemCredentialsProvider.getInstance()
-                .getDomainCredentialsMap();
+        Credentials credentials =
+                new StringCredentialsImpl(CredentialsScope.GLOBAL, credentialsId, "test", Secret.fromString(TOKEN));
+        Map<Domain, List<Credentials>> domainCredentialsMap =
+                SystemCredentialsProvider.getInstance().getDomainCredentialsMap();
         domainCredentialsMap.put(Domain.global(), Collections.singletonList(credentials));
         return credentialsId;
     }
@@ -77,14 +74,15 @@ public class HttpAuthHeaderFactoryTest {
     private String createBaseCredentials() {
         String credentialsId = UUID.randomUUID().toString();
         Credentials credentials = new BaseCredentials(CredentialsScope.GLOBAL);
-        Map<Domain, List<Credentials>> domainCredentialsMap = SystemCredentialsProvider.getInstance()
-                .getDomainCredentialsMap();
+        Map<Domain, List<Credentials>> domainCredentialsMap =
+                SystemCredentialsProvider.getInstance().getDomainCredentialsMap();
         domainCredentialsMap.put(Domain.global(), Collections.singletonList(credentials));
         return credentialsId;
     }
 
-    private String base64Digest(){
-        return java.util.Base64.getEncoder().encodeToString((USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
+    private String base64Digest() {
+        return java.util.Base64.getEncoder()
+                .encodeToString((USERNAME + ":" + PASSWORD).getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -181,8 +179,8 @@ public class HttpAuthHeaderFactoryTest {
 
     @Test
     public void testCreateFactoryUsernamePassword_ValidCredentials() {
-        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword(USERNAME,
-                PASSWORD);
+        Optional<HttpAuthHeaderFactory> factory =
+                HttpAuthHeaderFactory.createFactoryUsernamePassword(USERNAME, PASSWORD);
         assertTrue(factory.isPresent());
         Header header = factory.get().createAuthHeader();
         assertNotNull(header);
@@ -193,15 +191,13 @@ public class HttpAuthHeaderFactoryTest {
 
     @Test
     public void testCreateFactoryUsernamePassword_NullUsername() {
-        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword(null,
-                PASSWORD);
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword(null, PASSWORD);
         assertFalse(factory.isPresent());
     }
 
     @Test
     public void testCreateFactoryUsernamePassword_EmptyUsername() {
-        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword("",
-                PASSWORD);
+        Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword("", PASSWORD);
         assertFalse(factory.isPresent());
     }
 
@@ -263,8 +259,8 @@ public class HttpAuthHeaderFactoryTest {
 
     @Test
     public void testConstructor_CredentialsObject_ApiKey() {
-        StringCredentials credentials = new StringCredentialsImpl(CredentialsScope.GLOBAL, UUID.randomUUID().toString(),
-                "test", Secret.fromString(TOKEN));
+        StringCredentials credentials = new StringCredentialsImpl(
+                CredentialsScope.GLOBAL, UUID.randomUUID().toString(), "test", Secret.fromString(TOKEN));
         HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials);
         Header header = factory.createAuthHeader();
         assertNotNull(header);
@@ -274,8 +270,8 @@ public class HttpAuthHeaderFactoryTest {
 
     @Test
     public void testConstructor_CredentialsObject_BearerToken() {
-        StringCredentials credentials = new StringCredentialsImpl(CredentialsScope.GLOBAL, UUID.randomUUID().toString(),
-                "test", Secret.fromString(TOKEN));
+        StringCredentials credentials = new StringCredentialsImpl(
+                CredentialsScope.GLOBAL, UUID.randomUUID().toString(), "test", Secret.fromString(TOKEN));
         HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials, true);
         Header header = factory.createAuthHeader();
         assertNotNull(header);
@@ -287,8 +283,8 @@ public class HttpAuthHeaderFactoryTest {
     public void testConstructor_CredentialsObject_UsernamePassword() {
         UsernamePasswordCredentialsImpl credentials;
         try {
-            credentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL,
-                    UUID.randomUUID().toString(), "test", USERNAME, PASSWORD);
+            credentials = new UsernamePasswordCredentialsImpl(
+                    CredentialsScope.GLOBAL, UUID.randomUUID().toString(), "test", USERNAME, PASSWORD);
             HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials);
             Header header = factory.createAuthHeader();
             assertNotNull(header);

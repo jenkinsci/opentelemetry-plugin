@@ -5,6 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry.jcasc;
 
+import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
+import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
+import static io.jenkins.plugins.casc.misc.Util.toYamlString;
+
 import io.jenkins.plugins.casc.ConfigurationContext;
 import io.jenkins.plugins.casc.ConfiguratorRegistry;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
@@ -19,10 +23,6 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.*;
 
-import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
-import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
-import static io.jenkins.plugins.casc.misc.Util.toYamlString;
-
 public class ConfigurationAsCodeElasticTest {
 
     @ClassRule
@@ -31,12 +31,15 @@ public class ConfigurationAsCodeElasticTest {
 
     @Test
     public void should_support_configuration_as_code() {
-        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+        final JenkinsOpenTelemetryPluginConfiguration configuration =
+                GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
-        MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("https://my-deployment.otel.example.com"));
+        MatcherAssert.assertThat(
+                configuration.getEndpoint(), CoreMatchers.is("https://my-deployment.otel.example.com"));
         MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(1));
 
-        ElasticBackend elastic = (ElasticBackend) configuration.getObservabilityBackends().get(0);
+        ElasticBackend elastic =
+                (ElasticBackend) configuration.getObservabilityBackends().get(0);
         MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://my-deployment.es.example.com"));
         MatcherAssert.assertThat(elastic.getName(), CoreMatchers.is("My Elastic"));
 

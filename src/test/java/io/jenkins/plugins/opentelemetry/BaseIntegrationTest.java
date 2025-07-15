@@ -5,6 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static com.google.common.base.Verify.verify;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+import static org.junit.Assert.fail;
+
 import com.cloudbees.hudson.plugins.folder.computed.FolderComputation;
 import com.github.rutledgepaulv.prune.Tree;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,22 +34,6 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.data.StatusData;
-import jenkins.plugins.git.ExtendedGitSampleRepoRule;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
-import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.jvnet.hudson.test.BuildWatcher;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,29 +50,40 @@ import java.util.function.BiPredicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import jenkins.plugins.git.ExtendedGitSampleRepoRule;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
+import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.FlagRule;
-
-import static com.google.common.base.Verify.verify;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
-import static org.junit.Assert.fail;
 
 public class BaseIntegrationTest {
     private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     @Rule
-    public FlagRule<Boolean> reset_OpenTelemtryConfiguration_TestingInMemoryMode =
-        new FlagRule<>(() -> OpenTelemetryConfiguration.TESTING_INMEMORY_MODE, x -> OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = x);
+    public FlagRule<Boolean> reset_OpenTelemtryConfiguration_TestingInMemoryMode = new FlagRule<>(
+            () -> OpenTelemetryConfiguration.TESTING_INMEMORY_MODE,
+            x -> OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = x);
 
     @Rule
     public FlagRule<Boolean> reset_OtelTraceService_StrictMode =
-        new FlagRule<>(() -> OtelTraceService.STRICT_MODE, x -> OtelTraceService.STRICT_MODE = x);
+            new FlagRule<>(() -> OtelTraceService.STRICT_MODE, x -> OtelTraceService.STRICT_MODE = x);
 
     @Rule
     public FlagRule<Boolean> reset_GitSCM_allowLocalCheckout =
-        new FlagRule<>(() -> GitSCM.ALLOW_LOCAL_CHECKOUT, x -> GitSCM.ALLOW_LOCAL_CHECKOUT = x);
+            new FlagRule<>(() -> GitSCM.ALLOW_LOCAL_CHECKOUT, x -> GitSCM.ALLOW_LOCAL_CHECKOUT = x);
 
-    public final static AtomicInteger jobNameSuffix = new AtomicInteger();
+    public static final AtomicInteger jobNameSuffix = new AtomicInteger();
 
     @ClassRule
     public static BuildWatcher buildWatcher = new BuildWatcher();
@@ -98,8 +98,7 @@ public class BaseIntegrationTest {
     static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
     @Before
-    public void before() throws Exception {
-    }
+    public void before() throws Exception {}
 
     @After
     public void after() throws Exception {
@@ -118,17 +117,19 @@ public class BaseIntegrationTest {
         jenkinsRule.waitUntilNoActivity();
         LOGGER.log(Level.INFO, "Jenkins started");
 
-        ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries = jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
-        verify(jenkinsOpenTelemetries.size() == 1, "Number of jenkinsControllerOpenTelemetrys: %s", jenkinsOpenTelemetries.size());
+        ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries =
+                jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
+        verify(
+                jenkinsOpenTelemetries.size() == 1,
+                "Number of jenkinsControllerOpenTelemetrys: %s",
+                jenkinsOpenTelemetries.size());
         jenkinsControllerOpenTelemetry = jenkinsOpenTelemetries.get(0);
 
-        // verify(jenkinsControllerOpenTelemetry.openTelemetry == null, "JenkinsControllerOpenTelemetry has already been configured");
+        // verify(jenkinsControllerOpenTelemetry.openTelemetry == null, "JenkinsControllerOpenTelemetry has already been
+        // configured");
         try {
             OpenTelemetryConfiguration configuration = new OpenTelemetryConfiguration(
-                of("http://localhost:4317"), empty(),
-                empty(),
-                empty(), empty(), empty(),
-                Collections.emptyMap());
+                    of("http://localhost:4317"), empty(), empty(), empty(), empty(), empty(), Collections.emptyMap());
 
             LOGGER.log(Level.INFO, "Initialize OTel with configuration " + configuration.toOpenTelemetryProperties());
             jenkinsControllerOpenTelemetry.initialize(configuration);
@@ -151,47 +152,67 @@ public class BaseIntegrationTest {
             Assert.fail("No element in the list of expected spans for " + Arrays.asList(expectedSpanNames));
         }
         final String leafSpanName = expectedSpanNamesIt.next();
-        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(
-            node -> {
-                LOGGER.log( Level.FINE, () -> "Compare '" + leafSpanName + "' with '" + node.getData().spanData.getName() + "'");
-                return Objects.equals(leafSpanName, node.getData().spanData.getName());
-            });
+        Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(node -> {
+            LOGGER.log(
+                    Level.FINE,
+                    () -> "Compare '" + leafSpanName + "' with '"
+                            + node.getData().spanData.getName() + "'");
+            return Objects.equals(leafSpanName, node.getData().spanData.getName());
+        });
 
-        MatcherAssert.assertThat("Expected leaf span '" + leafSpanName + "' in chain of span" + expectedSpanNamesList + " not found", actualNodeOptional.isPresent(), CoreMatchers.is(true));
+        MatcherAssert.assertThat(
+                "Expected leaf span '" + leafSpanName + "' in chain of span" + expectedSpanNamesList + " not found",
+                actualNodeOptional.isPresent(),
+                CoreMatchers.is(true));
 
         while (expectedSpanNamesIt.hasNext()) {
             String expectedSpanName = expectedSpanNamesIt.next();
             actualNodeOptional = actualNodeOptional.get().getParent();
-            final String actualSpanName = actualNodeOptional.get().getData().spanData.getName();
-            MatcherAssert.assertThat("Expected span '" + expectedSpanName + "' in chain of span" + expectedSpanNamesList + " not found, actual is '" + actualSpanName + "'", actualSpanName, CoreMatchers.is(expectedSpanName));
+            final String actualSpanName =
+                    actualNodeOptional.get().getData().spanData.getName();
+            MatcherAssert.assertThat(
+                    "Expected span '" + expectedSpanName + "' in chain of span" + expectedSpanNamesList
+                            + " not found, actual is '" + actualSpanName + "'",
+                    actualSpanName,
+                    CoreMatchers.is(expectedSpanName));
         }
     }
 
     protected void dumpMetrics(Map<String, MetricData> exportedMetrics) {
         System.out.println("Metrics: " + exportedMetrics.size());
-        System.out.println(exportedMetrics.values().stream().sorted(Comparator.comparing(MetricData::getName)).map(metric -> {
-            MetricDataType metricType = metric.getType();
-            String s = metric.getName() + "   " + metricType + " ";
-            switch (metricType) {
-                case LONG_SUM:
-                    s += metric.getLongSumData().getPoints().stream().map(point -> String.valueOf(point.getValue())).collect(Collectors.joining(", "));
-                    break;
-                case DOUBLE_SUM:
-                    s += metric.getDoubleSumData().getPoints().stream().map(point -> String.valueOf(point.getValue())).collect(Collectors.joining(", "));
-                    break;
-                case DOUBLE_GAUGE:
-                    s += metric.getDoubleGaugeData().getPoints().stream().map(point -> String.valueOf(point.getValue())).collect(Collectors.joining(", "));
-                    break;
-                case LONG_GAUGE:
-                    s += metric.getLongGaugeData().getPoints().stream().map(point -> String.valueOf(point.getValue())).collect(Collectors.joining(", "));
-                    break;
-                case SUMMARY:
-                    break;
-                default:
-
-            }
-            return s;
-        }).collect(Collectors.joining(" \n")));
+        System.out.println(exportedMetrics.values().stream()
+                .sorted(Comparator.comparing(MetricData::getName))
+                .map(metric -> {
+                    MetricDataType metricType = metric.getType();
+                    String s = metric.getName() + "   " + metricType + " ";
+                    switch (metricType) {
+                        case LONG_SUM:
+                            s += metric.getLongSumData().getPoints().stream()
+                                    .map(point -> String.valueOf(point.getValue()))
+                                    .collect(Collectors.joining(", "));
+                            break;
+                        case DOUBLE_SUM:
+                            s += metric.getDoubleSumData().getPoints().stream()
+                                    .map(point -> String.valueOf(point.getValue()))
+                                    .collect(Collectors.joining(", "));
+                            break;
+                        case DOUBLE_GAUGE:
+                            s += metric.getDoubleGaugeData().getPoints().stream()
+                                    .map(point -> String.valueOf(point.getValue()))
+                                    .collect(Collectors.joining(", "));
+                            break;
+                        case LONG_GAUGE:
+                            s += metric.getLongGaugeData().getPoints().stream()
+                                    .map(point -> String.valueOf(point.getValue()))
+                                    .collect(Collectors.joining(", "));
+                            break;
+                        case SUMMARY:
+                            break;
+                        default:
+                    }
+                    return s;
+                })
+                .collect(Collectors.joining(" \n")));
     }
 
     protected Tree<SpanDataWrapper> getBuildTrace() {
@@ -204,16 +225,21 @@ public class BaseIntegrationTest {
     }
 
     protected static @NotNull Tree<SpanDataWrapper> getTrace(String rootSpanPrefix, int traceIndex) {
-        CompletableResultCode completableResultCode = jenkinsControllerOpenTelemetry.getOpenTelemetrySdk().getSdkTracerProvider().forceFlush();
+        CompletableResultCode completableResultCode = jenkinsControllerOpenTelemetry
+                .getOpenTelemetrySdk()
+                .getSdkTracerProvider()
+                .forceFlush();
         completableResultCode.join(1, TimeUnit.SECONDS);
         List<SpanData> spans = InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.getFinishedSpanItems();
 
-        final BiPredicate<Tree.Node<SpanDataWrapper>, Tree.Node<SpanDataWrapper>> parentChildMatcher = (spanDataNode1, spanDataNode2) -> {
-            final SpanData spanData1 = spanDataNode1.getData().spanData;
-            final SpanData spanData2 = spanDataNode2.getData().spanData;
-            return Objects.equals(spanData1.getSpanId(), spanData2.getParentSpanId());
-        };
-        final List<Tree<SpanDataWrapper>> trees = Tree.of(spans.stream().map(SpanDataWrapper::new).collect(Collectors.toList()), parentChildMatcher);
+        final BiPredicate<Tree.Node<SpanDataWrapper>, Tree.Node<SpanDataWrapper>> parentChildMatcher =
+                (spanDataNode1, spanDataNode2) -> {
+                    final SpanData spanData1 = spanDataNode1.getData().spanData;
+                    final SpanData spanData2 = spanDataNode2.getData().spanData;
+                    return Objects.equals(spanData1.getSpanId(), spanData2.getParentSpanId());
+                };
+        final List<Tree<SpanDataWrapper>> trees =
+                Tree.of(spans.stream().map(SpanDataWrapper::new).collect(Collectors.toList()), parentChildMatcher);
         System.out.println("## TREE VIEW OF SPANS ## ");
         for (Tree<SpanDataWrapper> tree : trees) {
             System.out.println(tree);
@@ -229,24 +255,36 @@ public class BaseIntegrationTest {
                 }
             }
         }
-        throw new IllegalArgumentException("No root span found starting with " + rootSpanPrefix + " and index " + traceIndex);
+        throw new IllegalArgumentException(
+                "No root span found starting with " + rootSpanPrefix + " and index " + traceIndex);
     }
 
     protected void assertEnvironmentVariables(EnvVars environment) {
-        MatcherAssert.assertThat(environment.get(OtelEnvironmentContributorService.SPAN_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(environment.get(OtelEnvironmentContributorService.TRACE_ID), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(
+                environment.get(OtelEnvironmentContributorService.SPAN_ID),
+                CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(
+                environment.get(OtelEnvironmentContributorService.TRACE_ID),
+                CoreMatchers.is(CoreMatchers.notNullValue()));
         // See src/test/resources/io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
-        MatcherAssert.assertThat(environment.get(ConfigurationKey.OTEL_TRACES_EXPORTER.asEnvVar()), CoreMatchers.is("otlp"));
-        MatcherAssert.assertThat(environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_ENDPOINT.asEnvVar()), CoreMatchers.is("http://otel-collector-contrib:4317"));
-        MatcherAssert.assertThat(environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_INSECURE.asEnvVar()), CoreMatchers.is("true"));
-        MatcherAssert.assertThat(environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_TIMEOUT.asEnvVar()), CoreMatchers.is("3000"));
+        MatcherAssert.assertThat(
+                environment.get(ConfigurationKey.OTEL_TRACES_EXPORTER.asEnvVar()), CoreMatchers.is("otlp"));
+        MatcherAssert.assertThat(
+                environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_ENDPOINT.asEnvVar()),
+                CoreMatchers.is("http://otel-collector-contrib:4317"));
+        MatcherAssert.assertThat(
+                environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_INSECURE.asEnvVar()), CoreMatchers.is("true"));
+        MatcherAssert.assertThat(
+                environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_TIMEOUT.asEnvVar()), CoreMatchers.is("3000"));
     }
 
-    protected void assertJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans, String jobType) throws Exception {
+    protected void assertJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans, String jobType)
+            throws Exception {
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
         MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(jobType));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
+        MatcherAssert.assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
     }
 
     protected void assertFreestyleJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) throws Exception {
@@ -262,26 +300,39 @@ public class BaseIntegrationTest {
     }
 
     protected void assertNodeMetadata(Tree<SpanDataWrapper> spans, String jobName, boolean withNode) throws Exception {
-        Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(node -> jobName.equals(node.getData().spanData.getName()));
+        Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(
+                node -> jobName.equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(shell, CoreMatchers.is(CoreMatchers.notNullValue()));
         Attributes attributes = shell.get().getData().spanData.getAttributes();
 
         if (withNode) {
-            MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.not(Matchers.emptyOrNullString()));
+            MatcherAssert.assertThat(
+                    attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL),
+                    CoreMatchers.not(Matchers.emptyOrNullString()));
         } else {
-            MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is(Matchers.emptyOrNullString()));
+            MatcherAssert.assertThat(
+                    attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL),
+                    CoreMatchers.is(Matchers.emptyOrNullString()));
         }
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_NAME), CoreMatchers.not(Matchers.emptyOrNullString()));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_ID), Matchers.notNullValue());
+        MatcherAssert.assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_NAME),
+                CoreMatchers.not(Matchers.emptyOrNullString()));
+        MatcherAssert.assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_ID), Matchers.notNullValue());
     }
 
-    protected void assertBuildStepMetadata(Tree<SpanDataWrapper> spans, String stepName, String pluginName) throws Exception {
-        Optional<Tree.Node<SpanDataWrapper>> step = spans.breadthFirstSearchNodes(node -> stepName.equals(node.getData().spanData.getName()));
+    protected void assertBuildStepMetadata(Tree<SpanDataWrapper> spans, String stepName, String pluginName)
+            throws Exception {
+        Optional<Tree.Node<SpanDataWrapper>> step = spans.breadthFirstSearchNodes(
+                node -> stepName.equals(node.getData().spanData.getName()));
         MatcherAssert.assertThat(step, CoreMatchers.is(CoreMatchers.notNullValue()));
         Attributes attributes = step.get().getData().spanData.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(pluginName));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION), CoreMatchers.is(CoreMatchers.notNullValue()));
+        MatcherAssert.assertThat(
+                attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(pluginName));
+        MatcherAssert.assertThat(
+                attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION),
+                CoreMatchers.is(CoreMatchers.notNullValue()));
     }
 
     /**
@@ -298,7 +349,9 @@ public class BaseIntegrationTest {
             List<String> childrenSpanNames = new ArrayList<>();
 
             // Get the children and for each one, store the name.
-            node.getChildren().forEach(child -> childrenSpanNames.add(child.getData().spanData.getName()));
+            node.getChildren()
+                    .forEach(child ->
+                            childrenSpanNames.add(child.getData().spanData.getName()));
 
             // Put the span and its children on the map.
             spansTreeMap.put(parentSpanName, childrenSpanNames);
@@ -315,21 +368,23 @@ public class BaseIntegrationTest {
     protected Map<String, SpanData> getSpanDataMapFromTree(Tree<SpanDataWrapper> spansTree) {
         Map<String, SpanData> spansTreeMap = new HashMap<>();
         // Stream all the nodes.
-        spansTree.breadthFirstStreamNodes().forEach(node ->
-            spansTreeMap.put(node.getData().spanData.getName(), node.getData().spanData));
+        spansTree
+                .breadthFirstStreamNodes()
+                .forEach(node -> spansTreeMap.put(node.getData().spanData.getName(), node.getData().spanData));
         return spansTreeMap;
     }
 
     // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java
     @NonNull
-    public static WorkflowJob scheduleAndFindBranchProject(@NonNull WorkflowMultiBranchProject mp, @NonNull String name) throws Exception {
+    public static WorkflowJob scheduleAndFindBranchProject(@NonNull WorkflowMultiBranchProject mp, @NonNull String name)
+            throws Exception {
         mp.scheduleBuild2(0).getFuture().get();
         return findBranchProject(mp, name);
     }
 
     // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java
-    public static @NonNull
-    WorkflowJob findBranchProject(@NonNull WorkflowMultiBranchProject mp, @NonNull String name) throws Exception {
+    public static @NonNull WorkflowJob findBranchProject(@NonNull WorkflowMultiBranchProject mp, @NonNull String name)
+            throws Exception {
         WorkflowJob p = mp.getItem(name);
         showIndexing(mp);
         if (p == null) {
@@ -345,7 +400,6 @@ public class BaseIntegrationTest {
         indexing.writeWholeLogTo(System.out);
         System.out.println("---%<--- ");
     }
-
 
     @AfterClass
     public static void afterClass() {
@@ -377,7 +431,9 @@ public class BaseIntegrationTest {
             if (status != null && status.getStatusCode() != StatusCode.UNSET) {
                 result += ", status.code: " + status.getStatusCode();
             }
-            if (status != null && status.getDescription() != null && !status.getDescription().isEmpty()) {
+            if (status != null
+                    && status.getDescription() != null
+                    && !status.getDescription().isEmpty()) {
                 result += ", status.description: " + status.getDescription();
             }
             return result;

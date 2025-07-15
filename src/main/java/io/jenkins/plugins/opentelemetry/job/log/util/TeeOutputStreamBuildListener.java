@@ -7,11 +7,10 @@ package io.jenkins.plugins.opentelemetry.job.log.util;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.BuildListener;
-import org.jenkinsci.plugins.workflow.log.OutputStreamTaskListener;
-
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Serial;
+import org.jenkinsci.plugins.workflow.log.OutputStreamTaskListener;
 
 public class TeeOutputStreamBuildListener implements BuildListener, OutputStreamTaskListener, AutoCloseable {
 
@@ -41,7 +40,9 @@ public class TeeOutputStreamBuildListener implements BuildListener, OutputStream
     @Override
     public synchronized OutputStream getOutputStream() {
         if (outputStream == null) {
-            outputStream = new TeeOutputStream(((OutputStreamTaskListener) primary).getOutputStream(), ((OutputStreamTaskListener) secondary).getOutputStream());
+            outputStream = new TeeOutputStream(
+                    ((OutputStreamTaskListener) primary).getOutputStream(),
+                    ((OutputStreamTaskListener) secondary).getOutputStream());
         }
         return outputStream;
     }

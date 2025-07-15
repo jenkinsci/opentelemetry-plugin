@@ -5,34 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
-import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.jvnet.hudson.test.JenkinsRule;
+import static com.google.common.base.Verify.verify;
 import static org.mockito.ArgumentMatchers.any;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
-
-import static com.google.common.base.Verify.verify;
 
 import hudson.ExtensionList;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
@@ -46,7 +22,29 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.testing.trace.SpanBuilderMock;
 import io.opentelemetry.sdk.testing.trace.SpanMock;
 import io.opentelemetry.sdk.testing.trace.TracerMock;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 @RunWith(Parameterized.class)
 public class MonitoringPipelineListenerParameterizedTest {
@@ -82,17 +80,21 @@ public class MonitoringPipelineListenerParameterizedTest {
     @Parameterized.Parameters
     public static Collection<Object[]> argumentsActionScenarios() {
         return Arrays.asList(new Object[][] {
-            { "with.new.span.boolean", AttributeKey.booleanKey("with.new.span.boolean"), true },
-            { "with.new.span.string", AttributeKey.stringKey("with.new.span.string"), "true" },
-            { "with.new.span.long", AttributeKey.longKey("with.new.span.long"), 2L },
-            { "with.new.span.double", AttributeKey.doubleKey("with.new.span.double"), 2.22 },
+            {"with.new.span.boolean", AttributeKey.booleanKey("with.new.span.boolean"), true},
+            {"with.new.span.string", AttributeKey.stringKey("with.new.span.string"), "true"},
+            {"with.new.span.long", AttributeKey.longKey("with.new.span.long"), 2L},
+            {"with.new.span.double", AttributeKey.doubleKey("with.new.span.double"), 2.22},
         });
     }
 
     @Before
     public void setup() {
-        ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries = jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
-        verify(jenkinsOpenTelemetries.size() == 1, "Number of jenkinsControllerOpenTelemetrys: %s", jenkinsOpenTelemetries.size());
+        ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries =
+                jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
+        verify(
+                jenkinsOpenTelemetries.size() == 1,
+                "Number of jenkinsControllerOpenTelemetrys: %s",
+                jenkinsOpenTelemetries.size());
         JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry = Mockito.spy(jenkinsOpenTelemetries.get(0));
 
         Tracer tracer = Mockito.spy(new TracerMock());
@@ -105,7 +107,8 @@ public class MonitoringPipelineListenerParameterizedTest {
         monitoringPipelineListener.jenkinsControllerOpenTelemetry = jenkinsControllerOpenTelemetry;
 
         Assert.assertNull(monitoringPipelineListener.getTracer());
-        // postConstruct() calls the getDefaultTracer() method which needs to be stubbed in advance before using the tracer.
+        // postConstruct() calls the getDefaultTracer() method which needs to be stubbed in advance before using the
+        // tracer.
         // Manually invoke the postConstruct() method to re-apply the @PostConstruct logic.
         monitoringPipelineListener.postConstruct();
 
@@ -146,7 +149,11 @@ public class MonitoringPipelineListenerParameterizedTest {
         Assert.assertNotNull(monitoringPipelineListener.getTracerService().getSpan(workflowRun));
 
         SpanMock newSpan = Mockito.spy(new SpanMock(WITH_NEW_SPAN_NAME));
-        Mockito.when(monitoringPipelineListener.getTracer().spanBuilder(WITH_NEW_SPAN_NAME).startSpan()).thenReturn(newSpan);
+        Mockito.when(monitoringPipelineListener
+                        .getTracer()
+                        .spanBuilder(WITH_NEW_SPAN_NAME)
+                        .startSpan())
+                .thenReturn(newSpan);
 
         try (MockedStatic<Span> mockedStaticSpan = mockStatic(Span.class);
                 MockedStatic<Context> mockedStaticContext = mockStatic(Context.class)) {
@@ -168,7 +175,8 @@ public class MonitoringPipelineListenerParameterizedTest {
 
             // After the onStartWithNewSpanStep() call, the spanBuilder should contain the attribute.
             Assert.assertTrue(spanBuilderMock.getAttributes().containsKey(attributeKeyObj));
-            Assert.assertEquals(attributeValueObj, spanBuilderMock.getAttributes().get(attributeKeyObj));
+            Assert.assertEquals(
+                    attributeValueObj, spanBuilderMock.getAttributes().get(attributeKeyObj));
         }
     }
 }

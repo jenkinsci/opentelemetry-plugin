@@ -5,16 +5,15 @@
 
 package io.jenkins.plugins.opentelemetry.job.jenkins;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.ExtensionList;
+import java.util.List;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.List;
 
 public interface PipelineListener {
 
@@ -36,12 +35,17 @@ public interface PipelineListener {
     /**
      * Just after the `node` step starts.
      */
-    void onAfterStartNodeStep(@NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run);
+    void onAfterStartNodeStep(
+            @NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run);
 
     /**
      * Just after the `node` step ends
      */
-    void onEndNodeStep(@NonNull StepEndNode nodeStepEndNode, @NonNull String nodeName, FlowNode nextNode, @NonNull WorkflowRun run);
+    void onEndNodeStep(
+            @NonNull StepEndNode nodeStepEndNode,
+            @NonNull String nodeName,
+            FlowNode nextNode,
+            @NonNull WorkflowRun run);
 
     /**
      * Just before the `stage`step starts
@@ -51,17 +55,23 @@ public interface PipelineListener {
     /**
      * Just after the `stage` step ends
      */
-    void onEndStageStep(@NonNull StepEndNode stageStepEndNode, @NonNull String stageName, FlowNode nextNode, @NonNull WorkflowRun run);
+    void onEndStageStep(
+            @NonNull StepEndNode stageStepEndNode,
+            @NonNull String stageName,
+            FlowNode nextNode,
+            @NonNull WorkflowRun run);
 
     /**
      * Just before the `parallel` branch starts
      */
-    void onStartParallelStepBranch(@NonNull StepStartNode stepStartNode, @NonNull String branchName, @NonNull WorkflowRun run);
+    void onStartParallelStepBranch(
+            @NonNull StepStartNode stepStartNode, @NonNull String branchName, @NonNull WorkflowRun run);
 
     /**
      * Just before the `parallel` branch ends
      */
-    void onEndParallelStepBranch(@NonNull StepEndNode stepStepNode, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run);
+    void onEndParallelStepBranch(
+            @NonNull StepEndNode stepStepNode, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run);
 
     /**
      * Just before the `withNewSpan` step starts
@@ -87,5 +97,4 @@ public interface PipelineListener {
      * Just after the pipeline ends
      */
     void onEndPipeline(@NonNull FlowNode node, @NonNull WorkflowRun run);
-
 }

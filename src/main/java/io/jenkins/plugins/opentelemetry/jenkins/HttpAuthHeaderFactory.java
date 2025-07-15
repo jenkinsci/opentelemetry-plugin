@@ -1,26 +1,23 @@
 package io.jenkins.plugins.opentelemetry.jenkins;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.model.Descriptor.FormException;
+import hudson.security.ACL;
+import hudson.util.Secret;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
-
+import jenkins.model.Jenkins;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
-
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.model.Descriptor.FormException;
-import hudson.security.ACL;
-import hudson.util.Secret;
-import jenkins.model.Jenkins;
 
 /**
  * Factory class to create HTTP authentication headers for Jenkins credentials.
@@ -54,7 +51,7 @@ public class HttpAuthHeaderFactory {
      *
      * @param jenkinsCredentials the Jenkins credentials
      */
-    public HttpAuthHeaderFactory(com.cloudbees.plugins.credentials.Credentials jenkinsCredentials){
+    public HttpAuthHeaderFactory(com.cloudbees.plugins.credentials.Credentials jenkinsCredentials) {
         this(jenkinsCredentials, false);
     }
 
@@ -64,7 +61,7 @@ public class HttpAuthHeaderFactory {
      * @param jenkinsCredentials the Jenkins credentials
      * @param bearerMode         whether to use bearer mode for authentication
      */
-    public HttpAuthHeaderFactory(com.cloudbees.plugins.credentials.Credentials jenkinsCredentials, Boolean bearerMode){
+    public HttpAuthHeaderFactory(com.cloudbees.plugins.credentials.Credentials jenkinsCredentials, Boolean bearerMode) {
         this.jenkinsCredentials = jenkinsCredentials;
         this.bearerMode = bearerMode;
     }
@@ -83,21 +80,27 @@ public class HttpAuthHeaderFactory {
     /**
      * Gets the Jenkins credentials using the provided credentials ID.
      */
-    private com.cloudbees.plugins.credentials.Credentials getJenkinsCredentials(String jenkinsCredentialsId) throws CredentialsNotFoundException {
+    private com.cloudbees.plugins.credentials.Credentials getJenkinsCredentials(String jenkinsCredentialsId)
+            throws CredentialsNotFoundException {
         com.cloudbees.plugins.credentials.Credentials credentials = null;
         if (jenkinsCredentialsId == null || jenkinsCredentialsId.isEmpty()) {
             throw new CredentialsNotFoundException("No Jenkins credentials defined");
         }
         try {
             credentials = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentialsInItemGroup(
-                    com.cloudbees.plugins.credentials.Credentials.class, Jenkins.get(), ACL.SYSTEM2, Collections.emptyList()),
+                    CredentialsProvider.lookupCredentialsInItemGroup(
+                            com.cloudbees.plugins.credentials.Credentials.class,
+                            Jenkins.get(),
+                            ACL.SYSTEM2,
+                            Collections.emptyList()),
                     CredentialsMatchers.withId(jenkinsCredentialsId));
         } catch (NoSuchElementException e) {
-            throw new CredentialsNotFoundException("No Jenkins credentials found for id '" + jenkinsCredentialsId + "'");
+            throw new CredentialsNotFoundException(
+                    "No Jenkins credentials found for id '" + jenkinsCredentialsId + "'");
         }
         if (credentials == null) {
-            throw new CredentialsNotFoundException("No Jenkins credentials found for id '" + jenkinsCredentialsId + "'");
+            throw new CredentialsNotFoundException(
+                    "No Jenkins credentials found for id '" + jenkinsCredentialsId + "'");
         }
         return credentials;
     }
@@ -111,12 +114,14 @@ public class HttpAuthHeaderFactory {
      * @throws CredentialsNotFoundException if the credentials are not found
      */
     public Header createAuthHeader() throws CredentialsNotFoundException {
-        if(jenkinsCredentials instanceof com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials usernamePassword) {
+        if (jenkinsCredentials
+                instanceof com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials usernamePassword) {
             return createAuthHeader(usernamePassword);
         } else if (jenkinsCredentials instanceof StringCredentials stringCredentials) {
             return createAuthHeader(stringCredentials);
         } else {
-            throw new CredentialsNotFoundException("Incorrect credentials type, supported are StringCredentials and UsernamePasswordCredentials");
+            throw new CredentialsNotFoundException(
+                    "Incorrect credentials type, supported are StringCredentials and UsernamePasswordCredentials");
         }
     }
 
@@ -141,14 +146,17 @@ public class HttpAuthHeaderFactory {
      * @return the authentication header
      * @throws CredentialsNotFoundException if the credentials are not found
      */
-    private Header createAuthHeader(@NonNull com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials jenkinsCredentials)
+    private Header createAuthHeader(
+            @NonNull com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials jenkinsCredentials)
             throws CredentialsNotFoundException {
         if (jenkinsCredentials == null) {
             throw new CredentialsNotFoundException("No Jenkins credentials set");
         }
         String username = jenkinsCredentials.getUsername();
         String password = jenkinsCredentials.getPassword().getPlainText();
-        String digest = Base64.getEncoder().encodeToString(String.format(DIGEST_FORMAT_STRING, username, password).getBytes(StandardCharsets.UTF_8));
+        String digest = Base64.getEncoder()
+                .encodeToString(
+                        String.format(DIGEST_FORMAT_STRING, username, password).getBytes(StandardCharsets.UTF_8));
         String value = String.format(BASIC_AUTH_FORMAT, digest);
         return new BasicHeader(AUTHORIZATION, value);
     }
@@ -183,7 +191,7 @@ public class HttpAuthHeaderFactory {
     @NonNull
     public static Optional<HttpAuthHeaderFactory> createFactory(@NonNull Optional<String> jenkinsCredentialsId) {
         Optional<HttpAuthHeaderFactory> ret = Optional.empty();
-        if(jenkinsCredentialsId.isPresent() && !jenkinsCredentialsId.get().isEmpty()) {
+        if (jenkinsCredentialsId.isPresent() && !jenkinsCredentialsId.get().isEmpty()) {
             ret = HttpAuthHeaderFactory.createFactory(jenkinsCredentialsId.get());
         }
         return ret;
@@ -263,5 +271,4 @@ public class HttpAuthHeaderFactory {
         }
         return ret;
     }
-
 }

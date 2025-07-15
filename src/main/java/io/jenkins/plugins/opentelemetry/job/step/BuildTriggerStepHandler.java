@@ -7,26 +7,25 @@ package io.jenkins.plugins.opentelemetry.job.step;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.Extension;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
+import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.Tracer;
 import java.util.Map;
-
+import jenkins.YesNoMaybe;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.build.BuildTriggerStep;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
-import io.opentelemetry.api.trace.SpanBuilder;
-import io.opentelemetry.api.trace.Tracer;
-import jenkins.YesNoMaybe;
-
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class BuildTriggerStepHandler implements StepHandler {
     @Override
     public boolean canCreateSpanBuilder(@NonNull FlowNode flowNode, @NonNull WorkflowRun run) {
-        return flowNode instanceof StepAtomNode && ((StepAtomNode) flowNode).getDescriptor() instanceof BuildTriggerStep.DescriptorImpl;
+        return flowNode instanceof StepAtomNode
+                && ((StepAtomNode) flowNode).getDescriptor() instanceof BuildTriggerStep.DescriptorImpl;
     }
 
     @NonNull
