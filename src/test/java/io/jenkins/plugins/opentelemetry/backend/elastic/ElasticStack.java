@@ -55,6 +55,8 @@ public class ElasticStack extends ComposeContainer {
         withExposedService(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT)
                 .withExposedService(KIBANA_SERVICE, KIBANA_PORT)
                 .withExposedService(EDOT_SERVICE, OTEL_PORT)
+                .waitingFor(ELASTICSEARCH_SERVICE, new DockerHealthcheckWaitStrategy())
+                .waitingFor(KIBANA_SERVICE, new DockerHealthcheckWaitStrategy())
                 .waitingFor(EDOT_SERVICE, new DockerHealthcheckWaitStrategy())
                 .withStartupTimeout(Duration.ofMinutes(10));
     }

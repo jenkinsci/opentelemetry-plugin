@@ -23,11 +23,12 @@ import org.testcontainers.shaded.org.apache.commons.lang3.SystemUtils;
 @Testcontainers(disabledWithoutDocker = true)
 public abstract class ElasticStackIT {
     @Container
-    public static ElasticStack elasticStack = new ElasticStack();
+    protected static final ElasticStack elasticStack = new ElasticStack();
 
     @BeforeEach
-    void beforeEach() {
+    void beforeEach() throws Exception {
         elasticStack.getServicePort(ElasticStack.EDOT_SERVICE, ElasticStack.OTEL_PORT);
+        elasticStack.createLogIndexIfNeeded();
     }
 
     @BeforeAll
@@ -39,14 +40,5 @@ public abstract class ElasticStackIT {
     @AfterAll
     static void afterAll() {
         GlobalOpenTelemetry.resetForTest();
-    }
-
-    /**
-     * Initializes the log index in the Elastic Stack.
-     * Declared as an initializer to ensure it runs after {@link io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry#init()} and avoids exception by {@link io.opentelemetry.api.GlobalOpenTelemetry#set(io.opentelemetry.api.OpenTelemetry)}
-     */
-    @Initializer(after = InitMilestone.SYSTEM_CONFIG_LOADED)
-    public static void init() throws Exception {
-        elasticStack.createLogIndexIfNeeded();
     }
 }
