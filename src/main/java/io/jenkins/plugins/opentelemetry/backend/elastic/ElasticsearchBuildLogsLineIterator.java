@@ -71,6 +71,8 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
     Iterator<LogLine<Long>> delegate;
     boolean endOfStream;
 
+    List<FieldValue> lastSortValues;
+
     public ElasticsearchBuildLogsLineIterator(
             @NonNull String jobFullName,
             int runNumber,
@@ -170,6 +172,7 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
                         .startSpan();
                 try (Scope ignored2 = esClosePitSpan.makeCurrent()) {
                     esClient.closePointInTime(builder -> builder.id(pointInTimeId));
+                    lastSortValues = null;
                 } finally {
                     esClosePitSpan.end();
                     pointInTimeId = null;
@@ -195,10 +198,6 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
             logger.log(Level.INFO, () -> "Skip more than Integer.MAX_VALUE pages, return empty result");
             return Collections.emptyIterator();
         }
-        if (this.lineNumber > MAX_LINES_PAGINATED) {
-            logger.log(Level.INFO, () -> "Skip more than " + MAX_LINES_PAGINATED + " pages, return empty result");
-            return Collections.emptyIterator();
-        }
         String loadPointInTimeId = this.lazyLoadPointInTimeId();
 
         Span esSearchSpan =
@@ -214,20 +213,26 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
 
             Query query = getQuery(esSearchSpan);
 
-            SearchRequest searchRequest = new SearchRequest.Builder()
+            SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder()
                     .pit(pit -> pit.id(loadPointInTimeId).keepAlive(POINT_IN_TIME_KEEP_ALIVE))
-                    .from((int) this.lineNumber)
                     .size(PAGE_SIZE)
                     .sort(s -> s.field(
                             f -> f.field(ElasticsearchFields.FIELD_TIMESTAMP).order(SortOrder.Asc)))
-                    .query(query)
-                    .build();
+                    .query(query);
+
+            if (lastSortValues != null) {
+                searchRequestBuilder.searchAfter(lastSortValues);
+            }
+            SearchRequest searchRequest = searchRequestBuilder.build();
+
             SearchResponse<ObjectNode> searchResponse = this.esClient.search(searchRequest, ObjectNode.class);
 
             List<Hit<ObjectNode>> hits = searchResponse.hits().hits();
             esSearchSpan.setAttribute("response.size", hits.size());
-            this.lineNumber += hits.size();
-            if (hits.size() == 0) {
+            if (!hits.isEmpty()) {
+                this.lineNumber += hits.size();
+                this.lastSortValues = hits.get(hits.size() - 1).sort();
+            } else {
                 endOfStream = true;
             }
             return hits.stream()
