@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
@@ -55,8 +56,6 @@ public class ElasticStack extends ComposeContainer {
         withExposedService(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT)
                 .withExposedService(KIBANA_SERVICE, KIBANA_PORT)
                 .withExposedService(EDOT_SERVICE, OTEL_PORT)
-                .waitingFor(ELASTICSEARCH_SERVICE, new DockerHealthcheckWaitStrategy())
-                .waitingFor(KIBANA_SERVICE, new DockerHealthcheckWaitStrategy())
                 .waitingFor(EDOT_SERVICE, new DockerHealthcheckWaitStrategy())
                 .withStartupTimeout(Duration.ofMinutes(10));
     }
@@ -65,21 +64,24 @@ public class ElasticStack extends ComposeContainer {
      * @return The URL to access to the Elasticsearch Docker container.
      */
     public String getEsUrl() {
-        return "http://localhost:" + this.getServicePort(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT);
+        return "http://" + this.getServiceHost(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT) + ":"
+                + this.getServicePort(ELASTICSEARCH_SERVICE, ELASTICSEARCH_PORT);
     }
 
     /**
      * @return The URL to access to the Kibana Docker container.
      */
     public String getKibanaUrl() {
-        return "http://localhost:" + this.getServicePort(KIBANA_SERVICE, KIBANA_PORT);
+        return "http://" + this.getServiceHost(KIBANA_SERVICE, KIBANA_PORT) + ":"
+                + this.getServicePort(KIBANA_SERVICE, KIBANA_PORT);
     }
 
     /**
      * @return The URL to access to the OpenTelemetry Docker container.
      */
     public String getFleetUrl() {
-        return "http://localhost:" + this.getServicePort(EDOT_SERVICE, OTEL_PORT);
+        return "http://" + this.getServiceHost(EDOT_SERVICE, OTEL_PORT) + ":"
+                + this.getServicePort(EDOT_SERVICE, OTEL_PORT);
     }
 
     /**
@@ -90,21 +92,13 @@ public class ElasticStack extends ComposeContainer {
     public void createLogIndexIfNeeded() throws IOException {
         try (ElasticsearchClient client =
                 ElasticsearchClient.of(b -> b.host(getEsUrl()).usernameAndPassword(USER_NAME, PASSWORD))) {
-            try {
-                client.ping();
-            } catch (Exception e) {
-                return;
-            }
             boolean exists = client.indices().exists(e -> e.index(INDEX)).value();
             if (exists) {
                 return;
             }
 
-            client.indices().create(c -> c.index(INDEX)
-                    .mappings(m -> m.properties("@timestamp", p -> p.date(d -> d))
-                            .properties(TemplateBindings.TRACE_ID, p -> p.keyword(k -> k))
-                            .properties(TemplateBindings.SPAN_ID, p -> p.keyword(k -> k)))
-                    .settings(settings -> settings.numberOfReplicas("0")));
+            client.indices()
+                    .create(new CreateIndexRequest.Builder().index(INDEX).build());
 
             BulkRequest.Builder br = new BulkRequest.Builder();
             for (int n = 0; n < 100; n++) {

@@ -6,8 +6,6 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import hudson.init.InitMilestone;
-import hudson.init.Initializer;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
