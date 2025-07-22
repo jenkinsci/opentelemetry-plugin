@@ -21,17 +21,16 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import jenkins.model.GlobalConfiguration;
-import org.testcontainers.containers.ComposeContainer;
+import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.wait.strategy.DockerHealthcheckWaitStrategy;
 
 /**
  * Elastic Stack containers used on the tests.
  */
-public class ElasticStack extends ComposeContainer {
-    public static final String SERVICE_SUFFIX = "-1";
-    public static final String EDOT_SERVICE = suffixService("edot");
-    public static final String KIBANA_SERVICE = suffixService("kibana");
-    public static final String ELASTICSEARCH_SERVICE = suffixService("elasticsearch");
+public class ElasticStack extends DockerComposeContainer<ElasticStack> {
+    public static final String EDOT_SERVICE = "edot_1";
+    public static final String KIBANA_SERVICE = "kibana_1";
+    public static final String ELASTICSEARCH_SERVICE = "elasticsearch_1";
     public static final String USER_NAME = "admin";
     public static final String PASSWORD = "changeme";
     public static final String INDEX = "logs-001";
@@ -46,10 +45,6 @@ public class ElasticStack extends ComposeContainer {
     private ElasticLogsBackendWithJenkinsVisualization elasticStackConfiguration;
     private ElasticBackend elasticBackendConfiguration;
     private LogStorageRetriever elasticsearchRetriever;
-
-    private static final String suffixService(String service) {
-        return service + SERVICE_SUFFIX;
-    }
 
     public ElasticStack() {
         super(new File("src/test/resources/docker-compose.yml"));
