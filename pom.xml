@@ -60,8 +60,8 @@
   <properties>
     <revision>3</revision>
     <changelist>999999-SNAPSHOT</changelist>
-    <jenkins.baseline>2.479</jenkins.baseline>
-    <jenkins.version>${jenkins.baseline}.3</jenkins.version>
+    <jenkins.baseline>2.504</jenkins.baseline>
+    <jenkins.version>${jenkins.baseline}.1</jenkins.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <opentelemetry.version>1.49.0</opentelemetry.version>
     <jenkins-opentelemetry.version>1.49.0.77.va_c69ec2472c0</jenkins-opentelemetry.version>
@@ -157,13 +157,20 @@
       <artifactId>elasticsearch-java</artifactId>
       <version>${elasticstack.version}</version>
       <exclusions>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+        </exclusion>
         <!-- Jenkins does not use JSR 305 annotations -->
         <exclusion>
           <groupId>com.google.code.findbugs</groupId>
           <artifactId>jsr305</artifactId>
         </exclusion>
         <exclusion>
-          <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-5-api -->
           <groupId>commons-logging</groupId>
           <artifactId>commons-logging</artifactId>
         </exclusion>
@@ -172,7 +179,6 @@
           <artifactId>opentelemetry-api</artifactId>
         </exclusion>
         <exclusion>
-          <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-5-api -->
           <groupId>org.apache.httpcomponents.client5</groupId>
           <artifactId>httpclient5</artifactId>
         </exclusion>
@@ -525,10 +531,6 @@
       <version>1.21.3</version>
       <scope>test</scope>
       <exclusions>
-        <exclusion>
-          <groupId>org.apache.commons</groupId>
-          <artifactId>commons-compress</artifactId>
-        </exclusion>
         <exclusion>
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
