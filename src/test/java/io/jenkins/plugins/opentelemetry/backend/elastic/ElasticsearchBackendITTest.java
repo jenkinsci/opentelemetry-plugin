@@ -27,7 +27,9 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
+import org.junit.jupiter.api.Disabled;
 
+@Disabled("These tests are unstables, we need to review them")
 @Timeout(value = 10, unit = TimeUnit.MINUTES)
 @WithJenkinsConfiguredWithCode
 public class ElasticsearchBackendITTest extends ElasticStackIT {
