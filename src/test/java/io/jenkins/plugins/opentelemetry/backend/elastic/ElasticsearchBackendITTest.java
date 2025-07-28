@@ -40,6 +40,7 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "p");
         p.setDefinition(new CpsFlowDefinition("node('remote') {\n" + "  echo 'Hello'\n" + "}", true));
         WorkflowRun run = j.buildAndAssertSuccess(p);
+        j.waitForCompletion(run);
         waitForLogs(run);
         j.assertLogContains("Hello", run);
     }
