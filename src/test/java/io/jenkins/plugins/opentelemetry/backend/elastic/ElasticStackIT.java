@@ -24,7 +24,7 @@ public abstract class ElasticStackIT {
     protected static final ElasticStack elasticStack = new ElasticStack();
 
     @BeforeEach
-    void beforeEach() {
+    void beforeEach() throws Exception {
         elasticStack.getServicePort(ElasticStack.EDOT_SERVICE, ElasticStack.OTEL_PORT);
     }
 
