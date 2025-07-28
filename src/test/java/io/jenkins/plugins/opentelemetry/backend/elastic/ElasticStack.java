@@ -83,8 +83,10 @@ public class ElasticStack extends DockerComposeContainer<ElasticStack> {
         elasticStackConfiguration =
                 ((ElasticLogsBackendWithJenkinsVisualization) elasticBackendConfiguration.getElasticLogsBackend());
 
+        // overrides the configuration defined in jcasc-elastic-backend.yml
         configuration.setEndpoint(getFleetUrl());
         elasticBackendConfiguration.setKibanaBaseUrl(getKibanaUrl());
+        elasticBackendConfiguration.setEnableEDOT(true);
         elasticStackConfiguration.setElasticsearchUrl(getEsUrl());
         // FIXME the configuration is not applied if you not save the configuration
         configuration.configureOpenTelemetrySdk();
