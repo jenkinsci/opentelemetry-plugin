@@ -26,7 +26,6 @@ public abstract class ElasticStackIT {
     @BeforeEach
     void beforeEach() throws Exception {
         elasticStack.getServicePort(ElasticStack.EDOT_SERVICE, ElasticStack.OTEL_PORT);
-        elasticStack.createLogIndexIfNeeded();
     }
 
     @BeforeAll
