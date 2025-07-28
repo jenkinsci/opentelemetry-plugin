@@ -19,11 +19,13 @@ import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogsQueryResult;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 @Disabled("These tests are unstables, we need to review them")
