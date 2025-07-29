@@ -12,6 +12,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
+/**
+ * Initializes the instrumentation for {@link SynchronousNonBlockingStepExecution} by augmenting the
+ * {@link ExecutorService} to ensure that the OpenTelemetry context is propagated correctly.
+ */
 @Extension
 public class StepExecutionInstrumentationInitializer
         implements SynchronousNonBlockingStepExecution.ExecutorServiceAugmentor {
