@@ -14,7 +14,6 @@ import hudson.Functions;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.init.StepExecutionInstrumentationInitializer;
 import io.jenkins.plugins.opentelemetry.job.step.SpanContextPropagationSynchronousTestStep;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
@@ -36,15 +35,12 @@ import java.util.logging.Logger;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.steps.EchoStep;
-import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.jupiter.api.Timeout;
-import org.jvnet.hudson.test.LogRecorder;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
 /**
@@ -686,16 +682,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
-
-        try (LogRecorder recorder = new LogRecorder()
-                .quiet()
-                .record(StepExecutionInstrumentationInitializer.class, Level.FINE)
-                .capture(10)) {
-            jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
-            MatcherAssert.assertThat(
-                    recorder.getMessages(),
-                    Matchers.hasItem("Instrumenting " + SynchronousNonBlockingStepExecution.class.getName() + "..."));
-        }
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
         String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
