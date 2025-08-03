@@ -163,6 +163,11 @@
           <artifactId>jsr305</artifactId>
         </exclusion>
         <exclusion>
+          <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-5-api -->
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+        <exclusion>
           <groupId>io.opentelemetry</groupId>
           <artifactId>opentelemetry-api</artifactId>
         </exclusion>
@@ -170,11 +175,6 @@
           <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-5-api -->
           <groupId>org.apache.httpcomponents.client5</groupId>
           <artifactId>httpclient5</artifactId>
-        </exclusion>
-        <exclusion>
-            <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-5-api -->
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
