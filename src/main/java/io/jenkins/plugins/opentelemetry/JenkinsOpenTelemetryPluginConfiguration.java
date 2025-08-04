@@ -164,6 +164,17 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Override
+    public void load() {
+        super.load();
+        if (currentOpenTelemetryConfiguration != null) {
+            // After reloading the XML configuration, we need to reconfigure the OTel SDK, otherwise the fields here
+            // may be out of sync with the SDK. We only do this as long as `configureOpenTelemetrySdk` has run at least
+            // once so that the first configuration happens during startup via `@Initializer` after applying CasC.
+            configureOpenTelemetrySdk();
+        }
+    }
+
+    @Override
     public boolean configure(StaplerRequest2 req, JSONObject json) throws FormException {
         LOGGER.log(Level.FINE, "Configure...");
         req.bindJSON(this, json);
