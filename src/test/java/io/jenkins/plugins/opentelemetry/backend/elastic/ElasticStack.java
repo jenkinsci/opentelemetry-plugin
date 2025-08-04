@@ -12,16 +12,16 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.io.File;
 import java.time.Duration;
 import jenkins.model.GlobalConfiguration;
-import org.testcontainers.containers.DockerComposeContainer;
+import org.testcontainers.containers.ComposeContainer;
 import org.testcontainers.containers.wait.strategy.DockerHealthcheckWaitStrategy;
 
 /**
  * Elastic Stack containers used on the tests.
  */
-public class ElasticStack extends DockerComposeContainer<ElasticStack> {
-    public static final String EDOT_SERVICE = "edot_1";
-    public static final String KIBANA_SERVICE = "kibana_1";
-    public static final String ELASTICSEARCH_SERVICE = "elasticsearch_1";
+public class ElasticStack extends ComposeContainer {
+    public static final String EDOT_SERVICE = "edot-1";
+    public static final String KIBANA_SERVICE = "kibana-1";
+    public static final String ELASTICSEARCH_SERVICE = "elasticsearch-1";
     public static final String USER_NAME = "admin";
     public static final String PASSWORD = "changeme";
     public static final String INDEX = "logs-001";
