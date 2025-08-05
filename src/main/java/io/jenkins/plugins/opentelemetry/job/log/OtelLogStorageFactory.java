@@ -8,7 +8,6 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
-import hudson.ExtensionList;
 import hudson.model.Queue;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
@@ -19,19 +18,19 @@ import io.opentelemetry.api.trace.Tracer;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
+import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.jenkinsci.plugins.workflow.log.BrokenLogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorage;
 import org.jenkinsci.plugins.workflow.log.LogStorageFactory;
+import org.jenkinsci.plugins.workflow.log.LogStorageFactoryDescriptor;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Binds Otel Logs to Pipeline logs.
  * <p>
  * See <a href="https://github.com/jenkinsci/pipeline-cloudwatch-logs-plugin/blob/pipeline-cloudwatch-logs-0.2/src/main/java/io/jenkins/plugins/pipeline_cloudwatch_logs/PipelineBridge.java">Pipeline Cloudwatch Logs - PipelineBridge</a>
  */
-@Extension
 public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelemetryLifecycleListener {
 
     private static final Logger logger = Logger.getLogger(OtelLogStorageFactory.class.getName());
@@ -41,16 +40,17 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
         System.setProperty("org.jenkinsci.plugins.workflow.steps.durable_task.DurableTaskStep.USE_WATCHING", "true");
     }
 
-    @Inject
-    JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    private final JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
-    @Nullable
-    private OtelTraceService otelTraceService;
+    private final OtelTraceService otelTraceService;
 
-    private Tracer tracer;
+    private final Tracer tracer;
 
-    static OtelLogStorageFactory get() {
-        return ExtensionList.lookupSingleton(OtelLogStorageFactory.class);
+    @DataBoundConstructor
+    public OtelLogStorageFactory() {
+        jenkinsControllerOpenTelemetry = JenkinsControllerOpenTelemetry.get();
+        otelTraceService = OtelTraceService.get();
+        tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
     }
 
     /**
@@ -62,7 +62,7 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
     @Override
     public LogStorage forBuild(@NonNull final FlowExecutionOwner owner) {
         LogStorage ret = null;
-        if (!getJenkinsControllerOpenTelemetry().isLogsEnabled()) {
+        if (!jenkinsControllerOpenTelemetry.isLogsEnabled()) {
             logger.log(Level.FINE, () -> "OTel Logs disabled");
             return ret;
         }
@@ -86,35 +86,23 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
         if (exec instanceof Run<?, ?> run && run.getAction(MonitoringAction.class) != null) {
             // it's a pipeline with monitoring data
             logger.log(Level.FINEST, () -> "forExec(" + run + ")");
-            ret = new OtelLogStorage(run, getOtelTraceService(), tracer);
+            ret = new OtelLogStorage(run, otelTraceService, tracer);
         }
         return ret;
     }
 
-    /**
-     * Workaround dependency injection problem. @Inject doesn't work here
-     */
-    @NonNull
-    private JenkinsControllerOpenTelemetry getJenkinsControllerOpenTelemetry() {
-        if (jenkinsControllerOpenTelemetry == null) {
-            jenkinsControllerOpenTelemetry = JenkinsControllerOpenTelemetry.get();
+    @Extension()
+    @Symbol("opentelemetry")
+    public static final class DescriptorImpl extends LogStorageFactoryDescriptor<OtelLogStorageFactory> {
+        @NonNull
+        @Override
+        public String getDisplayName() {
+            return "Open Telemetry";
         }
-        return jenkinsControllerOpenTelemetry;
-    }
 
-    /**
-     * Workaround dependency injection problem. @Inject doesn't work here
-     */
-    @NonNull
-    private OtelTraceService getOtelTraceService() {
-        if (otelTraceService == null) {
-            otelTraceService = OtelTraceService.get();
+        @Override
+        public LogStorageFactory getDefaultInstance() {
+            return new OtelLogStorageFactory();
         }
-        return otelTraceService;
-    }
-
-    @PostConstruct
-    public void postConstruct() {
-        this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
     }
 }
