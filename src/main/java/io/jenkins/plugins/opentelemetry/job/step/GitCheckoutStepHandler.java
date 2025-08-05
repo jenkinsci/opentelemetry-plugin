@@ -17,6 +17,7 @@ import hudson.scm.SCM;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -101,7 +102,11 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
             }
 
             List<Map<String, ?>> extensions = (List<Map<String, ?>>) scm.get("extensions");
-            final Map<String, ?> cloneOption = Iterables.getFirst(extensions, null);
+            if (extensions == null) {
+                LOGGER.log(Level.FINE, "Extensions is null for node {0}, using empty list", node.getId());
+                extensions = Collections.emptyList();
+            }
+                final Map<String, ?> cloneOption = Iterables.getFirst(extensions, null);
 
             if (cloneOption != null) {
                 shallow = cloneOption.containsKey("shallow") ? (Boolean) cloneOption.get("shallow") : shallow;
@@ -109,6 +114,10 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
             }
 
             List<Map<String, ?>> userRemoteConfigs = (List<Map<String, ?>>) scm.get("userRemoteConfigs");
+            if (userRemoteConfigs == null) {
+                LOGGER.log(Level.FINE, "userRemoteConfigs is null for node {0}, using empty list", node.getId());
+                userRemoteConfigs = Collections.emptyList();
+            }
             final Map<String, ?> userRemoteConfig = Iterables.getFirst(userRemoteConfigs, null);
             if (userRemoteConfig == null) {
                 return addCloneAttributes(tracer.spanBuilder(stepFunctionName), shallow, depth);
