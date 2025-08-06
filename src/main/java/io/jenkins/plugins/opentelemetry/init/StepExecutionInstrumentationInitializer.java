@@ -18,6 +18,12 @@ public class StepExecutionInstrumentationInitializer
 
     static final Logger logger = Logger.getLogger(StepExecutionInstrumentationInitializer.class.getName());
 
+    /**
+     * Augment the provided ExecutorService to wrap it with OpenTelemetry context propagation
+     * @param executorService the ExecutorService to augment
+     * @return the augmented ExecutorService
+     * @see SynchronousNonBlockingStepExecution#getExecutorService()
+     */
     public ExecutorService augment(ExecutorService executorService) {
         logger.log(Level.FINE, () -> "Instrumenting " + SynchronousNonBlockingStepExecution.class.getName() + "...");
         return Context.taskWrapping(executorService);
