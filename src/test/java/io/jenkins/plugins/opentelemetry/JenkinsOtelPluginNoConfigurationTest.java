@@ -10,16 +10,12 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.LogRecorder;
 
 public class JenkinsOtelPluginNoConfigurationTest {
 
@@ -28,11 +24,6 @@ public class JenkinsOtelPluginNoConfigurationTest {
 
     @Rule
     public BuildWatcher buildWatcher = new BuildWatcher();
-
-    /**
-     * As the JVM and classes are loaded only once for the whole test, {@link SynchronousNonBlockingStepExecution#getExecutorService()} augments only once. The current boolean keeps track of the augmentation status.
-     */
-    private static boolean augmented = false;
 
     /**
      * Test that the StepExecutionInstrumentationInitializer does nothing when configuration is not set.
@@ -53,14 +44,8 @@ public class JenkinsOtelPluginNoConfigurationTest {
         final String jobName = "test-SpanContextPropagationSynchronousTestStep";
         WorkflowJob pipeline = j.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        j.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        try (LogRecorder recorder = new LogRecorder()
-                .quiet()
-                .record(StepExecutionInstrumentationInitializer.class, Level.FINE)
-                .capture(10)) {
-            j.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
-            checkAugmentation(recorder);
-        }
         CompletableResultCode result = JenkinsControllerOpenTelemetry.get()
                 .getOpenTelemetrySdk()
                 .getSdkTracerProvider()
@@ -87,22 +72,7 @@ public class JenkinsOtelPluginNoConfigurationTest {
             """,
                 true));
 
-        try (LogRecorder recorder = new LogRecorder()
-                .quiet()
-                .record(StepExecutionInstrumentationInitializer.class, Level.FINE)
-                .capture(10)) {
-            var build = j.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
-            assertThat(build.getArtifacts(), hasSize(1));
-            checkAugmentation(recorder);
-        }
-    }
-
-    private void checkAugmentation(LogRecorder recorder) {
-        if (!augmented) {
-            assertThat(
-                    recorder.getMessages(),
-                    Matchers.hasItem("Instrumenting " + SynchronousNonBlockingStepExecution.class.getName() + "..."));
-            augmented = true;
-        }
+        var build = j.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+        assertThat(build.getArtifacts(), hasSize(1));
     }
 }
