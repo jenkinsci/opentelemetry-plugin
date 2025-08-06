@@ -154,14 +154,14 @@
         <!-- TODO remove when in bom -->
         <groupId>org.jenkins-ci.plugins.workflow</groupId>
         <artifactId>workflow-api</artifactId>
-        <version>1404.vb_1e6d0166a_33</version>
+        <version>1409.v96d6da_eed7f7</version>
       </dependency>
       <dependency>
         <!-- depends on https://github.com/jenkinsci/workflow-api-plugin/pull/417 -->
         <!-- TODO remove when in bom -->
         <groupId>org.jenkins-ci.plugins.workflow</groupId>
         <artifactId>workflow-api</artifactId>
-        <version>1404.vb_1e6d0166a_33</version>
+        <version>1409.v96d6da_eed7f7</version>
         <scope>test</scope>
         <classifier>tests</classifier>
       </dependency>
