@@ -64,12 +64,12 @@
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <opentelemetry.version>1.49.0</opentelemetry.version>
-    <jenkins-opentelemetry.version>1.49.0.59.vc32561e77cf3</jenkins-opentelemetry.version>
+    <jenkins-opentelemetry.version>1.49.0.75.v66006f513b_1f</jenkins-opentelemetry.version>
     <opentelemetry-instrumentation.version>2.15.0</opentelemetry-instrumentation.version>
     <opentelemetry-semconv.version>1.32.0</opentelemetry-semconv.version>
     <opentelemetry-contrib.version>1.46.0-alpha</opentelemetry-contrib.version>
     <useBeta>true</useBeta>
-    <elasticstack.version>9.0.0</elasticstack.version>
+    <elasticstack.version>9.0.4</elasticstack.version>
     <error-prone.version>2.40.0</error-prone.version>
   </properties>
 
@@ -78,7 +78,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>5043.v855ff4819a_0f</version>
+        <version>5054.v620b_5d2b_d5e6</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -170,12 +170,17 @@
         </exclusion>
         <exclusion>
           <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-5-api -->
-          <groupId>org.apache.httpcomponents.client5</groupId>
-          <artifactId>httpclient5</artifactId>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
         </exclusion>
         <exclusion>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-api</artifactId>
+          <groupId>io.opentelemetry</groupId>
+          <artifactId>opentelemetry-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- provided by org.jenkins-ci.plugins:apache-httpcomponents-client-5-api -->
+          <groupId>org.apache.httpcomponents.client5</groupId>
+          <artifactId>httpclient5</artifactId>
         </exclusion>
       </exclusions>
     </dependency>

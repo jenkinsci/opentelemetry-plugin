@@ -60,6 +60,8 @@ services:
       service: kibana
     networks:
       - jenkins
+    ports:
+      - "5601:5601"
     depends_on:
       elasticsearch:
         condition: service_healthy
