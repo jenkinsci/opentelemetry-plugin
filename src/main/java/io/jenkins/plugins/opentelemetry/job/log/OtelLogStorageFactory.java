@@ -92,12 +92,12 @@ public final class OtelLogStorageFactory implements LogStorageFactory, OpenTelem
     }
 
     @Extension()
-    @Symbol("opentelemetry")
+    @Symbol("openTelemetry")
     public static final class DescriptorImpl extends LogStorageFactoryDescriptor<OtelLogStorageFactory> {
         @NonNull
         @Override
         public String getDisplayName() {
-            return "Open Telemetry";
+            return "OpenTelemetry";
         }
 
         @Override
