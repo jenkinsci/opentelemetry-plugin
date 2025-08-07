@@ -17,7 +17,6 @@ import hudson.scm.SCM;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -92,7 +91,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
 
         // TODO better handling of cases where an expected property is not found
         if (branchJobProperty == null) {
-            final Map<String, ?> scm = (Map<String, ?>) rootArguments.get("scm");
+            final Map<String, Object> scm = (Map<String, Object>) rootArguments.get("scm");
             if (scm == null) {
                 return addCloneAttributes(tracer.spanBuilder(stepFunctionName), shallow, depth);
             }
@@ -100,12 +99,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
             if (!(Objects.equal(GitSCM.class.getSimpleName(), clazz))) {
                 return addCloneAttributes(tracer.spanBuilder(stepFunctionName), shallow, depth);
             }
-
-            List<Map<String, ?>> extensions = (List<Map<String, ?>>) scm.get("extensions");
-            if (extensions == null) {
-                LOGGER.log(Level.FINE, "Extensions is null for node {0}, using empty list", node.getId());
-                extensions = Collections.emptyList();
-            }
+            List<Map<String, Object>> extensions = (List<Map<String, Object>>) scm.getOrDefault("extensions", List.of());
                 final Map<String, ?> cloneOption = Iterables.getFirst(extensions, null);
 
             if (cloneOption != null) {
@@ -113,11 +107,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
                 depth = cloneOption.containsKey("depth") ? (Integer) cloneOption.get("depth") : depth;
             }
 
-            List<Map<String, ?>> userRemoteConfigs = (List<Map<String, ?>>) scm.get("userRemoteConfigs");
-            if (userRemoteConfigs == null) {
-                LOGGER.log(Level.FINE, "userRemoteConfigs is null for node {0}, using empty list", node.getId());
-                userRemoteConfigs = Collections.emptyList();
-            }
+            List<Map<String, Object>> userRemoteConfigs = (List<Map<String, Object>>) scm.getOrDefault("userRemoteConfigs",List.of());
             final Map<String, ?> userRemoteConfig = Iterables.getFirst(userRemoteConfigs, null);
             if (userRemoteConfig == null) {
                 return addCloneAttributes(tracer.spanBuilder(stepFunctionName), shallow, depth);
