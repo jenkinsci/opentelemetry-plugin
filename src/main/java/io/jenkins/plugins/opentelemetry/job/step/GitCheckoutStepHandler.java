@@ -100,7 +100,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
                 return addCloneAttributes(tracer.spanBuilder(stepFunctionName), shallow, depth);
             }
             List<Map<String, Object>> extensions = (List<Map<String, Object>>) scm.getOrDefault("extensions", List.of());
-                final Map<String, ?> cloneOption = Iterables.getFirst(extensions, null);
+            final Map<String, ?> cloneOption = Iterables.getFirst(extensions, null);
 
             if (cloneOption != null) {
                 shallow = cloneOption.containsKey("shallow") ? (Boolean) cloneOption.get("shallow") : shallow;
