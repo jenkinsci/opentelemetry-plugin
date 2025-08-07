@@ -9,6 +9,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Rule;
 import org.junit.Test;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
@@ -36,6 +37,7 @@ public class GitCheckoutStepHandlerTest {
      * a missing or null "extensions" field, and the test passes as expected.
      */
     @Test
+    @Issue("https://github.com/jenkinsci/opentelemetry-plugin/issues/1170")
     public void testSimpleGitCheckout() throws Exception {
         String pipeline =
             "node {\n" +
