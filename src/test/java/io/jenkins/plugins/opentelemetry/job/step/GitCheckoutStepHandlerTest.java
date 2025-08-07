@@ -23,6 +23,7 @@ public class GitCheckoutStepHandlerTest {
 
     private final GitCheckoutStepHandler handler = new GitCheckoutStepHandler();
     private final TracerMock tracer = new TracerMock();
+
     @Rule
     public JenkinsRule jenkins = new JenkinsRule();
 
@@ -36,9 +37,13 @@ public class GitCheckoutStepHandlerTest {
      */
     @Test
     public void testSimpleGitCheckout() throws Exception {
-        String pipeline = "node {\n" + "    checkout([$class: 'GitSCM', \n" + "        branches: [[name: 'main']], \n"
-                          + "        userRemoteConfigs: [[url: 'https://github.com/open-telemetry/opentelemetry-java.git']]\n"
-                          + "    ])\n" + "}";
+        String pipeline =
+            "node {\n" +
+            "    checkout([$class: 'GitSCM', \n" +
+            "        branches: [[name: 'main']], \n" +
+            "        userRemoteConfigs: [[url: 'https://github.com/open-telemetry/opentelemetry-java.git']]\n" +
+            "    ])\n" +
+            "}";
         WorkflowRun run = runPipeline("simple-git-checkout", pipeline);
         FlowNode checkoutNode = findCheckoutNode(run);
         Map<AttributeKey<?>, Object> attributes = getSpanAttributes(checkoutNode, run);
@@ -55,11 +60,18 @@ public class GitCheckoutStepHandlerTest {
      */
     @Test
     public void testGitCheckoutWithShallowClone() throws Exception {
-        String pipeline = "node {\n" + "    checkout([$class: 'GitSCM', \n" + "        branches: [[name: 'main']], \n"
-                          + "        userRemoteConfigs: [[url: 'https://github.com/open-telemetry/opentelemetry-java.git']], \n"
-                          + "        extensions: [[" + "            $class: 'CloneOption', \n"
-                          + "            shallow: true, \n" + "            depth: 1\n" + "        ]]\n" + "    ])\n"
-                          + "}";
+        String pipeline =
+            "node {\n" +
+            "    checkout([$class: 'GitSCM', \n" +
+            "        branches: [[name: 'main']], \n" +
+            "        userRemoteConfigs: [[url: 'https://github.com/open-telemetry/opentelemetry-java.git']], \n" +
+            "        extensions: [[\n" +
+            "            $class: 'CloneOption', \n" +
+            "            shallow: true, \n" +
+            "            depth: 1\n" +
+            "        ]]\n" +
+            "    ])\n" +
+            "}";
         WorkflowRun run = runPipeline("shallow-clone", pipeline);
         FlowNode checkoutNode = findCheckoutNode(run);
         Map<AttributeKey<?>, Object> attributes = getSpanAttributes(checkoutNode, run);
@@ -87,5 +99,4 @@ public class GitCheckoutStepHandlerTest {
         SpanBuilder spanBuilder = handler.createSpanBuilder(checkoutNode, run, tracer);
         return ((SpanBuilderMock) spanBuilder).getAttributes();
     }
-
 }
