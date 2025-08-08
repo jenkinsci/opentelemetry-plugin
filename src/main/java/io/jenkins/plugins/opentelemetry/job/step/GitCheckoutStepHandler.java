@@ -107,7 +107,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
                 depth = cloneOption.containsKey("depth") ? (Integer) cloneOption.get("depth") : depth;
             }
 
-            List<Map<String, Object>> userRemoteConfigs = (List<Map<String, Object>>) scm.getOrDefault("userRemoteConfigs",List.of());
+            List<Map<String, Object>> userRemoteConfigs = (List<Map<String, Object>>) scm.getOrDefault("userRemoteConfigs", List.of());
             final Map<String, ?> userRemoteConfig = Iterables.getFirst(userRemoteConfigs, null);
             if (userRemoteConfig == null) {
                 return addCloneAttributes(tracer.spanBuilder(stepFunctionName), shallow, depth);

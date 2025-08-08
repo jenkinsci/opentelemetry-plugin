@@ -17,6 +17,8 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.sdk.testing.trace.SpanBuilderMock;
 import io.opentelemetry.sdk.testing.trace.TracerMock;
 
+import jenkins.plugins.git.ExtendedGitSampleRepoRule;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -27,6 +29,14 @@ public class GitCheckoutStepHandlerTest {
 
     @Rule
     public JenkinsRule jenkins = new JenkinsRule();
+
+    @Rule
+    public ExtendedGitSampleRepoRule sampleRepo = new ExtendedGitSampleRepoRule();
+
+    // This system property allows local checkouts
+    static {
+        System.setProperty("hudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT", "true");
+    }
 
     /**
      * Verifies that a simple Git checkout without any extensions (i.e., the "extensions" field is absent)
@@ -39,11 +49,12 @@ public class GitCheckoutStepHandlerTest {
     @Test
     @Issue("https://github.com/jenkinsci/opentelemetry-plugin/issues/1170")
     public void testSimpleGitCheckout() throws Exception {
+        initSampleRepo();
         String pipeline =
             "node {\n" +
             "    checkout([$class: 'GitSCM', \n" +
-            "        branches: [[name: 'main']], \n" +
-            "        userRemoteConfigs: [[url: 'https://github.com/open-telemetry/opentelemetry-java.git']]\n" +
+            "        branches: [[name: 'master']], \n" +
+            "        userRemoteConfigs: [[url: '" + sampleRepo.toString() + "']]\n" +
             "    ])\n" +
             "}";
         WorkflowRun run = runPipeline("simple-git-checkout", pipeline);
@@ -62,11 +73,12 @@ public class GitCheckoutStepHandlerTest {
      */
     @Test
     public void testGitCheckoutWithShallowClone() throws Exception {
+        initSampleRepo();
         String pipeline =
             "node {\n" +
             "    checkout([$class: 'GitSCM', \n" +
-            "        branches: [[name: 'main']], \n" +
-            "        userRemoteConfigs: [[url: 'https://github.com/open-telemetry/opentelemetry-java.git']], \n" +
+            "        branches: [[name: 'master']], \n" +
+            "        userRemoteConfigs: [[url: '" + sampleRepo.toString() + "']], \n" +
             "        extensions: [[\n" +
             "            $class: 'CloneOption', \n" +
             "            shallow: true, \n" +
@@ -100,5 +112,12 @@ public class GitCheckoutStepHandlerTest {
     private Map<AttributeKey<?>, Object> getSpanAttributes(FlowNode checkoutNode, WorkflowRun run) {
         SpanBuilder spanBuilder = handler.createSpanBuilder(checkoutNode, run, tracer);
         return ((SpanBuilderMock) spanBuilder).getAttributes();
+    }
+
+    private void initSampleRepo() throws Exception {
+        sampleRepo.init();
+        sampleRepo.write("README.md", "# dummy");
+        sampleRepo.git("add", "README.md");
+        sampleRepo.git("commit", "-m", "init");
     }
 }
