@@ -16,6 +16,7 @@ public interface ElasticsearchFields {
      * Mapping for {@link SpanContext#getTraceId()}
      */
     String FIELD_TRACE_ID = "trace.id";
+
     String FIELD_TIMESTAMP = "@timestamp";
     String INDEX_TEMPLATE_PATTERNS = "logs-*";
 
@@ -23,6 +24,7 @@ public interface ElasticsearchFields {
      * Legacy APM field names
      */
     String LEGACY_FIELD_TRACE_ID = "trace.id";
+
     String LEGACY_FIELD_CI_PIPELINE_ID = "labels.ci_pipeline_id";
     String LEGACY_FIELD_CI_PIPELINE_RUN_NUMBER = "numeric_labels.ci_pipeline_run_number";
     String LEGACY_FIELD_JENKINS_STEP_ID = "labels.jenkins_pipeline_step_id";

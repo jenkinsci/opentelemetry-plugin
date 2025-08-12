@@ -6,20 +6,16 @@
 package io.jenkins.plugins.opentelemetry.job.runhandler;
 
 import com.google.common.annotations.VisibleForTesting;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
-import io.opentelemetry.api.trace.SpanBuilder;
-import io.opentelemetry.api.trace.Tracer;
-import jenkins.scm.api.SCMHead;
-import jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy;
-import jenkins.scm.api.mixin.ChangeRequestSCMHead;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import jenkins.scm.api.SCMHead;
+import jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy;
+import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 
 /**
  * Use same short pipeline name for all change request pipelines (pull request, merge request)
@@ -28,12 +24,12 @@ import java.util.Locale;
 @Extension
 public class DefaultRunHandler implements RunHandler {
 
-    private final static List<String> CHANGE_REQUEST_JOB_NAME_SUFFIXES = Collections.unmodifiableList(Arrays.asList(
-        "-" + ChangeRequestCheckoutStrategy.HEAD.name().toLowerCase(Locale.ENGLISH),
-        "-" + ChangeRequestCheckoutStrategy.MERGE.name().toLowerCase(Locale.ENGLISH)));
+    private static final List<String> CHANGE_REQUEST_JOB_NAME_SUFFIXES = Collections.unmodifiableList(Arrays.asList(
+            "-" + ChangeRequestCheckoutStrategy.HEAD.name().toLowerCase(Locale.ENGLISH),
+            "-" + ChangeRequestCheckoutStrategy.MERGE.name().toLowerCase(Locale.ENGLISH)));
 
     @Override
-    public boolean matches(@NonNull Run<?,?> run) {
+    public boolean matches(@NonNull Run<?, ?> run) {
         return true;
     }
 

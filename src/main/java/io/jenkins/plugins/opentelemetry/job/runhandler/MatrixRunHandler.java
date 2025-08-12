@@ -16,10 +16,9 @@ import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import jenkins.YesNoMaybe;
-
 import java.util.ArrayList;
 import java.util.List;
+import jenkins.YesNoMaybe;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class MatrixRunHandler implements RunHandler {
@@ -69,6 +68,7 @@ public class MatrixRunHandler implements RunHandler {
 
     @Override
     public void configure(ConfigProperties config) {
-        expandJobName = Boolean.TRUE.equals(config.getBoolean("otel.instrumentation.jenkins.job.matrix.expand.job.name"));
+        expandJobName =
+                Boolean.TRUE.equals(config.getBoolean("otel.instrumentation.jenkins.job.matrix.expand.job.name"));
     }
 }

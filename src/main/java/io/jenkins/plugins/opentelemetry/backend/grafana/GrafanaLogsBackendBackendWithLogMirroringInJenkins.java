@@ -8,11 +8,10 @@ package io.jenkins.plugins.opentelemetry.backend.grafana;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * Store pipeline logs both in Loki and in the Jenkins home directory. Visualization of logs is done retrieving logs
@@ -20,8 +19,7 @@ import java.util.Map;
  */
 public class GrafanaLogsBackendBackendWithLogMirroringInJenkins extends GrafanaLogsBackend {
     @DataBoundConstructor
-    public GrafanaLogsBackendBackendWithLogMirroringInJenkins() {
-    }
+    public GrafanaLogsBackendBackendWithLogMirroringInJenkins() {}
 
     /**
      * Logs should be retrieved from the Jenkins home, not from Loki

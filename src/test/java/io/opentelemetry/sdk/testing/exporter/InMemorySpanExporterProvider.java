@@ -15,7 +15,7 @@ public class InMemorySpanExporterProvider implements ConfigurableSpanExporterPro
 
     @Override
     public SpanExporter createExporter(ConfigProperties config) {
-        LAST_CREATED_INSTANCE =  InMemorySpanExporter.create();
+        LAST_CREATED_INSTANCE = InMemorySpanExporter.create();
         return LAST_CREATED_INSTANCE;
     }
 
@@ -23,6 +23,4 @@ public class InMemorySpanExporterProvider implements ConfigurableSpanExporterPro
     public String getName() {
         return "testing";
     }
-
-
 }

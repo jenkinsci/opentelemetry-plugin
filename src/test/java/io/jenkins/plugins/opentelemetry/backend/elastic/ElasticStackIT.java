@@ -6,37 +6,25 @@ package io.jenkins.plugins.opentelemetry.backend.elastic;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.concurrent.TimeUnit;
-
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Timeout;
-import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.apache.commons.lang3.SystemUtils;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
-
 /**
  * Base class for integration tests using an Elastic Stack.
  */
-@Timeout(value = 10, unit = TimeUnit.MINUTES)
-@WithJenkins
 @Testcontainers(disabledWithoutDocker = true)
 public abstract class ElasticStackIT {
     @Container
-    public static ElasticStack elasticStack = new ElasticStack();
-
-    protected JenkinsRule j;
+    protected static final ElasticStack elasticStack = new ElasticStack();
 
     @BeforeEach
-    void beforeEach(JenkinsRule j) {
-        this.j = j;
-        this.j.timeout = 0;
+    void beforeEach() throws Exception {
         elasticStack.getServicePort(ElasticStack.EDOT_SERVICE, ElasticStack.OTEL_PORT);
     }
 
@@ -48,6 +36,6 @@ public abstract class ElasticStackIT {
 
     @AfterAll
     static void afterAll() {
-       GlobalOpenTelemetry.resetForTest();
+        GlobalOpenTelemetry.resetForTest();
     }
 }

@@ -70,12 +70,13 @@ public class OtelUtilsTest extends BaseIntegrationTest {
 
     @Test
     public void test_matrix() throws Exception {
-        // See https://github.com/jenkinsci/matrix-project-plugin/blob/be0b18bcba0c4089b1ed9482863050de6aa65b32/src/test/java/hudson/matrix/MatrixProjectTest.java#L193-L202
+        // See
+        // https://github.com/jenkinsci/matrix-project-plugin/blob/be0b18bcba0c4089b1ed9482863050de6aa65b32/src/test/java/hudson/matrix/MatrixProjectTest.java#L193-L202
         final String jobName = "test-matrix-" + jobNameSuffix.incrementAndGet();
         MatrixProject project = jenkinsRule.createProject(MatrixProject.class, jobName);
         AxisList axes = new AxisList();
-        axes.add(new TextAxis("db","mysql", "oracle"));
-        axes.add(new TextAxis("direction","north", "south"));
+        axes.add(new TextAxis("db", "mysql", "oracle"));
+        axes.add(new TextAxis("direction", "north", "south"));
         project.setAxes(axes);
         MatrixBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
@@ -122,7 +123,10 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         final String mbpName = "node-steps-" + jobNameSuffix.incrementAndGet();
         final String branchName = "master";
         WorkflowMultiBranchProject mp = jenkinsRule.createProject(WorkflowMultiBranchProject.class, mbpName);
-        mp.getSourcesList().add(new BranchSource(new GitSCMSource(null, sampleRepo.toString(), "", "*", "", false), new DefaultBranchPropertyStrategy(new BranchProperty[0])));
+        mp.getSourcesList()
+                .add(new BranchSource(
+                        new GitSCMSource(null, sampleRepo.toString(), "", "*", "", false),
+                        new DefaultBranchPropertyStrategy(new BranchProperty[0])));
         WorkflowJob p = scheduleAndFindBranchProject(mp, branchName);
         jenkinsRule.waitUntilNoActivity();
         WorkflowRun build = p.getLastBuild();

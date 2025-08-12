@@ -6,10 +6,19 @@
 package io.jenkins.plugins.opentelemetry.job.jenkins;
 
 import static com.google.common.base.Verify.*;
+
 import com.google.common.collect.Iterables;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Run;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
@@ -26,21 +35,12 @@ import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
 /**
  * Adapter to simplify the implementation of pipeline {@link org.jenkinsci.plugins.workflow.steps.Step} listeners.
  */
 @Extension
 public class GraphListenerAdapterToPipelineListener implements StepListener, GraphListener.Synchronous {
-    private final static Logger LOGGER = Logger.getLogger(GraphListenerAdapterToPipelineListener.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(GraphListenerAdapterToPipelineListener.class.getName());
 
     @Override
     public final void onNewHead(FlowNode node) {
@@ -50,9 +50,16 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
     }
 
     private void processPreviousNodes(FlowNode node, WorkflowRun run) {
-        log(Level.FINE, () -> run.getFullDisplayName() + " - onNewHead - Process " + PipelineNodeUtil.getDetailedDebugString(node));
+        log(
+                Level.FINE,
+                () -> run.getFullDisplayName() + " - onNewHead - Process "
+                        + PipelineNodeUtil.getDetailedDebugString(node));
         for (FlowNode previousNode : node.getParents()) {
-            log(Level.FINE, () -> run.getFullDisplayName() + " - Process previous node " + PipelineNodeUtil.getDetailedDebugString(previousNode) + " of node " + PipelineNodeUtil.getDetailedDebugString(node));
+            log(
+                    Level.FINE,
+                    () -> run.getFullDisplayName() + " - Process previous node "
+                            + PipelineNodeUtil.getDetailedDebugString(previousNode) + " of node "
+                            + PipelineNodeUtil.getDetailedDebugString(node));
             if (previousNode instanceof StepAtomNode) {
                 StepAtomNode stepAtomNode = (StepAtomNode) previousNode;
                 fireOnAfterAtomicStep(stepAtomNode, node, run);
@@ -65,7 +72,10 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             } else if (isBeforeEndParallelBranch(previousNode)) {
                 StepEndNode endParallelBranchNode = (StepEndNode) previousNode;
                 StepStartNode beginParallelBranch = endParallelBranchNode.getStartNode();
-                ThreadNameAction persistentAction = verifyNotNull(beginParallelBranch.getPersistentAction(ThreadNameAction.class), "Null ThreadNameAction on %s", beginParallelBranch);
+                ThreadNameAction persistentAction = verifyNotNull(
+                        beginParallelBranch.getPersistentAction(ThreadNameAction.class),
+                        "Null ThreadNameAction on %s",
+                        beginParallelBranch);
                 fireOnAfterEndParallelStepBranch(endParallelBranchNode, persistentAction.getThreadName(), node, run);
             } else if (isBeforeEndWithNewSpanStep(previousNode)) {
                 fireOnAfterEndWithNewSpanStep((StepEndNode) previousNode, node, run);
@@ -86,7 +96,8 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             String stageName = PipelineNodeUtil.getDisplayName(node);
             fireOnBeforeStartStageStep((StepStartNode) node, stageName, run);
         } else if (PipelineNodeUtil.isStartParallelBranch(node)) {
-            ThreadNameAction persistentAction = verifyNotNull(node.getPersistentAction(ThreadNameAction.class), "Null ThreadNameAction on %s", node);
+            ThreadNameAction persistentAction = verifyNotNull(
+                    node.getPersistentAction(ThreadNameAction.class), "Null ThreadNameAction on %s", node);
             fireOnBeforeStartParallelStepBranch((StepStartNode) node, persistentAction.getThreadName(), run);
         } else if (PipelineNodeUtil.isStartParallelBlock(node)) {
             // begin parallel block
@@ -114,48 +125,73 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             FlowNode flowNode = context.get(FlowNode.class);
             Computer computer = context.get(Computer.class);
             String computerHostname = computer == null ? "#null#" : computer.getHostName();
-            String computerActions = computer == null ? "#null#" :  computer.getAllActions().stream().map(action -> action.getClass().getSimpleName()).collect(Collectors.joining(", "));
+            String computerActions = computer == null
+                    ? "#null#"
+                    : computer.getAllActions().stream()
+                            .map(action -> action.getClass().getSimpleName())
+                            .collect(Collectors.joining(", "));
             String computerName = computer == null ? "#null#" : computer.getName() + "/" + computer.getDisplayName();
-            log(Level.FINE, () -> run.getFullDisplayName() + " - notifyOfNewStep - Process " + PipelineNodeUtil.getDetailedDebugString(flowNode) + " - computer[name: " + computerName + ", hostname: " + computerHostname + "," + computerActions + "]");
+            log(
+                    Level.FINE,
+                    () -> run.getFullDisplayName() + " - notifyOfNewStep - Process "
+                            + PipelineNodeUtil.getDetailedDebugString(flowNode) + " - computer[name: " + computerName
+                            + ", hostname: " + computerHostname + "," + computerActions + "]");
         } catch (IOException | InterruptedException | RuntimeException e) {
             e.printStackTrace();
         }
     }
 
-    private void fireOnBeforeStartParallelStepBranch(@NonNull StepStartNode node, @NonNull String branchName, @NonNull WorkflowRun run) {
+    private void fireOnBeforeStartParallelStepBranch(
+            @NonNull StepStartNode node, @NonNull String branchName, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
-            log(Level.FINE, () -> "onBeforeStartParallelStepBranch(branchName: " + branchName + ", " + node.getDisplayName() + "): " + pipelineListener.toString());
+            log(
+                    Level.FINE,
+                    () -> "onBeforeStartParallelStepBranch(branchName: " + branchName + ", " + node.getDisplayName()
+                            + "): " + pipelineListener.toString());
             try {
                 pipelineListener.onStartParallelStepBranch(node, branchName, run);
             } catch (RuntimeException e) {
-                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onBeforeStartParallelStepBranch` on " + pipelineListener);
+                LOGGER.log(
+                        Level.WARNING,
+                        e,
+                        () -> "Exception invoking `onBeforeStartParallelStepBranch` on " + pipelineListener);
             }
         }
     }
 
-    private void fireOnAfterEndParallelStepBranch(@NonNull StepEndNode node, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run) {
+    private void fireOnAfterEndParallelStepBranch(
+            @NonNull StepEndNode node, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
-            log(Level.FINE, () -> "onAfterEndParallelStepBranch(branchName: " + branchName + ", node[name:" + node.getDisplayName() + ", id: " + node.getId() + "]): " + pipelineListener.toString());
+            log(
+                    Level.FINE,
+                    () -> "onAfterEndParallelStepBranch(branchName: " + branchName + ", node[name:"
+                            + node.getDisplayName() + ", id: " + node.getId() + "]): " + pipelineListener.toString());
             try {
                 pipelineListener.onEndParallelStepBranch(node, branchName, nextNode, run);
             } catch (RuntimeException e) {
-                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onAfterEndParallelStepBranch` on " + pipelineListener);
+                LOGGER.log(
+                        Level.WARNING,
+                        e,
+                        () -> "Exception invoking `onAfterEndParallelStepBranch` on " + pipelineListener);
             }
         }
     }
 
     private void logFlowNodeDetails(@NonNull FlowNode node, @NonNull WorkflowRun run) {
-        log(Level.FINE, () ->
-        {
-            String message = run.getFullDisplayName() + " - " +
-                    "before " + node.getDisplayFunctionName() + " // " + PipelineNodeUtil.getDisplayName(node) + ", ";
+        log(Level.FINE, () -> {
+            String message = run.getFullDisplayName() + " - " + "before " + node.getDisplayFunctionName() + " // "
+                    + PipelineNodeUtil.getDisplayName(node) + ", ";
 
             if (node instanceof StepNode) {
                 StepNode stepNode = (StepNode) node;
                 StepDescriptor descriptor = stepNode.getDescriptor();
-                message += "descriptor (class:" + descriptor.getClass().getName() + ", " + descriptor.getFunctionName() + "), ";
+                message += "descriptor (class:" + descriptor.getClass().getName() + ", " + descriptor.getFunctionName()
+                        + "), ";
             }
-            message += node.getAllActions().stream().map(action -> Objects.toString(action.getDisplayName(), action.getClass().toString())).collect(Collectors.joining(", "));
+            message += node.getAllActions().stream()
+                    .map(action -> Objects.toString(
+                            action.getDisplayName(), action.getClass().toString()))
+                    .collect(Collectors.joining(", "));
             message += ", node.parent: " + Iterables.getFirst(node.getParents(), null);
             return message;
         });
@@ -185,7 +221,8 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
 
     public void fireOnStartPipeline(@NonNull FlowStartNode node, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
-            log(() -> "onStartPipeline(" + node.getDisplayName() + ") run " + run.getFullDisplayName() + ", pipelineListenerStep:" + pipelineListener.toString());
+            log(() -> "onStartPipeline(" + node.getDisplayName() + ") run " + run.getFullDisplayName()
+                    + ", pipelineListenerStep:" + pipelineListener.toString());
             try {
                 pipelineListener.onStartPipeline(node, run);
             } catch (RuntimeException e) {
@@ -194,9 +231,11 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
-    public void fireOnAfterEndNodeStep(@NonNull StepEndNode node, @NonNull String nodeName, FlowNode nextNode, @NonNull WorkflowRun run) {
+    public void fireOnAfterEndNodeStep(
+            @NonNull StepEndNode node, @NonNull String nodeName, FlowNode nextNode, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
-            log(() -> "onAfterEndNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError()) : ""));
+            log(() -> "onAfterEndNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString()
+                    + (node.getError() != null ? ("error: " + node.getError().getError()) : ""));
             try {
                 pipelineListener.onEndNodeStep(node, nodeName, nextNode, run);
             } catch (RuntimeException e) {
@@ -205,9 +244,11 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
-    public void fireOnAfterEndStageStep(@NonNull StepEndNode node, @NonNull String stageName, FlowNode nextNode, @NonNull WorkflowRun run) {
+    public void fireOnAfterEndStageStep(
+            @NonNull StepEndNode node, @NonNull String stageName, FlowNode nextNode, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
-            log(() -> "onAfterEndStageStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError()) : ""));
+            log(() -> "onAfterEndStageStep(" + node.getDisplayName() + "): " + pipelineListener.toString()
+                    + (node.getError() != null ? ("error: " + node.getError().getError()) : ""));
             try {
                 pipelineListener.onEndStageStep(node, stageName, nextNode, run);
             } catch (RuntimeException e) {
@@ -222,18 +263,23 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             try {
                 pipelineListener.onStartWithNewSpanStep(node, run);
             } catch (RuntimeException e) {
-                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onBeforeWithNewSpanStep` on " + pipelineListener);
+                LOGGER.log(
+                        Level.WARNING, e, () -> "Exception invoking `onBeforeWithNewSpanStep` on " + pipelineListener);
             }
         }
     }
 
     public void fireOnAfterEndWithNewSpanStep(@NonNull StepEndNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
-            log(() -> "onAfterEndWithNewSpanStep(" + node.getDisplayName() + "): " + pipelineListener.toString() + (node.getError() != null ? ("error: " + node.getError().getError()) : ""));
+            log(() -> "onAfterEndWithNewSpanStep(" + node.getDisplayName() + "): " + pipelineListener.toString()
+                    + (node.getError() != null ? ("error: " + node.getError().getError()) : ""));
             try {
                 pipelineListener.onEndWithNewSpanStep(node, nextNode, run);
             } catch (RuntimeException e) {
-                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onAfterEndWithNewSpanStep` on " + pipelineListener);
+                LOGGER.log(
+                        Level.WARNING,
+                        e,
+                        () -> "Exception invoking `onAfterEndWithNewSpanStep` on " + pipelineListener);
             }
         }
     }
@@ -260,7 +306,8 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
-    public void fireOnAfterStartNodeStep(@NonNull StepStartNode node, @NonNull String nodeLabel, @NonNull WorkflowRun run) {
+    public void fireOnAfterStartNodeStep(
+            @NonNull StepStartNode node, @NonNull String nodeLabel, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onAfterStartNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
             try {
@@ -271,19 +318,22 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
-    public void fireOnBeforeStartStageStep(@NonNull StepStartNode node, @NonNull String stageName, @NonNull WorkflowRun run) {
+    public void fireOnBeforeStartStageStep(
+            @NonNull StepStartNode node, @NonNull String stageName, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onBeforeStartStageStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
             try {
                 pipelineListener.onStartStageStep(node, stageName, run);
             } catch (RuntimeException e) {
-                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onBeforeStartStageStep` on " + pipelineListener);
+                LOGGER.log(
+                        Level.WARNING, e, () -> "Exception invoking `onBeforeStartStageStep` on " + pipelineListener);
             }
         }
     }
 
     private boolean isBeforeEndExecutorNodeStep(@NonNull FlowNode node) {
-        return (node instanceof StepEndNode) && PipelineNodeUtil.isStartExecutorNode(((StepEndNode) node).getStartNode());
+        return (node instanceof StepEndNode)
+                && PipelineNodeUtil.isStartExecutorNode(((StepEndNode) node).getStartNode());
     }
 
     private boolean isBeforeEndStageStep(@NonNull FlowNode node) {
@@ -291,11 +341,13 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
     }
 
     private boolean isBeforeEndParallelBranch(@NonNull FlowNode node) {
-        return (node instanceof StepEndNode) && PipelineNodeUtil.isStartParallelBranch(((StepEndNode) node).getStartNode());
+        return (node instanceof StepEndNode)
+                && PipelineNodeUtil.isStartParallelBranch(((StepEndNode) node).getStartNode());
     }
 
     private boolean isBeforeEndWithNewSpanStep(@NonNull FlowNode node) {
-        return (node instanceof StepEndNode) && PipelineNodeUtil.isStartWithNewSpan(((StepEndNode) node).getStartNode());
+        return (node instanceof StepEndNode)
+                && PipelineNodeUtil.isStartWithNewSpan(((StepEndNode) node).getStartNode());
     }
 
     protected void log(@NonNull Supplier<String> message) {

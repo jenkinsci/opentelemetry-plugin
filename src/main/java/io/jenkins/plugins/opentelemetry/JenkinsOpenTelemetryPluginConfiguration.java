@@ -15,49 +15,8 @@ import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_INS
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_METRIC_EXPORT_INTERVAL;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_TRACES_EXPORTER;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.StringReader;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-
-import org.jenkins.ui.icon.Icon;
-import org.jenkins.ui.icon.IconSet;
-import org.jenkinsci.Symbol;
-import org.jenkinsci.plugins.structs.SymbolLookup;
-import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
-import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
-import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.steps.CoreStep;
-import org.jenkinsci.plugins.workflow.support.steps.StageStepExecution;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest2;
-
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
-
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -83,41 +42,66 @@ import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.ServiceAttributes;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 import jenkins.model.CauseOfInterruption;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
 import net.jcip.annotations.Immutable;
 import net.sf.json.JSONObject;
+import org.jenkins.ui.icon.Icon;
+import org.jenkins.ui.icon.IconSet;
+import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.structs.SymbolLookup;
+import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
+import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
+import org.jenkinsci.plugins.workflow.graph.FlowNode;
+import org.jenkinsci.plugins.workflow.steps.CoreStep;
+import org.jenkinsci.plugins.workflow.support.steps.StageStepExecution;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest2;
 
-@Extension(ordinal = Integer.MAX_VALUE - 1 /* initialize OTel ASAP, just after loading JenkinsControllerOpenTelemetry as GlobalOpenTelemetry */)
+@Extension(
+        ordinal =
+                Integer.MAX_VALUE
+                        - 1 /* initialize OTel ASAP, just after loading JenkinsControllerOpenTelemetry as GlobalOpenTelemetry */)
 @Symbol("openTelemetry")
 public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration {
-    private final static Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());
 
     static {
+        IconSet.icons.addIcon(new Icon("icon-otel icon-sm", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_SMALL_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel icon-sm",
-                ICONS_PREFIX + "opentelemetry.svg",
-                Icon.ICON_SMALL_STYLE));
+                new Icon("icon-otel icon-md", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_MEDIUM_STYLE));
+        IconSet.icons.addIcon(new Icon("icon-otel icon-lg", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_LARGE_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel icon-md",
-                ICONS_PREFIX + "opentelemetry.svg",
-                Icon.ICON_MEDIUM_STYLE));
-        IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel icon-lg",
-                ICONS_PREFIX + "opentelemetry.svg",
-                Icon.ICON_LARGE_STYLE));
-        IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel icon-xlg",
-                ICONS_PREFIX + "opentelemetry.svg",
-                Icon.ICON_XLARGE_STYLE));
+                new Icon("icon-otel icon-xlg", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_XLARGE_STYLE));
     }
-
 
     /**
      * OTLP endpoint prefixed by "http://" or "https://"
@@ -138,7 +122,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
-    private String disabledResourceProviders = JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+    private String disabledResourceProviders =
+            JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
 
     @Inject
     private transient ReconfigurableOpenTelemetry openTelemetry;
@@ -164,10 +149,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * @see org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
      */
     private final List<String> statusUnsetCausesOfInterruption = Arrays.asList(
-        "org.jenkinsci.plugins.workflow.cps.steps.ParallelStep$FailFastCause",
-        StageStepExecution.CanceledCause.class.getName(),
-        CauseOfInterruption.UserInterruption.class.getName()
-    );
+            "org.jenkinsci.plugins.workflow.cps.steps.ParallelStep$FailFastCause",
+            StageStepExecution.CanceledCause.class.getName(),
+            CauseOfInterruption.UserInterruption.class.getName());
 
     /**
      * The previously used configuration. Kept in memory to prevent unneeded reconfigurations.
@@ -201,26 +185,31 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         LOGGER.log(Level.FINE, "readResolve()");
         boolean configModified = false;
         if (this.disabledResourceProviders == null) {
-            this.disabledResourceProviders = JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+            this.disabledResourceProviders =
+                    JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
             LOGGER.log(Level.INFO, "Migration of the 'disabledResourceProviders' config param");
             configModified = true;
         }
         if (this.exporterTimeoutMillis != null) {
-            this.configurationProperties =
-                this.configurationProperties + "\n" +
-                    "# Migration of the 'exporterTimeoutMillis' config param to 'otel.exporter.otlp.timeout' property\n" +
-                    OTEL_EXPORTER_OTLP_TIMEOUT.asProperty() + "=" + this.exporterTimeoutMillis;
+            this.configurationProperties = this.configurationProperties + "\n"
+                    + "# Migration of the 'exporterTimeoutMillis' config param to 'otel.exporter.otlp.timeout' property\n"
+                    + OTEL_EXPORTER_OTLP_TIMEOUT.asProperty()
+                    + "=" + this.exporterTimeoutMillis;
             this.exporterTimeoutMillis = null;
-            LOGGER.log(Level.INFO, "Migration of the 'exporterTimeoutMillis' config param to 'otel.exporter.otlp.timeout' property");
+            LOGGER.log(
+                    Level.INFO,
+                    "Migration of the 'exporterTimeoutMillis' config param to 'otel.exporter.otlp.timeout' property");
             configModified = true;
         }
         if (this.exporterIntervalMillis != null) {
-            this.configurationProperties =
-                this.configurationProperties + "\n" +
-                    "# Migration of the 'exporterIntervalMillis' config param to 'otel.metric.export.interval' property\n" +
-                    OTEL_METRIC_EXPORT_INTERVAL.asProperty() + "=" + this.exporterIntervalMillis;
+            this.configurationProperties = this.configurationProperties + "\n"
+                    + "# Migration of the 'exporterIntervalMillis' config param to 'otel.metric.export.interval' property\n"
+                    + OTEL_METRIC_EXPORT_INTERVAL.asProperty()
+                    + "=" + this.exporterIntervalMillis;
             this.exporterIntervalMillis = null;
-            LOGGER.log(Level.INFO, "Migration of the 'exporterIntervalMillis' config param to 'otel.metric.export.interval' property");
+            LOGGER.log(
+                    Level.INFO,
+                    "Migration of the 'exporterIntervalMillis' config param to 'otel.metric.export.interval' property");
             configModified = true;
         }
 
@@ -240,24 +229,32 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         }
 
         Map<String, String> configurationProperties = new HashMap<>();
-        getObservabilityBackends().forEach(backend -> configurationProperties.putAll(backend.getOtelConfigurationProperties()));
+        getObservabilityBackends()
+                .forEach(backend -> configurationProperties.putAll(backend.getOtelConfigurationProperties()));
         configurationProperties.put(ExtendedJenkinsAttributes.JENKINS_VERSION.getKey(), OtelUtils.getJenkinsVersion());
-        configurationProperties.put(ExtendedJenkinsAttributes.JENKINS_URL.getKey(), this.jenkinsLocationConfiguration.getUrl());
-        configurationProperties.put(OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS.asProperty(), Boolean.toString(this.exportOtelConfigurationAsEnvironmentVariables));
+        configurationProperties.put(
+                ExtendedJenkinsAttributes.JENKINS_URL.getKey(), this.jenkinsLocationConfiguration.getUrl());
+        configurationProperties.put(
+                OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS.asProperty(),
+                Boolean.toString(this.exportOtelConfigurationAsEnvironmentVariables));
 
-        // use same Jenkins instance identifier as the Jenkins Support Core plugin. No need to add the complexity of the instance-identity-plugin
+        // use same Jenkins instance identifier as the Jenkins Support Core plugin. No need to add the complexity of the
+        // instance-identity-plugin
         // https://github.com/jenkinsci/support-core-plugin/blob/support-core-2.81/src/main/java/com/cloudbees/jenkins/support/impl/AboutJenkins.java#L401
-        configurationProperties.put(ServiceIncubatingAttributes.SERVICE_INSTANCE_ID.getKey(), Jenkins.get().getLegacyInstanceId());
-        properties.forEach((k, v) -> configurationProperties.put(Objects.toString(k, "#null#"), Objects.toString(v, "#null#")));
+        configurationProperties.put(
+                ServiceIncubatingAttributes.SERVICE_INSTANCE_ID.getKey(),
+                Jenkins.get().getLegacyInstanceId());
+        properties.forEach(
+                (k, v) -> configurationProperties.put(Objects.toString(k, "#null#"), Objects.toString(v, "#null#")));
 
         return new OpenTelemetryConfiguration(
-            Optional.ofNullable(this.getEndpoint()),
-            Optional.ofNullable(this.getTrustedCertificatesPem()),
-            Optional.of(this.getAuthentication()),
-            Optional.ofNullable(this.getServiceName()),
-            Optional.ofNullable(this.getServiceNamespace()),
-            Optional.ofNullable(this.getDisabledResourceProviders()),
-            configurationProperties);
+                Optional.ofNullable(this.getEndpoint()),
+                Optional.ofNullable(this.getTrustedCertificatesPem()),
+                Optional.of(this.getAuthentication()),
+                Optional.ofNullable(this.getServiceName()),
+                Optional.ofNullable(this.getServiceNamespace()),
+                Optional.ofNullable(this.getDisabledResourceProviders()),
+                configurationProperties);
     }
 
     /**
@@ -273,9 +270,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
         } else {
             openTelemetry.configure(
-                newOpenTelemetryConfiguration.toOpenTelemetryProperties(),
-                newOpenTelemetryConfiguration.toOpenTelemetryResource(),
-                true);
+                    newOpenTelemetryConfiguration.toOpenTelemetryProperties(),
+                    newOpenTelemetryConfiguration.toOpenTelemetryResource(),
+                    true);
             this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
         }
 
@@ -284,7 +281,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             try {
                 ((Closeable) logStorageRetriever).close();
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Exception closing currently setup logStorageRetriever: " + logStorageRetriever, e);
+                LOGGER.log(
+                        Level.WARNING,
+                        "Exception closing currently setup logStorageRetriever: " + logStorageRetriever,
+                        e);
             }
         }
         this.logStorageRetriever = resolveLogStorageRetriever();
@@ -361,7 +361,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setExporterTimeoutMillis(Integer exporterTimeoutMillis) {
         this.exporterTimeoutMillis = exporterTimeoutMillis;
-
     }
 
     @Deprecated
@@ -394,7 +393,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setDisabledResourceProviders(String disabledResourceProviders) {
         this.disabledResourceProviders = disabledResourceProviders;
-
     }
 
     public boolean isExportOtelConfigurationAsEnvironmentVariables() {
@@ -402,7 +400,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @DataBoundSetter
-    public void setExportOtelConfigurationAsEnvironmentVariables(boolean exportOtelConfigurationAsEnvironmentVariables) {
+    public void setExportOtelConfigurationAsEnvironmentVariables(
+            boolean exportOtelConfigurationAsEnvironmentVariables) {
         this.exportOtelConfigurationAsEnvironmentVariables = exportOtelConfigurationAsEnvironmentVariables;
     }
 
@@ -413,7 +412,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setConfigurationProperties(String configurationProperties) {
         this.configurationProperties = configurationProperties;
-
     }
 
     @NonNull
@@ -435,7 +433,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             environmentVariables.put(OTEL_EXPORTER_OTLP_CERTIFICATE.asEnvVar(), trustedCertificatesPem);
         }
         if (this.exporterTimeoutMillis != null) {
-            environmentVariables.put(OTEL_EXPORTER_OTLP_TIMEOUT.asEnvVar(), Integer.toString(this.exporterTimeoutMillis));
+            environmentVariables.put(
+                    OTEL_EXPORTER_OTLP_TIMEOUT.asEnvVar(), Integer.toString(this.exporterTimeoutMillis));
         }
         return environmentVariables;
     }
@@ -452,7 +451,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      */
     @NonNull
     public String getVisualisationObservabilityBackendsString() {
-        return "Visualisation observability backends: " + ObservabilityBackend.allDescriptors().stream().sorted().map(Descriptor::getDisplayName).collect(Collectors.joining(", "));
+        return "Visualisation observability backends: "
+                + ObservabilityBackend.allDescriptors().stream()
+                        .sorted()
+                        .map(Descriptor::getDisplayName)
+                        .collect(Collectors.joining(", "));
     }
 
     @NonNull
@@ -465,7 +468,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @Nullable
-    private Descriptor<? extends Describable<?>> getStepDescriptor(@NonNull FlowNode node, @Nullable Descriptor<? extends Describable<?>> descriptor) {
+    private Descriptor<? extends Describable<?>> getStepDescriptor(
+            @NonNull FlowNode node, @Nullable Descriptor<? extends Describable<?>> descriptor) {
         // Support for https://javadoc.jenkins.io/jenkins/tasks/SimpleBuildStep.html
         if (descriptor instanceof CoreStep.DescriptorImpl) {
             Map<String, Object> arguments = ArgumentsAction.getFilteredArguments(node);
@@ -501,7 +505,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @NonNull
-    public StepPlugin findStepPluginOrDefault(@NonNull String stepName, @Nullable Descriptor<? extends Describable<?>> descriptor) {
+    public StepPlugin findStepPluginOrDefault(
+            @NonNull String stepName, @Nullable Descriptor<? extends Describable<?>> descriptor) {
         StepPlugin data = loadedStepsPlugins.get(stepName);
         if (data != null) {
             LOGGER.log(Level.FINEST, " found the plugin for the step '" + stepName + "' - " + data);
@@ -526,7 +531,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @NonNull
-    public String findSymbolOrDefault(@NonNull String buildStepName, @Nullable Descriptor<? extends Describable<?>> descriptor) {
+    public String findSymbolOrDefault(
+            @NonNull String buildStepName, @Nullable Descriptor<? extends Describable<?>> descriptor) {
         String value = buildStepName;
         if (descriptor != null) {
             Set<String> values = SymbolLookup.getSymbolValue(descriptor);
@@ -545,20 +551,20 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
-
     }
 
     /**
      * @see io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes#SERVICE_NAMESPACE
      */
     public String getServiceNamespace() {
-        return (Strings.isNullOrEmpty(this.serviceNamespace)) ? ExtendedJenkinsAttributes.JENKINS : this.serviceNamespace;
+        return (Strings.isNullOrEmpty(this.serviceNamespace))
+                ? ExtendedJenkinsAttributes.JENKINS
+                : this.serviceNamespace;
     }
 
     @DataBoundSetter
     public void setServiceNamespace(String serviceNamespace) {
         this.serviceNamespace = serviceNamespace;
-
     }
 
     @NonNull
@@ -576,9 +582,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      */
     @NonNull
     public String getResourceAsText() {
-        return this.getResource().getAttributes().asMap().entrySet().stream().
-            map(e -> e.getKey() + "=" + e.getValue()).
-            collect(Collectors.joining("\r\n"));
+        return this.getResource().getAttributes().asMap().entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining("\r\n"));
     }
 
     @NonNull
@@ -596,9 +602,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      */
     @NonNull
     public String getNoteworthyConfigPropertiesAsText() {
-        return OtelUtils.noteworthyConfigProperties(getConfigProperties()).entrySet().stream().
-            map(e -> e.getKey() + "=" + e.getValue()).
-            collect(Collectors.joining("\r\n"));
+        return OtelUtils.noteworthyConfigProperties(getConfigProperties()).entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining("\r\n"));
     }
 
     @NonNull
@@ -617,22 +623,21 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         LogStorageRetriever logStorageRetriever = null;
 
         Resource otelSdkResource = openTelemetry.getResource();
-        String serviceName = Objects.requireNonNull(otelSdkResource.getAttribute(ServiceAttributes.SERVICE_NAME), "service.name can't be null");
+        String serviceName = Objects.requireNonNull(
+                otelSdkResource.getAttribute(ServiceAttributes.SERVICE_NAME), "service.name can't be null");
         String serviceNamespace = otelSdkResource.getAttribute(ServiceIncubatingAttributes.SERVICE_NAMESPACE);
 
         Map<String, Object> bindings;
         if (serviceNamespace == null) {
             bindings = Map.of(
-                ObservabilityBackend.TemplateBindings.SERVICE_NAME, serviceName,
-                ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, serviceName
-            );
+                    ObservabilityBackend.TemplateBindings.SERVICE_NAME, serviceName,
+                    ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, serviceName);
         } else {
             String serviceNamespaceAndName = serviceNamespace + "/" + serviceName;
             bindings = Map.of(
-                ObservabilityBackend.TemplateBindings.SERVICE_NAME, serviceName,
-                ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE, serviceNamespace,
-                ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, serviceNamespaceAndName
-            );
+                    ObservabilityBackend.TemplateBindings.SERVICE_NAME, serviceName,
+                    ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE, serviceNamespace,
+                    ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, serviceNamespaceAndName);
         }
 
         for (ObservabilityBackend backend : getObservabilityBackends()) {
@@ -642,13 +647,18 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             }
         }
         if (logStorageRetriever == null) {
-            // "No observability backend configured to display the build logs for build with traceId: ${traceId}. See documentation: ",
+            // "No observability backend configured to display the build logs for build with traceId: ${traceId}. See
+            // documentation: ",
             try {
                 logStorageRetriever = new CustomLogStorageRetriever(
-                    new GStringTemplateEngine().createTemplate("https://plugins.jenkins.io/opentelemetry/"), // TODO better documentation URL
-                    TemplateBindingsProvider.of(
-                        ObservabilityBackend.TemplateBindings.BACKEND_NAME, "See documentation on missing logs visualization URL",
-                        ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/svgs/opentelemetry.svg"));
+                        new GStringTemplateEngine()
+                                .createTemplate(
+                                        "https://plugins.jenkins.io/opentelemetry/"), // TODO better documentation URL
+                        TemplateBindingsProvider.of(
+                                ObservabilityBackend.TemplateBindings.BACKEND_NAME,
+                                        "See documentation on missing logs visualization URL",
+                                ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL,
+                                        "/plugin/opentelemetry/svgs/opentelemetry.svg"));
             } catch (ClassNotFoundException | IOException e) {
                 throw new IllegalStateException(e);
             }
@@ -687,13 +697,16 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             return FormValidation.error("Invalid URL: " + e.getMessage() + ".");
         }
         if (!"http".equals(endpointAsUrl.getScheme()) && !"https".equals(endpointAsUrl.getScheme())) {
-            return FormValidation.error("Unsupported protocol '" + endpointAsUrl.getScheme() + "'. Expect 'https' or 'http' protocol.");
+            return FormValidation.error(
+                    "Unsupported protocol '" + endpointAsUrl.getScheme() + "'. Expect 'https' or 'http' protocol.");
         }
         List<String> localhosts = Arrays.asList("localhost", "127.0.0.1", "0:0:0:0:0:0:0:1");
         for (String localhost : localhosts) {
             if (localhost.equals(endpointAsUrl.getHost())) {
-                return FormValidation.warning("The OTLP Endpoint URL is also used from the Jenkins agents when sending logs through OTLP. " +
-                    "Identifying the OTLP endpoint with the `" + localhost + "` hostname is likely to not work from Jenkins agents.");
+                return FormValidation.warning(
+                        "The OTLP Endpoint URL is also used from the Jenkins agents when sending logs through OTLP. "
+                                + "Identifying the OTLP endpoint with the `" + localhost
+                                + "` hostname is likely to not work from Jenkins agents.");
             }
         }
         return FormValidation.ok();
@@ -722,7 +735,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         if (value.equals("false")) {
             return FormValidation.ok();
         }
-        return FormValidation.warning("Note that OpenTelemetry credentials, if configured, will be exposed as environment variables (likely in OTEL_EXPORTER_OTLP_HEADERS)");
+        return FormValidation.warning(
+                "Note that OpenTelemetry credentials, if configured, will be exposed as environment variables (likely in OTEL_EXPORTER_OTLP_HEADERS)");
     }
 
     /**
@@ -767,10 +781,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
         @Override
         public String toString() {
-            return "StepPlugin{" +
-                "name=" + name +
-                ", version=" + version +
-                '}';
+            return "StepPlugin{" + "name=" + name + ", version=" + version + '}';
         }
     }
 }

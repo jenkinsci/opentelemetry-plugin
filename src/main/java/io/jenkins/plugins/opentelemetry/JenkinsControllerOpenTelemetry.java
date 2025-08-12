@@ -5,6 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_LOGS_EXPORTER;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_LOGS_MIRROR_TO_DISK;
+
 import com.google.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
@@ -17,14 +20,10 @@ import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.instrumentation.resources.ProcessResourceProvider;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.util.Objects;
 import java.util.Optional;
-
-import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_LOGS_EXPORTER;
-import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_LOGS_MIRROR_TO_DISK;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 
 /**
  * {@link OpenTelemetry} instance intended to live on the Jenkins Controller.
@@ -52,16 +51,15 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
     public void postConstruct() {
         String opentelemetryPluginVersion = OtelUtils.getOpentelemetryPluginVersion();
 
-        this.defaultTracer =
-            this.openTelemetry
+        this.defaultTracer = this.openTelemetry
                 .tracerBuilder(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME)
                 .setInstrumentationVersion(opentelemetryPluginVersion)
                 .build();
 
         this.defaultMeter = openTelemetry
-            .meterBuilder(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME)
-            .setInstrumentationVersion(opentelemetryPluginVersion)
-            .build();
+                .meterBuilder(ExtendedJenkinsAttributes.INSTRUMENTATION_NAME)
+                .setInstrumentationVersion(opentelemetryPluginVersion)
+                .build();
     }
 
     @NonNull
@@ -88,17 +86,17 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
     @NonNull
     @Deprecated
     protected OpenTelemetrySdk getOpenTelemetrySdk() {
-        return (OpenTelemetrySdk) Optional.ofNullable(openTelemetry).map(ReconfigurableOpenTelemetry::getImplementation).orElseThrow(() -> new IllegalStateException("OpenTelemetry not initialized"));
+        return (OpenTelemetrySdk) Optional.ofNullable(openTelemetry)
+                .map(ReconfigurableOpenTelemetry::getImplementation)
+                .orElseThrow(() -> new IllegalStateException("OpenTelemetry not initialized"));
     }
 
     public void initialize(@NonNull OpenTelemetryConfiguration configuration) {
         openTelemetry.configure(
-            configuration.toOpenTelemetryProperties(),
-            configuration.toOpenTelemetryResource(),
-            true);
+                configuration.toOpenTelemetryProperties(), configuration.toOpenTelemetryResource(), true);
     }
 
-    static public JenkinsControllerOpenTelemetry get() {
+    public static JenkinsControllerOpenTelemetry get() {
         return ExtensionList.lookupSingleton(JenkinsControllerOpenTelemetry.class);
     }
 }

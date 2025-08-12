@@ -8,11 +8,10 @@ package io.jenkins.plugins.opentelemetry.backend;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithJenkinsVisualization;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithoutJenkinsVisualization;
 import io.jenkins.plugins.opentelemetry.backend.elastic.NoElasticLogsBackend;
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.util.Collections;
 import java.util.Map;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class ElasticBackendTest {
 
@@ -98,7 +97,8 @@ public class ElasticBackendTest {
         elasticBackend.setEnableEDOT(false);
         String url = elasticBackend.getTraceVisualisationUrlTemplate();
         Assert.assertTrue(url.contains("transactionType=job"));
-        Assert.assertTrue(url.startsWith("http://localhost:5601/s/space/app/apm/services/${serviceName}/transactions/view"));
+        Assert.assertTrue(
+                url.startsWith("http://localhost:5601/s/space/app/apm/services/${serviceName}/transactions/view"));
     }
 
     @Test
