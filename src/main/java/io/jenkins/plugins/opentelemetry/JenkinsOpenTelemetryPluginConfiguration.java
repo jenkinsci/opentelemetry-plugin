@@ -163,6 +163,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         load();
     }
 
+    // needed by CloudBees HA see https://github.com/jenkinsci/opentelemetry-plugin/issues/1156
     @Override
     public void load() {
         super.load();
