@@ -54,7 +54,7 @@ public class GitCheckoutStepHandlerTest {
             "node {\n" +
             "    checkout([$class: 'GitSCM', \n" +
             "        branches: [[name: 'master']], \n" +
-            "        userRemoteConfigs: [[url: '" + sampleRepo.toString() + "']]\n" +
+            "        userRemoteConfigs: [[url: '" + sampleRepo.fileUrl() + "']]\n" +
             "    ])\n" +
             "}";
         WorkflowRun run = runPipeline("simple-git-checkout", pipeline);
@@ -78,7 +78,7 @@ public class GitCheckoutStepHandlerTest {
             "node {\n" +
             "    checkout([$class: 'GitSCM', \n" +
             "        branches: [[name: 'master']], \n" +
-            "        userRemoteConfigs: [[url: '" + sampleRepo.toString() + "']], \n" +
+            "        userRemoteConfigs: [[url: '" + sampleRepo.fileUrl() + "']], \n" +
             "        extensions: [[\n" +
             "            $class: 'CloneOption', \n" +
             "            shallow: true, \n" +
