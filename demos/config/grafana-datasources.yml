@@ -15,4 +15,8 @@ datasources:
     uid: example-jaeger
     access: proxy
     url: http://jaeger-all-in-one:16686
-
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: example-loki
+        filterByTraceID: true
+        filterBySpanID: true
