@@ -2,8 +2,8 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import static com.google.common.base.Verify.verify;
 import static java.util.Optional.of;
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.ExtensionList;
 import hudson.model.Result;
@@ -27,26 +27,32 @@ import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class OtelLocaLogMirroringTest {
+@WithJenkins
+class OtelLocaLogMirroringTest {
 
     private static final Logger LOGGER = Logger.getLogger(OtelLocaLogMirroringTest.class.getName());
 
-    @ClassRule
-    public static JenkinsRule jenkinsRule = new JenkinsRule();
+    private static JenkinsRule jenkinsRule;
 
-    static ReconfigurableOpenTelemetry openTelemetry;
-    static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    private static ReconfigurableOpenTelemetry openTelemetry;
+    private static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
-    static WorkflowJob pipeline;
+    private static WorkflowJob pipeline;
 
-    static String printedLine = "message_testing_logs_mirroring";
-    static final AtomicInteger jobNameSuffix = new AtomicInteger();
+    private static final String PRINTED_LINE = "message_testing_logs_mirroring";
+    private static final AtomicInteger jobNameSuffix = new AtomicInteger();
 
-    @BeforeClass
-    public static void beforeClass() throws Exception {
+    @BeforeAll
+    static void beforeClass(JenkinsRule rule) throws Exception {
+        jenkinsRule = rule;
         LOGGER.log(Level.INFO, "beforeClass()");
         LOGGER.log(Level.INFO, "Wait for jenkins to start...");
         jenkinsRule.waitUntilNoActivity();
@@ -73,19 +79,19 @@ public class OtelLocaLogMirroringTest {
                 Collections.emptyMap()));
     }
 
-    @AfterClass
-    public static void afterClass() throws Exception {
+    @AfterAll
+    static void afterClass() throws Exception {
         ((AutoCloseable) openTelemetry).close();
         GlobalOpenTelemetry.resetForTest();
     }
 
-    @Before
-    public void resetOtelConfig() {
+    @BeforeEach
+    void resetOtelConfig() {
         reInitProvider(new HashMap<>());
     }
 
-    @After
-    public void after() throws Exception {
+    @AfterEach
+    void after() throws Exception {
         jenkinsRule.waitUntilNoActivity();
         InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
         InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
@@ -97,7 +103,7 @@ public class OtelLocaLogMirroringTest {
                 + "    stage('foo') {\n"
                 + "      steps {\n"
                 + "        echo '"
-                + printedLine + "' \n" + "        script { \n"
+                + PRINTED_LINE + "' \n" + "        script { \n"
                 + "          currentBuild.description = 'Bar' \n"
                 + "        } \n"
                 + "      }\n"
@@ -122,7 +128,7 @@ public class OtelLocaLogMirroringTest {
     }
 
     @Test
-    public void return_otel_log_text_when_otlp_enabled_and_no_log_file() throws Exception {
+    void return_otel_log_text_when_otlp_enabled_and_no_log_file() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         Map<String, String> configuration = new HashMap<>();
         configuration.put("otel.logs.exporter", "otlp");
@@ -142,7 +148,7 @@ public class OtelLocaLogMirroringTest {
     }
 
     @Test
-    public void return_log_from_file_when_log_file_mirrored() throws Exception {
+    void return_log_from_file_when_log_file_mirrored() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         Map<String, String> configuration = new HashMap<>();
         configuration.put("otel.logs.exporter", "otlp");
@@ -153,17 +159,17 @@ public class OtelLocaLogMirroringTest {
 
         assertNotEquals(OverallLog.class, build.getLogText().getClass());
         String logText = build.getLog();
-        assertTrue(logText.contains(printedLine));
+        assertTrue(logText.contains(PRINTED_LINE));
 
         File logIndex = new File(build.getRootDir().getPath(), "log-index");
         assertTrue(logIndex.exists());
-        assertTrue(logText.length() > 0);
+        assertFalse(logText.isEmpty());
 
         assertEquals(Files.readString(build.getLogFile().toPath()), logText);
     }
 
     @Test
-    public void return_log_from_file_when_log_file_added_before_otlp_enabled() throws Exception {
+    void return_log_from_file_when_log_file_added_before_otlp_enabled() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         WorkflowRun build = runBuild();
 
@@ -171,13 +177,13 @@ public class OtelLocaLogMirroringTest {
         configuration.put("otel.logs.exporter", "otlp");
         reInitProvider(configuration);
 
-        assertNotEquals(build.getLogText().getClass(), OverallLog.class);
+        assertNotEquals(OverallLog.class, build.getLogText().getClass());
         String logText = build.getLog();
-        assertTrue(logText.contains(printedLine));
+        assertTrue(logText.contains(PRINTED_LINE));
 
         File logIndex = new File(build.getRootDir().getPath(), "log-index");
         assertTrue(logIndex.exists());
-        assertTrue(logText.length() > 0);
+        assertFalse(logText.isEmpty());
 
         assertEquals(Files.readString(build.getLogFile().toPath()), logText);
     }

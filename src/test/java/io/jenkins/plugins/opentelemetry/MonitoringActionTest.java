@@ -8,18 +8,18 @@ package io.jenkins.plugins.opentelemetry;
 import groovy.text.GStringTemplateEngine;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import java.io.IOException;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-public class MonitoringActionTest {
+class MonitoringActionTest {
 
     @Test
-    public void testGenerateVisualisationUrl() throws IOException, ClassNotFoundException {
+    void testGenerateVisualisationUrl() throws Exception {
         String template = "${baseUrl}/app/apm/services/${serviceName}/transactions/view"
                 + "?rangeFrom=${startTime.minusSeconds(600)}"
                 + "&rangeTo=${startTime.plusSeconds(600)}"
@@ -44,7 +44,7 @@ public class MonitoringActionTest {
     }
 
     @Test
-    public void testGenerateVisualisationUrlEncoded() throws IOException, ClassNotFoundException {
+    void testGenerateVisualisationUrlEncoded() throws Exception {
         String template = "${baseUrl}/app/apm/services/${serviceName}/transactions/view"
                 + "?rangeFrom=${startTime.minusSeconds(600)}"
                 + "&rangeTo=${startTime.plusSeconds(600)}"
@@ -68,13 +68,13 @@ public class MonitoringActionTest {
         System.out.println(actual);
     }
 
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    static void beforeClass() {
         GlobalOpenTelemetry.resetForTest();
     }
 
-    @AfterClass
-    public static void afterClass() {
+    @AfterAll
+    static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
     }
 }

@@ -9,11 +9,14 @@ import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
 import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
 import static io.jenkins.plugins.casc.misc.Util.toYamlString;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import io.jenkins.plugins.casc.ConfigurationContext;
 import io.jenkins.plugins.casc.ConfiguratorRegistry;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.casc.misc.junit.jupiter.WithJenkinsConfiguredWithCode;
 import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
@@ -24,54 +27,53 @@ import io.jenkins.plugins.opentelemetry.backend.JaegerBackend;
 import io.jenkins.plugins.opentelemetry.backend.ZipkinBackend;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-public class ConfigurationAsCodeTest {
-
-    @ClassRule
-    @ConfiguredWithCode("configuration-as-code.yml")
-    public static JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
+@WithJenkinsConfiguredWithCode
+class ConfigurationAsCodeTest {
 
     @Test
-    public void should_support_configuration_as_code() {
+    @ConfiguredWithCode("configuration-as-code.yml")
+    void should_support_configuration_as_code(JenkinsConfiguredWithCodeRule j) {
         final JenkinsOpenTelemetryPluginConfiguration configuration =
                 GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
-        MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
-        MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(4));
+        assertThat(configuration.getEndpoint(), is("http://otel-collector-contrib:4317"));
+        assertThat(configuration.getObservabilityBackends().size(), is(4));
 
         ElasticBackend elastic =
                 (ElasticBackend) configuration.getObservabilityBackends().get(0);
-        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("http://localhost:5601"));
-        MatcherAssert.assertThat(elastic.getName(), CoreMatchers.is("My Elastic"));
+        assertThat(elastic.getKibanaBaseUrl(), is("http://localhost:5601"));
+        assertThat(elastic.getName(), is("My Elastic"));
 
         JaegerBackend jaeger =
                 (JaegerBackend) configuration.getObservabilityBackends().get(1);
-        MatcherAssert.assertThat(jaeger.getJaegerBaseUrl(), CoreMatchers.is("http://localhost:16686"));
-        MatcherAssert.assertThat(jaeger.getName(), CoreMatchers.is("My Jaeger"));
+        assertThat(jaeger.getJaegerBaseUrl(), is("http://localhost:16686"));
+        assertThat(jaeger.getName(), is("My Jaeger"));
 
         CustomObservabilityBackend custom = (CustomObservabilityBackend)
                 configuration.getObservabilityBackends().get(2);
-        MatcherAssert.assertThat(custom.getMetricsVisualizationUrlTemplate(), CoreMatchers.is("foo"));
-        MatcherAssert.assertThat(custom.getTraceVisualisationUrlTemplate(), CoreMatchers.is("http://example.com"));
-        MatcherAssert.assertThat(custom.getName(), CoreMatchers.is("My Custom"));
+        assertThat(custom.getMetricsVisualizationUrlTemplate(), is("foo"));
+        assertThat(custom.getTraceVisualisationUrlTemplate(), is("http://example.com"));
+        assertThat(custom.getName(), is("My Custom"));
 
         ZipkinBackend zipkin =
                 (ZipkinBackend) configuration.getObservabilityBackends().get(3);
-        MatcherAssert.assertThat(zipkin.getZipkinBaseUrl(), CoreMatchers.is("http://localhost:9411/"));
-        MatcherAssert.assertThat(zipkin.getName(), CoreMatchers.is("My Zipkin"));
+        assertThat(zipkin.getZipkinBaseUrl(), is("http://localhost:9411/"));
+        assertThat(zipkin.getName(), is("My Zipkin"));
 
         OtlpAuthentication authentication = configuration.getAuthentication();
-        MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
+        assertThat(authentication, is(instanceOf(NoAuthentication.class)));
 
-        MatcherAssert.assertThat(configuration.getServiceName(), CoreMatchers.is("my-jenkins"));
-        MatcherAssert.assertThat(configuration.getServiceNamespace(), CoreMatchers.is("ci"));
+        assertThat(configuration.getServiceName(), is("my-jenkins"));
+        assertThat(configuration.getServiceNamespace(), is("ci"));
     }
 
     @Test
-    public void should_support_configuration_export() throws Exception {
+    @ConfiguredWithCode("configuration-as-code.yml")
+    void should_support_configuration_export(JenkinsConfiguredWithCodeRule j) throws Exception {
         ConfiguratorRegistry registry = ConfiguratorRegistry.get();
         ConfigurationContext context = new ConfigurationContext(registry);
         CNode yourAttribute = getUnclassifiedRoot(context).get("openTelemetry");
@@ -80,16 +82,16 @@ public class ConfigurationAsCodeTest {
 
         String expected = toStringFromYamlFile(this, "configuration-as-code-expected.yml");
 
-        MatcherAssert.assertThat(exported, CoreMatchers.is(expected));
+        assertThat(exported, is(expected));
     }
 
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    static void beforeClass() {
         GlobalOpenTelemetry.resetForTest();
     }
 
-    @AfterClass
-    public static void afterClass() {
+    @AfterAll
+    static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
     }
 }

@@ -5,7 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.maven.MavenModuleSet;
@@ -13,16 +15,14 @@ import hudson.maven.MavenModuleSetBuild;
 import hudson.tasks.Maven;
 import jenkins.mvn.DefaultSettingsProvider;
 import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.ExtractResourceSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 
-public class JenkinsOtelPluginMavenIntegrationTest extends BaseIntegrationTest {
+class JenkinsOtelPluginMavenIntegrationTest extends BaseIntegrationTest {
 
     @Test
-    public void testMavenJob() throws Exception {
+    void testMavenJob() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
         // See https://github.com/jenkinsci/maven-plugin/blob/master/src/test/java/hudson/maven/MavenProjectTest.java
@@ -34,7 +34,7 @@ public class JenkinsOtelPluginMavenIntegrationTest extends BaseIntegrationTest {
 
         Tree<SpanDataWrapper> spans = getBuildTrace();
         // TODO: decide whether to support the maven modules under the same maven build
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(3L));
+        assertThat(spans.cardinality(), is(3L));
 
         assertMavenJobMetadata(build, spans);
         // TODO: maven multimodule contains the jobname and the maven goals.

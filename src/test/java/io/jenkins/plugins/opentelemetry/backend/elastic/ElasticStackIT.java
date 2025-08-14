@@ -19,12 +19,12 @@ import org.testcontainers.shaded.org.apache.commons.lang3.SystemUtils;
  * Base class for integration tests using an Elastic Stack.
  */
 @Testcontainers(disabledWithoutDocker = true)
-public abstract class ElasticStackIT {
+abstract class ElasticStackIT {
     @Container
     protected static final ElasticStack elasticStack = new ElasticStack();
 
     @BeforeEach
-    void beforeEach() throws Exception {
+    void beforeEach() {
         elasticStack.getServicePort(ElasticStack.EDOT_SERVICE, ElasticStack.OTEL_PORT);
     }
 

@@ -31,15 +31,18 @@ import org.kohsuke.stapler.framework.io.ByteBuffer;
 // @Disabled("These tests are unstables, we need to review them")
 @Timeout(value = 10, unit = TimeUnit.MINUTES)
 @WithJenkinsConfiguredWithCode
-public class ElasticsearchBackendITTest extends ElasticStackIT {
+class ElasticsearchBackendITTest extends ElasticStackIT {
 
     @Test
     @ConfiguredWithCode("jcasc-elastic-backend.yml")
-    public void test(JenkinsConfiguredWithCodeRule j) throws Exception {
+    void test(JenkinsConfiguredWithCodeRule j) throws Exception {
         elasticStack.configureElasticBackEnd();
         j.createOnlineSlave(new LabelAtom("remote"));
         WorkflowJob p = j.jenkins.createProject(WorkflowJob.class, "p");
-        p.setDefinition(new CpsFlowDefinition("node('remote') {\n" + "  echo 'Hello'\n" + "}", true));
+        p.setDefinition(new CpsFlowDefinition("""
+            node('remote') {
+              echo 'Hello'
+            }""", true));
         WorkflowRun run = j.buildAndAssertSuccess(p);
         j.waitForCompletion(run);
         waitForLogs(run);
@@ -48,7 +51,7 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
 
     @Test
     @ConfiguredWithCode("jcasc-elastic-backend.yml")
-    public void testCredentialsDoValidate(JenkinsConfiguredWithCodeRule j) {
+    void testCredentialsDoValidate(JenkinsConfiguredWithCodeRule j) {
         elasticStack.configureElasticBackEnd();
         ElasticBackend backend = elasticStack.getElasticBackendConfiguration();
         ElasticBackend.DescriptorImpl descriptor = (ElasticBackend.DescriptorImpl) backend.getDescriptor();
@@ -75,7 +78,7 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
 
     @Test
     @ConfiguredWithCode("jcasc-elastic-backend.yml")
-    public void testDoFillCredentialsIdItems(JenkinsConfiguredWithCodeRule j) {
+    void testDoFillCredentialsIdItems(JenkinsConfiguredWithCodeRule j) {
         elasticStack.configureElasticBackEnd();
         ElasticLogsBackendWithJenkinsVisualization visualization = elasticStack.getElasticStackConfiguration();
         ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor =
@@ -87,7 +90,7 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
 
     @Test
     @ConfiguredWithCode("jcasc-elastic-backend.yml")
-    public void testDoCheckCredentialsId(JenkinsConfiguredWithCodeRule j) {
+    void testDoCheckCredentialsId(JenkinsConfiguredWithCodeRule j) {
         elasticStack.configureElasticBackEnd();
         ElasticLogsBackendWithJenkinsVisualization visualization = elasticStack.getElasticStackConfiguration();
         ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor =
@@ -98,7 +101,7 @@ public class ElasticsearchBackendITTest extends ElasticStackIT {
         assertEquals(FormValidation.Kind.ERROR, visDescriptor.doCheckElasticsearchCredentialsId(null, "foo").kind);
     }
 
-    private void waitForLogs(WorkflowRun run) throws InterruptedException {
+    private void waitForLogs(WorkflowRun run) throws Exception {
         LogStorageRetriever elasticsearchRetriever = elasticStack.getElasticsearchRetriever();
         MonitoringAction action = run.getAction(MonitoringAction.class);
         String traceId = action.getTraceId();

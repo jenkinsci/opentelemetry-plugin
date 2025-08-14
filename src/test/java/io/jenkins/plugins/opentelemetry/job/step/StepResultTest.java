@@ -5,7 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
-import static org.junit.Assume.assumeFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.model.Node;
@@ -14,41 +16,41 @@ import io.jenkins.plugins.opentelemetry.BaseIntegrationTest;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class StepResultTest extends BaseIntegrationTest {
+class StepResultTest extends BaseIntegrationTest {
 
     @Test
-    public void testSimplePipelineWithWithStepResults() throws Exception {
+    void testSimplePipelineWithWithStepResults() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // BEFORE
 
-        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node() {\n"
-                + "    stage('build') {\n"
-                + "       unstable('stage unstable')\n"
-                + "    }\n"
-                + "    stage('parallel') {\n"
-                + "         catchError(stageResult: 'UNSTABLE') {  // otherwise, the timeout stage would never run\n"
-                + "             parallel (\n"
-                + "                 first: { xsh (label: 'parallel-first', script: 'exit 1') },\n"
-                + "                 second: { xsh (label: 'parallel-second', script: 'exit 0') },\n"
-                + "             )\n"
-                + "         }\n"
-                + "    }\n"
-                + "    stage('skipped') {\n"
-                + "        org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional('skipped');\n"
-                + "    }\n"
-                + "    stage('timeout') {\n"
-                + "        timeout(time: 1, unit: 'MILLISECONDS') {\n"
-                + "            xsh (label: 'sleep', script: 'sleep 1')\n"
-                + "        }\n"
-                + "    }\n"
-                + "}";
+        String pipelineScript = """
+            def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};
+            node() {
+                stage('build') {
+                   unstable('stage unstable')
+                }
+                stage('parallel') {
+                     catchError(stageResult: 'UNSTABLE') {  // otherwise, the timeout stage would never run
+                         parallel (
+                             first: { xsh (label: 'parallel-first', script: 'exit 1') },
+                             second: { xsh (label: 'parallel-second', script: 'exit 0') },
+                         )
+                     }
+                }
+                stage('skipped') {
+                    org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional('skipped');
+                }
+                stage('timeout') {
+                    timeout(time: 1, unit: 'MILLISECONDS') {
+                        xsh (label: 'sleep', script: 'sleep 1')
+                    }
+                }
+            }""";
         final Node agent = jenkinsRule.createOnlineSlave();
 
         final String jobName = "test-simple-pipeline-with-step-results" + jobNameSuffix.incrementAndGet();
@@ -96,111 +98,111 @@ public class StepResultTest extends BaseIntegrationTest {
 
         { // node span: 'ABORTED'  (because timeout stage is aborted)
             SpanData actualSpanData = spans.breadthFirstStream()
-                    .filter(sdw -> ExtendedJenkinsAttributes.AGENT_UI.equals(sdw.spanData.getName()))
-                    .findFirst()
-                    .get()
-                    .spanData;
+                .filter(sdw -> ExtendedJenkinsAttributes.AGENT_UI.equals(sdw.spanData().getName()))
+                .findFirst()
+                .get()
+                .spanData();
             String actualStageResult =
                     actualSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT);
-            MatcherAssert.assertThat(actualStageResult, CoreMatchers.is("ABORTED"));
+            assertThat(actualStageResult, is("ABORTED"));
         }
 
         { // node allocation span: 'SUCCESS'
             SpanData actualSpanData = spans.breadthFirstStream()
-                    .filter(sdw -> ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI.equals(sdw.spanData.getName()))
-                    .findFirst()
-                    .get()
-                    .spanData;
+                .filter(sdw -> ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI.equals(sdw.spanData().getName()))
+                .findFirst()
+                .get()
+                .spanData();
             String actualStageResult =
                     actualSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT);
-            MatcherAssert.assertThat(actualStageResult, CoreMatchers.is("SUCCESS"));
+            assertThat(actualStageResult, is("SUCCESS"));
         }
 
         { // stage 'build': 'UNSTABLE'
             SpanData actualSpanData = spans.breadthFirstStream()
-                    .filter(sdw -> "Stage: build".equals(sdw.spanData.getName()))
-                    .findFirst()
-                    .get()
-                    .spanData;
+                .filter(sdw -> "Stage: build".equals(sdw.spanData().getName()))
+                .findFirst()
+                .get()
+                .spanData();
             String actualStageResult =
                     actualSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT);
-            MatcherAssert.assertThat(actualStageResult, CoreMatchers.is("UNSTABLE"));
+            assertThat(actualStageResult, is("UNSTABLE"));
         }
 
         { // stage 'parallel': 'UNSTABLE'  (because catchError caught parallel-first's FAILURE and set stageResult to
             // UNSTABLE)
             SpanData actualSpanData = spans.breadthFirstStream()
-                    .filter(sdw -> "Stage: parallel".equals(sdw.spanData.getName()))
-                    .findFirst()
-                    .get()
-                    .spanData;
+                .filter(sdw -> "Stage: parallel".equals(sdw.spanData().getName()))
+                .findFirst()
+                .get()
+                .spanData();
             String actualStageResult =
                     actualSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT);
-            MatcherAssert.assertThat(actualStageResult, CoreMatchers.is("UNSTABLE"));
+            assertThat(actualStageResult, is("UNSTABLE"));
         }
 
         { // parallel node 'first': 'FAILURE'
             SpanData actualSpanData = spans.breadthFirstStream()
-                    .filter(sdw -> "Parallel branch: first".equals(sdw.spanData.getName()))
-                    .findFirst()
-                    .get()
-                    .spanData;
+                .filter(sdw -> "Parallel branch: first".equals(sdw.spanData().getName()))
+                .findFirst()
+                .get()
+                .spanData();
             String actualStepResult = actualSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT);
-            MatcherAssert.assertThat(actualStepResult, CoreMatchers.is("FAILURE"));
+            assertThat(actualStepResult, is("FAILURE"));
         }
 
         { // xsh node 'parallel-first': 'FAILURE'
             SpanData actualSpanData = spans.breadthFirstStream()
-                    .filter(sdw -> "parallel-first".equals(sdw.spanData.getName()))
-                    .findFirst()
-                    .get()
-                    .spanData;
+                .filter(sdw -> "parallel-first".equals(sdw.spanData().getName()))
+                .findFirst()
+                .get()
+                .spanData();
             String actualStepResult = actualSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT);
-            MatcherAssert.assertThat(actualStepResult, CoreMatchers.is("FAILURE"));
+            assertThat(actualStepResult, is("FAILURE"));
         }
 
         { // parallel node 'second': 'SUCCESS'
             SpanData actualSpanData = spans.breadthFirstStream()
-                    .filter(sdw -> "Parallel branch: second".equals(sdw.spanData.getName()))
-                    .findFirst()
-                    .get()
-                    .spanData;
+                .filter(sdw -> "Parallel branch: second".equals(sdw.spanData().getName()))
+                .findFirst()
+                .get()
+                .spanData();
             String actualStepResult = actualSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT);
-            MatcherAssert.assertThat(actualStepResult, CoreMatchers.is("SUCCESS"));
+            assertThat(actualStepResult, is("SUCCESS"));
         }
 
         { // xsh node 'parallel-second': 'SUCCESS'
             SpanData actualSpanData = spans.breadthFirstStream()
-                    .filter(sdw -> "parallel-second".equals(sdw.spanData.getName()))
-                    .findFirst()
-                    .get()
-                    .spanData;
+                .filter(sdw -> "parallel-second".equals(sdw.spanData().getName()))
+                .findFirst()
+                .get()
+                .spanData();
             String actualStepResult = actualSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT);
-            MatcherAssert.assertThat(actualStepResult, CoreMatchers.is("SUCCESS"));
+            assertThat(actualStepResult, is("SUCCESS"));
         }
 
         { // stage 'skipped': 'NOT_EXECUTED'
             SpanData actualSpanData = spans.breadthFirstStream()
-                    .filter(sdw -> "Stage: skipped".equals(sdw.spanData.getName()))
-                    .findFirst()
-                    .get()
-                    .spanData;
+                .filter(sdw -> "Stage: skipped".equals(sdw.spanData().getName()))
+                .findFirst()
+                .get()
+                .spanData();
             String actualStageResult =
                     actualSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT);
-            MatcherAssert.assertThat(actualStageResult, CoreMatchers.is("NOT_EXECUTED"));
+            assertThat(actualStageResult, is("NOT_EXECUTED"));
         }
 
         { // stage 'timeout': 'ABORTED'
             SpanData actualSpanData = spans.breadthFirstStream()
-                    .filter(sdw -> "Stage: timeout".equals(sdw.spanData.getName()))
-                    .findFirst()
-                    .get()
-                    .spanData;
+                .filter(sdw -> "Stage: timeout".equals(sdw.spanData().getName()))
+                .findFirst()
+                .get()
+                .spanData();
             String actualStageResult =
                     actualSpanData.getAttributes().get(ExtendedJenkinsAttributes.JENKINS_STEP_RESULT);
-            MatcherAssert.assertThat(actualStageResult, CoreMatchers.is("ABORTED"));
+            assertThat(actualStageResult, is("ABORTED"));
         }
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(15L));
+        assertThat(spans.cardinality(), is(15L));
     }
 }

@@ -5,16 +5,15 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry.common;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import io.opentelemetry.sdk.common.Clock;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class MonotonicClockTest {
+class MonotonicClockTest {
 
     @Test
-    public void nowHighPrecision() {
-
+    void nowHighPrecision() {
         long previousTimestamp = 0;
         Clock clock = Clocks.monotonicClock();
         long singleIncrements = 0;

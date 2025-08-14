@@ -5,8 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static org.hamcrest.Matchers.is;
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
-import static org.junit.Assume.assumeFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.model.Cause;
@@ -20,31 +22,39 @@ import hudson.tasks.Shell;
 import hudson.tasks._ant.AntTargetNote;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
+import java.io.File;
 import java.util.List;
 import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.rules.TemporaryFolder;
-import org.junit.rules.TestRule;
 import org.jvnet.hudson.test.FailureBuilder;
 import org.jvnet.hudson.test.FakeChangeLogSCM;
-import org.jvnet.hudson.test.FlagRule;
 import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
-public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
+class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
 
-    @Rule
-    public TemporaryFolder tmp = new TemporaryFolder();
+    @TempDir
+    private File tmp;
 
-    @Rule
-    public TestRule antTargetNoteEnabled = new FlagRule<>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
+    private boolean antTargetNoteEnabled;
+
+    @BeforeEach
+    void setUp() {
+        antTargetNoteEnabled = AntTargetNote.ENABLED;
+    }
+
+    @AfterEach
+    void tearDown() {
+        AntTargetNote.ENABLED = antTargetNoteEnabled;
+    }
 
     @Test
-    public void testFreestyleJob() throws Exception {
+    void testFreestyleJob() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
@@ -57,7 +67,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+        assertThat(spans.cardinality(), is(5L));
 
         assertFreestyleJobMetadata(build, spans);
         assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
@@ -65,7 +75,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     }
 
     @Test
-    public void testFreestyleJob_with_multiple_builders() throws Exception {
+    void testFreestyleJob_with_multiple_builders() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "test-multiple-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
@@ -80,7 +90,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
+        assertThat(spans.cardinality(), is(6L));
 
         assertFreestyleJobMetadata(build, spans);
         assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
@@ -88,7 +98,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     }
 
     @Test
-    public void testFreestyleJobFailed() throws Exception {
+    void testFreestyleJobFailed() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "test-failed-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
@@ -101,7 +111,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+        assertThat(spans.cardinality(), is(5L));
 
         assertFreestyleJobMetadata(build, spans);
         assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
@@ -109,7 +119,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     }
 
     @Test
-    public void testFreestyleJob_with_publishers() throws Exception {
+    void testFreestyleJob_with_publishers() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String jobName = "test-publisher-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
@@ -126,7 +136,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "archiveArtifacts", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
+        assertThat(spans.cardinality(), is(6L));
 
         assertFreestyleJobMetadata(build, spans);
         assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
@@ -134,7 +144,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     }
 
     @Test
-    public void testFreestyleJob_with_assigned_node() throws Exception {
+    void testFreestyleJob_with_assigned_node() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "test-assigned-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
@@ -151,7 +161,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
             checkChainOfSpans(spans, "Phase: Start", rootSpanName);
             checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
             checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+            assertThat(spans.cardinality(), is(5L));
 
             assertFreestyleJobMetadata(build, spans);
             assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
@@ -162,7 +172,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     }
 
     @Test
-    public void testFreestyleJob_with_causes() throws Exception {
+    void testFreestyleJob_with_causes() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "test-cause-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
@@ -170,15 +180,15 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         jenkinsRule.assertBuildStatusSuccess(project.scheduleBuild2(0, new Cause.UserIdCause()));
         Tree<SpanDataWrapper> spans = getBuildTrace();
         List<SpanDataWrapper> root = spans.byDepth().get(0);
-        Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(
+        Attributes attributes = root.get(0).spanData().getAttributes();
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_CAUSE),
-                CoreMatchers.is(List.of("UserIdCause:SYSTEM")));
+                is(List.of("UserIdCause:SYSTEM")));
     }
 
     @Test
     @WithPlugin("ant")
-    public void testFreestyleJob_with_ant_plugin() throws Exception {
+    void testFreestyleJob_with_ant_plugin() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "test-ant-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
@@ -200,7 +210,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
             checkChainOfSpans(spans, "Phase: Start", rootSpanName);
             checkChainOfSpans(spans, "ant", "Phase: Run", rootSpanName);
             checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+            assertThat(spans.cardinality(), is(5L));
 
             assertFreestyleJobMetadata(build, spans);
             assertBuildStepMetadata(spans, "ant", "ant");
@@ -213,11 +223,13 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     // See
     // https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
     private Ant.AntInstallation configureDefaultAnt() throws Exception {
-        return ToolInstallations.configureDefaultAnt(tmp);
+        TemporaryFolder temp = new TemporaryFolder(tmp);
+        temp.create();
+        return ToolInstallations.configureDefaultAnt(temp);
     }
 
     @Test
-    public void testFreestyleJob_with_culprits() throws Exception {
+    void testFreestyleJob_with_culprits() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // See
         // https://github.com/abayer/jenkins/blob/914963c22317e7d72cf7e3e7d9ed8ab57709ccb0/test/src/test/java/hudson/model/AbstractBuildTest.java#L135-L150
@@ -252,9 +264,9 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "Phase: Run", rootSpanName);
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
-        Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_COMMITTERS), CoreMatchers.is(List.of("bob")));
+        Attributes attributes = root.get(0).spanData().getAttributes();
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_COMMITTERS), is(List.of("bob")));
 
         assertFreestyleJobMetadata(build, spans);
     }

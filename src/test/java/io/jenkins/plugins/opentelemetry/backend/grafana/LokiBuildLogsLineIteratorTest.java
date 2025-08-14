@@ -5,8 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.jenkins.plugins.opentelemetry.job.log.LogLine;
@@ -19,12 +18,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class LokiBuildLogsLineIteratorTest {
+class LokiBuildLogsLineIteratorTest {
 
     @Test
-    public void testLoadLokiQueryResponse() {
+    void testLoadLokiQueryResponse() throws Exception {
         CloseableHttpClient httpClient = HttpClients.custom().build();
 
         Instant pipelineStartTime =
@@ -56,8 +55,6 @@ public class LokiBuildLogsLineIteratorTest {
                 LogLine<Long> logLine = logLines.next();
                 System.out.println(logLine);
             }
-        } catch (Exception e) {
-            fail(e.getMessage());
         }
     }
 }

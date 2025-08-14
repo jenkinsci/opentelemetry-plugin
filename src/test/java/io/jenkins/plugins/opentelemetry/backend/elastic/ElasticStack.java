@@ -18,20 +18,18 @@ import org.testcontainers.containers.wait.strategy.DockerHealthcheckWaitStrategy
 /**
  * Elastic Stack containers used on the tests.
  */
-public class ElasticStack extends ComposeContainer {
-    public static final String EDOT_SERVICE = "edot-1";
-    public static final String KIBANA_SERVICE = "kibana-1";
-    public static final String ELASTICSEARCH_SERVICE = "elasticsearch-1";
-    public static final String USER_NAME = "admin";
-    public static final String PASSWORD = "changeme";
-    public static final String INDEX = "logs-001";
+class ElasticStack extends ComposeContainer {
 
-    public static final int OTEL_PORT = 4317;
-    public static final int KIBANA_PORT = 5601;
-    public static final int ELASTICSEARCH_PORT = 9200;
+    protected static final String EDOT_SERVICE = "edot-1";
+    private static final String KIBANA_SERVICE = "kibana-1";
+    private static final String ELASTICSEARCH_SERVICE = "elasticsearch-1";
 
-    public static final String WRONG_CREDS = "wrongCreds";
-    public static final String CRED_ID = "credID";
+    protected static final int OTEL_PORT = 4317;
+    private static final int KIBANA_PORT = 5601;
+    private static final int ELASTICSEARCH_PORT = 9200;
+
+    protected static final String WRONG_CREDS = "wrongCreds";
+    protected static final String CRED_ID = "credID";
 
     private ElasticLogsBackendWithJenkinsVisualization elasticStackConfiguration;
     private ElasticBackend elasticBackendConfiguration;

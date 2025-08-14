@@ -13,14 +13,16 @@ import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
 
-public class JenkinsControllerOpenTelemetryTest {
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+class JenkinsControllerOpenTelemetryTest {
 
     @Test
-    public void testOverwriteDefaultConfig() {
+    void testOverwriteDefaultConfig() {
         String serviceNameDefinedInConfig = null;
         String serviceNamespaceDefinedInConfig = null;
         String expectedServiceName = "jenkins";
@@ -34,7 +36,7 @@ public class JenkinsControllerOpenTelemetryTest {
     }
 
     @Test
-    public void testDefaultConfig() {
+    void testDefaultConfig() {
         String serviceNameDefinedInConfig = "my-jenkins";
         String serviceNamespaceDefinedInConfig = "my-namespace";
         String expectedServiceName = "my-jenkins";
@@ -75,15 +77,15 @@ public class JenkinsControllerOpenTelemetryTest {
         Resource resource = reconfigurableOpenTelemetry.getResource();
         // resource.getAttributes().forEach((key, value)-> System.out.println(key + ": " + value));
 
-        MatcherAssert.assertThat(
-                resource.getAttribute(ServiceAttributes.SERVICE_NAME), CoreMatchers.is(expectedServiceName));
-        MatcherAssert.assertThat(
+        assertThat(
+                resource.getAttribute(ServiceAttributes.SERVICE_NAME), is(expectedServiceName));
+        assertThat(
                 resource.getAttribute(ServiceIncubatingAttributes.SERVICE_NAMESPACE),
-                CoreMatchers.is(expectedServiceNamespace));
+                is(expectedServiceNamespace));
         if (System.getenv("JENKINS_URL") == null && System.getProperty("jenkins.url") == null) {
-            MatcherAssert.assertThat(
+            assertThat(
                     resource.getAttribute(ExtendedJenkinsAttributes.JENKINS_URL),
-                    CoreMatchers.is("https://jenkins.example.com/"));
+                    is("https://jenkins.example.com/"));
         } else {
             // on ci.jenkins.io, the JENKINS_URL environment variable is set to 'https://ci.jenkins.io", breaking the
             // check
@@ -91,9 +93,9 @@ public class JenkinsControllerOpenTelemetryTest {
                     + "#testDefaultConfigurationOverwrite: skip verification of Resource['jenkins.url'] "
                     + "because the environment variable or the system property is specified");
         }
-        MatcherAssert.assertThat(
-                resource.getAttribute(ExtendedJenkinsAttributes.JENKINS_VERSION), CoreMatchers.is("1.2.3"));
-        MatcherAssert.assertThat(resource.getAttribute(ServiceAttributes.SERVICE_VERSION), CoreMatchers.is("1.2.3"));
+        assertThat(
+                resource.getAttribute(ExtendedJenkinsAttributes.JENKINS_VERSION), is("1.2.3"));
+        assertThat(resource.getAttribute(ServiceAttributes.SERVICE_VERSION), is("1.2.3"));
 
         reconfigurableOpenTelemetry.close();
     }

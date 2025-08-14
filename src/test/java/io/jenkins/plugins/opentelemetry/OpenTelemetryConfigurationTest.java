@@ -9,14 +9,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.Test;
 
-public class OpenTelemetryConfigurationTest {
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+class OpenTelemetryConfigurationTest {
 
     @Test
-    public void testSingleOpenTelemetryExporters() {
+    void testSingleOpenTelemetryExporters() {
         String expectedTracesExporter = "otlp";
         String expectedMetricsExporter = "otlp";
         String expectedLogsExporter = null;
@@ -33,7 +35,7 @@ public class OpenTelemetryConfigurationTest {
     }
 
     @Test
-    public void testMultipleOpenTelemetryExporters_1() {
+    void testMultipleOpenTelemetryExporters_1() {
         String expectedTracesExporter = "otlp";
         String expectedMetricsExporter = "otlp,prometheus";
         String expectedLogsExporter = null;
@@ -51,7 +53,7 @@ public class OpenTelemetryConfigurationTest {
     }
 
     @Test
-    public void testMultipleOpenTelemetryExporters_2() {
+    void testMultipleOpenTelemetryExporters_2() {
         String expectedTracesExporter = "otlp";
         String expectedMetricsExporter = "prometheus,otlp";
         String expectedLogsExporter = null;
@@ -68,7 +70,7 @@ public class OpenTelemetryConfigurationTest {
     }
 
     @Test
-    public void testMultipleOpenTelemetryExporters_3() {
+    void testMultipleOpenTelemetryExporters_3() {
         String expectedTracesExporter = "otlp";
         String expectedMetricsExporter = "none";
         String expectedLogsExporter = null;
@@ -85,7 +87,7 @@ public class OpenTelemetryConfigurationTest {
     }
 
     @Test
-    public void testMultipleOpenTelemetryExporters_4() {
+    void testMultipleOpenTelemetryExporters_4() {
         String expectedTracesExporter = "none";
         String expectedMetricsExporter = "otlp";
         String expectedLogsExporter = null;
@@ -102,7 +104,7 @@ public class OpenTelemetryConfigurationTest {
     }
 
     @Test
-    public void testMultipleOpenTelemetryExporters_5() {
+    void testMultipleOpenTelemetryExporters_5() {
         String expectedTracesExporter = "otlp";
         String expectedMetricsExporter = "otlp";
         String expectedLogsExporter = "none";
@@ -138,8 +140,8 @@ public class OpenTelemetryConfigurationTest {
         String actualMetricsExporter = actualOtelProperties.get("otel.metrics.exporter");
         String actualLogsExporter = actualOtelProperties.get("otel.logs.exporter");
 
-        MatcherAssert.assertThat(actualTracesExporter, Matchers.is(expectedTracesExporter));
-        MatcherAssert.assertThat(actualMetricsExporter, Matchers.is(expectedMetricsExporter));
-        MatcherAssert.assertThat(actualLogsExporter, Matchers.is(expectedLogsExporter));
+        assertThat(actualTracesExporter, is(expectedTracesExporter));
+        assertThat(actualMetricsExporter, is(expectedMetricsExporter));
+        assertThat(actualLogsExporter, is(expectedLogsExporter));
     }
 }

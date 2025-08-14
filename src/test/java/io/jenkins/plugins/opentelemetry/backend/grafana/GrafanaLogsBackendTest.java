@@ -13,13 +13,12 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class GrafanaLogsBackendTest {
+class GrafanaLogsBackendTest {
 
     @Test
-    public void getBuildLogsVisualizationMessageTemplate() {
-
+    void getBuildLogsVisualizationMessageTemplate() {
         Instant startTime =
                 ZonedDateTime.of(2023, 10, 15, 22, 34, 0, 0, ZoneId.of("UTC")).toInstant();
 

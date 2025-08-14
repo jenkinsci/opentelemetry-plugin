@@ -8,21 +8,24 @@ package io.jenkins.plugins.opentelemetry;
 import static com.google.common.base.Verify.verify;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyOrNullString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.cloudbees.hudson.plugins.folder.computed.FolderComputation;
 import com.github.rutledgepaulv.prune.Tree;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.EnvVars;
 import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.plugins.git.GitSCM;
-import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
-import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
-import io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributorService;
+import io.jenkins.plugins.casc.ConfigurationAsCode;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
-import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
+import io.jenkins.plugins.opentelemetry.rules.ExtendedGitSampleRepoRule;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
@@ -50,23 +53,22 @@ import java.util.function.BiPredicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import jenkins.plugins.git.ExtendedGitSampleRepoRule;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
+
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.jvnet.hudson.test.BuildWatcher;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class BaseIntegrationTest {
+@WithJenkins
+public abstract class BaseIntegrationTest {
+
     private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     static {
@@ -75,33 +77,34 @@ public class BaseIntegrationTest {
         GitSCM.ALLOW_LOCAL_CHECKOUT = true;
     }
 
-    public static final AtomicInteger jobNameSuffix = new AtomicInteger();
+    protected static final AtomicInteger jobNameSuffix = new AtomicInteger();
 
-    @ClassRule
-    public static BuildWatcher buildWatcher = new BuildWatcher();
+    @SuppressWarnings("unused")
+    @RegisterExtension
+    private static final BuildWatcherExtension BUILD_WATCHER = new BuildWatcherExtension();
 
-    @ClassRule
-    @ConfiguredWithCode("jcasc-elastic-backend.yml")
-    public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
+    protected static JenkinsRule jenkinsRule;
 
-    @Rule
-    public ExtendedGitSampleRepoRule sampleRepo = new ExtendedGitSampleRepoRule();
+    @RegisterExtension
+    protected final ExtendedGitSampleRepoRule sampleRepo = new ExtendedGitSampleRepoRule();
 
     static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
-    @Before
-    public void before() throws Exception {}
+    @BeforeEach
+    void beforeEach() {}
 
-    @After
-    public void after() throws Exception {
+    @AfterEach
+    void afterEach() throws Exception {
         jenkinsRule.waitUntilNoActivity();
         InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
         InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
     }
 
-    @BeforeClass
-    public static void beforeClass() throws Exception {
+    @BeforeAll
+    static void beforeAll(JenkinsRule rule) throws Exception {
         LOGGER.log(Level.INFO, "beforeClass()");
+        jenkinsRule = rule;
+        ConfigurationAsCode.get().configure(BaseIntegrationTest.class.getResource("jcasc-elastic-backend.yml").toExternalForm());
         LOGGER.log(Level.INFO, "Wait for jenkins to start...");
         jenkinsRule.waitUntilNoActivity();
         LOGGER.log(Level.INFO, "Jenkins started");
@@ -135,11 +138,16 @@ public class BaseIntegrationTest {
         // jenkinsControllerOpenTelemetry.tracer.setDelegate(jenkinsControllerOpenTelemetry.openTelemetry.getTracer("jenkins"));
     }
 
+    @AfterAll
+    static void afterAll() {
+        GlobalOpenTelemetry.resetForTest();
+    }
+
     protected void checkChainOfSpans(Tree<SpanDataWrapper> spanTree, String... expectedSpanNames) {
         final List<String> expectedSpanNamesList = Arrays.asList(expectedSpanNames);
         final Iterator<String> expectedSpanNamesIt = expectedSpanNamesList.iterator();
         if (!expectedSpanNamesIt.hasNext()) {
-            Assert.fail("No element in the list of expected spans for " + Arrays.asList(expectedSpanNames));
+            fail("No element in the list of expected spans for " + Arrays.asList(expectedSpanNames));
         }
         final String leafSpanName = expectedSpanNamesIt.next();
         Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(node -> {
@@ -150,21 +158,21 @@ public class BaseIntegrationTest {
             return Objects.equals(leafSpanName, node.getData().spanData.getName());
         });
 
-        MatcherAssert.assertThat(
+        assertThat(
                 "Expected leaf span '" + leafSpanName + "' in chain of span" + expectedSpanNamesList + " not found",
                 actualNodeOptional.isPresent(),
-                CoreMatchers.is(true));
+                is(true));
 
         while (expectedSpanNamesIt.hasNext()) {
             String expectedSpanName = expectedSpanNamesIt.next();
             actualNodeOptional = actualNodeOptional.get().getParent();
             final String actualSpanName =
                     actualNodeOptional.get().getData().spanData.getName();
-            MatcherAssert.assertThat(
+            assertThat(
                     "Expected span '" + expectedSpanName + "' in chain of span" + expectedSpanNamesList
                             + " not found, actual is '" + actualSpanName + "'",
                     actualSpanName,
-                    CoreMatchers.is(expectedSpanName));
+                    is(expectedSpanName));
         }
     }
 
@@ -249,80 +257,59 @@ public class BaseIntegrationTest {
                 "No root span found starting with " + rootSpanPrefix + " and index " + traceIndex);
     }
 
-    protected void assertEnvironmentVariables(EnvVars environment) {
-        MatcherAssert.assertThat(
-                environment.get(OtelEnvironmentContributorService.SPAN_ID),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(
-                environment.get(OtelEnvironmentContributorService.TRACE_ID),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
-        // See src/test/resources/io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
-        MatcherAssert.assertThat(
-                environment.get(ConfigurationKey.OTEL_TRACES_EXPORTER.asEnvVar()), CoreMatchers.is("otlp"));
-        MatcherAssert.assertThat(
-                environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_ENDPOINT.asEnvVar()),
-                CoreMatchers.is("http://otel-collector-contrib:4317"));
-        MatcherAssert.assertThat(
-                environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_INSECURE.asEnvVar()), CoreMatchers.is("true"));
-        MatcherAssert.assertThat(
-                environment.get(ConfigurationKey.OTEL_EXPORTER_OTLP_TIMEOUT.asEnvVar()), CoreMatchers.is("3000"));
-    }
-
-    protected void assertJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans, String jobType)
-            throws Exception {
+    protected void assertJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans, String jobType) {
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(jobType));
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
+        assertThat(attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), is(jobType));
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), nullValue());
     }
 
-    protected void assertFreestyleJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) throws Exception {
+    protected void assertFreestyleJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) {
         assertJobMetadata(build, spans, OtelUtils.FREESTYLE);
     }
 
-    protected void assertMatrixJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) throws Exception {
+    protected void assertMatrixJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) {
         assertJobMetadata(build, spans, OtelUtils.MATRIX);
     }
 
-    protected void assertMavenJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) throws Exception {
+    protected void assertMavenJobMetadata(AbstractBuild<?, ?> build, Tree<SpanDataWrapper> spans) {
         assertJobMetadata(build, spans, OtelUtils.MAVEN);
     }
 
-    protected void assertNodeMetadata(Tree<SpanDataWrapper> spans, String jobName, boolean withNode) throws Exception {
+    protected void assertNodeMetadata(Tree<SpanDataWrapper> spans, String jobName, boolean withNode) {
         Optional<Tree.Node<SpanDataWrapper>> shell = spans.breadthFirstSearchNodes(
                 node -> jobName.equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(shell, CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(shell, is(notNullValue()));
         Attributes attributes = shell.get().getData().spanData.getAttributes();
 
         if (withNode) {
-            MatcherAssert.assertThat(
+            assertThat(
                     attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL),
-                    CoreMatchers.not(Matchers.emptyOrNullString()));
+                    not(emptyOrNullString()));
         } else {
-            MatcherAssert.assertThat(
+            assertThat(
                     attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL),
-                    CoreMatchers.is(Matchers.emptyOrNullString()));
+                    is(emptyOrNullString()));
         }
-        MatcherAssert.assertThat(
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_NAME),
-                CoreMatchers.not(Matchers.emptyOrNullString()));
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_ID), Matchers.notNullValue());
+                not(emptyOrNullString()));
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_ID), notNullValue());
     }
 
-    protected void assertBuildStepMetadata(Tree<SpanDataWrapper> spans, String stepName, String pluginName)
-            throws Exception {
+    protected void assertBuildStepMetadata(Tree<SpanDataWrapper> spans, String stepName, String pluginName) {
         Optional<Tree.Node<SpanDataWrapper>> step = spans.breadthFirstSearchNodes(
                 node -> stepName.equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(step, CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(step, is(notNullValue()));
         Attributes attributes = step.get().getData().spanData.getAttributes();
 
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), CoreMatchers.is(pluginName));
-        MatcherAssert.assertThat(
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME), is(pluginName));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
+                is(notNullValue()));
     }
 
     /**
@@ -366,14 +353,14 @@ public class BaseIntegrationTest {
 
     // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java
     @NonNull
-    public static WorkflowJob scheduleAndFindBranchProject(@NonNull WorkflowMultiBranchProject mp, @NonNull String name)
+    protected static WorkflowJob scheduleAndFindBranchProject(@NonNull WorkflowMultiBranchProject mp, @NonNull String name)
             throws Exception {
         mp.scheduleBuild2(0).getFuture().get();
         return findBranchProject(mp, name);
     }
 
     // https://github.com/jenkinsci/workflow-multibranch-plugin/blob/master/src/test/java/org/jenkinsci/plugins/workflow/multibranch/WorkflowMultiBranchProjectTest.java
-    public static @NonNull WorkflowJob findBranchProject(@NonNull WorkflowMultiBranchProject mp, @NonNull String name)
+    protected static @NonNull WorkflowJob findBranchProject(@NonNull WorkflowMultiBranchProject mp, @NonNull String name)
             throws Exception {
         WorkflowJob p = mp.getItem(name);
         showIndexing(mp);
@@ -391,20 +378,10 @@ public class BaseIntegrationTest {
         System.out.println("---%<--- ");
     }
 
-    @AfterClass
-    public static void afterClass() {
-        GlobalOpenTelemetry.resetForTest();
-    }
-
-    public static class SpanDataWrapper {
-        public final SpanData spanData;
-
-        public SpanDataWrapper(SpanData spanData) {
-            this.spanData = spanData;
-        }
+    public record SpanDataWrapper(SpanData spanData) {
 
         @Override
-        public String toString() {
+        public @NotNull String toString() {
             String result = spanData.getName();
 
             final Attributes attributes = spanData.getAttributes();
@@ -422,8 +399,8 @@ public class BaseIntegrationTest {
                 result += ", status.code: " + status.getStatusCode();
             }
             if (status != null
-                    && status.getDescription() != null
-                    && !status.getDescription().isEmpty()) {
+                && status.getDescription() != null
+                && !status.getDescription().isEmpty()) {
                 result += ", status.description: " + status.getDescription();
             }
             return result;

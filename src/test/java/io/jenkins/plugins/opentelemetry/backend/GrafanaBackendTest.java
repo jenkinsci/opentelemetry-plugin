@@ -9,12 +9,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class GrafanaBackendTest {
+class GrafanaBackendTest {
 
     @Test
-    public void testTraceUrl() {
+    void testTraceUrl() {
         GrafanaBackend grafanaBackend = new GrafanaBackend();
         grafanaBackend.setGrafanaBaseUrl("https://cleclerc.grafana.net");
         grafanaBackend.setGrafanaOrgId("1");

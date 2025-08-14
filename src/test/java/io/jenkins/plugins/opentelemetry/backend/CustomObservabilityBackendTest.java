@@ -8,32 +8,34 @@ package io.jenkins.plugins.opentelemetry.backend;
 import groovy.text.GStringTemplateEngine;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.ServiceAttributes;
-import java.io.IOException;
+
 import java.util.Collections;
 import java.util.Map;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
 
-public class CustomObservabilityBackendTest {
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+class CustomObservabilityBackendTest {
 
     @Test
-    public void testGetMetricsVisualizationUrl() {
+    void testGetMetricsVisualizationUrl() {
         CustomObservabilityBackend backend = new CustomObservabilityBackend();
         backend.setMetricsVisualizationUrlTemplate(
                 "https://observability.Example.com/dashboards/jenkins?service.name=${resource['service.name']}");
-        MatcherAssert.assertThat("service.name", CoreMatchers.is(ServiceAttributes.SERVICE_NAME.getKey()));
+        assertThat("service.name", is(ServiceAttributes.SERVICE_NAME.getKey()));
         Resource resource = Resource.builder()
                 .put(ServiceAttributes.SERVICE_NAME, "jenkins")
                 .build();
 
         String actual = backend.getMetricsVisualizationUrl(resource);
-        MatcherAssert.assertThat(
-                actual, CoreMatchers.is("https://observability.Example.com/dashboards/jenkins?service.name=jenkins"));
+        assertThat(
+                actual, is("https://observability.Example.com/dashboards/jenkins?service.name=jenkins"));
     }
 
     @Test
-    public void testGStringTemplateEngine() throws IOException, ClassNotFoundException {
+    void testGStringTemplateEngine() throws Exception {
         String template =
                 "https://observability.Example.com/dashboards/jenkins?service.name=${resource['service.name']}";
 
@@ -44,7 +46,7 @@ public class CustomObservabilityBackendTest {
                 .createTemplate(template)
                 .make(binding)
                 .toString();
-        MatcherAssert.assertThat(
-                actual, CoreMatchers.is("https://observability.Example.com/dashboards/jenkins?service.name=jenkins"));
+        assertThat(
+                actual, is("https://observability.Example.com/dashboards/jenkins?service.name=jenkins"));
     }
 }

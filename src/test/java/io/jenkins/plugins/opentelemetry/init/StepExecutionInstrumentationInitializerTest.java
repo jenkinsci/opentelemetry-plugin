@@ -7,12 +7,12 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import java.util.Collections;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class StepExecutionInstrumentationInitializerTest {
+class StepExecutionInstrumentationInitializerTest {
 
     @Test
-    public void testAfterConfiguration() {
+    void testAfterConfiguration() {
         StepExecutionInstrumentationInitializer stepExecutionInstrumentationInitializer =
                 new StepExecutionInstrumentationInitializer();
         stepExecutionInstrumentationInitializer.afterConfiguration(
