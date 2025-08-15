@@ -43,8 +43,11 @@ unclassified:
     observabilityBackends:
       - grafana:
           grafanaBaseUrl: ${GRAFANA_HOST}
+          tempoDataSourceIdentifier: "example-jaeger"
           grafanaLogsBackend:
             grafanaLogsBackendWithJenkinsVisualization:
+              grafanaLokiDatasourceIdentifier: "example-loki"
+              lokiOTelLogFormat: "LOKI_V3_OTEL_FORMAT"
               lokiUrl: ${LOKI_HOST}
 jobs:
   - file: "/var/jenkins_home/config/ansible.dsl"
