@@ -26,19 +26,20 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class SpanContextPropagationSynchronousNonBlockingTestStep extends Step implements Serializable {
+
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private static final Logger logger =
+    private static final Logger LOGGER =
             Logger.getLogger(SpanContextPropagationSynchronousNonBlockingTestStep.class.getName());
-    transient OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
-    transient Tracer tracer = openTelemetry.getTracer("io.jenkins.opentelemetry.test");
+    private transient OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
+    private transient Tracer tracer = openTelemetry.getTracer("io.jenkins.opentelemetry.test");
 
     @DataBoundConstructor
     public SpanContextPropagationSynchronousNonBlockingTestStep() {}
 
     @Override
-    public StepExecution start(StepContext context) throws Exception {
+    public StepExecution start(StepContext context) {
         return new StepExecution(context);
     }
 

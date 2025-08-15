@@ -5,18 +5,19 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import hudson.model.FreeStyleProject;
 import javaposse.jobdsl.plugin.ExecuteDslScripts;
 import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class JobDslIntegrationTest extends BaseIntegrationTest {
+class JobDslIntegrationTest extends BaseIntegrationTest {
+
     @Test
-    public void testJobDslJob() throws Exception {
+    void testJobDslJob() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String seedJobName = "test-job-dsl-seed-" + jobNameSuffix.incrementAndGet();
         String generatedJobName = "test-job-dsl-generated-job-" + jobNameSuffix.incrementAndGet();
@@ -27,7 +28,7 @@ public class JobDslIntegrationTest extends BaseIntegrationTest {
         jenkinsRule.buildAndAssertSuccess(seedProject);
 
         FreeStyleProject generatedJob = (FreeStyleProject) jenkinsRule.jenkins.getItemByFullName(generatedJobName);
-        MatcherAssert.assertThat(generatedJob, CoreMatchers.notNullValue());
+        assertThat(generatedJob, notNullValue());
 
         jenkinsRule.buildAndAssertSuccess(generatedJob);
         getBuildTrace();

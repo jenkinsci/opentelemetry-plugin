@@ -5,16 +5,17 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class MonitoringRunListenerTest {
+class MonitoringRunListenerTest {
 
     @Test
-    public void test_default_allow_deny_list() {
+    void test_default_allow_deny_list() {
         MonitoringRunListener monitoringRunListener = new MonitoringRunListener();
         Map<String, String> configProperties = Map.of();
         monitoringRunListener.afterConfiguration(DefaultConfigProperties.createFromMap(configProperties));
@@ -30,7 +31,7 @@ public class MonitoringRunListenerTest {
     }
 
     @Test
-    public void test_deny_list_matching() {
+    void test_deny_list_matching() {
         MonitoringRunListener monitoringRunListener = new MonitoringRunListener();
         Map<String, String> configProperties = Map.of(
                 "otel.instrumentation.jenkins.run.metric.duration.allow_list",
@@ -50,7 +51,7 @@ public class MonitoringRunListenerTest {
     }
 
     @Test
-    public void test_deny_list_not_matching() {
+    void test_deny_list_not_matching() {
         MonitoringRunListener monitoringRunListener = new MonitoringRunListener();
         Map<String, String> configProperties = Map.of(
                 "otel.instrumentation.jenkins.run.metric.duration.allow_list",
@@ -70,7 +71,7 @@ public class MonitoringRunListenerTest {
     }
 
     @Test
-    public void test_allow_list_matching() {
+    void test_allow_list_matching() {
         MonitoringRunListener monitoringRunListener = new MonitoringRunListener();
         Map<String, String> configProperties =
                 Map.of("otel.instrumentation.jenkins.run.metric.duration.allow_list", "my-team/.*");
@@ -87,7 +88,7 @@ public class MonitoringRunListenerTest {
     }
 
     @Test
-    public void test_allow_list_not_matching() {
+    void test_allow_list_not_matching() {
         MonitoringRunListener monitoringRunListener = new MonitoringRunListener();
         Map<String, String> configProperties =
                 Map.of("otel.instrumentation.jenkins.run.metric.duration.allow_list", "my-team/.*");

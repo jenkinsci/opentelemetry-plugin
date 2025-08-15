@@ -5,128 +5,129 @@
 
 package io.jenkins.plugins.opentelemetry.backend;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithJenkinsVisualization;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithoutJenkinsVisualization;
 import io.jenkins.plugins.opentelemetry.backend.elastic.NoElasticLogsBackend;
 import java.util.Collections;
 import java.util.Map;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class ElasticBackendTest {
+class ElasticBackendTest {
 
     @Test
-    public void testNoElasticLogsBackend() {
+    void testNoElasticLogsBackend() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setElasticLogsBackend(new NoElasticLogsBackend());
         Map<String, String> actual = elasticBackend.getOtelConfigurationProperties();
         Map<String, String> expected = Collections.emptyMap();
-        Assert.assertEquals(actual, expected);
+        assertEquals(actual, expected);
     }
 
     @Test
-    public void testElasticLogsBackendWithJenkinsVisualization() {
+    void testElasticLogsBackendWithJenkinsVisualization() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setElasticLogsBackend(new ElasticLogsBackendWithJenkinsVisualization());
         Map<String, String> actual = elasticBackend.getOtelConfigurationProperties();
         Map<String, String> expected = Collections.singletonMap("otel.logs.exporter", "otlp");
-        Assert.assertEquals(actual, expected);
+        assertEquals(actual, expected);
     }
 
     @Test
-    public void testElasticLogsBackendWithoutJenkinsVisualization() {
+    void testElasticLogsBackendWithoutJenkinsVisualization() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setElasticLogsBackend(new ElasticLogsBackendWithoutJenkinsVisualization());
         Map<String, String> actual = elasticBackend.getOtelConfigurationProperties();
         Map<String, String> expected = Collections.singletonMap("otel.logs.exporter", "otlp");
-        Assert.assertEquals(actual, expected);
+        assertEquals(actual, expected);
     }
 
     @Test
-    public void testGetKibanaBaseUrlRemovesTrailingSlash() {
+    void testGetKibanaBaseUrlRemovesTrailingSlash() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setKibanaBaseUrl("http://localhost:5601/");
-        Assert.assertEquals("http://localhost:5601", elasticBackend.getKibanaBaseUrl());
+        assertEquals("http://localhost:5601", elasticBackend.getKibanaBaseUrl());
     }
 
     @Test
-    public void testGetKibanaBaseUrlReturnsNullIfUnset() {
+    void testGetKibanaBaseUrlReturnsNullIfUnset() {
         ElasticBackend elasticBackend = new ElasticBackend();
-        Assert.assertNull(elasticBackend.getKibanaBaseUrl());
+        assertNull(elasticBackend.getKibanaBaseUrl());
     }
 
     @Test
-    public void testGetEffectiveKibanaURLWithSpaceIdentifier() {
+    void testGetEffectiveKibanaURLWithSpaceIdentifier() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setKibanaBaseUrl("http://localhost:5601");
         elasticBackend.setKibanaSpaceIdentifier("my-space");
-        Assert.assertEquals("http://localhost:5601/s/my-space", elasticBackend.getEffectiveKibanaURL());
+        assertEquals("http://localhost:5601/s/my-space", elasticBackend.getEffectiveKibanaURL());
     }
 
     @Test
-    public void testGetEffectiveKibanaURLWithoutSpaceIdentifier() {
+    void testGetEffectiveKibanaURLWithoutSpaceIdentifier() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setKibanaBaseUrl("http://localhost:5601");
         elasticBackend.setKibanaSpaceIdentifier("");
-        Assert.assertEquals("http://localhost:5601", elasticBackend.getEffectiveKibanaURL());
+        assertEquals("http://localhost:5601", elasticBackend.getEffectiveKibanaURL());
     }
 
     @Test
-    public void testGetMetricsVisualizationUrlTemplateWhenDisplayLinkFalse() {
+    void testGetMetricsVisualizationUrlTemplateWhenDisplayLinkFalse() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setDisplayKibanaDashboardLink(false);
-        Assert.assertNull(elasticBackend.getMetricsVisualizationUrlTemplate());
+        assertNull(elasticBackend.getMetricsVisualizationUrlTemplate());
     }
 
     @Test
-    public void testGetMetricsVisualizationUrlTemplateWhenDisplayLinkTrue() {
+    void testGetMetricsVisualizationUrlTemplateWhenDisplayLinkTrue() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setDisplayKibanaDashboardLink(true);
         elasticBackend.setKibanaBaseUrl("http://localhost:5601");
         elasticBackend.setKibanaSpaceIdentifier("space");
         elasticBackend.setKibanaDashboardUrlParameters("foo=bar");
         String expected = "http://localhost:5601/s/space/app/kibana#/dashboards?foo=bar";
-        Assert.assertEquals(expected, elasticBackend.getMetricsVisualizationUrlTemplate());
+        assertEquals(expected, elasticBackend.getMetricsVisualizationUrlTemplate());
     }
 
     @Test
-    public void testGetTraceVisualisationUrlTemplateWithEDOTDisabled() {
+    void testGetTraceVisualisationUrlTemplateWithEDOTDisabled() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setKibanaBaseUrl("http://localhost:5601");
         elasticBackend.setKibanaSpaceIdentifier("space");
         elasticBackend.setEnableEDOT(false);
         String url = elasticBackend.getTraceVisualisationUrlTemplate();
-        Assert.assertTrue(url.contains("transactionType=job"));
-        Assert.assertTrue(
+        assertTrue(url.contains("transactionType=job"));
+        assertTrue(
                 url.startsWith("http://localhost:5601/s/space/app/apm/services/${serviceName}/transactions/view"));
     }
 
     @Test
-    public void testGetTraceVisualisationUrlTemplateWithEDOTEnabled() {
+    void testGetTraceVisualisationUrlTemplateWithEDOTEnabled() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setKibanaBaseUrl("http://localhost:5601");
         elasticBackend.setKibanaSpaceIdentifier("space");
         elasticBackend.setEnableEDOT(true);
         String url = elasticBackend.getTraceVisualisationUrlTemplate();
-        Assert.assertTrue(url.contains("transactionType=unknown"));
+        assertTrue(url.contains("transactionType=unknown"));
     }
 
     @Test
-    public void testGetBindings() {
+    void testGetBindings() {
         ElasticBackend elasticBackend = new ElasticBackend();
         elasticBackend.setKibanaBaseUrl("http://localhost:5601");
         elasticBackend.setKibanaSpaceIdentifier("space");
         elasticBackend.setKibanaDashboardTitle("My Dashboard");
         Map<String, Object> bindings = elasticBackend.getBindings();
-        Assert.assertEquals("Elastic Observability", bindings.get("backendName"));
-        Assert.assertEquals("/plugin/opentelemetry/images/24x24/elastic.png", bindings.get("backend24x24IconUrl"));
-        Assert.assertEquals("http://localhost:5601", bindings.get("kibanaBaseUrl"));
-        Assert.assertEquals("My+Dashboard", bindings.get("kibanaDashboardTitle"));
-        Assert.assertEquals("space", bindings.get("kibanaSpaceIdentifier"));
+        assertEquals("Elastic Observability", bindings.get("backendName"));
+        assertEquals("/plugin/opentelemetry/images/24x24/elastic.png", bindings.get("backend24x24IconUrl"));
+        assertEquals("http://localhost:5601", bindings.get("kibanaBaseUrl"));
+        assertEquals("My+Dashboard", bindings.get("kibanaDashboardTitle"));
+        assertEquals("space", bindings.get("kibanaSpaceIdentifier"));
     }
 
     @Test
-    public void testEqualsAndHashCode() {
+    void testEqualsAndHashCode() {
         ElasticBackend a = new ElasticBackend();
         a.setDisplayKibanaDashboardLink(true);
         a.setKibanaBaseUrl("http://localhost:5601");
@@ -141,12 +142,12 @@ public class ElasticBackendTest {
         b.setKibanaDashboardTitle("title");
         b.setKibanaDashboardUrlParameters("params");
 
-        Assert.assertEquals(a, b);
-        Assert.assertEquals(a.hashCode(), b.hashCode());
+        assertEquals(a, b);
+        assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
-    public void testNotEquals() {
+    void testNotEquals() {
         ElasticBackend a = new ElasticBackend();
         a.setDisplayKibanaDashboardLink(true);
         a.setKibanaBaseUrl("http://localhost:5601");
@@ -155,6 +156,6 @@ public class ElasticBackendTest {
         b.setDisplayKibanaDashboardLink(false);
         b.setKibanaBaseUrl("http://localhost:5601");
 
-        Assert.assertNotEquals(a, b);
+        assertNotEquals(a, b);
     }
 }

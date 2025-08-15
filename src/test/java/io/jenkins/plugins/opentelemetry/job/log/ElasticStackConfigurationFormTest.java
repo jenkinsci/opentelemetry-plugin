@@ -4,29 +4,28 @@
  */
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import static junit.framework.TestCase.assertEquals;
-
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithJenkinsVisualization;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-public class ElasticStackConfigurationFormTest {
+class ElasticStackConfigurationFormTest {
 
     @Test
-    public void testDoCheckKibanaUrl() {
+    void testDoCheckKibanaUrl() {
         ElasticBackend.DescriptorImpl config = new ElasticBackend.DescriptorImpl();
-        assertEquals(config.doCheckKibanaBaseUrl("http://example.com:100").kind, FormValidation.Kind.OK);
-        assertEquals(config.doCheckKibanaBaseUrl("").kind, FormValidation.Kind.OK);
-        assertEquals(config.doCheckKibanaBaseUrl("foo").kind, FormValidation.Kind.ERROR);
+        Assertions.assertEquals(FormValidation.Kind.OK, config.doCheckKibanaBaseUrl("http://example.com:100").kind);
+        Assertions.assertEquals(FormValidation.Kind.OK, config.doCheckKibanaBaseUrl("").kind);
+        Assertions.assertEquals(FormValidation.Kind.ERROR, config.doCheckKibanaBaseUrl("foo").kind);
     }
 
     @Test
-    public void testDoCheckElasticsearchUrl() {
+    void testDoCheckElasticsearchUrl() {
         ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl config =
                 new ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl();
-        assertEquals(config.doCheckElasticsearchUrl("http://example.com:1000").kind, FormValidation.Kind.OK);
-        assertEquals(config.doCheckElasticsearchUrl("").kind, FormValidation.Kind.OK);
-        assertEquals(config.doCheckElasticsearchUrl("foo").kind, FormValidation.Kind.ERROR);
+        Assertions.assertEquals(FormValidation.Kind.OK, config.doCheckElasticsearchUrl("http://example.com:1000").kind);
+        Assertions.assertEquals(FormValidation.Kind.OK, config.doCheckElasticsearchUrl("").kind);
+        Assertions.assertEquals(FormValidation.Kind.ERROR, config.doCheckElasticsearchUrl("foo").kind);
     }
 }

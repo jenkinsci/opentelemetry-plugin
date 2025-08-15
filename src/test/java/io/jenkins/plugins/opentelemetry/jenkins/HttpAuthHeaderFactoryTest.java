@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry.jenkins;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -17,7 +16,6 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import hudson.model.Descriptor.FormException;
 import hudson.util.Secret;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -34,12 +32,12 @@ import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 @WithJenkins
-public class HttpAuthHeaderFactoryTest {
+class HttpAuthHeaderFactoryTest {
 
-    protected JenkinsRule j;
-    private static String USERNAME = "testuser";
-    private static String PASSWORD = "testpassword";
-    private static String TOKEN = "testtoken";
+    private JenkinsRule j;
+    private static final String USERNAME = "testuser";
+    private static final String PASSWORD = "testpassword";
+    private static final String TOKEN = "testtoken";
 
     @BeforeEach
     void beforeEach(JenkinsRule j) {
@@ -47,17 +45,13 @@ public class HttpAuthHeaderFactoryTest {
         this.j.timeout = 0;
     }
 
-    private String createUsernamePasswordCredentials() {
+    private String createUsernamePasswordCredentials() throws Exception {
         String credentialsId = UUID.randomUUID().toString();
-        try {
-            Credentials credentials = new UsernamePasswordCredentialsImpl(
-                    CredentialsScope.GLOBAL, credentialsId, "test", USERNAME, PASSWORD);
-            Map<Domain, List<Credentials>> domainCredentialsMap =
-                    SystemCredentialsProvider.getInstance().getDomainCredentialsMap();
-            domainCredentialsMap.put(Domain.global(), Collections.singletonList(credentials));
-        } catch (FormException e) {
-            assertNull(e, "FormException should not be thrown");
-        }
+        Credentials credentials = new UsernamePasswordCredentialsImpl(
+                CredentialsScope.GLOBAL, credentialsId, "test", USERNAME, PASSWORD);
+        Map<Domain, List<Credentials>> domainCredentialsMap =
+                SystemCredentialsProvider.getInstance().getDomainCredentialsMap();
+        domainCredentialsMap.put(Domain.global(), Collections.singletonList(credentials));
         return credentialsId;
     }
 
@@ -86,7 +80,7 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testCreateAuthHeader_UsernamePasswordCredentials() {
+    void testCreateAuthHeader_UsernamePasswordCredentials() throws Exception{
         String credentialsId = createUsernamePasswordCredentials();
         HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentialsId);
         Header header = factory.createAuthHeader();
@@ -98,7 +92,7 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testCreateAuthHeader_StringCredentials_ApiKey() {
+    void testCreateAuthHeader_StringCredentials_ApiKey() {
         String credentialsId = createSecretStringCredentials();
         HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentialsId);
         Header header = factory.createAuthHeader();
@@ -109,7 +103,7 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testCreateAuthHeader_StringCredentials_BearerToken() {
+    void testCreateAuthHeader_StringCredentials_BearerToken() {
         String credentialsId = createSecretStringCredentials();
         HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentialsId, true);
         Header header = factory.createAuthHeader();
@@ -120,29 +114,29 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testCreateAuthHeader_CredentialsNotFound() {
+    void testCreateAuthHeader_CredentialsNotFound() {
         String credentialsId = "nonexistent-credentials";
         assertThrowsExactly(CredentialsNotFoundException.class, () -> new HttpAuthHeaderFactory(credentialsId));
     }
 
     @Test
-    public void testCreateAuthHeader_NoCredentialsId() {
+    void testCreateAuthHeader_NoCredentialsId() {
         assertThrowsExactly(CredentialsNotFoundException.class, () -> new HttpAuthHeaderFactory((String) null));
     }
 
     @Test
-    public void testCreateAuthHeader_EmptyCredentialsId() {
+    void testCreateAuthHeader_EmptyCredentialsId() {
         assertThrowsExactly(CredentialsNotFoundException.class, () -> new HttpAuthHeaderFactory(""));
     }
 
     @Test
-    public void testCreateAuthHeader_IncorrectCredentialsType() {
+    void testCreateAuthHeader_IncorrectCredentialsType() {
         String credentialsId = createBaseCredentials();
         assertThrowsExactly(CredentialsNotFoundException.class, () -> new HttpAuthHeaderFactory(credentialsId));
     }
 
     @Test
-    public void testCreateFactory_ValidCredentialsId() {
+    void testCreateFactory_ValidCredentialsId() throws Exception {
         String credentialsId = createUsernamePasswordCredentials();
 
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactory(credentialsId);
@@ -151,19 +145,19 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testCreateFactory_NullCredentialsId() {
+    void testCreateFactory_NullCredentialsId() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactory((String) null);
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testCreateFactory_EmptyCredentialsId() {
+    void testCreateFactory_EmptyCredentialsId() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactory("");
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testCreateFactory_Optional_ValidCredentialsId() {
+    void testCreateFactory_Optional_ValidCredentialsId() throws Exception {
         String credentialsId = createUsernamePasswordCredentials();
 
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactory(Optional.of(credentialsId));
@@ -172,13 +166,13 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testCreateFactory_Optional_EmptyCredentialsId() {
+    void testCreateFactory_Optional_EmptyCredentialsId() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactory(Optional.empty());
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testCreateFactoryUsernamePassword_ValidCredentials() {
+    void testCreateFactoryUsernamePassword_ValidCredentials() {
         Optional<HttpAuthHeaderFactory> factory =
                 HttpAuthHeaderFactory.createFactoryUsernamePassword(USERNAME, PASSWORD);
         assertTrue(factory.isPresent());
@@ -190,31 +184,31 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testCreateFactoryUsernamePassword_NullUsername() {
+    void testCreateFactoryUsernamePassword_NullUsername() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword(null, PASSWORD);
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testCreateFactoryUsernamePassword_EmptyUsername() {
+    void testCreateFactoryUsernamePassword_EmptyUsername() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword("", PASSWORD);
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testCreateFactoryUsernamePassword_NullPassword() {
+    void testCreateFactoryUsernamePassword_NullPassword() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword("testuser", null);
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testCreateFactoryUsernamePassword_EmptyPassword() {
+    void testCreateFactoryUsernamePassword_EmptyPassword() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryUsernamePassword("testuser", "");
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testCreateFactoryApikey_ValidApiKey() {
+    void testCreateFactoryApikey_ValidApiKey() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryApikey(TOKEN);
         assertTrue(factory.isPresent());
         Header header = factory.get().createAuthHeader();
@@ -224,19 +218,19 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testCreateFactoryApikey_NullApiKey() {
+    void testCreateFactoryApikey_NullApiKey() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryApikey(null);
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testCreateFactoryApikey_EmptyApiKey() {
+    void testCreateFactoryApikey_EmptyApiKey() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryApikey("");
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testCreateFactoryBearer_ValidBearerToken() {
+    void testCreateFactoryBearer_ValidBearerToken() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryBearer(TOKEN);
         assertTrue(factory.isPresent());
         Header header = factory.get().createAuthHeader();
@@ -246,19 +240,19 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testCreateFactoryBearer_NullBearerToken() {
+    void testCreateFactoryBearer_NullBearerToken() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryBearer(null);
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testCreateFactoryBearer_EmptyBearerToken() {
+    void testCreateFactoryBearer_EmptyBearerToken() {
         Optional<HttpAuthHeaderFactory> factory = HttpAuthHeaderFactory.createFactoryBearer("");
         assertFalse(factory.isPresent());
     }
 
     @Test
-    public void testConstructor_CredentialsObject_ApiKey() {
+    void testConstructor_CredentialsObject_ApiKey() {
         StringCredentials credentials = new StringCredentialsImpl(
                 CredentialsScope.GLOBAL, UUID.randomUUID().toString(), "test", Secret.fromString(TOKEN));
         HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials);
@@ -269,7 +263,7 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testConstructor_CredentialsObject_BearerToken() {
+    void testConstructor_CredentialsObject_BearerToken() {
         StringCredentials credentials = new StringCredentialsImpl(
                 CredentialsScope.GLOBAL, UUID.randomUUID().toString(), "test", Secret.fromString(TOKEN));
         HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials, true);
@@ -280,26 +274,22 @@ public class HttpAuthHeaderFactoryTest {
     }
 
     @Test
-    public void testConstructor_CredentialsObject_UsernamePassword() {
+    void testConstructor_CredentialsObject_UsernamePassword() throws Exception {
         UsernamePasswordCredentialsImpl credentials;
-        try {
-            credentials = new UsernamePasswordCredentialsImpl(
-                    CredentialsScope.GLOBAL, UUID.randomUUID().toString(), "test", USERNAME, PASSWORD);
-            HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials);
-            Header header = factory.createAuthHeader();
-            assertNotNull(header);
-            assertEquals("Authorization", header.getName());
-            String expectedValue = "Basic " + base64Digest();
-            assertEquals(expectedValue, header.getValue());
-        } catch (FormException e) {
-            assertNull(e, "FormException should not be thrown");
-        }
+        credentials = new UsernamePasswordCredentialsImpl(
+                CredentialsScope.GLOBAL, UUID.randomUUID().toString(), "test", USERNAME, PASSWORD);
+        HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials);
+        Header header = factory.createAuthHeader();
+        assertNotNull(header);
+        assertEquals("Authorization", header.getName());
+        String expectedValue = "Basic " + base64Digest();
+        assertEquals(expectedValue, header.getValue());
     }
 
     @Test
-    public void testConstructor_CredentialsObject_IncorrectCredentialsType() {
+    void testConstructor_CredentialsObject_IncorrectCredentialsType() {
         Credentials credentials = new BaseCredentials(CredentialsScope.GLOBAL);
         HttpAuthHeaderFactory factory = new HttpAuthHeaderFactory(credentials);
-        assertThrowsExactly(CredentialsNotFoundException.class, () -> factory.createAuthHeader());
+        assertThrowsExactly(CredentialsNotFoundException.class, factory::createAuthHeader);
     }
 }

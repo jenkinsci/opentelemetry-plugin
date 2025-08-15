@@ -5,19 +5,19 @@
 
 package io.jenkins.plugins.opentelemetry.servlet;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import io.opentelemetry.api.OpenTelemetry;
 import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class StaplerInstrumentationServletFilterTest {
+class StaplerInstrumentationServletFilterTest {
 
     @Test
-    public void testParseJobUrlLatestBuildConsole() {
+    void testParseJobUrlLatestBuildConsole() {
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl(
                         "my-war/master", null, "/job/:jobFullName/lastBuild/console");
@@ -29,7 +29,7 @@ public class StaplerInstrumentationServletFilterTest {
      * TODO trim trailing slash
      */
     @Test
-    public void testParseJobUrlLastBuild() {
+    void testParseJobUrlLastBuild() {
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl(
                         "my-war/master", null, "/job/:jobFullName/lastBuild");
@@ -38,7 +38,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void testParseJobUrlLastBuildNoTrailingSlash() {
+    void testParseJobUrlLastBuildNoTrailingSlash() {
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl(
                         "my-war/master", null, "/job/:jobFullName/lastBuild");
@@ -47,7 +47,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void testParseJobUrlBuildNoTrailingSlash() {
+    void testParseJobUrlBuildNoTrailingSlash() {
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl(
                         "my-war/master", 3L, "/job/:jobFullName/:runNumber");
@@ -56,7 +56,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void testParseJobUrlBuildConsole() {
+    void testParseJobUrlBuildConsole() {
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl(
                         "my-war/master", 3L, "/job/:jobFullName/:runNumber/console");
@@ -65,7 +65,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void testParseJobUrl() {
+    void testParseJobUrl() {
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl("my-war/master", null, "/job/:jobFullName");
         String pathInfo = "/job/my-war/job/master/";
@@ -73,7 +73,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void job_run_execution_node() {
+    void job_run_execution_node() {
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl(
                         "ecommerce-antifraud/main", 110L, "/job/:jobFullName/:runNumber/execution/:execution/*");
@@ -85,16 +85,16 @@ public class StaplerInstrumentationServletFilterTest {
         List<String> pathInfoTokens = Collections.list(new StringTokenizer(pathInfo, "/")).stream()
                 .map(token -> (String) token)
                 .filter(t -> !t.isEmpty())
-                .collect(Collectors.toList());
+                .toList();
 
         StaplerInstrumentationServletFilter.ParsedJobUrl actual =
                 newStaplerInstrumentationServletFilter().parseJobUrl(pathInfoTokens);
         System.out.println(actual);
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     @Test
-    public void url_bo_multibranch_pipeline_run_home() {
+    void url_bo_multibranch_pipeline_run_home() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/";
 
         StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected =
@@ -108,7 +108,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_multibranch_pipeline_run_testSummary() {
+    void url_bo_multibranch_pipeline_run_testSummary() {
         String pathInfo =
                 "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/blueTestSummary/";
 
@@ -123,7 +123,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_multibranch_pipeline_run_node_steps() {
+    void url_bo_multibranch_pipeline_run_node_steps() {
         String pathInfo =
                 "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/";
 
@@ -138,7 +138,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_pipeline_run() {
+    void url_bo_pipeline_run() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/";
 
         StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected =
@@ -152,7 +152,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_pipeline_run_blueTestSummary() {
+    void url_bo_pipeline_run_blueTestSummary() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/blueTestSummary/";
         StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
@@ -165,7 +165,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_pipeline_run_changeSet() {
+    void url_bo_pipeline_run_changeSet() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/changeSet/";
         StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
@@ -178,7 +178,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_pipeline_activity() {
+    void url_bo_pipeline_activity() {
         String pathInfo = "/blue/organizations/jenkins/my-war/activity";
 
         StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected =
@@ -188,7 +188,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_pipeline_run_steps() {
+    void url_bo_pipeline_run_steps() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/steps/";
 
         StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected =
@@ -202,7 +202,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_pipeline_run_nodes() {
+    void url_bo_pipeline_run_nodes() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/nodes/";
 
         StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected =
@@ -216,7 +216,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_rest_pipeline_scm() {
+    void url_bo_rest_pipeline_scm() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/scm/content";
         StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl(
@@ -229,7 +229,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_pipeline_run_node_steps_log() {
+    void url_bo_pipeline_run_node_steps_log() {
         String pathInfo = "/blue/rest/organizations/jenkins/pipelines/my-war/runs/1/steps/5/log/";
 
         StaplerInstrumentationServletFilter.ParsedBlueOceanPipelineJobUrl expected =
@@ -243,7 +243,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void url_bo_multibranch_pipeline_run_node_step_unexpected() {
+    void url_bo_multibranch_pipeline_run_node_step_unexpected() {
         String pathInfo =
                 "/blue/rest/organizations/jenkins/pipelines/ecommerce-antifraud/branches/main/runs/110/nodes/13/steps/19/unexpected/path";
 
@@ -258,7 +258,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void testParseJobBuildArtifactUrl() {
+    void testParseJobBuildArtifactUrl() {
         // /job/:jobFullName/:runNumber/artifact/target/anti-fraud-0.0.1-SNAPSHOT.jar
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl(
@@ -268,7 +268,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void testParseJobLastBuildArtifactUrl() {
+    void testParseJobLastBuildArtifactUrl() {
         // /job/:jobFullName/:runNumber/artifact/target/anti-fraud-0.0.1-SNAPSHOT.jar
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl(
@@ -278,7 +278,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void testParseJobBuildDescriptorMethodUrl() {
+    void testParseJobBuildDescriptorMethodUrl() {
         // /job/ecommerce-antifraud/job/main/128/descriptorByName/com.cloudbees.jenkins.support.impl.RunDirectoryComponent/checkMaxDepth
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl(
@@ -291,7 +291,7 @@ public class StaplerInstrumentationServletFilterTest {
     }
 
     @Test
-    public void testParseJobLastBuildDescriptorMethodUrl() {
+    void testParseJobLastBuildDescriptorMethodUrl() {
         // /job/ecommerce-antifraud/job/main/128/descriptorByName/com.cloudbees.jenkins.support.impl.RunDirectoryComponent/checkMaxDepth
         StaplerInstrumentationServletFilter.ParsedJobUrl expected =
                 new StaplerInstrumentationServletFilter.ParsedJobUrl(
@@ -308,7 +308,7 @@ public class StaplerInstrumentationServletFilterTest {
         List<String> pathInfoTokens = Collections.list(new StringTokenizer(pathInfo, "/")).stream()
                 .map(token -> (String) token)
                 .filter(t -> !t.isEmpty())
-                .collect(Collectors.toList());
+                .toList();
 
         try {
             StaplerInstrumentationServletFilter staplerInstrumentationServletFilter =
@@ -318,7 +318,7 @@ public class StaplerInstrumentationServletFilterTest {
                     staplerInstrumentationServletFilter.parseBlueOceanRestPipelineUrl(pathInfoTokens);
 
             System.out.println(actual);
-            Assert.assertEquals(expected, actual);
+            assertEquals(expected, actual);
         } catch (IndexOutOfBoundsException e) {
             throw new AssertionError("Exception parsing " + pathInfo + " - " + e.getMessage(), e);
         }

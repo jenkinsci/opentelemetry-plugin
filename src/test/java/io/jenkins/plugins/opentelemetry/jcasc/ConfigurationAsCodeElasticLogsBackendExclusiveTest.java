@@ -9,11 +9,15 @@ import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
 import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
 import static io.jenkins.plugins.casc.misc.Util.toYamlString;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import io.jenkins.plugins.casc.ConfigurationContext;
 import io.jenkins.plugins.casc.ConfiguratorRegistry;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.casc.misc.junit.jupiter.WithJenkinsConfiguredWithCode;
 import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
@@ -22,46 +26,42 @@ import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithoutJenkinsVisualization;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-public class ConfigurationAsCodeElasticLogsBackendExclusiveTest {
-
-    @ClassRule
-    @ConfiguredWithCode("elastic-logs-exclusive.yml")
-    public static JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
+@WithJenkinsConfiguredWithCode
+class ConfigurationAsCodeElasticLogsBackendExclusiveTest {
 
     @Test
-    public void should_support_configuration_as_code() {
+    @ConfiguredWithCode("elastic-logs-exclusive.yml")
+    void should_support_configuration_as_code(JenkinsConfiguredWithCodeRule j) {
         final JenkinsOpenTelemetryPluginConfiguration configuration =
                 GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
-        MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
+        assertThat(configuration.getEndpoint(), is("http://otel-collector-contrib:4317"));
 
         ElasticBackend elastic =
                 (ElasticBackend) configuration.getObservabilityBackends().get(0);
-        MatcherAssert.assertThat(elastic.getKibanaBaseUrl(), CoreMatchers.is("https://kibana.es.example.com"));
-        MatcherAssert.assertThat(elastic.getName(), CoreMatchers.is("My Elastic"));
+        assertThat(elastic.getKibanaBaseUrl(), is("https://kibana.es.example.com"));
+        assertThat(elastic.getName(), is("My Elastic"));
 
         ElasticLogsBackendWithoutJenkinsVisualization elasticLogsBackend =
                 (ElasticLogsBackendWithoutJenkinsVisualization) elastic.getElasticLogsBackend();
-        MatcherAssert.assertThat(elasticLogsBackend, CoreMatchers.is(CoreMatchers.notNullValue()));
+        assertThat(elasticLogsBackend, is(notNullValue()));
 
         OtlpAuthentication authentication = configuration.getAuthentication();
-        MatcherAssert.assertThat(authentication, CoreMatchers.is(instanceOf(NoAuthentication.class)));
+        assertThat(authentication, is(instanceOf(NoAuthentication.class)));
 
-        MatcherAssert.assertThat(configuration.getIgnoredSteps(), CoreMatchers.is("dir,echo,isUnix,pwd,properties"));
+        assertThat(configuration.getIgnoredSteps(), is("dir,echo,isUnix,pwd,properties"));
 
-        MatcherAssert.assertThat(configuration.getServiceName(), CoreMatchers.is("jenkins"));
-        MatcherAssert.assertThat(configuration.getServiceNamespace(), CoreMatchers.is("jenkins"));
+        assertThat(configuration.getServiceName(), is("jenkins"));
+        assertThat(configuration.getServiceNamespace(), is("jenkins"));
     }
 
     @Test
-    public void should_support_configuration_export() throws Exception {
+    @ConfiguredWithCode("elastic-logs-exclusive.yml")
+    void should_support_configuration_export(JenkinsConfiguredWithCodeRule j) throws Exception {
         ConfiguratorRegistry registry = ConfiguratorRegistry.get();
         ConfigurationContext context = new ConfigurationContext(registry);
         CNode yourAttribute = getUnclassifiedRoot(context).get("openTelemetry");
@@ -70,16 +70,16 @@ public class ConfigurationAsCodeElasticLogsBackendExclusiveTest {
 
         String expected = toStringFromYamlFile(this, "elastic-logs-exclusive-expected.yml");
 
-        MatcherAssert.assertThat(exported, CoreMatchers.is(expected));
+        assertThat(exported, is(expected));
     }
 
-    @BeforeClass
-    public static void beforeClass() {
+    @BeforeAll
+    static void beforeClass() {
         GlobalOpenTelemetry.resetForTest();
     }
 
-    @AfterClass
-    public static void afterClass() {
+    @AfterAll
+    static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
     }
 }

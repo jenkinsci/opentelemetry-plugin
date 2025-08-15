@@ -5,7 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import com.google.common.collect.Iterables;
@@ -33,13 +37,11 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.steps.EchoStep;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
@@ -47,22 +49,25 @@ import org.jvnet.hudson.test.recipes.WithPlugin;
  * Note usage of `def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}}` is inspired by
  * https://github.com/jenkinsci/workflow-basic-steps-plugin/blob/474cea2a53753e1fb9b166fa1ca0f6184b5cee4a/src/test/java/org/jenkinsci/plugins/workflow/steps/IsUnixStepTest.java#L39
  */
-public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
+class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
+
     private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     @Test
-    public void testSimplePipeline() throws Exception {
+    void testSimplePipeline() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // BEFORE
 
-        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node() {\n"
-                + "    stage('ze-stage1') {\n"
-                + "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n"
-                + "    }\n"
-                + "    stage('ze-stage2') {\n"
-                + "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n"
-                + "    }\n"
-                + "}";
+        String pipelineScript = """
+            def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};
+            node() {
+                stage('ze-stage1') {
+                   xsh (label: 'shell-1', script: 'echo ze-echo-1')\s
+                }
+                stage('ze-stage2') {
+                   xsh (label: 'shell-2', script: 'echo ze-echo-2')\s
+                }
+            }""";
         jenkinsRule.createOnlineSlave();
 
         final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
@@ -86,7 +91,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(
                 spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
+        assertThat(spans.cardinality(), is(10L));
 
         // FIXME REPAIR METRICS TESTS
         /*
@@ -95,19 +100,19 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
         dumpMetrics(exportedMetrics);
         MetricData runStartedCounterData = exportedMetrics.get(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED);
-        MatcherAssert.assertThat(runStartedCounterData, CoreMatchers.notNullValue());
+        assertThat(runStartedCounterData, notNullValue());
         // TODO TEST METRICS WITH PROPER RESET BETWEEN TESTS
-        MatcherAssert.assertThat(runStartedCounterData.getType(), CoreMatchers.is(MetricDataType.LONG_SUM));
+        assertThat(runStartedCounterData.getType(), is(MetricDataType.LONG_SUM));
         Collection<LongPointData> metricPoints = runStartedCounterData.getLongSumData().getPoints();
-        //MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.is(1L));
+        //MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), is(1L));
         // we dont test the metric CI_PIPELINE_RUN_COMPLETED because there is flakiness on it
         */
     }
 
-    @Ignore("Lifecycle problem, the InMemoryMetricExporter gets reset too much and the disk usage is not captured")
+    @Disabled("Lifecycle problem, the InMemoryMetricExporter gets reset too much and the disk usage is not captured")
     @Test
     @WithPlugin("cloudbees-disk-usage-simple")
-    public void testMetricsWithDiskUsagePlugin() throws Exception {
+    void testMetricsWithDiskUsagePlugin() throws Exception {
         LOGGER.log(Level.INFO, "testMetricsWithDiskUsagePlugin...");
         // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
         Thread.sleep(100); // FIXME
@@ -126,29 +131,31 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
         dumpMetrics(exportedMetrics);
         MetricData diskUsageData = exportedMetrics.get(JenkinsMetrics.JENKINS_DISK_USAGE_BYTES);
-        MatcherAssert.assertThat(diskUsageData, CoreMatchers.notNullValue());
+        assertThat(diskUsageData, notNullValue());
         // TODO TEST METRICS WITH PROPER RESET BETWEEN TESTS
-        MatcherAssert.assertThat(diskUsageData.getType(), CoreMatchers.is(MetricDataType.LONG_GAUGE));
+        assertThat(diskUsageData.getType(), is(MetricDataType.LONG_GAUGE));
         Collection<LongPointData> metricPoints =
                 diskUsageData.getLongGaugeData().getPoints();
-        MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.notNullValue());
+        assertThat(Iterables.getLast(metricPoints).getValue(), notNullValue());
     }
 
     @Test
-    public void testTraceEnvironmentVariablesInjectedInShellSteps() throws Exception {
+    void testTraceEnvironmentVariablesInjectedInShellSteps() throws Exception {
         if (Functions.isWindows()) {
             // TODO test on windows
         } else {
-            String pipelineScript = "node() {\n" + "    stage('ze-stage1') {\n"
-                    + "       sh '''\n"
-                    + "if [ -z $TRACEPARENT ]\n"
-                    + "then\n"
-                    + "   echo TRACEPARENT NOT FOUND\n"
-                    + "   exit 1\n"
-                    + "fi\n"
-                    + "'''\n"
-                    + "    }\n"
-                    + "}";
+            String pipelineScript = """
+                node() {
+                    stage('ze-stage1') {
+                       sh '''
+                if [ -z $TRACEPARENT ]
+                then
+                   echo TRACEPARENT NOT FOUND
+                   exit 1
+                fi
+                '''
+                    }
+                }""";
             jenkinsRule.createOnlineSlave();
 
             WorkflowJob pipeline = jenkinsRule.createProject(
@@ -158,23 +165,25 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
             jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
             final Tree<SpanDataWrapper> spans = getBuildTrace();
-            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+            assertThat(spans.cardinality(), is(8L));
         }
     }
 
     @Test
-    public void testPipelineWithNodeSteps() throws Exception {
-        String pipelineScript = "pipeline {\n" + "  agent none\n"
-                + "  stages {\n"
-                + "    stage('foo') {\n"
-                + "      steps {\n"
-                + "        node('linux') { \n"
-                + "          echo 'hello world' \n"
-                + "        }\n"
-                + "      }\n"
-                + "    }\n"
-                + "  }\n"
-                + "}";
+    void testPipelineWithNodeSteps() throws Exception {
+        String pipelineScript = """
+            pipeline {
+              agent none
+              stages {
+                stage('foo') {
+                  steps {
+                    node('linux') {\s
+                      echo 'hello world'\s
+                    }
+                  }
+                }
+              }
+            }""";
 
         final Node agent = jenkinsRule.createOnlineSlave();
         agent.setLabelString("linux");
@@ -195,57 +204,59 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "Stage: foo",
                 "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
+        assertThat(spans.cardinality(), is(7L));
 
         Optional<Tree.Node<SpanDataWrapper>> executorNodeAllocation =
                 spans.breadthFirstSearchNodes(node -> (ExtendedJenkinsAttributes.AGENT_ALLOCATION_UI)
-                        .equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(executorNodeAllocation, CoreMatchers.is(CoreMatchers.notNullValue()));
+                        .equals(node.getData().spanData().getName()));
+        assertThat(executorNodeAllocation, is(notNullValue()));
 
-        Attributes attributes = executorNodeAllocation.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
-        MatcherAssert.assertThat(
+        Attributes attributes = executorNodeAllocation.get().getData().spanData().getAttributes();
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), is("linux"));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(
+                is(notNullValue()));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
+                is(notNullValue()));
 
         Optional<Tree.Node<SpanDataWrapper>> executorNode =
                 spans.breadthFirstSearchNodes(node -> (ExtendedJenkinsAttributes.AGENT_UI)
-                        .equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(executorNode, CoreMatchers.is(CoreMatchers.notNullValue()));
-        attributes = executorNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), CoreMatchers.is("linux"));
-        MatcherAssert.assertThat(
+                        .equals(node.getData().spanData().getName()));
+        assertThat(executorNode, is(notNullValue()));
+        attributes = executorNode.get().getData().spanData().getAttributes();
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL), is("linux"));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(
+                is(notNullValue()));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
+                is(notNullValue()));
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
-        attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.WORKFLOW));
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), CoreMatchers.nullValue());
+        attributes = root.get(0).spanData().getAttributes();
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), is(OtelUtils.WORKFLOW));
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE), nullValue());
     }
 
     @Test
-    public void testPipelineWithSkippedSteps() throws Exception {
+    void testPipelineWithSkippedSteps() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node() {\n"
-                + "    stage('ze-stage1') {\n"
-                + "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n"
-                + "       echo 'ze-echo-step' \n"
-                + "    }\n"
-                + "    stage('ze-stage2') {\n"
-                + "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n"
-                + "    }\n"
-                + "}";
+        String pipelineScript = """
+            def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};
+            node() {
+                stage('ze-stage1') {
+                   xsh (label: 'shell-1', script: 'echo ze-echo-1')\s
+                   echo 'ze-echo-step'\s
+                }
+                stage('ze-stage2') {
+                   xsh (label: 'shell-2', script: 'echo ze-echo-2')\s
+                }
+            }""";
 
         jenkinsRule.createOnlineSlave();
 
@@ -261,34 +272,36 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 spans, "shell-1", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
         checkChainOfSpans(
                 spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
+        assertThat(spans.cardinality(), is(10L));
 
         Optional<Tree.Node<SpanDataWrapper>> stageNode = spans.breadthFirstSearchNodes(
-                node -> "Stage: ze-stage1".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(stageNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+                node -> "Stage: ze-stage1".equals(node.getData().spanData().getName()));
+        assertThat(stageNode, is(notNullValue()));
 
-        Attributes attributes = stageNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(
+        Attributes attributes = stageNode.get().getData().spanData().getAttributes();
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(
+                is(notNullValue()));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
+                is(notNullValue()));
     }
 
     @Test
-    public void testPipelineWithWrappingStep() throws Exception {
-        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node() {\n"
-                + "    stage('ze-stage1') {\n"
-                + "       withEnv(['MY_VARIABLE=MY_VALUE']) {\n"
-                + "          xsh (label: 'shell-1', script: 'echo ze-echo-1') \n"
-                + "       }\n"
-                + "       xsh 'echo ze-echo' \n"
-                + "    }\n"
-                + "    stage('ze-stage2') {\n"
-                + "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n"
-                + "    }\n"
-                + "}";
+    void testPipelineWithWrappingStep() throws Exception {
+        String pipelineScript = """
+            def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};
+            node() {
+                stage('ze-stage1') {
+                   withEnv(['MY_VARIABLE=MY_VALUE']) {
+                      xsh (label: 'shell-1', script: 'echo ze-echo-1')\s
+                   }
+                   xsh 'echo ze-echo'\s
+                }
+                stage('ze-stage2') {
+                   xsh (label: 'shell-2', script: 'echo ze-echo-2')\s
+                }
+            }""";
         jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(
@@ -299,32 +312,34 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         final Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
+        assertThat(spans.cardinality(), is(11L));
 
         Optional<Tree.Node<SpanDataWrapper>> shellNode = spans.breadthFirstSearchNodes(
-                node -> "shell-1".equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(shellNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+                node -> "shell-1".equals(node.getData().spanData().getName()));
+        assertThat(shellNode, is(notNullValue()));
 
-        Attributes attributes = shellNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(
+        Attributes attributes = shellNode.get().getData().spanData().getAttributes();
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(
+                is(notNullValue()));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
+                is(notNullValue()));
     }
 
     @Test
-    public void testPipelineWithError() throws Exception {
-        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node() {\n"
-                + "    stage('ze-stage1') {\n"
-                + "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n"
-                + "    }\n"
-                + "    stage('ze-stage2') {\n"
-                + "       xsh (label: 'shell-2', script: 'echo ze-echo-2') \n"
-                + "       error 'ze-pipeline-error' \n"
-                + "    }\n"
-                + "}";
+    void testPipelineWithError() throws Exception {
+        String pipelineScript = """
+            def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};
+            node() {
+                stage('ze-stage1') {
+                   xsh (label: 'shell-1', script: 'echo ze-echo-1')\s
+                }
+                stage('ze-stage2') {
+                   xsh (label: 'shell-2', script: 'echo ze-echo-2')\s
+                   error 'ze-pipeline-error'\s
+                }
+            }""";
         jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(
@@ -336,19 +351,21 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "shell-1", "Stage: ze-stage1", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "shell-2", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "error", "Stage: ze-stage2", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
+        assertThat(spans.cardinality(), is(11L));
     }
 
     @Test
     @Timeout(300)
-    public void testChainOfPipelines() throws Exception {
+    void testChainOfPipelines() throws Exception {
         jenkinsRule.createOnlineSlave();
 
-        String childPipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node() {\n"
-                + "    stage('child-pipeline') {\n"
-                + "       echo 'child-pipeline' \n"
-                + "    }\n"
-                + "}";
+        String childPipelineScript = """
+            def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};
+            node() {
+                stage('child-pipeline') {
+                   echo 'child-pipeline'\s
+                }
+            }""";
         WorkflowJob childPipeline =
                 jenkinsRule.createProject(WorkflowJob.class, "child-pipeline-" + jobNameSuffix.incrementAndGet());
         childPipeline.setDefinition(new CpsFlowDefinition(childPipelineScript, true));
@@ -378,23 +395,25 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "Stage: trigger-child-pipeline",
                 ExtendedJenkinsAttributes.AGENT_UI,
                 "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(15L));
+        assertThat(spans.cardinality(), is(15L));
     }
 
     @Test
-    public void testPipelineWithParallelStep() throws Exception {
+    void testPipelineWithParallelStep() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node() {\n"
-                + "    stage('ze-parallel-stage') {\n"
-                + "        parallel parallelBranch1: {\n"
-                + "            xsh (label: 'shell-1', script: 'echo this-is-the-parallel-branch-1')\n"
-                + "        } ,parallelBranch2: {\n"
-                + "            xsh (label: 'shell-2', script: 'echo this-is-the-parallel-branch-2')\n"
-                + "        } ,parallelBranch3: {\n"
-                + "            xsh (label: 'shell-3', script: 'echo this-is-the-parallel-branch-3')\n"
-                + "        }\n"
-                + "    }\n"
-                + "}";
+        String pipelineScript = """
+            def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};
+            node() {
+                stage('ze-parallel-stage') {
+                    parallel parallelBranch1: {
+                        xsh (label: 'shell-1', script: 'echo this-is-the-parallel-branch-1')
+                    } ,parallelBranch2: {
+                        xsh (label: 'shell-2', script: 'echo this-is-the-parallel-branch-2')
+                    } ,parallelBranch3: {
+                        xsh (label: 'shell-3', script: 'echo this-is-the-parallel-branch-3')
+                    }
+                }
+            }""";
         jenkinsRule.createOnlineSlave();
 
         WorkflowJob pipeline = jenkinsRule.createProject(
@@ -424,24 +443,24 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "Stage: ze-parallel-stage",
                 ExtendedJenkinsAttributes.AGENT_UI,
                 "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
+        assertThat(spans.cardinality(), is(13L));
 
         Optional<Tree.Node<SpanDataWrapper>> branchNode =
                 spans.breadthFirstSearchNodes(node -> "Parallel branch: parallelBranch1"
-                        .equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(branchNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+                        .equals(node.getData().spanData().getName()));
+        assertThat(branchNode, is(notNullValue()));
 
-        Attributes attributes = branchNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(
+        Attributes attributes = branchNode.get().getData().spanData().getAttributes();
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(
+                is(notNullValue()));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
+                is(notNullValue()));
     }
 
     @Test
-    public void testPipelineWithGitCredentialsSteps() throws Exception {
+    void testPipelineWithGitCredentialsSteps() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // Details defined in the JCasC file -> io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
         final String userName = "my-user-2";
@@ -453,7 +472,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    public void testPipelineWithSshCredentialsSteps() throws Exception {
+    void testPipelineWithSshCredentialsSteps() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         // Details defined in the JCasC file -> io/jenkins/plugins/opentelemetry/jcasc-elastic-backend.yml
         final String userName = "my-user-1";
@@ -465,7 +484,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    public void testPipelineWithoutGitCredentialsSteps() throws Exception {
+    void testPipelineWithoutGitCredentialsSteps() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String credentialId = "unknown";
         final String jobName = "git-credentials-" + jobNameSuffix.incrementAndGet();
@@ -491,32 +510,34 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "Stage: foo",
                 ExtendedJenkinsAttributes.AGENT_UI,
                 "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        assertThat(spans.cardinality(), is(8L));
 
         Optional<Tree.Node<SpanDataWrapper>> gitNode =
                 spans.breadthFirstSearchNodes(node -> "git: github.com/octocat/Hello-World"
-                        .equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(gitNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+                        .equals(node.getData().spanData().getName()));
+        assertThat(gitNode, is(notNullValue()));
 
-        Attributes attributes = gitNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_USERNAME), CoreMatchers.is(gitUserName));
-        MatcherAssert.assertThat(
+        Attributes attributes = gitNode.get().getData().spanData().getAttributes();
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_USERNAME), is(gitUserName));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(
+                is(notNullValue()));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
+                is(notNullValue()));
     }
 
     @Test
-    public void testPipelineWithCheckoutShallowSteps() throws Exception {
+    void testPipelineWithCheckoutShallowSteps() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "with-checkout-" + jobNameSuffix.incrementAndGet();
 
-        String pipelineScript = "node() {\n" + "  stage('foo') {\n"
-                + "    checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [[$class: 'CloneOption', depth: 2, noTags: true, reference: '', shallow: true]], userRemoteConfigs: [[url: 'https://github.com/octocat/Hello-World']]]) \n"
-                + "  }\n"
-                + "}";
+        String pipelineScript = """
+            node() {
+              stage('foo') {
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [[$class: 'CloneOption', depth: 2, noTags: true, reference: '', shallow: true]], userRemoteConfigs: [[url: 'https://github.com/octocat/Hello-World']]])\s
+              }
+            }""";
         jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
@@ -529,33 +550,35 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "Stage: foo",
                 ExtendedJenkinsAttributes.AGENT_UI,
                 "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        assertThat(spans.cardinality(), is(8L));
 
         Optional<Tree.Node<SpanDataWrapper>> checkoutNode =
                 spans.breadthFirstSearchNodes(node -> "checkout: github.com/octocat/Hello-World"
-                        .equals(node.getData().spanData.getName()));
-        MatcherAssert.assertThat(checkoutNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+                        .equals(node.getData().spanData().getName()));
+        assertThat(checkoutNode, is(notNullValue()));
 
-        Attributes attributes = checkoutNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(
+        Attributes attributes = checkoutNode.get().getData().spanData().getAttributes();
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(
+                is(notNullValue()));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION),
-                CoreMatchers.is(CoreMatchers.notNullValue()));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(true));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(2L));
+                is(notNullValue()));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), is(true));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), is(2L));
     }
 
     @Test
-    public void testPipelineWithoutCheckoutShallowSteps() throws Exception {
+    void testPipelineWithoutCheckoutShallowSteps() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "without-checkout-" + jobNameSuffix.incrementAndGet();
 
-        String pipelineScript = "node() {\n" + "  stage('foo') {\n"
-                + "    checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/octocat/Hello-World']]]) \n"
-                + "  }\n"
-                + "}";
+        String pipelineScript = """
+            node() {
+              stage('foo') {
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/octocat/Hello-World']]])\s
+              }
+            }""";
         jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
@@ -568,30 +591,32 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "Stage: foo",
                 ExtendedJenkinsAttributes.AGENT_UI,
                 "Phase: Run");
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        assertThat(spans.cardinality(), is(8L));
 
         Optional<Tree.Node<SpanDataWrapper>> checkoutNode =
                 spans.breadthFirstSearchNodes(node -> "checkout: github.com/octocat/Hello-World"
-                        .equals(node.getData().spanData.getName()));
-        Attributes attributes = checkoutNode.get().getData().spanData.getAttributes();
+                        .equals(node.getData().spanData().getName()));
+        Attributes attributes = checkoutNode.get().getData().spanData().getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), is(false));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), is(0L));
     }
 
     @Test
-    public void testFailFastParallelScriptedPipelineWithException() throws Exception {
+    void testFailFastParallelScriptedPipelineWithException() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String jobName = "fail-fast-parallel-scripted-pipeline-with-failure" + jobNameSuffix.incrementAndGet();
 
-        String pipelineScript = "node() {\n" + "    stage('ze-parallel-stage') {\n"
-                + "        parallel failingBranch: {\n"
-                + "            error 'the failure that will cause the interruption of other branches'\n"
-                + "        }, branchThatWillBeInterrupted: {\n"
-                + "            sleep 5\n"
-                + "        }, failFast:true\n"
-                + "    }\n"
-                + "}";
+        String pipelineScript = """
+            node() {
+                stage('ze-parallel-stage') {
+                    parallel failingBranch: {
+                        error 'the failure that will cause the interruption of other branches'
+                    }, branchThatWillBeInterrupted: {
+                        sleep 5
+                    }, failFast:true
+                }
+            }""";
         jenkinsRule.createOnlineSlave();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
@@ -607,47 +632,49 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 "Phase: Run");
 
         SpanData sleepSpanData = spans.breadthFirstSearchNodes(
-                        node -> "sleep".equals(node.getData().spanData.getName()))
-                .get()
-                .getData()
-                .spanData;
-        MatcherAssert.assertThat(sleepSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
+                node -> "sleep".equals(node.getData().spanData().getName()))
+            .get()
+            .getData()
+            .spanData();
+        assertThat(sleepSpanData.getStatus().getStatusCode(), is(StatusCode.UNSET));
 
         SpanData branchThatWillBeInterruptedSpanData = spans.breadthFirstSearchNodes(
-                        node -> "Parallel branch: branchThatWillBeInterrupted"
-                                .equals(node.getData().spanData.getName()))
-                .get()
-                .getData()
-                .spanData;
-        MatcherAssert.assertThat(
-                branchThatWillBeInterruptedSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.UNSET));
-        MatcherAssert.assertThat(
+                node -> "Parallel branch: branchThatWillBeInterrupted"
+                    .equals(node.getData().spanData().getName()))
+            .get()
+            .getData()
+            .spanData();
+        assertThat(
+                branchThatWillBeInterruptedSpanData.getStatus().getStatusCode(), is(StatusCode.UNSET));
+        assertThat(
                 branchThatWillBeInterruptedSpanData
                         .getAttributes()
                         .get(ExtendedJenkinsAttributes.JENKINS_STEP_INTERRUPTION_CAUSES),
-                CoreMatchers.is(List.of("FailFastCause: Failed in branch failingBranch")));
+                is(List.of("FailFastCause: Failed in branch failingBranch")));
 
         SpanData failingBranchSpanData = spans.breadthFirstSearchNodes(node -> "Parallel branch: failingBranch"
-                        .equals(node.getData().spanData.getName()))
-                .get()
-                .getData()
-                .spanData;
-        MatcherAssert.assertThat(failingBranchSpanData.getStatus().getStatusCode(), CoreMatchers.is(StatusCode.ERROR));
-        MatcherAssert.assertThat(
+                .equals(node.getData().spanData().getName()))
+            .get()
+            .getData()
+            .spanData();
+        assertThat(failingBranchSpanData.getStatus().getStatusCode(), is(StatusCode.ERROR));
+        assertThat(
                 failingBranchSpanData.getStatus().getDescription(),
-                CoreMatchers.is("the failure that will cause the interruption of other branches"));
+                is("the failure that will cause the interruption of other branches"));
     }
 
     @Test
-    public void testSpanContextPropagationSynchronousTestStep() throws Exception {
+    void testSpanContextPropagationSynchronousTestStep() throws Exception {
         Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class)
                 .forEach(c -> System.out.println(c + " -> " + ExtensionList.lookup(c)));
 
-        String pipelineScript = "node() {\n" + "    stage('ze-stage1') {\n"
-                + "       echo message: 'hello'\n"
-                + "       spanContextPropagationSynchronousTestStep()\n"
-                + "    }\n"
-                + "}";
+        String pipelineScript = """
+            node() {
+                stage('ze-stage1') {
+                   echo message: 'hello'
+                   spanContextPropagationSynchronousTestStep()
+                }
+            }""";
         jenkinsRule.createOnlineSlave();
 
         final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
@@ -668,15 +695,17 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    public void testSpanContextPropagationSynchronousNonBlockingTestStep() throws Exception {
+    void testSpanContextPropagationSynchronousNonBlockingTestStep() throws Exception {
         Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class)
                 .forEach(c -> System.out.println(c + " -> " + ExtensionList.lookup(c)));
 
-        String pipelineScript = "node() {\n" + "    stage('ze-stage1') {\n"
-                + "       echo message: 'hello'\n"
-                + "       spanContextPropagationSynchronousNonBlockingTestStep()\n"
-                + "    }\n"
-                + "}";
+        String pipelineScript = """
+            node() {
+                stage('ze-stage1') {
+                   echo message: 'hello'
+                   spanContextPropagationSynchronousNonBlockingTestStep()
+                }
+            }""";
         jenkinsRule.createOnlineSlave();
 
         final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();

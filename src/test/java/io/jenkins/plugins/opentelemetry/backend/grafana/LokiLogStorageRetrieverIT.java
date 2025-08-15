@@ -14,12 +14,12 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class LokiLogStorageRetrieverIT {
+class LokiLogStorageRetrieverIT {
 
     @Test
-    public void test_checkLokiSetup() throws Exception {
+    void test_checkLokiSetup() throws Exception {
         System.out.println("OTel Java Specific Version: " + JavaVersionSpecific.get());
 
         InputStream env = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");

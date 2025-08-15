@@ -22,15 +22,14 @@ import okhttp3.RequestBody;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class RemoteSpanDisabledTest extends BaseIntegrationTest {
-    static final String PARENT_TRACE_ID = "4bf92f3577b34da6a3ce929d0e0e4736";
-    static final String PARENT_SPAN_ID = "00f067aa0ba902b7";
+class RemoteSpanDisabledTest extends BaseIntegrationTest {
+    private static final String PARENT_TRACE_ID = "4bf92f3577b34da6a3ce929d0e0e4736";
+    private static final String PARENT_SPAN_ID = "00f067aa0ba902b7";
 
     @Test
-    public void testRemoteSpanDisabledByDefault() throws Exception {
-
+    void testRemoteSpanDisabledByDefault() throws Exception {
         // remote call (with parent trace)->target->(build step)->target-sub
         // So the target and target sub should have same trace id inherited from remote span.
 
@@ -76,11 +75,11 @@ public class RemoteSpanDisabledTest extends BaseIntegrationTest {
             String targetSpanName =
                     ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + targetProject.getName();
             Optional<Tree.Node<SpanDataWrapper>> targetJobSpan = spans.breadthFirstSearchNodes(
-                    node -> targetSpanName.equals(node.getData().spanData.getName()));
+                    node -> targetSpanName.equals(node.getData().spanData().getName()));
             assertThat("Should have target job span in the tree", targetJobSpan.isPresent());
             assertThat(
                     "Target job should have the traceId same as trace parent",
-                    targetJobSpan.get().getData().spanData.getTraceId(),
+                    targetJobSpan.get().getData().spanData().getTraceId(),
                     not(equalTo(PARENT_TRACE_ID)));
 
             String targetSubSpanName =
@@ -89,11 +88,11 @@ public class RemoteSpanDisabledTest extends BaseIntegrationTest {
                     .get()
                     .asTree()
                     .breadthFirstSearchNodes(node ->
-                            targetSubSpanName.equals(node.getData().spanData.getName()));
+                            targetSubSpanName.equals(node.getData().spanData().getName()));
             assertThat("Should have target sub job span in the tree", targetSubSpan.isPresent());
             assertThat(
                     "Target sub job should not have the traceId same as trace parent",
-                    targetSubSpan.get().getData().spanData.getTraceId(),
+                    targetSubSpan.get().getData().spanData().getTraceId(),
                     not(equalTo(PARENT_TRACE_ID)));
         });
     }
