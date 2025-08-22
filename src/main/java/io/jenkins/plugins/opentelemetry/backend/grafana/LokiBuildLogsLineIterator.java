@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
@@ -151,7 +150,7 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
         }
     }
 
-    @Nonnull
+    @NonNull
     @VisibleForTesting
     protected Iterator<LogLine<Long>> loadLogLines(InputStream lokiQueryResponseInputStream) throws IOException {
         Iterator<LogLine<Long>> logLineIterator =

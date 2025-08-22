@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
@@ -169,8 +168,8 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
      * @param channel pass the channel rather than using {@link Computer#getChannel()} to support {@link ComputerListener#preOnline(Computer, Channel, FilePath, TaskListener)} use cases
      */
     private Future<Object> configureOpenTelemetrySdkOnComputer(
-            @Nonnull Computer computer,
-            @Nonnull VirtualChannel channel,
+            @NonNull Computer computer,
+            @NonNull VirtualChannel channel,
             Map<String, String> otelSdkProperties,
             Map<String, String> otelSdkResourceProperties) {
         Map<String, String> buildAgentOtelSdkProperties;

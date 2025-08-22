@@ -7,6 +7,7 @@ package io.jenkins.plugins.opentelemetry.backend.grafana;
 
 import com.google.errorprone.annotations.MustBeClosed;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import groovy.text.Template;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
@@ -40,8 +41,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -81,14 +80,14 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
 
     @MustBeClosed
     public LokiLogStorageRetriever(
-            @Nonnull String lokiUrl,
+            @NonNull String lokiUrl,
             boolean disableSslVerifications,
-            @Nonnull Optional<HttpAuthHeaderFactory> httpAuthHeaderFactory,
-            @Nonnull Optional<String> lokiTenantId,
+            @NonNull Optional<HttpAuthHeaderFactory> httpAuthHeaderFactory,
+            @NonNull Optional<String> lokiTenantId,
             @NonNull Template buildLogsVisualizationUrlTemplate,
             @NonNull TemplateBindingsProvider templateBindingsProvider,
-            @Nonnull String serviceName,
-            @Nonnull Optional<String> serviceNamespace) {
+            @NonNull String serviceName,
+            @NonNull Optional<String> serviceNamespace) {
         if (StringUtils.isBlank(lokiUrl)) {
             throw new IllegalArgumentException("Loki url cannot be blank");
         }
@@ -125,7 +124,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         this.templateBindingsProvider = templateBindingsProvider;
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public LogsQueryResult overallLog(
             String jobFullName,
@@ -203,7 +202,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         }
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public LogsQueryResult stepLog(
             String jobFullName,

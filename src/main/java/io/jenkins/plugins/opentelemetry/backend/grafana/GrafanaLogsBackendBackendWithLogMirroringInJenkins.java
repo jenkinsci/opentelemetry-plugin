@@ -5,12 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nonnull;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -59,7 +59,7 @@ public class GrafanaLogsBackendBackendWithLogMirroringInJenkins extends GrafanaL
             return LokiOTelLogFormat.LOKI_V2_JSON_OTEL_FORMAT.name();
         }
 
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Store pipeline logs in Loki and mirror them in Jenkins";

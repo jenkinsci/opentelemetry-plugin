@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.TaskListener;
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -17,7 +18,6 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -49,7 +49,7 @@ public class SpanContextPropagationSynchronousTestStep extends Step {
             return "spanContextPropagationSynchronousTestStep";
         }
 
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return "spanContextPropagationSynchronousTestStep";

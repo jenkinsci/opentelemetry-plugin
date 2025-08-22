@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.init;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.util.ClassLoaderSanityThreadFactory;
 import hudson.util.DaemonThreadFactory;
@@ -19,7 +20,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
 
 @Extension
@@ -28,7 +28,7 @@ public class StepExecutionInstrumentationInitializer implements OpenTelemetryLif
     static final Logger logger = Logger.getLogger(StepExecutionInstrumentationInitializer.class.getName());
 
     @Override
-    public void afterConfiguration(@Nonnull ConfigProperties configProperties) {
+    public void afterConfiguration(@NonNull ConfigProperties configProperties) {
         try {
             logger.log(
                     Level.FINE, () -> "Instrumenting " + SynchronousNonBlockingStepExecution.class.getName() + "...");

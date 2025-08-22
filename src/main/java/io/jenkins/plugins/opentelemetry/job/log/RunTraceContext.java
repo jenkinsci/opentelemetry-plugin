@@ -17,7 +17,6 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
-import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 
 public class RunTraceContext implements Serializable {
@@ -77,13 +76,13 @@ public class RunTraceContext implements Serializable {
         return W3CTraceContextPropagator.getInstance()
                 .extract(Context.current(), getW3cTraceContext(), new TextMapGetter<>() {
                     @Override
-                    public Iterable<String> keys(@Nonnull Map<String, String> carrier) {
+                    public Iterable<String> keys(@NonNull Map<String, String> carrier) {
                         return carrier.keySet();
                     }
 
                     @Nullable
                     @Override
-                    public String get(@Nullable Map<String, String> carrier, @Nonnull String key) {
+                    public String get(@Nullable Map<String, String> carrier, @NonNull String key) {
                         assert carrier != null;
                         return carrier.get(key);
                     }

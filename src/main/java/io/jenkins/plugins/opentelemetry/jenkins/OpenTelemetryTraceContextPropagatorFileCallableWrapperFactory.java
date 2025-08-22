@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.remoting.RoleChecker;
@@ -111,13 +110,13 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
             Context callerContext = W3CTraceContextPropagator.getInstance()
                     .extract(Context.current(), w3cTraceContext, new TextMapGetter<>() {
                         @Override
-                        public Iterable<String> keys(@Nonnull Map<String, String> carrier) {
+                        public Iterable<String> keys(@NonNull Map<String, String> carrier) {
                             return carrier.keySet();
                         }
 
                         @Nullable
                         @Override
-                        public String get(@Nullable Map<String, String> carrier, @Nonnull String key) {
+                        public String get(@Nullable Map<String, String> carrier, @NonNull String key) {
                             assert carrier != null;
                             return carrier.get(key);
                         }
