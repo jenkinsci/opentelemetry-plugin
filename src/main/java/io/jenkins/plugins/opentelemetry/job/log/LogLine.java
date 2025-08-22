@@ -5,7 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Represents a build log line.
@@ -18,7 +18,7 @@ public class LogLine<Id> {
     private final Id id;
     private final String message;
 
-    public LogLine(@Nonnull Id id, @Nonnull String message) {
+    public LogLine(@NonNull Id id, @NonNull String message) {
         this.id = id;
         this.message = message;
     }
@@ -28,12 +28,12 @@ public class LogLine<Id> {
      * query results (e.g. {@link Long} line number for Elasticsearch
      * or the {@link Long} timestamp in nanos for Loki)
      */
-    @Nonnull
+    @NonNull
     public Id getId() {
         return id;
     }
 
-    @Nonnull
+    @NonNull
     public String getMessage() {
         return message;
     }

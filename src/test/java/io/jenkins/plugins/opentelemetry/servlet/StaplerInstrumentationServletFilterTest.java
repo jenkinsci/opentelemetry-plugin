@@ -5,12 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry.servlet;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.opentelemetry.api.OpenTelemetry;
 import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -324,7 +324,7 @@ public class StaplerInstrumentationServletFilterTest {
         }
     }
 
-    private static @Nonnull StaplerInstrumentationServletFilter newStaplerInstrumentationServletFilter() {
+    private static @NonNull StaplerInstrumentationServletFilter newStaplerInstrumentationServletFilter() {
         StaplerInstrumentationServletFilter staplerInstrumentationServletFilter =
                 new StaplerInstrumentationServletFilter();
         staplerInstrumentationServletFilter.tracer = OpenTelemetry.noop().getTracer("test");

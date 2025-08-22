@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import com.google.common.annotations.VisibleForTesting;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.instrumentation.resources.ContainerResourceProvider;
@@ -24,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 
 /**
  * Global singleton similar to the {@link io.opentelemetry.api.GlobalOpenTelemetry} in order to also have a
@@ -55,7 +55,7 @@ public final class GlobalOpenTelemetrySdk {
      */
     static final AtomicInteger configurationCounter = new AtomicInteger();
 
-    @Nonnull
+    @NonNull
     public static ReconfigurableOpenTelemetry get() {
         return GlobalOpenTelemetrySdk.openTelemetry;
     }
@@ -64,7 +64,7 @@ public final class GlobalOpenTelemetrySdk {
         return GlobalOpenTelemetrySdk.openTelemetry != null;
     }
 
-    @Nonnull
+    @NonNull
     public static io.opentelemetry.api.logs.Logger getOtelLogger() {
         return otelLogger;
     }

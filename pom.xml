@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.19</version>
+    <version>5.24</version>
     <relativePath />
   </parent>
   <groupId>io.jenkins.plugins</groupId>
@@ -71,6 +71,8 @@
     <useBeta>true</useBeta>
     <elasticstack.version>9.1.0</elasticstack.version>
     <error-prone.version>2.40.0</error-prone.version>
+    <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
+    <hpi.bundledArtifacts>detector-resources-support,elasticsearch-java,error_prone_anntations,jakarta.json-api,opentelemetry-apache-httpclient-5.2,opentelemetry-aws-resources,opentelemetry-extension-trace-propagators,opentelemetry-gcp-resources,opentelemetry-runtime-telemetry-java8,parsson</hpi.bundledArtifacts>
   </properties>
 
   <dependencyManagement>
@@ -202,6 +204,13 @@
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>opentelemetry-api</artifactId>
       <version>${jenkins-opentelemetry.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- TODO: Could be removed after picking up https://github.com/jenkinsci/opentelemetry-api-plugin/pull/75 -->
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>
@@ -386,6 +395,13 @@
     <dependency>
       <groupId>org.jenkinsci.plugins</groupId>
       <artifactId>pipeline-model-definition</artifactId>
+      <exclusions>
+        <exclusion>
+          <!-- TODO: Could be removed after picking up https://github.com/jenkinsci/pipeline-model-definition-plugin/pull/816 -->
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>
@@ -493,6 +509,11 @@
         <exclusion>
           <groupId>org.jenkins-ci.plugins</groupId>
           <artifactId>apache-httpcomponents-client-4-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- TODO: Could be removed after picking up https://github.com/jenkinsci/trilead-api-plugin/pull/237 -->
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
         </exclusion>
       </exclusions>
     </dependency>

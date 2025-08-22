@@ -15,7 +15,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.Nonnull;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 /**
@@ -30,7 +29,7 @@ public class InputStreamByteBuffer extends ByteBuffer {
     @NonNull
     final InputStream in;
 
-    public InputStreamByteBuffer(@Nonnull InputStream in, @Nonnull Tracer tracer) {
+    public InputStreamByteBuffer(@NonNull InputStream in, @NonNull Tracer tracer) {
         this.in = in;
         this.tracer = tracer;
     }

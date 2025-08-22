@@ -19,7 +19,6 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 
@@ -66,7 +65,7 @@ public class LokiGetJenkinsBuildLogsQueryParameters {
         this.serviceNamespace = serviceNamespace;
     }
 
-    public ClassicHttpRequest toHttpRequest(@Nonnull String lokiUrl) {
+    public ClassicHttpRequest toHttpRequest(@NonNull String lokiUrl) {
         // https://grafana.com/docs/loki/latest/reference/loki-http-api/#query-logs-within-a-range-of-time
 
         final StringBuilder logQl = new StringBuilder("{");
@@ -139,7 +138,7 @@ public class LokiGetJenkinsBuildLogsQueryParameters {
 
     static class InstantToEpochInNanos implements Function<Instant, Long> {
         @Override
-        @Nonnull
+        @NonNull
         public Long apply(Instant instant) {
             return TimeUnit.NANOSECONDS.convert(instant.toEpochMilli(), TimeUnit.MILLISECONDS) + instant.getNano();
         }

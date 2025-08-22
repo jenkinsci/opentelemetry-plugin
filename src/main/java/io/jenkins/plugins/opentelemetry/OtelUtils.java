@@ -286,7 +286,7 @@ public class OtelUtils {
         }
 
         @Override
-        public String get(@javax.annotation.Nullable HttpServletRequest request, @NonNull String key) {
+        public String get(HttpServletRequest request, @NonNull String key) {
             return Optional.ofNullable(request).map(c -> c.getHeader(key)).orElse(null);
         }
     }

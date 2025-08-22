@@ -14,7 +14,6 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import java.io.Serial;
 import java.util.Map;
-import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
 public class FlowNodeTraceContext extends RunTraceContext {
@@ -75,7 +74,7 @@ public class FlowNodeTraceContext extends RunTraceContext {
         return java.util.Objects.hash(super.hashCode(), flowNodeId);
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public Attributes toAttributes() {
         return Attributes.builder()

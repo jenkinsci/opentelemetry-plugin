@@ -5,12 +5,12 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import java.util.Collections;
 import java.util.Map;
-import javax.annotation.Nonnull;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class NoGrafanaLogsBackend extends GrafanaLogsBackend {
@@ -39,7 +39,7 @@ public class NoGrafanaLogsBackend extends GrafanaLogsBackend {
 
     @Extension(ordinal = 100)
     public static class DescriptorImpl extends GrafanaLogsBackend.DescriptorImpl {
-        @Nonnull
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Don't store pipeline logs in Loki";
