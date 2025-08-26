@@ -18,7 +18,7 @@
     <version>${revision}.${changelist}</version>
     <packaging>hpi</packaging>
     <properties>
-        <revision>3</revision>
+        <revision>3.1543</revision>
         <changelist>999999-SNAPSHOT</changelist>
         <jenkins.baseline>2.479</jenkins.baseline>
         <jenkins.version>${jenkins.baseline}.3</jenkins.version>
