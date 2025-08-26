@@ -7,11 +7,23 @@ package io.jenkins.plugins.opentelemetry.job.log;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.backend.ElasticBackend;
 import io.jenkins.plugins.opentelemetry.backend.elastic.ElasticLogsBackendWithJenkinsVisualization;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import static junit.framework.TestCase.assertEquals;
 
+@WithJenkins
 public class ElasticStackConfigurationFormTest {
+
+    @SuppressWarnings("unused")
+    private JenkinsRule r;
+
+    @BeforeEach
+    public void setUp(JenkinsRule r) {
+        this.r = r;
+    }
 
     @Test
     public void testDoCheckKibanaUrl() {

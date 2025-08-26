@@ -129,6 +129,9 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
 
         @RequirePOST
         public FormValidation doCheckElasticsearchUrl(@QueryParameter("elasticsearchUrl") String url) {
+            if (!isAuthorized()) {
+                return FormValidation.error("You do not have permission to configure this setting.");
+            }
             if (StringUtils.isEmpty(url)) {
                 return FormValidation.ok();
             }
@@ -141,24 +144,22 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         }
 
         @RequirePOST
-        public ListBoxModel doFillElasticsearchCredentialsIdItems(Item context,
+        public ListBoxModel doFillElasticsearchCredentialsIdItems(
                 @QueryParameter String elasticsearchCredentialsId) {
-            if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
-                    || context != null && !context.hasPermission(Item.CONFIGURE)) {
+            if (!isAuthorized()) {
                 return new StandardListBoxModel();
             }
 
             return new StandardListBoxModel().includeEmptyValue()
-                    .includeAs(ACL.SYSTEM2, context, StandardUsernameCredentials.class)
+                    .includeAs(ACL.SYSTEM2, (Item) null, StandardUsernameCredentials.class)
                     .includeCurrentValue(elasticsearchCredentialsId);
         }
 
         @RequirePOST
-        public FormValidation doCheckElasticsearchCredentialsId(Item context,
+        public FormValidation doCheckElasticsearchCredentialsId(
                 @QueryParameter String elasticsearchCredentialsId) {
-            if (context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER)
-                    || context != null && !context.hasPermission(Item.CONFIGURE)) {
-                return FormValidation.ok();
+            if (!isAuthorized()) {
+                return FormValidation.error("You do not have permission to configure this setting.");
             }
 
             if (elasticsearchCredentialsId == null || elasticsearchCredentialsId.isEmpty()) {
@@ -175,6 +176,9 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         @RequirePOST
         public FormValidation doValidate(@QueryParameter String elasticsearchUrl,
                 @QueryParameter boolean disableSslVerifications, @QueryParameter String elasticsearchCredentialsId) {
+            if (!isAuthorized()) {
+                return FormValidation.error("You do not have permission to configure this setting.");
+            }
             FormValidation elasticsearchUrlValidation = doCheckElasticsearchUrl(elasticsearchUrl);
             if (elasticsearchUrlValidation.kind != FormValidation.Kind.OK) {
                 return elasticsearchUrlValidation;
@@ -192,6 +196,14 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             } catch (Exception e) {
                 return FormValidation.error(e, e.getMessage());
             }
+        }
+
+        /**
+         * Checks if the user has permission to configure the backend.
+         * @return true if the user is authorized, false otherwise
+         */
+        private boolean isAuthorized() {
+            return Jenkins.get().hasPermission(Jenkins.ADMINISTER);
         }
     }
 }
