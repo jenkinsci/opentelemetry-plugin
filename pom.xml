@@ -149,6 +149,22 @@
         <artifactId>parsson</artifactId>
         <version>1.1.7</version>
       </dependency>
+      <dependency>
+        <!-- depends on https://github.com/jenkinsci/workflow-api-plugin/pull/417 -->
+        <!-- TODO remove when in bom -->
+        <groupId>org.jenkins-ci.plugins.workflow</groupId>
+        <artifactId>workflow-api</artifactId>
+        <version>1409.v96d6da_eed7f7</version>
+      </dependency>
+      <dependency>
+        <!-- depends on https://github.com/jenkinsci/workflow-api-plugin/pull/417 -->
+        <!-- TODO remove when in bom -->
+        <groupId>org.jenkins-ci.plugins.workflow</groupId>
+        <artifactId>workflow-api</artifactId>
+        <version>1409.v96d6da_eed7f7</version>
+        <scope>test</scope>
+        <classifier>tests</classifier>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <dependencies>
@@ -181,6 +197,16 @@
         <exclusion>
           <groupId>org.apache.httpcomponents.client5</groupId>
           <artifactId>httpclient5</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- provided by org.jenkins-ci.plugins:jackson2-api -->
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- provided by org.jenkins-ci.plugins:jackson2-api -->
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
