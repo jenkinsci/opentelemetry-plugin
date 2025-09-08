@@ -84,7 +84,7 @@ class ElasticsearchBackendITTest extends ElasticStackIT {
         ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor =
                 (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization.getDescriptor();
         assertFalse(visDescriptor
-                .doFillElasticsearchCredentialsIdItems(null, ElasticStack.CRED_ID)
+                .doFillElasticsearchCredentialsIdItems(ElasticStack.CRED_ID)
                 .isEmpty());
     }
 
@@ -96,9 +96,8 @@ class ElasticsearchBackendITTest extends ElasticStackIT {
         ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl visDescriptor =
                 (ElasticLogsBackendWithJenkinsVisualization.DescriptorImpl) visualization.getDescriptor();
         assertEquals(
-                FormValidation.Kind.OK,
-                visDescriptor.doCheckElasticsearchCredentialsId(null, ElasticStack.CRED_ID).kind);
-        assertEquals(FormValidation.Kind.ERROR, visDescriptor.doCheckElasticsearchCredentialsId(null, "foo").kind);
+                FormValidation.Kind.OK, visDescriptor.doCheckElasticsearchCredentialsId(ElasticStack.CRED_ID).kind);
+        assertEquals(FormValidation.Kind.ERROR, visDescriptor.doCheckElasticsearchCredentialsId("foo").kind);
     }
 
     private void waitForLogs(WorkflowRun run) throws Exception {
