@@ -15,170 +15,173 @@ import io.opentelemetry.semconv.ServerAttributes;
 import io.opentelemetry.semconv.UrlAttributes;
 import java.util.Map;
 import org.eclipse.jgit.transport.URIish;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class GitStepHandlerTest {
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+
+class GitStepHandlerTest {
 
     @Test
-    public void testHttpsGithubUrl() throws Exception {
+    void testHttpsGithubUrl() {
         SpanBuilderMock spanBuilder =
                 testGithubUrl("https://github.com/open-telemetry/opentelemetry-java", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(
+        assertThat(
                 attributes.get(UrlAttributes.URL_FULL),
-                Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java"));
-        MatcherAssert.assertThat(
+                equalTo("https://github.com/open-telemetry/opentelemetry-java"));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY),
-                Matchers.equalTo("open-telemetry/opentelemetry-java"));
+                equalTo("open-telemetry/opentelemetry-java"));
     }
 
     @Test
-    public void testSshGithubUrl() throws Exception {
+    void testSshGithubUrl() {
         SpanBuilderMock spanBuilder =
                 testGithubUrl("git@github.com:open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("github.com"));
-        MatcherAssert.assertThat(
+        assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), equalTo("github.com"));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY),
-                Matchers.equalTo("open-telemetry/opentelemetry-java"));
+                equalTo("open-telemetry/opentelemetry-java"));
     }
 
     @Test
-    public void testScpStyleSshGitUrl() throws Exception {
+    void testScpStyleSshGitUrl() {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_the_ssh_protocol
         SpanBuilderMock spanBuilder =
                 testGithubUrl("user@example.com:open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
-        MatcherAssert.assertThat(
+        assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), equalTo("example.com"));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY),
-                Matchers.equalTo("open-telemetry/opentelemetry-java"));
+                equalTo("open-telemetry/opentelemetry-java"));
     }
 
     @Test
-    public void testScpStyleSshGitUrlWithoutUsername() throws Exception {
+    void testScpStyleSshGitUrlWithoutUsername() {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_the_ssh_protocol
         SpanBuilderMock spanBuilder =
                 testGithubUrl("example.com:open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
-        MatcherAssert.assertThat(
+        assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), equalTo("example.com"));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY),
-                Matchers.equalTo("open-telemetry/opentelemetry-java"));
+                equalTo("open-telemetry/opentelemetry-java"));
     }
 
     @Test
-    public void testSshGitUrl() throws Exception {
+    void testSshGitUrl() {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_the_ssh_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("ssh://user@example.com/project.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("project"));
+        assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), equalTo("example.com"));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), equalTo("project"));
     }
 
     @Test
-    public void testSshGitUrlWithPort() throws Exception {
+    void testSshGitUrlWithPort() {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_the_ssh_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("ssh://user@example.com:2222/project.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("project"));
+        assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), equalTo("example.com"));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), equalTo("project"));
     }
 
     @Test
-    public void testSshGitUrlWithoutUsername() throws Exception {
+    void testSshGitUrlWithoutUsername() {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_the_ssh_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("ssh://example.com/project.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), Matchers.equalTo("example.com"));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("project"));
+        assertThat(attributes.get(ServerAttributes.SERVER_ADDRESS), equalTo("example.com"));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), equalTo("project"));
     }
 
     @Test
-    public void testHttpsGithubUrlWithSuffix() throws Exception {
+    void testHttpsGithubUrlWithSuffix() {
         SpanBuilderMock spanBuilder =
                 testGithubUrl("https://github.com/open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
-        MatcherAssert.assertThat(
+        assertThat(
                 attributes.get(UrlAttributes.URL_FULL),
-                Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
-        MatcherAssert.assertThat(
+                equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY),
-                Matchers.equalTo("open-telemetry/opentelemetry-java"));
+                equalTo("open-telemetry/opentelemetry-java"));
     }
 
     @Test
-    public void testHttpsGithubUrlWithUsername() throws Exception {
+    void testHttpsGithubUrlWithUsername() {
         SpanBuilderMock spanBuilder = testGithubUrl(
                 "https://my_username@github.com/open-telemetry/opentelemetry-java.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
-        MatcherAssert.assertThat(
+        assertThat(
                 attributes.get(UrlAttributes.URL_FULL),
-                Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
-        MatcherAssert.assertThat(
+                equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY),
-                Matchers.equalTo("open-telemetry/opentelemetry-java"));
+                equalTo("open-telemetry/opentelemetry-java"));
     }
 
     @Test
-    public void testHttpsGithubUrlWithUsernamePassword() throws Exception {
+    void testHttpsGithubUrlWithUsernamePassword() {
         SpanBuilderMock spanBuilder = testGithubUrl(
                 "https://my_username:my_password@github.com/open-telemetry/opentelemetry-java.git",
                 "master",
                 "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
-        MatcherAssert.assertThat(
+        assertThat(
                 attributes.get(UrlAttributes.URL_FULL),
-                Matchers.equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
-        MatcherAssert.assertThat(
+                equalTo("https://github.com/open-telemetry/opentelemetry-java.git"));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY),
-                Matchers.equalTo("open-telemetry/opentelemetry-java"));
+                equalTo("open-telemetry/opentelemetry-java"));
     }
 
     @Test
-    public void testFileGitUrl() throws Exception {
+    void testFileGitUrl() {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_local_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("file:///srv/git/project.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.is(Matchers.nullValue()));
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("srv/git/project"));
+        assertThat(attributes.get(UrlAttributes.URL_FULL), is(nullValue()));
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), equalTo("srv/git/project"));
     }
 
     @Test
-    public void testFileGitUrlWithoutSchemeLinux() throws Exception {
+    void testFileGitUrlWithoutSchemeLinux() {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_local_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("/srv/git/project.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.is(Matchers.nullValue()));
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("srv/git/project"));
+        assertThat(attributes.get(UrlAttributes.URL_FULL), is(nullValue()));
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), equalTo("srv/git/project"));
     }
 
     @Test
-    public void testFileGitUrlWithoutSchemeWindows() throws Exception {
+    void testFileGitUrlWithoutSchemeWindows() {
         // https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols#_local_protocol
         SpanBuilderMock spanBuilder = testGithubUrl("c:\\srv/git/project.git", "master", "my-git-user");
         Map<AttributeKey<?>, Object> attributes = spanBuilder.getAttributes();
 
-        MatcherAssert.assertThat(attributes.get(UrlAttributes.URL_FULL), Matchers.is(Matchers.nullValue()));
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), Matchers.equalTo("c:\\srv/git/project"));
+        assertThat(attributes.get(UrlAttributes.URL_FULL), is(nullValue()));
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.GIT_REPOSITORY), equalTo("c:\\srv/git/project"));
     }
 
     private SpanBuilderMock testGithubUrl(
-            @NonNull String githubUrl, @Nullable String gitBranch, @Nullable String gitUsername) throws Exception {
+            @NonNull String githubUrl, @Nullable String gitBranch, @Nullable String gitUsername) {
 
         GitStepHandler handler = new GitStepHandler();
 
@@ -187,14 +190,14 @@ public class GitStepHandlerTest {
     }
 
     @Test
-    public void testSanitizeUserNamePassword() throws Exception {
+    void testSanitizeUserNamePassword() throws Exception {
         testSanitizeUrl(
                 "https://my_username:my_password@github.com/open-telemetry/opentelemetry-java.git",
                 "https://github.com/open-telemetry/opentelemetry-java.git");
     }
 
     @Test
-    public void testSanitizeUserName() throws Exception {
+    void testSanitizeUserName() throws Exception {
         testSanitizeUrl(
                 "https://my_username@github.com/open-telemetry/opentelemetry-java.git",
                 "https://github.com/open-telemetry/opentelemetry-java.git");
@@ -203,11 +206,11 @@ public class GitStepHandlerTest {
     private void testSanitizeUrl(String input, String expected) throws Exception {
         GitStepHandler handler = new GitStepHandler();
         String actual = handler.sanitizeUrl(new URIish(input));
-        MatcherAssert.assertThat(actual, Matchers.is(expected));
+        assertThat(actual, is(expected));
     }
 
     @Test
-    public void testSanitizeFileUrl() throws Exception {
+    void testSanitizeFileUrl() throws Exception {
         testSanitizeUrl("file:///srv/git/project.git", "file:///srv/git/project.git");
     }
 }

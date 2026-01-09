@@ -5,7 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import hudson.matrix.AxisList;
 import hudson.matrix.MatrixBuild;
@@ -21,55 +23,53 @@ import jenkins.branch.BranchSource;
 import jenkins.branch.DefaultBranchPropertyStrategy;
 import jenkins.plugins.git.GitSCMSource;
 import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class OtelUtilsTest extends BaseIntegrationTest {
+class OtelUtilsTest extends BaseIntegrationTest {
 
     @Test
-    public void test_workflow() throws Exception {
+    void test_workflow() throws Exception {
         final String jobName = "test-simple-pipeline-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition("echo 'hi'", true));
         WorkflowRun build = jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
 
-        MatcherAssert.assertThat(OtelUtils.isFreestyle(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMatrix(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(true));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.WORKFLOW));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
+        assertThat(OtelUtils.isFreestyle(build), is(false));
+        assertThat(OtelUtils.isMatrix(build), is(false));
+        assertThat(OtelUtils.isMaven(build), is(false));
+        assertThat(OtelUtils.isMultibranch(build), is(false));
+        assertThat(OtelUtils.isWorkflow(build), is(true));
+        assertThat(OtelUtils.getProjectType(build), is(OtelUtils.WORKFLOW));
+        assertThat(OtelUtils.getMultibranchType(build), is(OtelUtils.UNKNOWN));
+        assertThat(OtelUtils.isMultibranchChangeRequest(build), is(false));
+        assertThat(OtelUtils.isMultibranchBranch(build), is(false));
+        assertThat(OtelUtils.isMultibranchTag(build), is(false));
     }
 
     @Test
-    public void test_freestyle() throws Exception {
+    void test_freestyle() throws Exception {
         final String jobName = "test-freestyle-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-        MatcherAssert.assertThat(OtelUtils.isFreestyle(build), CoreMatchers.is(true));
-        MatcherAssert.assertThat(OtelUtils.isMatrix(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.FREESTYLE));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
+        assertThat(OtelUtils.isFreestyle(build), is(true));
+        assertThat(OtelUtils.isMatrix(build), is(false));
+        assertThat(OtelUtils.isMaven(build), is(false));
+        assertThat(OtelUtils.isMultibranch(build), is(false));
+        assertThat(OtelUtils.isWorkflow(build), is(false));
+        assertThat(OtelUtils.getProjectType(build), is(OtelUtils.FREESTYLE));
+        assertThat(OtelUtils.getMultibranchType(build), is(OtelUtils.UNKNOWN));
+        assertThat(OtelUtils.isMultibranchChangeRequest(build), is(false));
+        assertThat(OtelUtils.isMultibranchBranch(build), is(false));
+        assertThat(OtelUtils.isMultibranchTag(build), is(false));
     }
 
     @Test
-    public void test_matrix() throws Exception {
+    void test_matrix() throws Exception {
         // See
         // https://github.com/jenkinsci/matrix-project-plugin/blob/be0b18bcba0c4089b1ed9482863050de6aa65b32/src/test/java/hudson/matrix/MatrixProjectTest.java#L193-L202
         final String jobName = "test-matrix-" + jobNameSuffix.incrementAndGet();
@@ -80,40 +80,40 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         project.setAxes(axes);
         MatrixBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-        MatcherAssert.assertThat(OtelUtils.isFreestyle(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMatrix(build), CoreMatchers.is(true));
-        MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.MATRIX));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
+        assertThat(OtelUtils.isFreestyle(build), is(false));
+        assertThat(OtelUtils.isMatrix(build), is(true));
+        assertThat(OtelUtils.isMaven(build), is(false));
+        assertThat(OtelUtils.isMultibranch(build), is(false));
+        assertThat(OtelUtils.isWorkflow(build), is(false));
+        assertThat(OtelUtils.getProjectType(build), is(OtelUtils.MATRIX));
+        assertThat(OtelUtils.getMultibranchType(build), is(OtelUtils.UNKNOWN));
+        assertThat(OtelUtils.isMultibranchChangeRequest(build), is(false));
+        assertThat(OtelUtils.isMultibranchBranch(build), is(false));
+        assertThat(OtelUtils.isMultibranchTag(build), is(false));
     }
 
     @Test
-    public void test_maven() throws Exception {
+    void test_maven() throws Exception {
         final String jobName = "test-maven-" + jobNameSuffix.incrementAndGet();
         MavenModuleSet project = jenkinsRule.createProject(MavenModuleSet.class, jobName);
         // Maven installation has not been done so it will fail, but the test should only validate
         // the methods.
         MavenModuleSetBuild build = jenkinsRule.buildAndAssertStatus(Result.FAILURE, project);
 
-        MatcherAssert.assertThat(OtelUtils.isFreestyle(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMatrix(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(true));
-        MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.MAVEN));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.UNKNOWN));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
+        assertThat(OtelUtils.isFreestyle(build), is(false));
+        assertThat(OtelUtils.isMatrix(build), is(false));
+        assertThat(OtelUtils.isMaven(build), is(true));
+        assertThat(OtelUtils.isMultibranch(build), is(false));
+        assertThat(OtelUtils.isWorkflow(build), is(false));
+        assertThat(OtelUtils.getProjectType(build), is(OtelUtils.MAVEN));
+        assertThat(OtelUtils.getMultibranchType(build), is(OtelUtils.UNKNOWN));
+        assertThat(OtelUtils.isMultibranchChangeRequest(build), is(false));
+        assertThat(OtelUtils.isMultibranchBranch(build), is(false));
+        assertThat(OtelUtils.isMultibranchTag(build), is(false));
     }
 
     @Test
-    public void test_multibranch() throws Exception {
+    void test_multibranch() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         sampleRepo.init();
         sampleRepo.write("Jenkinsfile", "echo 'hi'");
@@ -131,29 +131,29 @@ public class OtelUtilsTest extends BaseIntegrationTest {
         jenkinsRule.waitUntilNoActivity();
         WorkflowRun build = p.getLastBuild();
 
-        MatcherAssert.assertThat(OtelUtils.isFreestyle(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMatrix(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMaven(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranch(build), CoreMatchers.is(true));
-        MatcherAssert.assertThat(OtelUtils.isWorkflow(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(build), CoreMatchers.is(OtelUtils.MULTIBRANCH));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(build), CoreMatchers.is(OtelUtils.BRANCH));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(build), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(build), CoreMatchers.is(true));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(build), CoreMatchers.is(false));
+        assertThat(OtelUtils.isFreestyle(build), is(false));
+        assertThat(OtelUtils.isMatrix(build), is(false));
+        assertThat(OtelUtils.isMaven(build), is(false));
+        assertThat(OtelUtils.isMultibranch(build), is(true));
+        assertThat(OtelUtils.isWorkflow(build), is(false));
+        assertThat(OtelUtils.getProjectType(build), is(OtelUtils.MULTIBRANCH));
+        assertThat(OtelUtils.getMultibranchType(build), is(OtelUtils.BRANCH));
+        assertThat(OtelUtils.isMultibranchChangeRequest(build), is(false));
+        assertThat(OtelUtils.isMultibranchBranch(build), is(true));
+        assertThat(OtelUtils.isMultibranchTag(build), is(false));
     }
 
     @Test
-    public void test_null() throws Exception {
-        MatcherAssert.assertThat(OtelUtils.isFreestyle(null), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMatrix(null), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMaven(null), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranch(null), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isWorkflow(null), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.getProjectType(null), CoreMatchers.is(OtelUtils.UNKNOWN));
-        MatcherAssert.assertThat(OtelUtils.getMultibranchType(null), CoreMatchers.is(OtelUtils.UNKNOWN));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchChangeRequest(null), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchBranch(null), CoreMatchers.is(false));
-        MatcherAssert.assertThat(OtelUtils.isMultibranchTag(null), CoreMatchers.is(false));
+    void test_null() {
+        assertThat(OtelUtils.isFreestyle(null), is(false));
+        assertThat(OtelUtils.isMatrix(null), is(false));
+        assertThat(OtelUtils.isMaven(null), is(false));
+        assertThat(OtelUtils.isMultibranch(null), is(false));
+        assertThat(OtelUtils.isWorkflow(null), is(false));
+        assertThat(OtelUtils.getProjectType(null), is(OtelUtils.UNKNOWN));
+        assertThat(OtelUtils.getMultibranchType(null), is(OtelUtils.UNKNOWN));
+        assertThat(OtelUtils.isMultibranchChangeRequest(null), is(false));
+        assertThat(OtelUtils.isMultibranchBranch(null), is(false));
+        assertThat(OtelUtils.isMultibranchTag(null), is(false));
     }
 }

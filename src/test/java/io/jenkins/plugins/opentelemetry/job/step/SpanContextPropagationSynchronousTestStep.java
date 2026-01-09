@@ -25,15 +25,16 @@ import org.jenkinsci.plugins.workflow.steps.SynchronousStepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class SpanContextPropagationSynchronousTestStep extends Step {
-    private static final Logger logger = Logger.getLogger(SpanContextPropagationSynchronousTestStep.class.getName());
-    transient OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
-    transient Tracer tracer = openTelemetry.getTracer("io.jenkins.opentelemetry.test");
+
+    private static final Logger LOGGER = Logger.getLogger(SpanContextPropagationSynchronousTestStep.class.getName());
+    private transient OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
+    private transient Tracer tracer = openTelemetry.getTracer("io.jenkins.opentelemetry.test");
 
     @DataBoundConstructor
     public SpanContextPropagationSynchronousTestStep() {}
 
     @Override
-    public StepExecution start(StepContext context) throws Exception {
+    public StepExecution start(StepContext context) {
         return new StepExecution(context);
     }
 

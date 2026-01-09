@@ -5,7 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
@@ -17,17 +20,15 @@ import jenkins.branch.BranchSource;
 import jenkins.branch.DefaultBranchPropertyStrategy;
 import jenkins.plugins.git.GitSCMSource;
 import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
+class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
 
     @Test
-    public void testMultibranchPipelineStep() throws Exception {
+    void testMultibranchPipelineStep() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         String pipelineScript =
                 """
@@ -68,30 +69,30 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
         // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
         checkChainOfSpans(spans, "Stage: Declarative: Checkout SCM", ExtendedJenkinsAttributes.AGENT_UI, "Phase: Run");
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
+        assertThat(spans.cardinality(), is(9L));
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
-        Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(
+        Attributes attributes = root.get(0).spanData().getAttributes();
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE),
-                CoreMatchers.is(OtelUtils.BRANCH));
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), CoreMatchers.is(OtelUtils.MULTIBRANCH));
-        MatcherAssert.assertThat(
-                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_DESCRIPTION), CoreMatchers.is("Bar"));
-        MatcherAssert.assertThat(
+                is(OtelUtils.BRANCH));
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE), is(OtelUtils.MULTIBRANCH));
+        assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_DESCRIPTION), is("Bar"));
+        assertThat(
                 attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_CAUSE),
-                CoreMatchers.is(List.of("BranchIndexingCause")));
+                is(List.of("BranchIndexingCause")));
 
         // TODO: support the chain of spans for the checkout step (it uses some random folder name in the tests
         // It returns the first checkout, aka the one without any shallow cloning, depth shallow.
         Optional<Tree.Node<SpanDataWrapper>> checkoutNode = spans.breadthFirstSearchNodes(
-                node -> node.getData().spanData.getName().startsWith("checkout:"));
-        MatcherAssert.assertThat(checkoutNode, CoreMatchers.is(CoreMatchers.notNullValue()));
+                node -> node.getData().spanData().getName().startsWith("checkout:"));
+        assertThat(checkoutNode, is(notNullValue()));
 
-        attributes = checkoutNode.get().getData().spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), CoreMatchers.is(false));
-        MatcherAssert.assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), CoreMatchers.is(0L));
+        attributes = checkoutNode.get().getData().spanData().getAttributes();
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW), is(false));
+        assertThat(attributes.get(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH), is(0L));
 
         // TODO verify environment variables are populated in shell steps
     }

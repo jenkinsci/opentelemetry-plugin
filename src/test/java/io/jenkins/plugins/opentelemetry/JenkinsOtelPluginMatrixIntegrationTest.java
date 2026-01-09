@@ -5,7 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.matrix.AxisList;
@@ -14,14 +16,12 @@ import hudson.matrix.MatrixProject;
 import hudson.matrix.TextAxis;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class JenkinsOtelPluginMatrixIntegrationTest extends BaseIntegrationTest {
+class JenkinsOtelPluginMatrixIntegrationTest extends BaseIntegrationTest {
 
     @Test
-    public void testMatrixJob() throws Exception {
+    void testMatrixJob() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
         // See
@@ -38,7 +38,7 @@ public class JenkinsOtelPluginMatrixIntegrationTest extends BaseIntegrationTest 
 
         Tree<SpanDataWrapper> spans = getBuildTrace();
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(20L));
+        assertThat(spans.cardinality(), is(20L));
         // TODO deeper checkChainOfSpans
         checkChainOfSpans(
                 spans,

@@ -5,6 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.job.log;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -41,16 +43,16 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.core5.http.HttpHost;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class OpenTelemetryLogToElasticsearchIT {
+class OpenTelemetryLogToElasticsearchIT {
+
     private static final Random RANDOM = new Random();
 
     @Test
-    public void test() throws Exception {
+    void test() throws Exception {
         InputStream envAsStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
-        Assert.assertNotNull(".env file not found in classpath", envAsStream);
+        assertNotNull(envAsStream, ".env file not found in classpath");
         Properties env = new Properties();
         env.load(envAsStream);
         Map<String, String> configuration = new HashMap<>();
@@ -146,7 +148,7 @@ public class OpenTelemetryLogToElasticsearchIT {
             for (Hit<ObjectNode> hit : hits) {
 
                 ObjectNode source = hit.source();
-                Assert.assertNotNull(source);
+                assertNotNull(source);
 
                 ObjectNode labels = (ObjectNode) source.findValue("labels");
                 ObjectNode numericLabels = (ObjectNode) source.findValue("numeric_labels");

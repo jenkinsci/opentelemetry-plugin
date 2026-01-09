@@ -11,12 +11,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.semconv.ServiceAttributes;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class DynatraceBackendTest {
+class DynatraceBackendTest {
 
     @Test
-    public void testGetMetricsVisualizationUrlDashboardIsSet() {
+    void testGetMetricsVisualizationUrlDashboardIsSet() {
         DynatraceBackend backend = new DynatraceBackend("https://{your-environment-id}.live.dynatrace.com/");
         backend.setDashboardId("311fa105-1f09-4005-926d-8d27bc33a717");
         Resource resource = Resource.builder()
@@ -31,7 +31,7 @@ public class DynatraceBackendTest {
     }
 
     @Test
-    public void testGetMetricsVisualizationUrlDashboardIsNotSet() {
+    void testGetMetricsVisualizationUrlDashboardIsNotSet() {
         DynatraceBackend backend = new DynatraceBackend("https://{your-environment-id}.live.dynatrace.com/");
         Resource resource = Resource.builder()
                 .put(ServiceAttributes.SERVICE_NAME, "jenkins")
