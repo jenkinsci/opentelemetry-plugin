@@ -16,20 +16,17 @@ import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 public class WithNewSpanStep extends Step {
 
     private final String label;
-    private final List<SpanAttribute> attributes;
-    private final boolean setAttributesOnlyOnParent;
+    private List<SpanAttribute> attributes = new ArrayList<>();
+    private boolean setAttributesOnlyOnParent = false;
 
     @DataBoundConstructor
-    public WithNewSpanStep(String label, List<SpanAttribute> attributes, Boolean setAttributesOnlyOnParent) {
+    public WithNewSpanStep(String label) {
         this.label = label;
-        // Allow empty attributes.
-        this.attributes = attributes == null ? new ArrayList<>() : attributes;
-        // Set to 'false', if no value is provided.
-        this.setAttributesOnlyOnParent = setAttributesOnlyOnParent != null && setAttributesOnlyOnParent;
     }
 
     public String getLabel() {
@@ -42,6 +39,18 @@ public class WithNewSpanStep extends Step {
 
     public boolean isSetAttributesOnlyOnParent() {
         return setAttributesOnlyOnParent;
+    }
+
+    @DataBoundSetter
+    public void setAttributes(List<SpanAttribute> attributes) {
+        // Allow empty attributes.
+        this.attributes = attributes != null ? attributes : new ArrayList<>();
+    }
+
+    @DataBoundSetter
+    public void setSetAttributesOnlyOnParent(Boolean setAttributesOnlyOnParent) {
+        // Set to 'false', if no value is provided.
+        this.setAttributesOnlyOnParent = setAttributesOnlyOnParent != null && setAttributesOnlyOnParent;
     }
 
     @Override
