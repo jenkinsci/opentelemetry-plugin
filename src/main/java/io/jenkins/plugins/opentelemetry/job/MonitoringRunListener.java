@@ -151,18 +151,13 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
     private DoubleHistogram cicdPipelineRunDurationHistogram;
     private LongUpDownCounter cicdPipelineRunActiveCounter;
     private LongCounter cicdPipelineRunErrorsCounter;
-    private LongCounter cicdSystemErrorsCounter;
+    private LongCounter cicdSystemErrorsCounter; // TODO implement
 
     @PostConstruct
     public void postConstruct() {
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins build executions...");
         Meter meter = getMeter();
         ConfigProperties configProperties = getConfigProperties();
-        SemconvStability semconvStability = new SemconvStability();
-        semconvStability.afterConfiguration(configProperties);
-        Meter newSemConventionsMeter = semconvStability.emitStableCicdSemconv()
-                ? meter
-                : OpenTelemetry.noop().getMeter("jenkins.opentelemetry");
 
         // CAUSE HANDLERS
         List<CauseHandler> causeHandlers = new ArrayList<>(ExtensionList.lookup(CauseHandler.class));
@@ -180,6 +175,15 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
         runDurationHistogramAllowList = MATCH_ANYTHING; // allow all
         runDurationHistogramDenyList = MATCH_NOTHING; // deny nothing
 
+        // keep the init of the new semantic conventions metrics in the `postConstruct()` to be consistent with
+        // the initialization of other metrics
+        // TODO only create new CICD semconv metrics if semconvStability.emitStableCicdSemconv() is true
+        // else shall we use use no-op metrics
+        SemconvStability semconvStability = new SemconvStability();
+        semconvStability.afterConfiguration(configProperties);
+        Meter newSemConventionsMeter = semconvStability.emitStableCicdSemconv()
+            ? meter
+            : OpenTelemetry.noop().getMeter("jenkins.opentelemetry");
         cicdPipelineRunDurationHistogram = CicdMetrics.newCiCdPipelineRunDurationHistogram(newSemConventionsMeter);
         cicdPipelineRunActiveCounter = CicdMetrics.newCiCdPipelineRunActiveCounter(newSemConventionsMeter);
         cicdPipelineRunErrorsCounter = CicdMetrics.newCiCdPipelineRunErrorsCounter(newSemConventionsMeter);
@@ -189,6 +193,10 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
         createOldSemanticConventionsMeasurements(semconvStability, meter);
     }
 
+    /**
+     * Locate the initialization of old semantic conventions measurements in a dedicated method to isolate the code,
+     * prevent misuse of the no-op meter, and ase removal of the code
+     */
     private void createOldSemanticConventionsMeasurements(SemconvStability semconvStability, Meter meter) {
         Meter oldSemConventionsMeter = semconvStability.emitOldCicdSemconv()
                 ? meter
@@ -557,7 +565,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                             1,
                             Attributes.of(
                                     CicdIncubatingAttributes.CICD_PIPELINE_NAME,
-                                    PIPELINE_NAME_OTHER, // FIXME CARDINALITY PROTECTION
+                                    PIPELINE_NAME_OTHER, // FIXME IMPLEMENT CARDINALITY PROTECTION
                                     ErrorAttributes.ERROR_TYPE,
                                     runResult.toString()));
                 } else if (Result.ABORTED.equals(runResult) || Result.NOT_BUILT.equals(runResult)) {
@@ -566,7 +574,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                             1,
                             Attributes.of(
                                     CicdIncubatingAttributes.CICD_PIPELINE_NAME,
-                                    PIPELINE_NAME_OTHER, // FIXME CARDINALITY PROTECTION
+                                    PIPELINE_NAME_OTHER, // FIXME IMPLEMENT CARDINALITY PROTECTION
                                     ErrorAttributes.ERROR_TYPE,
                                     runResult.toString()));
                 }
@@ -608,7 +616,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                     .orElseThrow((Supplier<RuntimeException>) () ->
                             new IllegalStateException("No RunHandler found for run " + run.getClass() + " - " + run))
                     .getPipelineShortName(run);
-            String pipelineId =
+            String pipelineName =
                     runDurationHistogramAllowList.matcher(pipelineShortName).matches()
                                     && !runDurationHistogramDenyList
                                             .matcher(pipelineShortName)
@@ -619,7 +627,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                     TimeUnit.SECONDS.convert(run.getDuration(), TimeUnit.MILLISECONDS),
                     Attributes.of(
                             ExtendedJenkinsAttributes.CI_PIPELINE_ID,
-                            pipelineId,
+                            pipelineName,
                             ExtendedJenkinsAttributes.CI_PIPELINE_RUN_RESULT,
                             result.toString()));
 
@@ -628,7 +636,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                     TimeUnit.SECONDS.convert(run.getDuration(), TimeUnit.MILLISECONDS),
                     Attributes.of(
                             CicdIncubatingAttributes.CICD_PIPELINE_NAME,
-                            pipelineId,
+                            pipelineName,
                             CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE,
                             CicdIncubatingAttributes.CicdPipelineRunStateIncubatingValues.FINALIZING,
                             CicdIncubatingAttributes.CICD_PIPELINE_RESULT,

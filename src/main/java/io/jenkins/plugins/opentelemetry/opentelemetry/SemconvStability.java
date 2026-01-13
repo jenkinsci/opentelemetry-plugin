@@ -11,6 +11,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.YesNoMaybe;
 
+/**
+ * Manages the configuration for semantic convention stability opt-in.
+ * Users can configure which version of the CI/CD semantic conventions to emit.
+ * TODO support hot config changes or document the need to restart Jenkins on config change.
+ */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
 public class SemconvStability implements OpenTelemetryLifecycleListener {
 
@@ -34,7 +39,8 @@ public class SemconvStability implements OpenTelemetryLifecycleListener {
         boolean oldCicd = true;
         boolean stableCicd = true;
 
-        String value = configProperties.getString("otel.semconv-stability.opt-in");
+        // default to just emitting the old style metrics
+        String value = configProperties.getString("otel.semconv-stability.opt-in", "cicd/old");
         if (value != null) {
             Set<String> values = new HashSet<>(Arrays.asList(value.split(",")));
 
