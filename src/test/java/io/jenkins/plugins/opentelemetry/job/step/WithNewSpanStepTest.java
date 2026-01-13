@@ -203,4 +203,31 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         Assert.assertNull(childAttributes.get(AttributeKey.stringKey("modules-num")));
         Assert.assertNull(childAttributes.get(AttributeKey.stringKey("command")));
     }
+
+    @Test
+    public void testNoOptionalParamsOnDeclarativePipeline() throws Exception {
+        String pipelineScript = "pipeline {\n"
+                + "   agent any \n"
+                + "   stages {\n"
+                + "       stage('build') {\n"
+                + "           steps {\n"
+                + "               withNewSpan(label: 'run-builds') { }\n"
+                + "           }\n"
+                + "       }\n"
+                +"    }\n"
+                + "}";
+
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        final Tree<SpanDataWrapper> spansTree = getBuildTrace();
+        Map<String, List<String>> spansTreeMap = getSpanMapWithChildrenFromTree(spansTree);
+
+        // Check that the new spans exist.
+        Assert.assertNotNull(spansTreeMap.get("run-builds"));
+
+        // Check span children.
+        Assert.assertTrue(spansTreeMap.get("run-builds").isEmpty());
+        Assert.assertEquals(0, spansTreeMap.get("run-builds").size());
+    }
 }
