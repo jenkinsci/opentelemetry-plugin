@@ -153,6 +153,10 @@
     </dependencies>
   </dependencyManagement>
   <dependencies>
+      <dependency>
+          <groupId>io.jenkins.plugins</groupId>
+          <artifactId>commons-lang3-api</artifactId>
+      </dependency>
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
