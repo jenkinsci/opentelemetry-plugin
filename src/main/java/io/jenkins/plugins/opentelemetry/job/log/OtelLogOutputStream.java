@@ -11,7 +11,7 @@ import io.opentelemetry.sdk.common.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Process the output stream and send it to OpenTelemetry.

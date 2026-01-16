@@ -4,7 +4,7 @@
  */
 package io.jenkins.plugins.opentelemetry.rules;
 
-import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Assume;
 import org.junit.rules.ExternalResource;
 
