@@ -12,6 +12,7 @@ import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXP
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_INSECURE;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_TIMEOUT;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS;
+import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_LOGS_EXPORTER;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_METRIC_EXPORT_INTERVAL;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_TRACES_EXPORTER;
 
@@ -277,6 +278,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @SuppressWarnings("MustBeClosedChecker")
     public void configureOpenTelemetrySdk() {
         LOGGER.log(Level.FINE, "Configure OpenTelemetry SDK...");
+
         OpenTelemetryConfiguration newOpenTelemetryConfiguration = toOpenTelemetryConfiguration();
         if (Objects.equals(this.currentOpenTelemetryConfiguration, newOpenTelemetryConfiguration)) {
             LOGGER.log(Level.FINE, "Configuration didn't change, skip reconfiguration");
@@ -288,6 +290,14 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
             this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
         }
 
+        closeLogStorageRetriever();
+        this.logStorageRetriever = resolveLogStorageRetriever();
+    }
+
+    /**
+     * Close the currently setup {@link LogStorageRetriever} if it is {@link Closeable}.
+     */
+    private void closeLogStorageRetriever() {
         if (logStorageRetriever != null && logStorageRetriever instanceof Closeable) {
             LOGGER.log(Level.FINE, () -> "Close " + logStorageRetriever + "...");
             try {
@@ -299,7 +309,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                         e);
             }
         }
-        this.logStorageRetriever = resolveLogStorageRetriever();
     }
 
     /**
@@ -633,50 +642,57 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     // false positive invoking backend.getLogStorageRetriever(templateBindingsProvider)
     private LogStorageRetriever resolveLogStorageRetriever() {
         LogStorageRetriever logStorageRetriever = null;
+        ConfigProperties config = openTelemetry.getConfig();
+        if (!"none".equalsIgnoreCase(config.getString(OTEL_LOGS_EXPORTER.asProperty(), "none"))) {
+            Resource otelSdkResource = openTelemetry.getResource();
+            String serviceName = Objects.requireNonNull(
+                    otelSdkResource.getAttribute(ServiceAttributes.SERVICE_NAME), "service.name can't be null");
+            String serviceNamespace = otelSdkResource.getAttribute(ServiceIncubatingAttributes.SERVICE_NAMESPACE);
 
-        Resource otelSdkResource = openTelemetry.getResource();
-        String serviceName = Objects.requireNonNull(
-                otelSdkResource.getAttribute(ServiceAttributes.SERVICE_NAME), "service.name can't be null");
-        String serviceNamespace = otelSdkResource.getAttribute(ServiceIncubatingAttributes.SERVICE_NAMESPACE);
+            Map<String, Object> bindings;
+            if (serviceNamespace == null) {
+                bindings = Map.of(
+                        ObservabilityBackend.TemplateBindings.SERVICE_NAME, serviceName,
+                        ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, serviceName);
+            } else {
+                String serviceNamespaceAndName = serviceNamespace + "/" + serviceName;
+                bindings = Map.of(
+                        ObservabilityBackend.TemplateBindings.SERVICE_NAME, serviceName,
+                        ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE, serviceNamespace,
+                        ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, serviceNamespaceAndName);
+            }
 
-        Map<String, Object> bindings;
-        if (serviceNamespace == null) {
-            bindings = Map.of(
-                    ObservabilityBackend.TemplateBindings.SERVICE_NAME, serviceName,
-                    ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, serviceName);
+            for (ObservabilityBackend backend : getObservabilityBackends()) {
+                logStorageRetriever =
+                        backend.newLogStorageRetriever(TemplateBindingsProvider.compose(backend, bindings));
+                if (logStorageRetriever != null) {
+                    break;
+                }
+            }
+            if (logStorageRetriever == null) {
+                // "No observability backend configured to display the build logs for build with traceId: ${traceId}.
+                // See
+                // documentation: ",
+                try {
+                    logStorageRetriever = new CustomLogStorageRetriever(
+                            new GStringTemplateEngine()
+                                    .createTemplate(
+                                            "https://plugins.jenkins.io/opentelemetry/"), // TODO better documentation
+                            // URL
+                            TemplateBindingsProvider.of(
+                                    ObservabilityBackend.TemplateBindings.BACKEND_NAME,
+                                            "See documentation on missing logs visualization URL",
+                                    ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL,
+                                            "/plugin/opentelemetry/svgs/opentelemetry.svg"));
+                } catch (ClassNotFoundException | IOException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.log(Level.FINE, "resolveStorageRetriever: " + logStorageRetriever);
+            }
         } else {
-            String serviceNamespaceAndName = serviceNamespace + "/" + serviceName;
-            bindings = Map.of(
-                    ObservabilityBackend.TemplateBindings.SERVICE_NAME, serviceName,
-                    ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE, serviceNamespace,
-                    ObservabilityBackend.TemplateBindings.SERVICE_NAMESPACE_AND_NAME, serviceNamespaceAndName);
-        }
-
-        for (ObservabilityBackend backend : getObservabilityBackends()) {
-            logStorageRetriever = backend.newLogStorageRetriever(TemplateBindingsProvider.compose(backend, bindings));
-            if (logStorageRetriever != null) {
-                break;
-            }
-        }
-        if (logStorageRetriever == null) {
-            // "No observability backend configured to display the build logs for build with traceId: ${traceId}. See
-            // documentation: ",
-            try {
-                logStorageRetriever = new CustomLogStorageRetriever(
-                        new GStringTemplateEngine()
-                                .createTemplate(
-                                        "https://plugins.jenkins.io/opentelemetry/"), // TODO better documentation URL
-                        TemplateBindingsProvider.of(
-                                ObservabilityBackend.TemplateBindings.BACKEND_NAME,
-                                        "See documentation on missing logs visualization URL",
-                                ObservabilityBackend.TemplateBindings.BACKEND_24_24_ICON_URL,
-                                        "/plugin/opentelemetry/svgs/opentelemetry.svg"));
-            } catch (ClassNotFoundException | IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-        if (LOGGER.isLoggable(Level.FINE)) {
-            LOGGER.log(Level.FINE, "resolveStorageRetriever: " + logStorageRetriever);
+            LOGGER.log(Level.WARNING, "Logs exporter is set to 'none', no log storage retriever configured");
         }
         return logStorageRetriever;
     }
