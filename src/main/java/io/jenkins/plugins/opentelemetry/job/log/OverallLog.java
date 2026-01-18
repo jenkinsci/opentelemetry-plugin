@@ -238,19 +238,6 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
     }
 
     @Override
-    protected Writer createWriter(StaplerRequest2 req, StaplerResponse2 rsp, long size) throws IOException {
-        Tracer tracer = logger.isLoggable(Level.FINE)
-                ? this.tracer
-                : TracerProvider.noop().get("noop");
-        Span span = tracer.spanBuilder("OverallLog.createWriter").startSpan();
-        try (Scope scope = span.makeCurrent()) {
-            return super.createWriter(req, rsp, size);
-        } finally {
-            span.end();
-        }
-    }
-
-    @Override
     public void markAsComplete() {
         Tracer tracer = logger.isLoggable(Level.FINE)
                 ? this.tracer
