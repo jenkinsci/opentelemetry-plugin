@@ -288,10 +288,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                     newOpenTelemetryConfiguration.toOpenTelemetryResource(),
                     true);
             this.currentOpenTelemetryConfiguration = newOpenTelemetryConfiguration;
+            closeLogStorageRetriever();
+            this.logStorageRetriever = resolveLogStorageRetriever();
         }
-
-        closeLogStorageRetriever();
-        this.logStorageRetriever = resolveLogStorageRetriever();
     }
 
     /**
@@ -642,8 +641,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     // false positive invoking backend.getLogStorageRetriever(templateBindingsProvider)
     private LogStorageRetriever resolveLogStorageRetriever() {
         LogStorageRetriever logStorageRetriever = null;
-        ConfigProperties config = openTelemetry.getConfig();
-        if (!"none".equalsIgnoreCase(config.getString(OTEL_LOGS_EXPORTER.asProperty(), "none"))) {
+        if (JenkinsControllerOpenTelemetry.get().isLogsEnabled() ) {
             Resource otelSdkResource = openTelemetry.getResource();
             String serviceName = Objects.requireNonNull(
                     otelSdkResource.getAttribute(ServiceAttributes.SERVICE_NAME), "service.name can't be null");
@@ -692,7 +690,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                 LOGGER.log(Level.FINE, "resolveStorageRetriever: " + logStorageRetriever);
             }
         } else {
-            LOGGER.log(Level.WARNING, "Logs exporter is set to 'none', no log storage retriever configured");
+            LOGGER.log(Level.INFO, "Logs exporter is set to 'none', no log storage retriever configured");
         }
         return logStorageRetriever;
     }
