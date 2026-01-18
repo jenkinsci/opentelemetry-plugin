@@ -71,7 +71,7 @@
     <useBeta>true</useBeta>
     <elasticstack.version>9.1.4</elasticstack.version>
     <error-prone.version>2.41.0</error-prone.version>
-      <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
+    <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
   </properties>
 
   <dependencyManagement>
@@ -153,10 +153,6 @@
     </dependencies>
   </dependencyManagement>
   <dependencies>
-      <dependency>
-          <groupId>io.jenkins.plugins</groupId>
-          <artifactId>commons-lang3-api</artifactId>
-      </dependency>
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
@@ -197,6 +193,10 @@
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>apache-httpcomponents-client-5-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
     </dependency>
 
     <dependency>

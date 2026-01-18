@@ -29,8 +29,7 @@ public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
     @Test
     public void testMultibranchPipelineStep() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        String pipelineScript =
-                """
+        String pipelineScript = """
             pipeline {
               agent any
               stages {
