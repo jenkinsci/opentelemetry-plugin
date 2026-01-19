@@ -214,7 +214,7 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
                 + "               withNewSpan(label: 'run-builds') { }\n"
                 + "           }\n"
                 + "       }\n"
-                +"    }\n"
+                + "    }\n"
                 + "}";
 
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));

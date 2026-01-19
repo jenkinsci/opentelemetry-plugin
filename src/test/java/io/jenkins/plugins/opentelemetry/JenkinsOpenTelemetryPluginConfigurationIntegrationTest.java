@@ -1,5 +1,8 @@
 package io.jenkins.plugins.opentelemetry;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.is;
+
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.sdk.metrics.data.MetricData;
@@ -28,7 +31,8 @@ public class JenkinsOpenTelemetryPluginConfigurationIntegrationTest {
         OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
     }
 
-    @BeforeEach() public void before() {
+    @BeforeEach()
+    public void before() {
         GlobalOpenTelemetry.resetForTest();
     }
 
@@ -62,7 +66,8 @@ public class JenkinsOpenTelemetryPluginConfigurationIntegrationTest {
         Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(
                 InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
         var metric = Optional.ofNullable(exportedMetrics.get(metricName));
-        return metric.map(m -> m.getResource().getAttributes().get(ServiceAttributes.SERVICE_NAME)).orElse(null);
+        return metric.map(m -> m.getResource().getAttributes().get(ServiceAttributes.SERVICE_NAME))
+                .orElse(null);
     }
 
     @Test
