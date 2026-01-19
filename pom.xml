@@ -70,7 +70,7 @@
     <opentelemetry-contrib.version>1.46.0-alpha</opentelemetry-contrib.version>
     <useBeta>true</useBeta>
     <elasticstack.version>9.1.4</elasticstack.version>
-    <error-prone.version>2.41.0</error-prone.version>
+    <error-prone.version>2.46.0</error-prone.version>
     <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
     <spotless.check.skip>false</spotless.check.skip>
   </properties>
