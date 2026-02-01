@@ -66,6 +66,11 @@ Here are example architectures with Elastic, Jaeger, and Prometheus:
 For details to set up Jenkins with Elastic, Jaeger or Prometheus, to configure the integration including using Jenkins Configuration as Code, see [Setup and Configuration](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/setup-and-configuration.md).
 
 
+## Programmatic Configuration
+
+For programmatic configuration of OpenTelemetry resource attributes (such as `service.name` and `service.namespace`) without GUI interaction, see [Programmatic Configuration](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/programmatic-configuration.md). This is particularly useful for managing multiple Jenkins controllers or CloudBees CI installations.
+
+
 ## Troubleshooting and Optimizing Jenkins Jobs and Pipelines Using Tracing on the Builds
 
 For details on how to explore and troubleshoot jobs and pipelines builds as traces, see [Traces of Jobs and Pipeline Builds](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/job-traces.md).
