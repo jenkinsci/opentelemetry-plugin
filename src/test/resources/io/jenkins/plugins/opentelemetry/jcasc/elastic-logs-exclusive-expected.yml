@@ -6,7 +6,7 @@ ignoredSteps: "dir,echo,isUnix,pwd,properties"
 observabilityBackends:
 - elastic:
     elasticLogsBackend: "elasticLogsBackendWithoutJenkinsVisualization"
-    kibanaBaseUrl: "https://kibana.europe-west1.gcp.cloud.es.io:9243"
+    kibanaBaseUrl: "https://kibana.es.example.com"
     name: "My Elastic"
 serviceName: "jenkins"
 serviceNamespace: "jenkins"

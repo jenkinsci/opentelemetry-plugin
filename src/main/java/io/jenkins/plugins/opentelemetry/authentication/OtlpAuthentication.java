@@ -6,16 +6,13 @@
 package io.jenkins.plugins.opentelemetry.authentication;
 
 import com.google.common.collect.ComparisonChain;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.DescriptorExtensionList;
 import hudson.ExtensionPoint;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
-import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporterBuilder;
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
-import jenkins.model.Jenkins;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
+import jenkins.model.Jenkins;
 
 public abstract class OtlpAuthentication implements Describable<OtlpAuthentication>, ExtensionPoint {
     public abstract void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties);
@@ -39,7 +36,8 @@ public abstract class OtlpAuthentication implements Describable<OtlpAuthenticati
         return Jenkins.get().getDescriptorList(OtlpAuthentication.class);
     }
 
-    public static abstract class AbstractDescriptor extends Descriptor<OtlpAuthentication> implements Comparable<AbstractDescriptor> {
+    public abstract static class AbstractDescriptor extends Descriptor<OtlpAuthentication>
+            implements Comparable<AbstractDescriptor> {
         /**
          * Override alpha sorting
          * @return ordinal position
@@ -50,7 +48,10 @@ public abstract class OtlpAuthentication implements Describable<OtlpAuthenticati
 
         @Override
         public int compareTo(OtlpAuthentication.AbstractDescriptor o) {
-            return ComparisonChain.start().compare(this.ordinal(), o.ordinal()).compare(this.getDisplayName(), o.getDisplayName()).result();
+            return ComparisonChain.start()
+                    .compare(this.ordinal(), o.ordinal())
+                    .compare(this.getDisplayName(), o.getDisplayName())
+                    .result();
         }
     }
 }

@@ -4,24 +4,24 @@
   ~ SPDX-License-Identifier: Apache-2.0
   -->
 <j:jelly xmlns:j="jelly:core"
-         xmlns:f="/lib/form"
-         xmlns:c="/lib/credentials">
-    <i>
-    Pipeline logs are no longer stored in the Jenkins home, they are sent through OpenTelemetry to Elastic, stored in
-    Elasticsearch, and visible in Kibana. <br/>
-    Pipeline logs are also visible through Jenkins screens.
-    </i>
+    xmlns:f="/lib/form"
+    xmlns:c="/lib/credentials">
+    <i> Pipeline logs are no longer stored in the Jenkins home, they are sent through OpenTelemetry
+        to Elastic, stored in Elasticsearch, and visible in Kibana. <br /> Pipeline logs are also
+        visible through Jenkins screens. </i>
     <f:entry title="${%Elasticsearch URL}" field="elasticsearchUrl"
-                 description="e.g. 'https://elasticsearch.example.com:9200'">
-            <f:textbox checkMethod="post"/>
+        description="e.g. 'https://elasticsearch.example.com:9200'">
+        <f:textbox checkMethod="post" />
     </f:entry>
-    <f:entry title="${%Disable SSL verifications}" field="disableSslVerifications" description="Not recommended in production">
+    <f:entry title="${%Disable SSL verifications}" field="disableSslVerifications"
+        description="Not recommended in production">
         <f:checkbox />
     </f:entry>
-        <f:entry title="${%Elasticsearch credentials}" field="elasticsearchCredentialsId"
-                 description="Requires read permission on the 'logs-apm.app-*' index template">
-            <c:select checkMethod="post"/>
-        </f:entry>
-        <f:validateButton title="${%Validate Elasticsearch configuration}" progress="Validating..." method="validate/"
-                          with="elasticsearchUrl,disableSslVerifications,elasticsearchCredentialsId"/>
+    <f:entry title="${%Elasticsearch credentials}" field="elasticsearchCredentialsId"
+        description="Requires read permission on the 'logs-*' index template">
+        <c:select checkMethod="post" />
+    </f:entry>
+    <f:validateButton title="${%Validate Elasticsearch configuration}" progress="Validating..."
+        method="validate/"
+        with="elasticsearchUrl,disableSslVerifications,elasticsearchCredentialsId" />
 </j:jelly>

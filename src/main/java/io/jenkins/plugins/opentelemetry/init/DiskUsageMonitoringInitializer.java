@@ -7,46 +7,48 @@ package io.jenkins.plugins.opentelemetry.init;
 
 import com.cloudbees.simplediskusage.DiskItem;
 import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
-import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.opentelemetry.api.events.EventEmitter;
-import io.opentelemetry.api.logs.LoggerProvider;
-import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import jenkins.YesNoMaybe;
-import jenkins.model.Jenkins;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
+import hudson.Extension;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
+import io.opentelemetry.api.metrics.Meter;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import jenkins.YesNoMaybe;
+import jenkins.model.Jenkins;
 
 /**
  * Capture disk usage metrics relying on the {@link QuickDiskUsagePlugin}
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class DiskUsageMonitoringInitializer implements OtelComponent {
+public class DiskUsageMonitoringInitializer implements OpenTelemetryLifecycleListener {
 
-    private final static Logger LOGGER = Logger.getLogger(DiskUsageMonitoringInitializer.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(DiskUsageMonitoringInitializer.class.getName());
 
     /**
-     * Don't inject the `quickDiskUsagePlugin` using @{@link  Inject} because the injected instance is not the right once.
+     * Don't inject the `quickDiskUsagePlugin` using @{@link  Inject} because the injected instance is not the right one.
      * Lazy load it using {@link Jenkins#getPlugin(Class)}.
      */
     protected QuickDiskUsagePlugin quickDiskUsagePlugin;
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
-            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_DISK_USAGE_BYTES)
+    @Inject
+    protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+
+    @PostConstruct
+    public void postConstruct() {
+        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage...");
+
+        Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
+        meter.gaugeBuilder(JenkinsMetrics.JENKINS_DISK_USAGE_BYTES)
                 .ofLongs()
                 .setDescription("Disk usage of first level folder in JENKINS_HOME.")
                 .setUnit("byte")
                 .buildWithCallback(valueObserver -> valueObserver.record(calculateDiskUsageInBytes()));
-
-        LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins controller disk usage...");
     }
 
     private long calculateDiskUsageInBytes() {
@@ -62,11 +64,10 @@ public class DiskUsageMonitoringInitializer implements OtelComponent {
     private long calculateDiskUsageInBytes(@NonNull QuickDiskUsagePlugin diskUsagePlugin) {
         LOGGER.log(Level.FINE, "calculateDiskUsageInBytes");
         try {
-            DiskItem disk = diskUsagePlugin.getDirectoriesUsages()
-                .stream()
-                .filter(diskItem -> diskItem.getDisplayName().equals("JENKINS_HOME"))
-                .findFirst()
-                .orElse(null);
+            DiskItem disk = diskUsagePlugin.getDirectoriesUsages().stream()
+                    .filter(diskItem -> diskItem.getDisplayName().equals("JENKINS_HOME"))
+                    .findFirst()
+                    .orElse(null);
             if (disk == null) {
                 return 0;
             } else {

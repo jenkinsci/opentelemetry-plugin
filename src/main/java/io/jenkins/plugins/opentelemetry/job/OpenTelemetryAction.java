@@ -5,7 +5,6 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-
 import hudson.model.Action;
 
 public class OpenTelemetryAction implements Action {

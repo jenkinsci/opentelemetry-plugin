@@ -31,23 +31,35 @@ test:
     stage('prepare') {
       steps {
         installOtelCli()
+        installHermit()
       }
     }
     stage('make build') {
       steps {
         withEnv(["PATH+OTEL=\${OTEL_LOCATION}"]) {
-          sh(label: 'make build', script: "OTEL_EXPORTER_OTLP_ENDPOINT=\${env.OTEL_EXPORTER_OTLP_ENDPOINT.replaceAll('http://', '')} make build")
+            runWithHermit(){
+                sh(label: 'make build', script: "OTEL_EXPORTER_OTLP_ENDPOINT=\${env.OTEL_EXPORTER_OTLP_ENDPOINT.replaceAll('http://', '')} make build")
+            }
         }
       }
     }
     stage('make test') {
       steps {
         withEnv(["PATH+OTEL=\${OTEL_LOCATION}"]) {
-          sh(label: 'make test', script: "OTEL_EXPORTER_OTLP_ENDPOINT=\${env.OTEL_EXPORTER_OTLP_ENDPOINT.replaceAll('http://', '')} make test")
+            runWithHermit(){
+                sh(label: 'make test', script: "OTEL_EXPORTER_OTLP_ENDPOINT=\${env.OTEL_EXPORTER_OTLP_ENDPOINT.replaceAll('http://', '')} make test")
+            }
         }
       }
     }
   }
+}
+
+def runWithHermit(Closure body){
+    hermitEnvVars = sh(returnStdout: true, script: './hermit/bin/hermit env --raw').trim()
+    withEnv(hermitEnvVars.split('\\n').toList()) {
+        body()
+    }
 }
 
 def installOtelCli() {
@@ -57,8 +69,21 @@ def installOtelCli() {
   }
   dir("\${OTEL_LOCATION}") {
     sh(label: 'fetch otel-cli',
-       script: "wget -q 'https://github.com/equinix-labs/otel-cli/releases/download/v0.0.18/otel-cli-0.0.18-\${os}-x86_64.tar.gz' -O otel-cli.tar.gz && tar -xf otel-cli.tar.gz")
+       script: "curl -sSfL -o otel-cli.tar.gz 'https://github.com/equinix-labs/otel-cli/releases/download/v0.0.18/otel-cli-0.0.18-\${os}-x86_64.tar.gz' && tar -xf otel-cli.tar.gz")
   }
+}
+
+def installHermit() {
+    sh(label: 'installHermit',
+        script: 'curl -fsSL https://github.com/cashapp/hermit/releases/download/stable/install.sh | /bin/bash')
+    sh(label: 'install tools',
+        script: '''
+            mkdir -p hermit
+            cd hermit
+            ~/bin/hermit init
+            eval \$(./bin/hermit env --raw)
+            hermit install make
+        ''')
 }
 """
 

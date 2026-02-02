@@ -5,9 +5,14 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
+import java.util.Map;
+import java.util.Objects;
 import jenkins.YesNoMaybe;
 import jenkins.plugins.git.GitStep;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
@@ -15,24 +20,16 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
-import java.util.Objects;
-import java.util.logging.Logger;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-
 /**
  * Customization of the span for {@code git} steps.
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class GitStepHandler extends AbstractGitStepHandler {
 
-    private final static Logger LOGGER = Logger.getLogger(GitStepHandler.class.getName());
-
     @Override
     public boolean canCreateSpanBuilder(@NonNull FlowNode flowNode, @NonNull WorkflowRun run) {
-        return flowNode instanceof StepAtomNode && ((StepAtomNode) flowNode).getDescriptor() instanceof GitStep.DescriptorImpl;
+        return flowNode instanceof StepAtomNode
+                && ((StepAtomNode) flowNode).getDescriptor() instanceof GitStep.DescriptorImpl;
     }
 
     @NonNull
@@ -46,5 +43,4 @@ public class GitStepHandler extends AbstractGitStepHandler {
 
         return createSpanBuilder(gitUrl, gitBranch, credentialsId, stepFunctionName, tracer, run);
     }
-
 }

@@ -5,58 +5,54 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
-import hudson.ExtensionList;
 import hudson.model.Item;
 import hudson.model.ItemGroup;
-import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
-import io.jenkins.plugins.opentelemetry.OtelUtils;
-import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.AttributeType;
-import io.opentelemetry.api.trace.Span;
-import org.jenkinsci.plugins.workflow.graph.FlowNode;
-import org.jenkinsci.plugins.workflow.steps.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import org.jenkinsci.plugins.workflow.steps.Step;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
+import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
 @Extension
 public class WithSpanAttributeStep extends Step {
-    private final static Logger logger = Logger.getLogger(WithSpanAttributeStep.class.getName());
-
-    enum Target {CURRENT_SPAN, PIPELINE_ROOT_SPAN}
+    private static final Logger logger = Logger.getLogger(WithSpanAttributeStep.class.getName());
 
     String key;
     Object value;
     AttributeType type;
 
-    Target target;
+    SpanAttributeTarget target;
 
     @DataBoundConstructor
-    public WithSpanAttributeStep() {
-
-    }
+    public WithSpanAttributeStep() {}
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
         if (value == null) {
             // null attributes are NOT supported
-            // todo log message
             return new StepExecution(context) {
                 @Override
                 public boolean start() {
-                    return false;
+                    getContext()
+                            .onFailure(new IllegalArgumentException(
+                                    "withSpanAttribute requires the value parameter for key " + key));
+                    return true;
                 }
             };
         }
@@ -67,7 +63,7 @@ public class WithSpanAttributeStep extends Step {
             if (value instanceof Boolean) {
                 type = isArray ? AttributeType.BOOLEAN_ARRAY : AttributeType.BOOLEAN;
             } else if (value instanceof Double || value instanceof Float) {
-                type = isArray ? AttributeType.DOUBLE_ARRAY: AttributeType.DOUBLE;
+                type = isArray ? AttributeType.DOUBLE_ARRAY : AttributeType.DOUBLE;
             } else if (value instanceof Long || value instanceof Integer) {
                 type = isArray ? AttributeType.LONG_ARRAY : AttributeType.LONG;
             } else {
@@ -75,7 +71,8 @@ public class WithSpanAttributeStep extends Step {
             }
         }
 
-        return new Execution(key, value, type, Objects.requireNonNullElse(target, Target.CURRENT_SPAN), context);
+        return new SpanAttributeStepExecution(
+                List.of(new SpanAttribute(key, value, type, target)), context.hasBody(), context);
     }
 
     public String getKey() {
@@ -107,28 +104,29 @@ public class WithSpanAttributeStep extends Step {
     @DataBoundSetter
     public void setType(String type) {
         this.type = Optional.ofNullable(type)
-            .map(String::trim)
-            .filter(Predicate.not(String::isEmpty))
-            .map(String::toUpperCase)
-            .map(AttributeType::valueOf).orElse(null);
+                .map(String::trim)
+                .filter(Predicate.not(String::isEmpty))
+                .map(String::toUpperCase)
+                .map(AttributeType::valueOf)
+                .orElse(null);
     }
 
     /**
-     * @param target case-insensitive representation of {@link Target}
+     * @param target case-insensitive representation of {@link SpanAttributeTarget}
      */
     @DataBoundSetter
     public void setTarget(String target) {
         this.target = Optional.ofNullable(target)
-            .map(String::trim)
-            .filter(Predicate.not(String::isEmpty))
-            .map(String::toUpperCase)
-            .map(Target::valueOf)
-            .orElse(null);
+                .map(String::trim)
+                .filter(Predicate.not(String::isEmpty))
+                .map(String::toUpperCase)
+                .map(SpanAttributeTarget::valueOf)
+                .orElse(null);
     }
 
     @CheckForNull
     public String getTarget() {
-        return Optional.ofNullable(target).map(Target::name).orElse(null);
+        return Optional.ofNullable(target).map(SpanAttributeTarget::name).orElse(null);
     }
 
     @Extension
@@ -152,93 +150,17 @@ public class WithSpanAttributeStep extends Step {
         }
 
         public ListBoxModel doFillTypeItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
-            List<AttributeType> supportedAttributeTypes = Arrays.asList(AttributeType.STRING, AttributeType.LONG, AttributeType.BOOLEAN, AttributeType.DOUBLE);
-            return new ListBoxModel(supportedAttributeTypes.stream().map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
+            List<AttributeType> supportedAttributeTypes = Arrays.asList(
+                    AttributeType.STRING, AttributeType.LONG, AttributeType.BOOLEAN, AttributeType.DOUBLE);
+            return new ListBoxModel(supportedAttributeTypes.stream()
+                    .map(t -> new ListBoxModel.Option(t.name(), t.name()))
+                    .collect(Collectors.toList()));
         }
 
         public ListBoxModel doFillTargetItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
-            return new ListBoxModel(Arrays.stream(Target.values()).map(t -> new ListBoxModel.Option(t.name(), t.name())).collect(Collectors.toList()));
+            return new ListBoxModel(Arrays.stream(SpanAttributeTarget.values())
+                    .map(t -> new ListBoxModel.Option(t.name(), t.name()))
+                    .collect(Collectors.toList()));
         }
-    }
-
-    public static class Execution extends SynchronousStepExecution<Void> {
-
-        private final String key;
-
-        private final Object value;
-
-        private final AttributeType attributeType;
-
-        private final Target target;
-
-        Execution(String key, Object value, AttributeType attributeType, Target target, StepContext context) {
-            super(context);
-            this.key = key;
-            this.value = value;
-            this.attributeType = attributeType;
-            this.target = target;
-        }
-
-        @Override
-        protected Void run() throws Exception {
-            OtelTraceService otelTraceService = ExtensionList.lookupSingleton(OtelTraceService.class);
-            Run run = getContext().get(Run.class);
-            FlowNode flowNode = getContext().get(FlowNode.class);
-            final Span span;
-            switch (target) {
-                case PIPELINE_ROOT_SPAN:
-                    span= otelTraceService.getPipelineRootSpan(run);
-                    break;
-                case CURRENT_SPAN:
-                    span= otelTraceService.getSpan(run, flowNode);
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported target span '" + target + "'. ");
-            }
-            Object convertedValue;
-            AttributeKey attributeKey;
-            switch (attributeType) {
-                case BOOLEAN:
-                    attributeKey = AttributeKey.booleanKey(key);
-                    convertedValue = value instanceof Boolean ? value : Boolean.parseBoolean(value.toString());
-                    break;
-                case DOUBLE:
-                    attributeKey = AttributeKey.doubleKey(key);
-                    convertedValue = value instanceof Double ? value : value instanceof Float ? ((Float) value).doubleValue() : Double.parseDouble(value.toString());
-                    break;
-                case STRING:
-                    attributeKey = AttributeKey.stringKey(key);
-                    convertedValue = value instanceof String ? value : value.toString();
-                    break;
-                case LONG:
-                    attributeKey = AttributeKey.longKey(key);
-                    convertedValue = value instanceof Long ?  value : value instanceof Integer ?  ((Integer) value).longValue() : Long.parseLong(value.toString());
-                    break;
-                case BOOLEAN_ARRAY:
-                    attributeKey = AttributeKey.booleanArrayKey(key);
-                    convertedValue = value; // todo try to convert if needed
-                    break;
-                case DOUBLE_ARRAY:
-                    attributeKey = AttributeKey.doubleArrayKey(key);
-                    convertedValue = value; // todo try to convert if needed
-                    break;
-                case LONG_ARRAY:
-                    attributeKey = AttributeKey.longArrayKey(key);
-                    convertedValue = value; // todo try to convert if needed
-                    break;
-                case STRING_ARRAY:
-                    attributeKey = AttributeKey.stringArrayKey(key);
-                    convertedValue = value; // todo try to convert if needed
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported span attribute type '" + attributeType + "'. ");
-            }
-            logger.log(Level.FINE, () -> "setSpanAttribute: run=\"" + run.getParent().getName() + "#" + run.getId() + "\", key=" + key + " value=\"" + value + "\" type=" + attributeType);
-            span.setAttribute(attributeKey, convertedValue);
-
-            return null;
-        }
-
-        private static final long serialVersionUID = 1L;
     }
 }

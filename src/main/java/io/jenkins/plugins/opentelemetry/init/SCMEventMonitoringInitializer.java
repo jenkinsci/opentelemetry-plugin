@@ -6,50 +6,56 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
-import io.opentelemetry.api.events.EventEmitter;
-import io.opentelemetry.api.logs.LoggerProvider;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import jenkins.YesNoMaybe;
-import jenkins.scm.api.SCMEvent;
-
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import jenkins.YesNoMaybe;
+import jenkins.scm.api.SCMEvent;
 
 /**
  * Capture SCM Events metrics
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class SCMEventMonitoringInitializer implements OtelComponent {
+public class SCMEventMonitoringInitializer implements OpenTelemetryLifecycleListener {
 
-    private final static Logger logger = Logger.getLogger(SCMEventMonitoringInitializer.class.getName());
+    private static final Logger logger = Logger.getLogger(SCMEventMonitoringInitializer.class.getName());
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    @Inject
+    protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
-            meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_SCM_EVENT_POOL_SIZE)
+    @PostConstruct
+    public void postConstruct() {
+        logger.log(Level.FINE, () -> "Start monitoring Jenkins controller SCM events...");
+
+        Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
+        meter.counterBuilder(JenkinsMetrics.JENKINS_SCM_EVENT_POOL_SIZE)
                 .setDescription("Number of threads handling SCM Events")
-                .setUnit("1")
-                .buildWithCallback(valueObserver -> valueObserver.record(SCMEvent.getEventProcessingMetrics().getPoolSize()));
+                .setUnit("{events}")
+                .buildWithCallback(valueObserver -> valueObserver.record(
+                        SCMEvent.getEventProcessingMetrics().getPoolSize()));
 
-            meter.upDownCounterBuilder(JenkinsSemanticMetrics.JENKINS_SCM_EVENT_ACTIVE_THREADS)
+        meter.upDownCounterBuilder(JenkinsMetrics.JENKINS_SCM_EVENT_ACTIVE_THREADS)
                 .setDescription("Number of threads actively handling SCM Events")
-                .setUnit("1")
-                .buildWithCallback(valueObserver -> valueObserver.record(SCMEvent.getEventProcessingMetrics().getActiveThreads()));
+                .setUnit("{threads}")
+                .buildWithCallback(valueObserver -> valueObserver.record(
+                        SCMEvent.getEventProcessingMetrics().getActiveThreads()));
 
-            meter.upDownCounterBuilder(JenkinsSemanticMetrics.JENKINS_SCM_EVENT_QUEUED_TASKS)
+        meter.upDownCounterBuilder(JenkinsMetrics.JENKINS_SCM_EVENT_QUEUED_TASKS)
                 .setDescription("Number of queued SCM Event tasks")
-                .setUnit("1")
-                .buildWithCallback(valueObserver -> valueObserver.record(SCMEvent.getEventProcessingMetrics().getQueuedTasks()));
+                .setUnit("{tasks}")
+                .buildWithCallback(valueObserver -> valueObserver.record(
+                        SCMEvent.getEventProcessingMetrics().getQueuedTasks()));
 
-            meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_SCM_EVENT_COMPLETED_TASKS)
+        meter.counterBuilder(JenkinsMetrics.JENKINS_SCM_EVENT_COMPLETED_TASKS)
                 .setDescription("Number of completed SCM Event tasks")
-                .setUnit("1")
-                .buildWithCallback(valueObserver -> valueObserver.record(SCMEvent.getEventProcessingMetrics().getCompletedTasks()));
-
-        logger.log(Level.FINE, () -> "Start monitoring Jenkins SCM events...");
+                .setUnit("{tasks}")
+                .buildWithCallback(valueObserver -> valueObserver.record(
+                        SCMEvent.getEventProcessingMetrics().getCompletedTasks()));
     }
 }

@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.runhandler;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.matrix.Combination;
 import hudson.matrix.MatrixBuild;
@@ -12,15 +13,13 @@ import hudson.matrix.MatrixConfiguration;
 import hudson.matrix.MatrixProject;
 import hudson.matrix.MatrixRun;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import jenkins.YesNoMaybe;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import jenkins.YesNoMaybe;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class MatrixRunHandler implements RunHandler {
@@ -33,36 +32,36 @@ public class MatrixRunHandler implements RunHandler {
     }
 
     @Override
-    public boolean canCreateSpanBuilder(@NonNull Run run) {
+    public boolean canCreateSpanBuilder(@NonNull Run<?, ?> run) {
         return run instanceof MatrixRun || run instanceof MatrixBuild;
     }
 
     @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@NonNull Run run, @NonNull Tracer tracer) {
-        if (run instanceof MatrixRun) {
-            MatrixRun matrixRun = (MatrixRun) run;
+    public SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer) {
+        if (run instanceof MatrixRun matrixRun) {
             MatrixConfiguration matrixConfiguration = matrixRun.getParent();
 
             MatrixProject matrixProject = matrixConfiguration.getParent();
-            String spanName = expandJobName ? run.getParent().getFullName() : matrixProject.getFullName() + "/execution";
-            SpanBuilder spanBuilder = tracer.spanBuilder(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
+            String spanName =
+                    expandJobName ? run.getParent().getFullName() : matrixProject.getFullName() + "/execution";
+            SpanBuilder spanBuilder =
+                    tracer.spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
             Combination combination = matrixConfiguration.getCombination();
             List<String> axisNames = new ArrayList<>();
             List<String> axisValues = new ArrayList<>();
 
-            combination.entrySet().stream().forEach(entry -> {
-                    axisNames.add(entry.getKey());
-                    axisValues.add(entry.getValue());
-                }
-            );
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_AXIS_NAMES, axisNames);
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_AXIS_VALUES, axisValues);
+            combination.forEach((key, value) -> {
+                axisNames.add(key);
+                axisValues.add(value);
+            });
+            spanBuilder.setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_AXIS_NAMES, axisNames);
+            spanBuilder.setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_AXIS_VALUES, axisValues);
 
             return spanBuilder;
-        } else if (run instanceof MatrixBuild) {
-            MatrixBuild matrixBuild = (MatrixBuild) run;
-            return tracer.spanBuilder(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + matrixBuild.getParent().getFullName());
+        } else if (run instanceof MatrixBuild matrixBuild) {
+            return tracer.spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX
+                    + matrixBuild.getParent().getFullName());
         } else {
             throw new IllegalStateException("Unsupported run type " + run);
         }
@@ -70,6 +69,7 @@ public class MatrixRunHandler implements RunHandler {
 
     @Override
     public void configure(ConfigProperties config) {
-        expandJobName = Boolean.TRUE.equals(config.getBoolean("otel.instrumentation.jenkins.job.matrix.expand.job.name"));
+        expandJobName =
+                Boolean.TRUE.equals(config.getBoolean("otel.instrumentation.jenkins.job.matrix.expand.job.name"));
     }
 }

@@ -1,7 +1,7 @@
 # Traces of Jobs and Pipeline Builds
 
 
-## Traces and Spans Attributes
+## Traces, Spans and Span Attributes
 
 The Jenkins OpenTelemetry integration collects comprehensive contextual attributes of the jobs and pipelines builds to: 
 * Provide build executions details in order to be an alternative to the Jenkins GUI if desired
@@ -12,7 +12,10 @@ The attributes of the traces and spans are normalized in order
 
 ### Enriching pipeline build traces with custom span attributes
 
-[Attributes](https://opentelemetry.io/docs/reference/specification/common/#attribute) can be added to the spans associated with pipeline steps using the `withSpanAttribute(key, value[, type]) ` step.
+[Attributes](https://opentelemetry.io/docs/reference/specification/common/#attribute) can be added to the spans associated with pipeline steps using one of the following pipeline steps:
+* `withSpanAttribute(key, value[, type][, target])`
+* `setSpanAttributes([spanAttribute(key, value[, type][, target])])`
+* `withSpanAttributes([spanAttribute(key, value[, type][, target])])`
 
 Example:
 
@@ -21,6 +24,10 @@ withSpanAttribute(key: "pipeline_type", value: "release_pipeline", target: "PIPE
 ...
 stage ("build") {
     withSpanAttribute(key: "build.tool", value: "maven")
+    setSpanAttributes([spanAttribute(key: "build.tool", value: "maven")])
+    withSpanAttributes([spanAttribute(key: "test.tool", value: "junit")]) {
+        sh "./run-tests.sh"
+    }
 }
 ````
 
@@ -30,7 +37,70 @@ If not specified, the `type` of the attribute is inferred from the passed `value
    * `CURRENT_SPAN` (default value): the attribute is set on the span of the current pipeline phase (current node, stage, step...)
    * `PIPELINE_ROOT_SPAN`: the attribute is set on the root span of the pipeline (ie the "BUILD ..." span)
 
-Note that the `withSpanAttribute` doesn't create a span in the pipeline build trace.
+Note that none of the steps `setSpanAttributes`, `withSpanAttribute`, `withSpanAttributes` create a span in the pipeline build trace.
+
+`withSpanAttribute` and `setSpanAttributes` set the given attribute(s) on the target.
+
+`withSpanAttributes` sets the given attribute(s) on child spans.
+
+It's also possible to use `withSpanAttributes` in declarative pipelines:
+
+````groovy
+pipeline {
+    options {
+        withSpanAttributes([spanAttribute(key: 'pipeline.type', value: 'release', target: 'PIPELINE_ROOT_SPAN')])
+    }
+    stages {
+        stage('build') {
+            ...
+        }
+    }
+}
+````
+
+### Custom spans
+
+Custom spans can be defined using the `withNewSpan` step, which accepts the following parameters
+* `label`
+  * the label of the span
+  * the value is a `string`
+* `attributes`
+  * a list of attributes, defined the same way as in the `withSpanAttributes` step
+  * ```groovy
+    attributes: ([
+        spanAttribute(key: 'modules', value: '2'),
+        spanAttribute(key: 'command', value: 'mvn clean install')
+    ])
+    ```
+* `setAttributesOnlyOnParent`
+  * flag used to define whether to inherit the provided attributes to the children spans or not
+  * `true` by default, all user-defined attributes for a span are passed on to children spans
+  * the value is a boolean, `true` or `false`
+
+Example definitions:
+
+* All parameters provided
+    ```groovy
+    stage('build') {
+        withNewSpan(label: 'custom-build-span', attributes: ([
+            spanAttribute(key: 'modules', value: '2'),
+            spanAttribute(key: 'command', value: 'mvn clean install')
+        ]), setAttributesOnlyOnParent: true) {
+            sh './build-module1.sh'
+            sh './build-module2.sh'
+        }
+    }
+    ```
+
+* Only the `label` parameter is required, all others are optional.
+    ```groovy
+    stage('build') {
+        withNewSpan(label: 'custom-build-span') {
+            sh './build-module1.sh'
+            sh './build-module2.sh'
+        }
+    }
+    ```
 
 ### Pipeline, freestyle, and matrix project build spans
 
@@ -75,6 +145,7 @@ Attributes reported on the span of pipeline steps:
 | jenkins.pipeline.step.name       | Step name (user friendly) | String |
 | jenkins.pipeline.step.type       | Step name | String |
 | jenkins.pipeline.step.id         | Step id   | String |
+| jenkins.pipeline.step.result     | Step result | Enum (`ABORTED`, `FAILURE`, `NOT_EXECUTED`, `PAUSED_PENDING_INPUT`, `QUEUED`, `SUCCESS`, `UNSTABLE`; see [GenericStatus](https://javadoc.jenkins.io/plugin/pipeline-graph-analysis/org/jenkinsci/plugins/workflow/pipelinegraphanalysis/GenericStatus.html)) |
 | jenkins.pipeline.step.plugin.name | Jenkins plugin for that particular step | String |
 | jenkins.pipeline.step.plugin.version| Jenkins plugin version | String |
 | jenkins.pipeline.step.agent.label | Labels attached to the agent | String |

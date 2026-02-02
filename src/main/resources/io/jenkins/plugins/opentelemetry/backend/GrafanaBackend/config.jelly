@@ -2,12 +2,22 @@
 <j:jelly xmlns:j="jelly:core"
          xmlns:f="/lib/form"
 >
-    <f:entry title="Grafana base URL" field="grafanaBaseUrl" description="e.g. 'https://example.grafana.net/'">
+    <f:entry title="Grafana base URL" field="grafanaBaseUrl" description="e.g. 'https://example.grafana.net/' or 'http://grafana.example.com:3000'">
         <f:textbox/>
     </f:entry>
     <f:entry title="Grafana metrics dashboard URL" field="grafanaMetricsDashboard" description="e.g. 'https://example.grafana.net/...'">
         <f:textbox/>
     </f:entry>
+    <f:block>
+        <strong>Pipeline logs storage in Loki</strong>
+        <j:invokeStatic var="grafanaLogsBackendDescriptors"
+                        className="io.jenkins.plugins.opentelemetry.backend.grafana.GrafanaLogsBackend" method="all"/>
+        <f:hetero-radio
+            field="grafanaLogsBackend"
+            descriptors="${grafanaLogsBackendDescriptors}"
+        />
+    </f:block>
+
     <f:advanced>
         <p>
             <strong>Grafana</strong>
@@ -17,8 +27,8 @@
             <f:textbox default="${descriptor.defaultTempoDataSourceIdentifier}"/>
         </f:entry>
         <f:entry title="Tempo Query Type" field="tempoQueryType"
-                 description="Query type passed to Tempo, used when searching for the specific trace. 'traceql' for newer Tempo versions. 'traceid' for older">
-            <f:textbox default="${descriptor.defaultTempoQueryType}"/>
+                 description="Query type passed to Tempo, used when searching for the specific trace.">
+            <f:select default="${descriptor.defaultTempoQueryType}"/>
         </f:entry>
         <f:entry title="Grafana Org Id" field="grafanaOrgId"
                 description="Grafana Organization Id to use in URLs (param 'orgId')">
@@ -27,13 +37,5 @@
         <f:entry title="Display Name" field="name" description="Name used in Jenkins GUI">
             <f:textbox default="${descriptor.displayName}"/>
         </f:entry>
-
-        <j:invokeStatic var="grafanaLogsBackendDescriptors"
-                        className="io.jenkins.plugins.opentelemetry.backend.grafana.GrafanaLogsBackend" method="all"/>
-        <f:hetero-radio
-            field="grafanaLogsBackend"
-            descriptors="${grafanaLogsBackendDescriptors}"
-
-        />
     </f:advanced>
 </j:jelly>

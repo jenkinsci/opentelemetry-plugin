@@ -1,0 +1,536 @@
+{
+    "status": "success",
+    "data": {
+        "resultType": "streams",
+        "result": [
+            {
+                "stream": {},
+                "values": [
+                    [
+                        "1718111754515426000",
+                        "Started by user unknown or anonymous"
+                    ],
+                    [
+                        "1718111755283666000",
+                        "Connecting to https://api.github.com using cyrille-leclerc/******"
+                    ],
+                    [
+                        "1718111756417529000",
+                        "Obtained Jenkinsfile from 8af211e392acba2eba4648dad5e5174fd9504346"
+                    ],
+                    [
+                        "1718111757236311000",
+                        "[Pipeline] Start of Pipeline"
+                    ],
+                    [
+                        "1718111758034978000",
+                        "[Pipeline] node"
+                    ],
+                    [
+                        "1718111758115323000",
+                        "Running on macos in /Users/cyrilleleclerc/jenkins-agent/workspace/my-war_master"
+                    ],
+                    [
+                        "1718111758185011000",
+                        "[Pipeline] {"
+                    ],
+                    [
+                        "1718111758240007000",
+                        "[Pipeline] stage"
+                    ],
+                    [
+                        "1718111758272139000",
+                        "[Pipeline] { (Declarative: Checkout SCM)"
+                    ],
+                    [
+                        "1718111758322139000",
+                        "[Pipeline] checkout"
+                    ],
+                    [
+                        "1718111758353795000",
+                        "The recommended git tool is: NONE"
+                    ],
+                    [
+                        "1718111761934560000",
+                        "Cloning repository https://github.com/cyrille-leclerc/my-war.git"
+                    ],
+                    [
+                        "1718111761969560000",
+                        " \u003e git init /Users/cyrilleleclerc/jenkins-agent/workspace/my-war_master # timeout=10"
+                    ],
+                    [
+                        "1718111761995548000",
+                        "using credential github"
+                    ],
+                    [
+                        "1718111762010560000",
+                        "Fetching upstream changes from https://github.com/cyrille-leclerc/my-war.git"
+                    ],
+                    [
+                        "1718111762010560001",
+                        " \u003e git --version # timeout=10"
+                    ],
+                    [
+                        "1718111762018409000",
+                        "Cloning the remote Git repository"
+                    ],
+                    [
+                        "1718111762020046000",
+                        "Cloning with configured refspecs honoured and without tags"
+                    ],
+                    [
+                        "1718111762023560000",
+                        " \u003e git --version # 'git version 2.39.3 (Apple Git-146)'"
+                    ],
+                    [
+                        "1718111762023560001",
+                        "using GIT_ASKPASS to set credentials "
+                    ],
+                    [
+                        "1718111762024560000",
+                        " \u003e git fetch --no-tags --force --progress -- https://github.com/cyrille-leclerc/my-war.git +refs/heads/master:refs/remotes/origin/master # timeout=10"
+                    ],
+                    [
+                        "1718111762915560000",
+                        " \u003e git config remote.origin.url https://github.com/cyrille-leclerc/my-war.git # timeout=10"
+                    ],
+                    [
+                        "1718111762927560000",
+                        " \u003e git config --add remote.origin.fetch +refs/heads/master:refs/remotes/origin/master # timeout=10"
+                    ],
+                    [
+                        "1718111763264560000",
+                        " \u003e git config core.sparsecheckout # timeout=10"
+                    ],
+                    [
+                        "1718111763278560000",
+                        " \u003e git checkout -f 8af211e392acba2eba4648dad5e5174fd9504346 # timeout=10"
+                    ],
+                    [
+                        "1718111763389943000",
+                        "Avoid second fetch"
+                    ],
+                    [
+                        "1718111763393007000",
+                        "Checking out Revision 8af211e392acba2eba4648dad5e5174fd9504346 (master)"
+                    ],
+                    [
+                        "1718111763459560000",
+                        " \u003e git rev-list --no-walk 8af211e392acba2eba4648dad5e5174fd9504346 # timeout=10"
+                    ],
+                    [
+                        "1718111763588135000",
+                        "Commit message: \"Add Maven extension\""
+                    ],
+                    [
+                        "1718111764182470000",
+                        "[Pipeline] }"
+                    ],
+                    [
+                        "1718111764217237000",
+                        "[Pipeline] // stage"
+                    ],
+                    [
+                        "1718111764263372000",
+                        "[Pipeline] withEnv"
+                    ],
+                    [
+                        "1718111764268144000",
+                        "[Pipeline] {"
+                    ],
+                    [
+                        "1718111764312333000",
+                        "[Pipeline] stage"
+                    ],
+                    [
+                        "1718111764317185000",
+                        "[Pipeline] { (Build)"
+                    ],
+                    [
+                        "1718111764376496000",
+                        "[Pipeline] sh"
+                    ],
+                    [
+                        "1718111764499638000",
+                        "+ ./mvnw verify"
+                    ],
+                    [
+                        "1718111764723638000",
+                        "--2024-06-11 15:16:04--  https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.1.1/maven-wrapper-3.1.1.jar"
+                    ],
+                    [
+                        "1718111764829638000",
+                        "Resolving repo.maven.apache.org (repo.maven.apache.org)... 151.101.0.215, 151.101.64.215, 151.101.128.215, ..."
+                    ],
+                    [
+                        "1718111764829638001",
+                        "Connecting to repo.maven.apache.org (repo.maven.apache.org)|151.101.0.215|:443... connected."
+                    ],
+                    [
+                        "1718111764830638000",
+                        "HTTP request sent, awaiting response... 200 OK"
+                    ],
+                    [
+                        "1718111764830638001",
+                        "Length: 59925 (59K) [application/java-archive]"
+                    ],
+                    [
+                        "1718111764830638002",
+                        "Saving to: ‘/Users/cyrilleleclerc/jenkins-agent/workspace/my-war_master/.mvn/wrapper/maven-wrapper.jar’"
+                    ],
+                    [
+                        "1718111764830638003",
+                        "     0K .......... .......... .......... .......... .......... 85% 4.78M 0s"
+                    ],
+                    [
+                        "1718111764830638004",
+                        "    50K ........                                              100% 6.71M=0.01s"
+                    ],
+                    [
+                        "1718111764830638005",
+                        "2024-06-11 15:16:04 (4.99 MB/s) - ‘/Users/cyrilleleclerc/jenkins-agent/workspace/my-war_master/.mvn/wrapper/maven-wrapper.jar’ saved [59925/59925]"
+                    ],
+                    [
+                        "1718111765662638000",
+                        "[INFO] Scanning for projects..."
+                    ],
+                    [
+                        "1718111765662638001",
+                        "[INFO] "
+                    ],
+                    [
+                        "1718111765662638002",
+                        "[INFO] -------------------------\u003c com.example:my-war \u003e-------------------------"
+                    ],
+                    [
+                        "1718111765662638003",
+                        "[INFO] Building my-warWebapp 1.0-SNAPSHOT"
+                    ],
+                    [
+                        "1718111765662638004",
+                        "[INFO] --------------------------------[ war ]---------------------------------"
+                    ],
+                    [
+                        "1718111765768638000",
+                        "[INFO] "
+                    ],
+                    [
+                        "1718111765768638001",
+                        "[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ my-war ---"
+                    ],
+                    [
+                        "1718111765873638000",
+                        "[INFO] Using 'UTF-8' encoding to copy filtered resources."
+                    ],
+                    [
+                        "1718111765873638001",
+                        "[INFO] skip non existing resourceDirectory /Users/cyrilleleclerc/jenkins-agent/workspace/my-war_master/src/main/resources"
+                    ],
+                    [
+                        "1718111765873638002",
+                        "[INFO] "
+                    ],
+                    [
+                        "1718111765873638003",
+                        "[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ my-war ---"
+                    ],
+                    [
+                        "1718111765979638000",
+                        "[INFO] No sources to compile"
+                    ],
+                    [
+                        "1718111765979638001",
+                        "[INFO] "
+                    ],
+                    [
+                        "1718111765979638002",
+                        "[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ my-war ---"
+                    ],
+                    [
+                        "1718111765979638003",
+                        "[INFO] Using 'UTF-8' encoding to copy filtered resources."
+                    ],
+                    [
+                        "1718111765979638004",
+                        "[INFO] skip non existing resourceDirectory /Users/cyrilleleclerc/jenkins-agent/workspace/my-war_master/src/test/resources"
+                    ],
+                    [
+                        "1718111765979638005",
+                        "[INFO] "
+                    ],
+                    [
+                        "1718111765979638006",
+                        "[INFO] --- maven-compiler-plugin:3.1:testCompile (default-testCompile) @ my-war ---"
+                    ],
+                    [
+                        "1718111765979638007",
+                        "[INFO] No sources to compile"
+                    ],
+                    [
+                        "1718111765979638008",
+                        "[INFO] "
+                    ],
+                    [
+                        "1718111765979638009",
+                        "[INFO] --- maven-surefire-plugin:2.12.4:test (default-test) @ my-war ---"
+                    ],
+                    [
+                        "1718111765979638010",
+                        "[INFO] No tests to run."
+                    ],
+                    [
+                        "1718111765979638011",
+                        "[INFO] "
+                    ],
+                    [
+                        "1718111765979638012",
+                        "[INFO] --- maven-war-plugin:3.3.2:war (default-war) @ my-war ---"
+                    ],
+                    [
+                        "1718111766085638000",
+                        "[INFO] Packaging webapp"
+                    ],
+                    [
+                        "1718111766085638001",
+                        "[INFO] Assembling webapp [my-war] in [/Users/cyrilleleclerc/jenkins-agent/workspace/my-war_master/target/my-war-1.0-SNAPSHOT]"
+                    ],
+                    [
+                        "1718111766085638002",
+                        "[INFO] Processing war project"
+                    ],
+                    [
+                        "1718111766085638003",
+                        "[INFO] Copying webapp resources [/Users/cyrilleleclerc/jenkins-agent/workspace/my-war_master/src/main/webapp]"
+                    ],
+                    [
+                        "1718111766190638000",
+                        "[INFO] Building war: /Users/cyrilleleclerc/jenkins-agent/workspace/my-war_master/target/my-war-1.0-SNAPSHOT.war"
+                    ],
+                    [
+                        "1718111766191638000",
+                        "[INFO] ------------------------------------------------------------------------"
+                    ],
+                    [
+                        "1718111766191638001",
+                        "[INFO] BUILD SUCCESS"
+                    ],
+                    [
+                        "1718111766191638002",
+                        "[INFO] ------------------------------------------------------------------------"
+                    ],
+                    [
+                        "1718111766191638003",
+                        "[INFO] Total time:  0.599 s"
+                    ],
+                    [
+                        "1718111766191638004",
+                        "[INFO] Finished at: 2024-06-11T15:16:06+02:00"
+                    ],
+                    [
+                        "1718111766191638005",
+                        "[INFO] ------------------------------------------------------------------------"
+                    ],
+                    [
+                        "1718111766268113000",
+                        "[Pipeline] archiveArtifacts"
+                    ],
+                    [
+                        "1718111766283865000",
+                        "Archiving artifacts"
+                    ],
+                    [
+                        "1718111766384841000",
+                        "Recording fingerprints"
+                    ],
+                    [
+                        "1718111766407176000",
+                        "[Pipeline] }"
+                    ],
+                    [
+                        "1718111766433199000",
+                        "[Pipeline] // stage"
+                    ],
+                    [
+                        "1718111766442109000",
+                        "[Pipeline] }"
+                    ],
+                    [
+                        "1718111766465175000",
+                        "[Pipeline] // withEnv"
+                    ],
+                    [
+                        "1718111766474122000",
+                        "[Pipeline] }"
+                    ],
+                    [
+                        "1718111766502617000",
+                        "[Pipeline] // node"
+                    ],
+                    [
+                        "1718111766513272000",
+                        "[Pipeline] End of Pipeline"
+                    ],
+                    [
+                        "1718111766990600000",
+                        "GitHub has been notified of this commit’s build result"
+                    ],
+                    [
+                        "1718111766991483000",
+                        "Finished: SUCCESS"
+                    ]
+                ]
+            }
+        ],
+        "stats": {
+            "summary": {
+                "bytesProcessedPerSecond": 1436113,
+                "linesProcessedPerSecond": 2298,
+                "totalBytesProcessed": 60602,
+                "totalLinesProcessed": 97,
+                "execTime": 0.042199,
+                "queueTime": 0.035091,
+                "subqueries": 0,
+                "totalEntriesReturned": 93,
+                "splits": 2,
+                "shards": 1,
+                "totalPostFilterLines": 93,
+                "totalStructuredMetadataBytesProcessed": 53650
+            },
+            "querier": {
+                "store": {
+                    "totalChunksRef": 1,
+                    "totalChunksDownloaded": 1,
+                    "chunksDownloadTime": 948433,
+                    "queryReferencedStructuredMetadata": true,
+                    "chunk": {
+                        "headChunkBytes": 0,
+                        "headChunkLines": 0,
+                        "decompressedBytes": 60602,
+                        "decompressedLines": 97,
+                        "compressedBytes": 3675,
+                        "totalDuplicates": 0,
+                        "postFilterLines": 93,
+                        "headChunkStructuredMetadataBytes": 0,
+                        "decompressedStructuredMetadataBytes": 53650
+                    },
+                    "chunkRefsFetchTime": 1079437,
+                    "congestionControlLatency": 0,
+                    "pipelineWrapperFilteredLines": 0
+                }
+            },
+            "ingester": {
+                "totalReached": 0,
+                "totalChunksMatched": 0,
+                "totalBatches": 0,
+                "totalLinesSent": 0,
+                "store": {
+                    "totalChunksRef": 0,
+                    "totalChunksDownloaded": 0,
+                    "chunksDownloadTime": 0,
+                    "queryReferencedStructuredMetadata": false,
+                    "chunk": {
+                        "headChunkBytes": 0,
+                        "headChunkLines": 0,
+                        "decompressedBytes": 0,
+                        "decompressedLines": 0,
+                        "compressedBytes": 0,
+                        "totalDuplicates": 0,
+                        "postFilterLines": 0,
+                        "headChunkStructuredMetadataBytes": 0,
+                        "decompressedStructuredMetadataBytes": 0
+                    },
+                    "chunkRefsFetchTime": 0,
+                    "congestionControlLatency": 0,
+                    "pipelineWrapperFilteredLines": 0
+                }
+            },
+            "cache": {
+                "chunk": {
+                    "entriesFound": 1,
+                    "entriesRequested": 1,
+                    "entriesStored": 0,
+                    "bytesReceived": 6413,
+                    "bytesSent": 0,
+                    "requests": 3,
+                    "downloadTime": 804381,
+                    "queryLengthServed": 0
+                },
+                "index": {
+                    "entriesFound": 0,
+                    "entriesRequested": 0,
+                    "entriesStored": 0,
+                    "bytesReceived": 0,
+                    "bytesSent": 0,
+                    "requests": 0,
+                    "downloadTime": 0,
+                    "queryLengthServed": 0
+                },
+                "result": {
+                    "entriesFound": 1,
+                    "entriesRequested": 1,
+                    "entriesStored": 0,
+                    "bytesReceived": 460,
+                    "bytesSent": 0,
+                    "requests": 1,
+                    "downloadTime": 319081,
+                    "queryLengthServed": 0
+                },
+                "statsResult": {
+                    "entriesFound": 1,
+                    "entriesRequested": 1,
+                    "entriesStored": 0,
+                    "bytesReceived": 278,
+                    "bytesSent": 0,
+                    "requests": 1,
+                    "downloadTime": 265372,
+                    "queryLengthServed": 641000000000
+                },
+                "volumeResult": {
+                    "entriesFound": 0,
+                    "entriesRequested": 0,
+                    "entriesStored": 0,
+                    "bytesReceived": 0,
+                    "bytesSent": 0,
+                    "requests": 0,
+                    "downloadTime": 0,
+                    "queryLengthServed": 0
+                },
+                "seriesResult": {
+                    "entriesFound": 0,
+                    "entriesRequested": 0,
+                    "entriesStored": 0,
+                    "bytesReceived": 0,
+                    "bytesSent": 0,
+                    "requests": 0,
+                    "downloadTime": 0,
+                    "queryLengthServed": 0
+                },
+                "labelResult": {
+                    "entriesFound": 0,
+                    "entriesRequested": 0,
+                    "entriesStored": 0,
+                    "bytesReceived": 0,
+                    "bytesSent": 0,
+                    "requests": 0,
+                    "downloadTime": 0,
+                    "queryLengthServed": 0
+                },
+                "instantMetricResult": {
+                    "entriesFound": 0,
+                    "entriesRequested": 0,
+                    "entriesStored": 0,
+                    "bytesReceived": 0,
+                    "bytesSent": 0,
+                    "requests": 0,
+                    "downloadTime": 0,
+                    "queryLengthServed": 0
+                }
+            },
+            "index": {
+                "totalChunks": 0,
+                "postFilterChunks": 0,
+                "shardsDuration": 0
+            }
+        }
+    }
+}

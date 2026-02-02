@@ -9,9 +9,11 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.model.Action;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.sdk.trace.ReadableSpan;
-
 import java.util.Map;
 
+/**
+ * Action to decorate {@link hudson.model.Job} steps to hold references to {@link Span}s
+ */
 public interface OtelMonitoringAction extends Action {
 
     Map<String, String> getW3cTraceContext();
@@ -19,7 +21,7 @@ public interface OtelMonitoringAction extends Action {
     @CheckForNull
     Span getSpan();
 
-    void purgeSpan();
+    void purgeSpanAndCloseAssociatedScopes();
 
     /**
      * @return {@code true} if the associated {@link Span} has ended

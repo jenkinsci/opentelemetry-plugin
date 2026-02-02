@@ -11,22 +11,15 @@ import hudson.model.Computer;
 import hudson.model.TaskListener;
 import hudson.remoting.Channel;
 import hudson.slaves.ComputerListener;
+import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsSemanticMetrics;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.events.EventEmitter;
-import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import io.opentelemetry.semconv.ResourceAttributes;
-import jenkins.YesNoMaybe;
-import jenkins.model.Jenkins;
-import jenkins.security.MasterToSlaveCallable;
-
+import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -34,15 +27,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import jenkins.YesNoMaybe;
+import jenkins.model.Jenkins;
+import jenkins.security.MasterToSlaveCallable;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
-public class MonitoringComputerListener extends ComputerListener implements OtelComponent {
-    private final static Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
+public class MonitoringComputerListener extends ComputerListener implements OpenTelemetryLifecycleListener {
+    private static final Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
     private LongCounter failureAgentCounter;
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    @Inject
+    protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+
+    @PostConstruct
+    public void postConstruct() {
+        Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
+
         final Jenkins jenkins = Jenkins.get();
         Computer controllerComputer = jenkins.getComputer("");
         if (controllerComputer == null) {
@@ -50,40 +53,56 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
         } else if (controllerComputer.getAction(OpenTelemetryAttributesAction.class) != null) {
             // nothing to do.
             // why are we invoked a second time? plugin reload?
-            LOGGER.log(Level.FINER, () -> "Resources for Jenkins Controller computer " + controllerComputer + " have already been defined: " + controllerComputer.getAction(OpenTelemetryAttributesAction.class));
+            LOGGER.log(
+                    Level.FINER,
+                    () -> "Resources for Jenkins Controller computer " + controllerComputer
+                            + " have already been defined: "
+                            + controllerComputer.getAction(OpenTelemetryAttributesAction.class));
         } else {
             try {
                 OpenTelemetryAttributesAction openTelemetryAttributesAction = new OpenTelemetryAttributesAction();
                 Map<String, String> attributesAsMap = new GetComputerAttributes().call();
                 for (Map.Entry<String, String> attribute : attributesAsMap.entrySet()) {
-                    openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
+                    openTelemetryAttributesAction
+                            .getAttributes()
+                            .put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
                 }
-                openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey()), JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
-                LOGGER.log(Level.FINER, () -> "Resources for Jenkins Controller computer " + controllerComputer + ": " + openTelemetryAttributesAction);
+                openTelemetryAttributesAction
+                        .getAttributes()
+                        .put(
+                                AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()),
+                                ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
+                LOGGER.log(
+                        Level.FINER,
+                        () -> "Resources for Jenkins Controller computer " + controllerComputer + ": "
+                                + openTelemetryAttributesAction);
                 controllerComputer.addAction(openTelemetryAttributesAction);
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Failure getting attributes for Jenkins Controller computer " + controllerComputer, e);
+                LOGGER.log(
+                        Level.WARNING,
+                        "Failure getting attributes for Jenkins Controller computer " + controllerComputer,
+                        e);
             }
         }
-        meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_OFFLINE)
-            .ofLongs()
-            .setDescription("Number of offline agents")
-            .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount()));
-            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_ONLINE)
-            .ofLongs()
-            .setDescription("Number of online agents")
-            .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount()));
-            meter.gaugeBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_TOTAL)
-            .ofLongs()
-            .setDescription("Number of agents")
-            .setUnit("1")
-            .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount()));
-        failureAgentCounter = meter.counterBuilder(JenkinsSemanticMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
-            .setDescription("Number of ComputerLauncher failures")
-            .setUnit("1")
-            .build();
+        meter.gaugeBuilder(JenkinsMetrics.JENKINS_AGENTS_OFFLINE)
+                .ofLongs()
+                .setDescription("Number of offline agents")
+                .setUnit("{agents}")
+                .buildWithCallback(valueObserver -> valueObserver.record(this.getOfflineAgentsCount()));
+        meter.gaugeBuilder(JenkinsMetrics.JENKINS_AGENTS_ONLINE)
+                .ofLongs()
+                .setDescription("Number of online agents")
+                .setUnit("{agents}")
+                .buildWithCallback(valueObserver -> valueObserver.record(this.getOnlineAgentsCount()));
+        meter.gaugeBuilder(JenkinsMetrics.JENKINS_AGENTS_TOTAL)
+                .ofLongs()
+                .setDescription("Number of agents")
+                .setUnit("{agents}")
+                .buildWithCallback(valueObserver -> valueObserver.record(this.getAgentsCount()));
+        failureAgentCounter = meter.counterBuilder(JenkinsMetrics.JENKINS_AGENTS_LAUNCH_FAILURE)
+                .setDescription("Number of ComputerLauncher failures")
+                .setUnit("{agents}")
+                .build();
 
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins agents management...");
     }
@@ -93,7 +112,7 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
         if (jenkins == null) {
             return 0;
         }
-        return Arrays.stream(jenkins.getComputers()).filter(computer -> computer.isOffline()).count();
+        return Arrays.stream(jenkins.getComputers()).filter(Computer::isOffline).count();
     }
 
     private long getOnlineAgentsCount() {
@@ -101,7 +120,7 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
         if (jenkins == null) {
             return 0;
         }
-        return Arrays.stream(jenkins.getComputers()).filter(computer -> computer.isOnline()).count();
+        return Arrays.stream(jenkins.getComputers()).filter(Computer::isOnline).count();
     }
 
     private long getAgentsCount() {
@@ -113,21 +132,28 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
     }
 
     @Override
-    public void preOnline(Computer computer, Channel channel, FilePath root, TaskListener listener) throws IOException, InterruptedException {
+    public void preOnline(Computer computer, Channel channel, FilePath root, TaskListener listener)
+            throws IOException, InterruptedException {
         OpenTelemetryAttributesAction openTelemetryAttributesAction = new OpenTelemetryAttributesAction();
 
         Map<String, String> attributes = channel.call(new GetComputerAttributes());
         for (Map.Entry<String, String> attribute : attributes.entrySet()) {
-            openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
+            openTelemetryAttributesAction
+                    .getAttributes()
+                    .put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
         }
-        openTelemetryAttributesAction.getAttributes().put(AttributeKey.stringKey(JenkinsOtelSemanticAttributes.JENKINS_COMPUTER_NAME.getKey()), computer.getName());
+        openTelemetryAttributesAction
+                .getAttributes()
+                .put(
+                        AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()),
+                        computer.getName());
 
         LOGGER.log(Level.FINE, () -> "preOnline(" + computer + "): " + openTelemetryAttributesAction);
         computer.addAction(openTelemetryAttributesAction);
     }
 
     @Override
-    public void onLaunchFailure(Computer computer, TaskListener taskListener) throws IOException, InterruptedException {
+    public void onLaunchFailure(Computer computer, TaskListener taskListener) {
         failureAgentCounter.add(1);
         LOGGER.log(Level.FINE, () -> "onLaunchFailure(" + computer + "): ");
     }
@@ -141,14 +167,16 @@ public class MonitoringComputerListener extends ComputerListener implements Otel
                 if (localHost.isLoopbackAddress()) {
                     // we have a problem, we want another network interface
                 }
-                attributes.put(ResourceAttributes.HOST_NAME.getKey(), localHost.getHostName());
-                attributes.put("host.ip", localHost.getHostAddress());
+                attributes.put(HostIncubatingAttributes.HOST_NAME.getKey(), localHost.getHostName());
+                attributes.put(HostIncubatingAttributes.HOST_IP.getKey(), localHost.getHostAddress());
             } catch (IOException e) {
                 // as this code will go through Jenkins remoting, test isLoggable before transferring data
                 if (LOGGER.isLoggable(Level.FINER)) {
-                    MonitoringComputerListener.LOGGER.log(Level.FINER, "Exception retrieving the build agent host details", e);
+                    MonitoringComputerListener.LOGGER.log(
+                            Level.FINER, "Exception retrieving the build agent host details", e);
                 } else if (LOGGER.isLoggable(Level.FINE)) {
-                    MonitoringComputerListener.LOGGER.log(Level.FINE, () -> "Exception retrieving the build agent host details " + e.getMessage());
+                    MonitoringComputerListener.LOGGER.log(
+                            Level.FINE, () -> "Exception retrieving the build agent host details " + e.getMessage());
                 }
             }
             return attributes;

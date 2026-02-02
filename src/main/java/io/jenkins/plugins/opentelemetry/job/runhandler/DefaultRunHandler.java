@@ -6,20 +6,19 @@
 package io.jenkins.plugins.opentelemetry.job.runhandler;
 
 import com.google.common.annotations.VisibleForTesting;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
-import jenkins.scm.api.SCMHead;
-import jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy;
-import jenkins.scm.api.mixin.ChangeRequestSCMHead;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import jenkins.scm.api.SCMHead;
+import jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy;
+import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 
 /**
  * Use same root span name for all pull change request pipelines (pull request, merge request)
@@ -28,18 +27,18 @@ import java.util.Locale;
 @Extension
 public class DefaultRunHandler implements RunHandler {
 
-    private final static List<String> CHANGE_REQUEST_JOB_NAME_SUFFIXES = Collections.unmodifiableList(Arrays.asList(
-        "-" + ChangeRequestCheckoutStrategy.HEAD.name().toLowerCase(Locale.ENGLISH),
-        "-" + ChangeRequestCheckoutStrategy.MERGE.name().toLowerCase(Locale.ENGLISH)));
+    private static final List<String> CHANGE_REQUEST_JOB_NAME_SUFFIXES = Collections.unmodifiableList(Arrays.asList(
+            "-" + ChangeRequestCheckoutStrategy.HEAD.name().toLowerCase(Locale.ENGLISH),
+            "-" + ChangeRequestCheckoutStrategy.MERGE.name().toLowerCase(Locale.ENGLISH)));
 
     @Override
-    public boolean canCreateSpanBuilder(@NonNull Run run) {
+    public boolean canCreateSpanBuilder(@NonNull Run<?, ?> run) {
         return true;
     }
 
     @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@NonNull Run run, @NonNull Tracer tracer) {
+    public SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer) {
         SCMHead head = SCMHead.HeadByItem.findHead(run.getParent());
         String spanName;
         if (head instanceof ChangeRequestSCMHead) {
@@ -47,9 +46,7 @@ public class DefaultRunHandler implements RunHandler {
         } else {
             spanName = run.getParent().getFullName();
         }
-        SpanBuilder spanBuilder = tracer.spanBuilder(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
-
-        return spanBuilder;
+        return tracer.spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
     }
 
     @VisibleForTesting

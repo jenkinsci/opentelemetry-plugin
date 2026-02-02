@@ -8,14 +8,19 @@ package io.jenkins.plugins.opentelemetry.job.step;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.git.extensions.impl.CloneOption;
 import hudson.scm.SCM;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import jenkins.YesNoMaybe;
 import jenkins.branch.Branch;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
@@ -26,18 +31,12 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.BranchJobProperty;
 import org.jenkinsci.plugins.workflow.steps.scm.GenericSCMStep;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * Customization of the {@code checkout ...} step when configured to access a Git repository.
  */
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class GitCheckoutStepHandler extends AbstractGitStepHandler {
-    private final static Logger LOGGER = Logger.getLogger(GitCheckoutStepHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(GitCheckoutStepHandler.class.getName());
 
     @Override
     public boolean canCreateSpanBuilder(@NonNull FlowNode flowNode, @NonNull WorkflowRun run) {
@@ -61,7 +60,10 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
             if (!(scmAsObject instanceof Map)) {
                 // `scm` is sometime a org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable .
                 // See https://github.com/jenkinsci/opentelemetry-plugin/issues/467
-                LOGGER.log(Level.FINE, () -> "Skip unexpected 'scm' type: " + scmAsObject.getClass().getSimpleName() + ": " + scmAsObject);
+                LOGGER.log(
+                        Level.FINE,
+                        () -> "Skip unexpected 'scm' type: "
+                                + scmAsObject.getClass().getSimpleName() + ": " + scmAsObject);
                 return false;
             }
             Map<String, ?> scm = (Map<String, ?>) scmAsObject;
@@ -102,8 +104,8 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
             final Map<String, ?> cloneOption = Iterables.getFirst(extensions, null);
 
             if (cloneOption != null) {
-                shallow = cloneOption.containsKey ("shallow") ? (Boolean) cloneOption.get("shallow") : shallow;
-                depth = cloneOption.containsKey ("depth") ? (Integer) cloneOption.get("depth") : depth;
+                shallow = cloneOption.containsKey("shallow") ? (Boolean) cloneOption.get("shallow") : shallow;
+                depth = cloneOption.containsKey("depth") ? (Integer) cloneOption.get("depth") : depth;
             }
 
             List<Map<String, ?>> userRemoteConfigs = (List<Map<String, ?>>) scm.get("userRemoteConfigs");
@@ -122,14 +124,16 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
                 final Map<String, ?> branch = Iterables.getFirst(branches, null);
                 gitBranch = (String) branch.get("name");
             }
-            return addCloneAttributes(super.createSpanBuilder(gitUrl, gitBranch, credentialsId, stepFunctionName, tracer, run), shallow, depth);
+            return addCloneAttributes(
+                    super.createSpanBuilder(gitUrl, gitBranch, credentialsId, stepFunctionName, tracer, run),
+                    shallow,
+                    depth);
         } else {
             Branch branch = branchJobProperty.getBranch();
             String gitBranch = branch.getName();
 
             final SCM scm = branch.getScm();
-            if (scm instanceof GitSCM) {
-                GitSCM gitScm = (GitSCM) scm;
+            if (scm instanceof GitSCM gitScm) {
                 CloneOption clone = gitScm.getExtensions().get(CloneOption.class);
                 if (clone != null && clone.isShallow()) {
                     if (clone.getDepth() != null) {
@@ -148,16 +152,19 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
                     return addCloneAttributes(tracer.spanBuilder(stepFunctionName), shallow, depth);
                 }
 
-                return addCloneAttributes(super.createSpanBuilder(gitUrl, gitBranch, credentialsId, stepFunctionName, tracer, run), shallow, depth);
+                return addCloneAttributes(
+                        super.createSpanBuilder(gitUrl, gitBranch, credentialsId, stepFunctionName, tracer, run),
+                        shallow,
+                        depth);
             } else {
                 return addCloneAttributes(tracer.spanBuilder(stepFunctionName), shallow, depth);
             }
         }
     }
 
-    private SpanBuilder addCloneAttributes(@NonNull SpanBuilder spanBuilder, @NonNull boolean shallow, @NonNull int depth) {
+    private SpanBuilder addCloneAttributes(@NonNull SpanBuilder spanBuilder, boolean shallow, int depth) {
         return spanBuilder
-            .setAttribute(JenkinsOtelSemanticAttributes.GIT_CLONE_DEPTH, (long) depth)
-            .setAttribute(JenkinsOtelSemanticAttributes.GIT_CLONE_SHALLOW, shallow);
+                .setAttribute(ExtendedJenkinsAttributes.GIT_CLONE_DEPTH, (long) depth)
+                .setAttribute(ExtendedJenkinsAttributes.GIT_CLONE_SHALLOW, shallow);
     }
 }

@@ -6,16 +6,15 @@
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 
 public class TeePrintStream extends PrintStream {
 
     final PrintStream secondary;
 
-    public TeePrintStream(@NonNull PrintStream primary, @NonNull PrintStream secondary) throws IOException {
-        super(primary, false, "UTF-8");
+    public TeePrintStream(@NonNull PrintStream primary, @NonNull PrintStream secondary) {
+        super(primary, false, StandardCharsets.UTF_8);
         this.secondary = secondary;
     }
 

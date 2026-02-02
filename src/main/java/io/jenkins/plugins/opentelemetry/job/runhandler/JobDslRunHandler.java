@@ -5,24 +5,21 @@
 
 package io.jenkins.plugins.opentelemetry.job.runhandler;
 
-
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Action;
 import hudson.model.Item;
 import hudson.model.Job;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import java.util.Collection;
 import javaposse.jobdsl.plugin.actions.SeedJobAction;
 import javaposse.jobdsl.plugin.actions.SeedJobTransientActionFactory;
-import jenkins.YesNoMaybe;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
-import java.util.Collection;
-
+import jenkins.YesNoMaybe;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class JobDslRunHandler implements RunHandler {
@@ -37,21 +34,26 @@ public class JobDslRunHandler implements RunHandler {
     }
 
     @Override
-    public boolean canCreateSpanBuilder(@NonNull Run run) {
-        Job job = run.getParent();
-        // perf optimization: directly lookup up in the SeedJobTransientActionFactory over `job.getAction(SeedJobAction.class)`
+    public boolean canCreateSpanBuilder(@NonNull Run<?, ?> run) {
+        Job<?, ?> job = run.getParent();
+        // perf optimization: directly lookup up in the SeedJobTransientActionFactory over
+        // `job.getAction(SeedJobAction.class)`
         Collection<? extends Action> actions = seedJobTransientActionFactory.createFor(job);
         return !actions.isEmpty();
     }
 
     @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@NonNull Run run, @NonNull Tracer tracer) {
-        Job job = run.getParent();
-        // perf optimization: directly lookup up in the SeedJobTransientActionFactory over `job.getAction(SeedJobAction.class)`
+    public SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer) {
+        Job<?, ?> job = run.getParent();
+        // perf optimization: directly lookup up in the SeedJobTransientActionFactory over
+        // `job.getAction(SeedJobAction.class)`
         Collection<? extends Action> actions = seedJobTransientActionFactory.createFor(job);
 
-        SeedJobAction seedJobAction = (SeedJobAction) actions.stream().filter(action -> action instanceof SeedJobAction).findFirst().orElseThrow(() -> new IllegalStateException());
+        SeedJobAction seedJobAction = (SeedJobAction) actions.stream()
+                .filter(action -> action instanceof SeedJobAction)
+                .findFirst()
+                .orElseThrow(IllegalStateException::new);
 
         // TODO understand the difference between seedJobAction.getTemplateJob() and seedJobAction.getSeedJob()
         Item seedJob = seedJobAction.getSeedJob();
@@ -69,19 +71,21 @@ public class JobDslRunHandler implements RunHandler {
             spanName = collapseJobName ? "Job from seed '" + templateFullName + "'" : job.getFullName();
         }
 
-        SpanBuilder spanBuilder = tracer.spanBuilder(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
+        SpanBuilder spanBuilder =
+                tracer.spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
         if (templateFullName != null) {
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TEMPLATE_ID, templateFullName);
+            spanBuilder.setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_TEMPLATE_ID, templateFullName);
         }
         if (templateUrl != null) {
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.CI_PIPELINE_TEMPLATE_URL, templateUrl);
+            spanBuilder.setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_TEMPLATE_URL, templateUrl);
         }
         return spanBuilder;
     }
 
     @Override
     public void configure(ConfigProperties config) {
-        collapseJobName = Boolean.TRUE.equals(config.getBoolean("otel.instrumentation.jenkins.job.dsl.collapse.job.name"));
+        collapseJobName =
+                Boolean.TRUE.equals(config.getBoolean("otel.instrumentation.jenkins.job.dsl.collapse.job.name"));
     }
 
     @Override

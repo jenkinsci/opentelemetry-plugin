@@ -6,23 +6,19 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
+import hudson.init.Terminator;
 import hudson.util.PluginServletFilter;
-import io.jenkins.plugins.opentelemetry.OtelComponent;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.servlet.StaplerInstrumentationServletFilter;
 import io.jenkins.plugins.opentelemetry.servlet.TraceContextServletFilter;
-import io.opentelemetry.api.events.EventEmitter;
-import io.opentelemetry.api.logs.LoggerProvider;
-import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
-import jenkins.YesNoMaybe;
-
-import javax.servlet.Filter;
-import javax.servlet.ServletException;
-import java.util.Optional;
+import jakarta.servlet.Filter;
+import jakarta.servlet.ServletException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import jenkins.YesNoMaybe;
 
 /**
  * TODO Register the {@link StaplerInstrumentationServletFilter} earlier in the chain of {@link Filter} of the Jenkins webapp,
@@ -30,35 +26,30 @@ import java.util.logging.Logger;
  * events can be associated to an HTTP trace.
  */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
-public class ServletFilterInitializer implements OtelComponent {
+public class ServletFilterInitializer implements OpenTelemetryLifecycleListener {
     private static final Logger logger = Logger.getLogger(ServletFilterInitializer.class.getName());
 
-    StaplerInstrumentationServletFilter staplerInstrumentationServletFilter;
-
+    @Inject
     TraceContextServletFilter traceContextServletFilter;
 
-    @Override
-    public void afterSdkInitialized(Meter meter, LoggerProvider loggerProvider, EventEmitter eventEmitter, Tracer tracer, ConfigProperties configProperties) {
+    @Inject
+    StaplerInstrumentationServletFilter staplerInstrumentationServletFilter;
 
-        boolean jenkinsRemoteSpanEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED)).orElse(false);
+    @PostConstruct
+    public void postConstruct() {
+        addToPluginServletFilter(traceContextServletFilter);
+        addToPluginServletFilter(staplerInstrumentationServletFilter);
+    }
 
-        if (jenkinsRemoteSpanEnabled) {
-            traceContextServletFilter = new TraceContextServletFilter();
-            addToPluginServletFilter(traceContextServletFilter);
-        } else {
-            logger.log(Level.INFO, () -> "Jenkins Remote Span disabled");
-        }
-        // TODO support live reload of the config flag
-        boolean jenkinsWebInstrumentationEnabled = Optional.ofNullable(configProperties.getBoolean(JenkinsOtelSemanticAttributes.OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED)).orElse(true);
-
-        if (jenkinsWebInstrumentationEnabled) {
-            staplerInstrumentationServletFilter = new StaplerInstrumentationServletFilter(tracer);
-            addToPluginServletFilter(staplerInstrumentationServletFilter);
-        } else {
-            logger.log(Level.INFO, () -> "Jenkins Web instrumentation disabled");
-        }
-
-
+    /**
+     * Unregister the {@link Filter}s from the {@link PluginServletFilter}.
+     * As <code>@PreDestroy</code> doesn't seem to be honored by Jenkins, we use <code>@Terminator</code> in addition.
+     */
+    @Terminator
+    @PreDestroy
+    public void preDestroy() throws ServletException {
+        PluginServletFilter.removeFilter(traceContextServletFilter);
+        PluginServletFilter.removeFilter(staplerInstrumentationServletFilter);
     }
 
     private void addToPluginServletFilter(Filter filter) {
@@ -69,18 +60,9 @@ public class ServletFilterInitializer implements OtelComponent {
                 PluginServletFilter.addFilter(filter);
                 logger.log(Level.FINE, () -> filter.getClass().getName() + " enabled");
             } catch (ServletException ex) {
-                logger.log(Level.WARNING, "Failure to enable " + filter.getClass().getName(), ex);
+                logger.log(
+                        Level.WARNING, "Failure to enable " + filter.getClass().getName(), ex);
             }
-        }
-    }
-
-    @Override
-    public void beforeSdkShutdown() {
-        try {
-            PluginServletFilter.removeFilter(staplerInstrumentationServletFilter);
-            PluginServletFilter.removeFilter(traceContextServletFilter);
-        } catch (ServletException e) {
-            logger.log(Level.INFO, "Exception removing OpenTelemetryServletFilter", e);
         }
     }
 }

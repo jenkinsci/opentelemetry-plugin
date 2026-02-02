@@ -1,0 +1,60 @@
+jenkins:
+  systemMessage: "Configured automatically with JCasC plugin"
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+  labelString: flyweight
+  mode: EXCLUSIVE
+  numExecutors: 5
+  remotingSecurity:
+    enabled: false
+  scmCheckoutRetryCount: 2
+  nodes:
+  - permanent:
+      labelString: "local"
+      launcher:
+        inbound:
+          workDirSettings:
+            disabled: true
+            failIfWorkDirIsMissing: false
+            internalDir: "remoting"
+            workDirPath: "/tmp"
+      name: "local"
+      numExecutors: 2
+      remoteFS: "/tmp"
+      retentionStrategy: "always"
+credentials:
+  system:
+    domainCredentials:
+    - credentials:
+      - usernamePassword:
+          description: "elasticsearch-logs"
+          id: "elasticsearch-logs"
+          password: "${ELASTICSEARCH_PASSWORD}"
+          scope: GLOBAL
+          username: "${ELASTICSEARCH_USERNAME}"
+unclassified:
+  location:
+    url: ${JENKINS_URL}
+  openTelemetry:
+    authentication: "noAuthentication"
+    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT}
+    exportOtelConfigurationAsEnvironmentVariables: true  # Note that OpenTelemetry credentials, if configured, will be exposed as environment variables
+    observabilityBackends:
+      - grafana:
+          grafanaBaseUrl: ${GRAFANA_HOST}
+          tempoDataSourceIdentifier: "example-jaeger"
+          grafanaLogsBackend:
+            grafanaLogsBackendWithJenkinsVisualization:
+              grafanaLokiDatasourceIdentifier: "example-loki"
+              lokiOTelLogFormat: "LOKI_V3_OTEL_FORMAT"
+              lokiUrl: ${LOKI_HOST}
+jobs:
+  - file: "/var/jenkins_home/config/ansible.dsl"
+  - file: "/var/jenkins_home/config/gradle.dsl"
+  - file: "/var/jenkins_home/config/maven.dsl"
+  - file: "/var/jenkins_home/config/otel-cli.dsl"
+  - file: "/var/jenkins_home/config/otel-cli-make.dsl"
+  - file: "/var/jenkins_home/config/import_dashboard.dsl"
+  - file: "/var/jenkins_home/config/pytest-otel.dsl"
+  - file: "/var/jenkins_home/config/hello-world.dsl"

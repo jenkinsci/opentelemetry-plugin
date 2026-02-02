@@ -5,6 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.jcasc;
 
+import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
+import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
+import static io.jenkins.plugins.casc.misc.Util.toYamlString;
+import static org.hamcrest.CoreMatchers.instanceOf;
+
 import io.jenkins.plugins.casc.ConfigurationContext;
 import io.jenkins.plugins.casc.ConfiguratorRegistry;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
@@ -20,11 +25,6 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.*;
 
-import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
-import static io.jenkins.plugins.casc.misc.Util.toStringFromYamlFile;
-import static io.jenkins.plugins.casc.misc.Util.toYamlString;
-import static org.hamcrest.CoreMatchers.instanceOf;
-
 public class ConfigurationAsCodeJaegerTest {
 
     @ClassRule
@@ -33,12 +33,14 @@ public class ConfigurationAsCodeJaegerTest {
 
     @Test
     public void should_support_configuration_as_code() {
-        final JenkinsOpenTelemetryPluginConfiguration configuration = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+        final JenkinsOpenTelemetryPluginConfiguration configuration =
+                GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
         MatcherAssert.assertThat(configuration.getEndpoint(), CoreMatchers.is("http://otel-collector-contrib:4317"));
         MatcherAssert.assertThat(configuration.getObservabilityBackends().size(), CoreMatchers.is(1));
 
-        JaegerBackend jaeger = (JaegerBackend) configuration.getObservabilityBackends().get(0);
+        JaegerBackend jaeger =
+                (JaegerBackend) configuration.getObservabilityBackends().get(0);
         MatcherAssert.assertThat(jaeger.getJaegerBaseUrl(), CoreMatchers.is("http://my-jaeger.acme.com:16686"));
         MatcherAssert.assertThat(jaeger.getName(), CoreMatchers.is("My Jaeger"));
 
@@ -47,9 +49,6 @@ public class ConfigurationAsCodeJaegerTest {
 
         MatcherAssert.assertThat(configuration.getServiceName(), CoreMatchers.is("my-jenkins"));
         MatcherAssert.assertThat(configuration.getServiceNamespace(), CoreMatchers.is("ci"));
-
-        MatcherAssert.assertThat(configuration.getExporterIntervalMillis(), CoreMatchers.is(Integer.valueOf(60_000)));
-        MatcherAssert.assertThat(configuration.getExporterTimeoutMillis(), CoreMatchers.is(Integer.valueOf(30_000)));
     }
 
     @Test

@@ -2,7 +2,9 @@ receivers:
   otlp:
     protocols:
       grpc:
-
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
 exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
@@ -11,7 +13,10 @@ exporters:
       enabled: true
     const_labels:
       label1: value1
-  logging:
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
 
   zipkin:
     endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
@@ -23,7 +28,7 @@ exporters:
       insecure: true
 
   otlp/elastic:
-    endpoint: "fleet-server:8200"
+    endpoint: "edot:4317"
     tls:
       insecure: true
 
@@ -51,11 +56,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, zipkin, otlp/jaeger, otlp/elastic]
+      exporters: [debug, zipkin, otlp/jaeger, otlp/elastic]
     metrics:
       receivers: [otlp]
       processors: [filter, batch]
-      exporters: [logging, prometheus, otlp/elastic]
+      exporters: [debug, prometheus, otlp/elastic]
     logs:
       receivers: [otlp]
-      exporters: [logging, otlp/elastic]
+      processors: [batch]
+      exporters: [debug, otlp/elastic]

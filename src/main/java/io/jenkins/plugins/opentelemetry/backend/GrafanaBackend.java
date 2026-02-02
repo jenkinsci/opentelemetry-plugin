@@ -10,10 +10,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.backend.grafana.GrafanaLogsBackend;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import org.apache.commons.lang.StringUtils;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkins.ui.icon.Icon;
 import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
@@ -21,15 +30,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
-public class GrafanaBackend extends ObservabilityBackend implements TemplateBindingsProvider {
+public class GrafanaBackend extends ObservabilityBackend {
 
     public static final String DEFAULT_BACKEND_NAME = "Grafana";
 
@@ -44,25 +45,13 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
 
     static {
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-grafana icon-sm",
-                ICONS_PREFIX + "grafana.svg",
-                Icon.ICON_SMALL_STYLE));
+                new Icon("icon-otel-grafana icon-sm", ICONS_PREFIX + "grafana.svg", Icon.ICON_SMALL_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-grafana icon-md",
-                ICONS_PREFIX + "grafana.svg",
-                Icon.ICON_MEDIUM_STYLE));
+                new Icon("icon-otel-grafana icon-md", ICONS_PREFIX + "grafana.svg", Icon.ICON_MEDIUM_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-grafana icon-lg",
-                ICONS_PREFIX + "grafana.svg",
-                Icon.ICON_LARGE_STYLE));
+                new Icon("icon-otel-grafana icon-lg", ICONS_PREFIX + "grafana.svg", Icon.ICON_LARGE_STYLE));
         IconSet.icons.addIcon(
-            new Icon(
-                "icon-otel-grafana icon-xlg",
-                ICONS_PREFIX + "grafana.svg",
-                Icon.ICON_XLARGE_STYLE));
+                new Icon("icon-otel-grafana icon-xlg", ICONS_PREFIX + "grafana.svg", Icon.ICON_XLARGE_STYLE));
     }
 
     private String grafanaBaseUrl;
@@ -77,28 +66,29 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
     private GrafanaLogsBackend grafanaLogsBackend;
 
     @DataBoundConstructor
-    public GrafanaBackend() {
-
-    }
+    public GrafanaBackend() {}
 
     @Nullable
     @Override
     public String getTraceVisualisationUrlTemplate() {
-        return
-            "${" + TemplateBindings.GRAFANA_BASE_URL + "}" +
-                "/explore?orgId=" +
-                "${" + TemplateBindings.GRAFANA_ORG_ID + "}" +
-                "&left=%7B%22datasource%22:%22" +
-                "${" + TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER + "}" +
-                "%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22datasource%22:%7B%22type%22:%22tempo%22,%22uid%22:%22" +
-                "${" + TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER + "}" +
-                "%22%7D,%22queryType%22:%22${" + TemplateBindings.GRAFANA_TEMPO_QUERY_TYPE + "}%22,%22query%22:%22" +
-                "${traceId}" +
-                "%22%7D%5D,%22range%22:%7B%22from%22:%22" +
-                "${" + TemplateBindings.START_TIME + ".minusSeconds(600).atZone(java.util.TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()}" +
-                "%22,%22to%22:%22" +
-                "${" + TemplateBindings.START_TIME + ".plusSeconds(600).atZone(java.util.TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()}" +
-                "%22%7D%7D";
+        return "${" + TemplateBindings.GRAFANA_BASE_URL + "}" + "/explore?orgId="
+                + "${"
+                + TemplateBindings.GRAFANA_ORG_ID + "}" + "&left=%7B%22datasource%22:%22"
+                + "${"
+                + TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER + "}"
+                + "%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22datasource%22:%7B%22type%22:%22tempo%22,%22uid%22:%22"
+                + "${"
+                + TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER + "}" + "%22%7D,%22queryType%22:%22${"
+                + TemplateBindings.GRAFANA_TEMPO_QUERY_TYPE + "}%22,%22query%22:%22" + "${traceId}"
+                + "%22%7D%5D,%22range%22:%7B%22from%22:%22"
+                + "${"
+                + TemplateBindings.START_TIME
+                + ".minusSeconds(600).atZone(java.util.TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()}"
+                + "%22,%22to%22:%22"
+                + "${"
+                + TemplateBindings.START_TIME
+                + ".plusSeconds(600).atZone(java.util.TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()}"
+                + "%22%7D%7D";
     }
 
     /**
@@ -133,7 +123,10 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GrafanaBackend that = (GrafanaBackend) o;
-        return Objects.equals(grafanaOrgId, that.grafanaOrgId) && Objects.equals(grafanaBaseUrl, that.grafanaBaseUrl) && Objects.equals(tempoDataSourceIdentifier, that.tempoDataSourceIdentifier) && Objects.equals(tempoQueryType, that.tempoQueryType);
+        return Objects.equals(grafanaOrgId, that.grafanaOrgId)
+                && Objects.equals(grafanaBaseUrl, that.grafanaBaseUrl)
+                && Objects.equals(tempoDataSourceIdentifier, that.tempoDataSourceIdentifier)
+                && Objects.equals(tempoQueryType, that.tempoQueryType);
     }
 
     @Override
@@ -151,14 +144,12 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
     @Override
     public Map<String, Object> getBindings() {
         Map<String, Object> bindings = Map.of(
-            TemplateBindings.BACKEND_NAME, getName(),
-            TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/grafana.png",
-
-            TemplateBindings.GRAFANA_BASE_URL, this.getGrafanaBaseUrl(),
-            TemplateBindings.GRAFANA_ORG_ID, String.valueOf(this.getGrafanaOrgId()),
-            TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER, this.getTempoDataSourceIdentifier(),
-            TemplateBindings.GRAFANA_TEMPO_QUERY_TYPE, this.getTempoQueryType()
-        );
+                TemplateBindings.BACKEND_NAME, getName(),
+                TemplateBindings.BACKEND_24_24_ICON_URL, "/plugin/opentelemetry/images/24x24/grafana.png",
+                TemplateBindings.GRAFANA_BASE_URL, this.getGrafanaBaseUrl(),
+                TemplateBindings.GRAFANA_ORG_ID, String.valueOf(this.getGrafanaOrgId()),
+                TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER, this.getTempoDataSourceIdentifier(),
+                TemplateBindings.GRAFANA_TEMPO_QUERY_TYPE, this.getTempoQueryType());
 
         if (grafanaLogsBackend instanceof TemplateBindingsProvider) {
             Map<String, Object> logsBackendBindings = ((TemplateBindingsProvider) grafanaLogsBackend).getBindings();
@@ -173,7 +164,9 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
     @CheckForNull
     @Override
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
-        return Optional.ofNullable(grafanaLogsBackend).map(b ->  b.newLogStorageRetriever(templateBindingsProvider)).orElse(null);
+        return Optional.ofNullable(grafanaLogsBackend)
+                .map(b -> b.newLogStorageRetriever(templateBindingsProvider))
+                .orElse(null);
     }
 
     public String getGrafanaBaseUrl() {
@@ -213,7 +206,7 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
     public String getTempoQueryType() {
         return tempoQueryType;
     }
-    
+
     @DataBoundSetter
     public void setTempoQueryType(String tempoQueryType) {
         this.tempoQueryType = tempoQueryType;
@@ -266,11 +259,18 @@ public class GrafanaBackend extends ObservabilityBackend implements TemplateBind
                 return FormValidation.ok();
             }
             try {
-                new URL(grafanaBaseUrl);
-            } catch (MalformedURLException e) {
+                new URI(grafanaBaseUrl).toURL();
+            } catch (URISyntaxException | MalformedURLException e) {
                 return FormValidation.error("Invalid URL: " + e.getMessage());
             }
             return FormValidation.ok();
+        }
+
+        public ListBoxModel doFillTempoQueryTypeItems() {
+            ListBoxModel items = new ListBoxModel();
+            items.add("Query Tempo using TraceQL", "traceql");
+            items.add("Query Tempo by TraceID (older Tempo versions)", "traceid");
+            return items;
         }
     }
 

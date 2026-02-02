@@ -5,11 +5,13 @@
 
 package io.jenkins.plugins.opentelemetry.jenkins;
 
-public class CredentialsNotFoundException extends RuntimeException {
-    static final long serialVersionUID = 1L;
+import java.io.Serial;
 
-    public CredentialsNotFoundException() {
-    }
+public class CredentialsNotFoundException extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    public CredentialsNotFoundException() {}
 
     public CredentialsNotFoundException(String message) {
         super(message);
@@ -23,7 +25,8 @@ public class CredentialsNotFoundException extends RuntimeException {
         super(cause);
     }
 
-    public CredentialsNotFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public CredentialsNotFoundException(
+            String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 }

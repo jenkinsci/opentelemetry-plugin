@@ -8,15 +8,14 @@ package io.jenkins.plugins.opentelemetry.backend.grafana;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
-import org.kohsuke.stapler.DataBoundConstructor;
-
 import java.util.Collections;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 public class NoGrafanaLogsBackend extends GrafanaLogsBackend {
     @DataBoundConstructor
-    public NoGrafanaLogsBackend() {
-    }
+    public NoGrafanaLogsBackend() {}
 
     @Override
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
@@ -40,9 +39,16 @@ public class NoGrafanaLogsBackend extends GrafanaLogsBackend {
 
     @Extension(ordinal = 100)
     public static class DescriptorImpl extends GrafanaLogsBackend.DescriptorImpl {
+        @Nonnull
         @Override
         public String getDisplayName() {
             return "Don't store pipeline logs in Loki";
+        }
+
+        // doesn't matter what the default is, as this is not really a backend
+        @Override
+        public String getDefaultLokiOTelLogFormat() {
+            return LokiOTelLogFormat.LOKI_V2_JSON_OTEL_FORMAT.name();
         }
     }
 }

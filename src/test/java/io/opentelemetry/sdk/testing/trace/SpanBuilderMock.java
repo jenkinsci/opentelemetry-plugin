@@ -5,13 +5,12 @@
 
 package io.opentelemetry.sdk.testing.trace;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.*;
 import io.opentelemetry.context.Context;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +20,7 @@ public class SpanBuilderMock implements SpanBuilder {
 
     private final SpanBuilder delegate;
 
-    private final Map<AttributeKey, Object> attributes = new HashMap<>();
+    private final Map<AttributeKey<?>, Object> attributes = new HashMap<>();
 
     public SpanBuilderMock(String spanName) {
         this.delegate = OpenTelemetry.noop().getTracer("noop").spanBuilder(spanName);
@@ -110,7 +109,7 @@ public class SpanBuilderMock implements SpanBuilder {
     }
 
     @NonNull
-    public Map<AttributeKey, Object> getAttributes() {
+    public Map<AttributeKey<?>, Object> getAttributes() {
         return attributes;
     }
 }

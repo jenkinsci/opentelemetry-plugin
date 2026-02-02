@@ -43,7 +43,7 @@ If `ARM64` please read the [support for `ARM64`](#support-for-arm64) section.
 2. Start the local Jenkins master service by running:
 
    ```
-   make -C demos start-all
+   make -C demos start
    ```
 
 3. Browse to <http://localhost:8080> in your web browser.

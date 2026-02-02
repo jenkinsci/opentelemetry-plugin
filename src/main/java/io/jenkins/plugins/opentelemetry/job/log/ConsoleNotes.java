@@ -6,20 +6,17 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
 import com.google.common.collect.ImmutableMap;
-import hudson.console.ConsoleNote;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
+import hudson.console.ConsoleNote;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import java.io.StringWriter;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 /**
  * Utilities for extracting and reinserting {@link ConsoleNote}s.
@@ -27,8 +24,7 @@ import java.util.Map;
  */
 public class ConsoleNotes {
 
-    private ConsoleNotes() {
-    }
+    private ConsoleNotes() {}
 
     public static TextAndAnnotations parse(byte[] bytes, int len) {
         assert len > 0 && len <= bytes.length;
@@ -63,8 +59,11 @@ public class ConsoleNotes {
                     break;
                 }
                 buf.append(line, pos, preamble);
-                annotations.add(
-                    ImmutableMap.of(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD, buf.length(), JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD, line.substring(endOfPreamble, postamble)));
+                annotations.add(ImmutableMap.of(
+                        ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD,
+                        buf.length(),
+                        ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD,
+                        line.substring(endOfPreamble, postamble)));
                 pos = postamble + ConsoleNote.POSTAMBLE_STR.length();
             }
             buf.append(line, pos, line.length()); // append tail
@@ -74,6 +73,7 @@ public class ConsoleNotes {
 
     static class TextAndAnnotations {
         final String text;
+
         @CheckForNull
         final JSONArray annotations;
 
@@ -91,8 +91,8 @@ public class ConsoleNotes {
             int pos = 0;
             for (Object o : annotations) {
                 JSONObject annotation = (JSONObject) o;
-                int position = annotation.getInt(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD);
-                String note = annotation.getString(JenkinsOtelSemanticAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD);
+                int position = annotation.getInt(ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_POSITION_FIELD);
+                String note = annotation.getString(ExtendedJenkinsAttributes.JENKINS_ANSI_ANNOTATIONS_NOTE_FIELD);
                 formattedMessage.write(message, pos, position - pos);
                 formattedMessage.write(ConsoleNote.PREAMBLE_STR);
                 formattedMessage.write(note);

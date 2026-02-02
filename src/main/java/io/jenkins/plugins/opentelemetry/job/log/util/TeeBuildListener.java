@@ -5,19 +5,18 @@
 
 package io.jenkins.plugins.opentelemetry.job.log.util;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.BuildListener;
 import hudson.model.TaskListener;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public final class TeeBuildListener implements BuildListener, Closeable {
+public final class TeeBuildListener implements BuildListener, AutoCloseable {
 
-    private final static Logger logger = Logger.getLogger(TeeBuildListener.class.getName());
+    private static final Logger logger = Logger.getLogger(TeeBuildListener.class.getName());
 
     final TaskListener main;
     final TaskListener secondary;
@@ -30,11 +29,7 @@ public final class TeeBuildListener implements BuildListener, Closeable {
     @NonNull
     @Override
     public PrintStream getLogger() {
-        try {
-            return new TeePrintStream(main.getLogger(), secondary.getLogger());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return new TeePrintStream(main.getLogger(), secondary.getLogger());
     }
 
     @Override

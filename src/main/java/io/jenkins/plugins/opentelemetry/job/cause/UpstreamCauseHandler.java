@@ -5,11 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry.job.cause;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Cause;
 import jenkins.YesNoMaybe;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class UpstreamCauseHandler implements CauseHandler {
@@ -27,6 +26,7 @@ public class UpstreamCauseHandler implements CauseHandler {
     @Override
     public String getStructuredDescription(@NonNull Cause cause) {
         Cause.UpstreamCause upstreamCause = (Cause.UpstreamCause) cause;
-        return upstreamCause.getClass().getSimpleName() + ":" + upstreamCause.getUpstreamProject() + "#" + upstreamCause.getUpstreamBuild();
+        return upstreamCause.getClass().getSimpleName() + ":" + upstreamCause.getUpstreamProject() + "#"
+                + upstreamCause.getUpstreamBuild();
     }
 }

@@ -1,0 +1,72 @@
+---
+services:
+  jenkins:
+    extends:
+      file: services.yml
+      service: jenkins
+    networks:
+      - jenkins
+    environment:
+      GRAFANA_HOST: ${GRAFANA_HOST:-http://localhost:3000}
+      LOKI_HOST: ${LOKI_HOST:-http://loki:3100}
+    volumes:
+      - type: bind
+        source: ./config/jenkins-grafana.yml
+        target: /var/jenkins_home/jcasc/jenkins.yml
+        read_only: true
+
+  jenkins-inbound-agent:
+    extends:
+      file: services.yml
+      service: jenkins-inbound-agent
+    networks:
+      - jenkins
+
+  loki:
+    extends:
+      file: services.yml
+      service: loki
+    networks:
+      - jenkins
+
+  grafana:
+    extends:
+      file: services.yml
+      service: grafana
+    networks:
+      - jenkins
+
+  prometheus:
+    extends:
+      file: services.yml
+      service: prometheus
+    networks:
+      - jenkins
+
+  jaeger-all-in-one:
+    extends:
+      file: services.yml
+      service: jaeger-all-in-one
+    networks:
+      - jenkins
+
+  otel-collector:
+    extends:
+      file: services.yml
+      service: otel-collector
+    volumes:
+      - ./config/otel-collector-grafana.yaml:/etc/otel-collector-config.yaml
+    depends_on:
+      - jaeger-all-in-one
+      - prometheus
+      - loki
+    networks:
+      - jenkins
+
+volumes:
+  jenkins:
+    driver: local
+
+networks:
+  jenkins:
+    driver: bridge

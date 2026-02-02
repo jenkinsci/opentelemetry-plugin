@@ -6,11 +6,10 @@
 package io.jenkins.plugins.opentelemetry.job.cause;
 
 import com.cloudbees.jenkins.plugins.BitBucketPushCause;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Cause;
 import jenkins.YesNoMaybe;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class BitBucketPushCauseHandler implements CauseHandler {

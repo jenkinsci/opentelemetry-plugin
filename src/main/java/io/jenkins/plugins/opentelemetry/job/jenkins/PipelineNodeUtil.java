@@ -6,12 +6,22 @@
 package io.jenkins.plugins.opentelemetry.job.jenkins;
 
 import com.google.common.collect.Iterables;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.model.Action;
 import hudson.model.Queue;
-import org.apache.commons.lang.StringUtils;
+import io.jenkins.plugins.opentelemetry.job.step.WithNewSpanStep;
+import java.io.IOException;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.pipeline.StageStatus;
 import org.jenkinsci.plugins.pipeline.SyntheticStage;
 import org.jenkinsci.plugins.workflow.actions.*;
+import org.jenkinsci.plugins.workflow.cps.actions.ArgumentsActionImpl;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.cps.steps.ParallelStep;
@@ -22,24 +32,15 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 import org.jenkinsci.plugins.workflow.support.steps.StageStep;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-
 public class PipelineNodeUtil {
-    private final static Logger LOGGER = Logger.getLogger(PipelineNodeUtil.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(PipelineNodeUtil.class.getName());
 
     /**
      * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
      */
     public static boolean isStartStage(FlowNode node) {
-        // logic below coming {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil#isStage(FlowNode)} from don't work for us
+        // logic below coming {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil#isStage(FlowNode)} from
+        // don't work for us
         // return node != null && (node.getAction(StageAction.class) != null && !isSyntheticStage(node))
         //        || (node.getAction(LabelAction.class) != null && node.getAction(ThreadNameAction.class) == null));
 
@@ -57,6 +58,21 @@ public class PipelineNodeUtil {
         return node.getAction(LabelAction.class) != null;
     }
 
+    public static boolean isStartWithNewSpan(FlowNode node) {
+        if (node == null) {
+            return false;
+        }
+
+        if (!(node instanceof StepStartNode)) {
+            return false;
+        }
+        StepStartNode stepStartNode = (StepStartNode) node;
+        if (!(stepStartNode.getDescriptor() instanceof WithNewSpanStep.DescriptorImpl)) {
+            return false;
+        }
+        return node.getAction(ArgumentsActionImpl.class) != null;
+    }
+
     /**
      * copy of {@code io.jenkins.blueocean.rest.impl.pipeline.PipelineNodeUtil}
      */
@@ -71,7 +87,8 @@ public class PipelineNodeUtil {
     public static TagsAction getSyntheticStage(@Nullable FlowNode node) {
         if (node != null) {
             for (Action action : node.getActions()) {
-                if (action instanceof TagsAction && ((TagsAction) action).getTagValue(SyntheticStage.TAG_NAME) != null) {
+                if (action instanceof TagsAction
+                        && ((TagsAction) action).getTagValue(SyntheticStage.TAG_NAME) != null) {
                     return (TagsAction) action;
                 }
             }
@@ -106,10 +123,10 @@ public class PipelineNodeUtil {
             if (action instanceof TagsAction && ((TagsAction) action).getTagValue(StageStatus.TAG_NAME) != null) {
                 TagsAction tagsAction = (TagsAction) action;
                 String value = tagsAction.getTagValue(StageStatus.TAG_NAME);
-                return value != null && (value.equals(StageStatus.getSkippedForConditional()) ||
-                        value.equals(StageStatus.getSkippedForFailure()) ||
-                        value.equals(StageStatus.getSkippedForUnstable())
-                );
+                return value != null
+                        && (value.equals(StageStatus.getSkippedForConditional())
+                                || value.equals(StageStatus.getSkippedForFailure())
+                                || value.equals(StageStatus.getSkippedForUnstable()));
             }
         }
         return false;
@@ -164,11 +181,11 @@ public class PipelineNodeUtil {
         BodyInvocationAction bodyInvocationAction = node.getAction(BodyInvocationAction.class);
         if (bodyInvocationAction != null) {
             // it's the second StepStartNode of the ExecutorStep, the StepStartNode for the actual invocation
-            LOGGER.log(Level.FINER, ()-> "isStartNode(): false - " + getDetailedDebugString(node));
+            LOGGER.log(Level.FINER, () -> "isStartNode(): false - " + getDetailedDebugString(node));
             return false;
         }
 
-        LOGGER.log(Level.FINE, ()-> "isStartNode(): true - " + getDetailedDebugString(node));
+        LOGGER.log(Level.FINE, () -> "isStartNode(): true - " + getDetailedDebugString(node));
         return true;
     }
 
@@ -224,9 +241,7 @@ public class PipelineNodeUtil {
     @NonNull
     public static String getDisplayName(@NonNull FlowNode node) {
         ThreadNameAction threadNameAction = node.getAction(ThreadNameAction.class);
-        return threadNameAction != null
-                ? threadNameAction.getThreadName()
-                : node.getDisplayName();
+        return threadNameAction != null ? threadNameAction.getThreadName() : node.getDisplayName();
     }
 
     /**
@@ -242,7 +257,6 @@ public class PipelineNodeUtil {
         }
         return Iterables.getFirst(parents, null);
     }
-
 
     @CheckForNull
     public static WorkflowRun getWorkflowRun(@NonNull FlowNode flowNode) {
@@ -266,13 +280,19 @@ public class PipelineNodeUtil {
         if (flowNode == null) {
             return "#null#";
         }
-        String value = "Node[" + flowNode.getDisplayFunctionName() + ", " + flowNode.getClass().getSimpleName();
+        String value = "Node[" + flowNode.getDisplayFunctionName() + ", "
+                + flowNode.getClass().getSimpleName();
         if (flowNode instanceof StepNode) {
             StepNode node = (StepNode) flowNode;
             StepDescriptor descriptor = node.getDescriptor();
-            value += "descriptor: " + (descriptor == null ? "#null#" : descriptor.getClass().getName());
+            value += "descriptor: "
+                    + (descriptor == null ? "#null#" : descriptor.getClass().getName());
         }
-        value += "actions: [" + flowNode.getActions().stream().map(action -> action.getClass().getSimpleName()).collect(Collectors.joining(",")) + "]";
+        value += "actions: ["
+                + flowNode.getActions().stream()
+                        .map(action -> action.getClass().getSimpleName())
+                        .collect(Collectors.joining(","))
+                + "]";
         value += ", id: " + flowNode.getId() + "]";
         return value;
     }
@@ -282,19 +302,25 @@ public class PipelineNodeUtil {
         if (flowNode == null) {
             return "#null#";
         }
-        String value = "Node[" + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + ", class: " + flowNode.getClass().getSimpleName() + ",";
+        String value = "Node[" + flowNode.getDisplayFunctionName() + ", id: " + flowNode.getId() + ", class: "
+                + flowNode.getClass().getSimpleName() + ",";
         if (flowNode instanceof StepNode) {
             StepNode node = (StepNode) flowNode;
             StepDescriptor descriptor = node.getDescriptor();
-            String descriptorClass = descriptor == null ? "#null#" : StringUtils.substringAfterLast(descriptor.getClass().getName(), ".");
+            String descriptorClass = descriptor == null
+                    ? "#null#"
+                    : StringUtils.substringAfterLast(descriptor.getClass().getName(), ".");
             value += "descriptor: " + descriptorClass + ",";
         }
         if (flowNode instanceof StepEndNode) {
             StepEndNode o = (StepEndNode) flowNode;
             value += "startNode: [id:" + o.getStartNode().getId() + "],";
-
         }
-        value += ", actions: [" + flowNode.getActions().stream().map(action -> action.getClass().getSimpleName()).collect(Collectors.joining(",")) + "]";
+        value += ", actions: ["
+                + flowNode.getActions().stream()
+                        .map(action -> action.getClass().getSimpleName())
+                        .collect(Collectors.joining(","))
+                + "]";
         value += "]";
         return value;
     }

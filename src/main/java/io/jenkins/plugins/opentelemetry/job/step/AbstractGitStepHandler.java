@@ -9,21 +9,23 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.NetworkAttributes;
+import io.opentelemetry.semconv.ServerAttributes;
+import io.opentelemetry.semconv.UrlAttributes;
+import io.opentelemetry.semconv.incubating.PeerIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.RpcIncubatingAttributes;
+import java.net.URISyntaxException;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.net.URISyntaxException;
-import java.util.logging.Logger;
-
 public abstract class AbstractGitStepHandler implements StepHandler {
-    private final static Logger LOGGER = Logger.getLogger(AbstractGitStepHandler.class.getName());
 
     public String searchGitUserName(@Nullable String credentialsId, @NonNull WorkflowRun run) {
         if (credentialsId == null) {
@@ -31,9 +33,8 @@ public abstract class AbstractGitStepHandler implements StepHandler {
         }
 
         String gitUserName = credentialsId;
-        StandardUsernameCredentials credentials = CredentialsProvider.findCredentialById(credentialsId,
-                StandardUsernameCredentials.class,
-                run);
+        StandardUsernameCredentials credentials =
+                CredentialsProvider.findCredentialById(credentialsId, StandardUsernameCredentials.class, run);
         if (credentials != null && credentials.getUsername() != null) {
             gitUserName = credentials.getUsername();
         }
@@ -48,7 +49,13 @@ public abstract class AbstractGitStepHandler implements StepHandler {
      */
     @VisibleForTesting
     @NonNull
-    public SpanBuilder createSpanBuilder(@NonNull String gitUrl, @Nullable String gitBranch, @Nullable String credentialsId, @NonNull String stepFunctionName, @NonNull Tracer tracer, @NonNull WorkflowRun run) {
+    public SpanBuilder createSpanBuilder(
+            @NonNull String gitUrl,
+            @Nullable String gitBranch,
+            @Nullable String credentialsId,
+            @NonNull String stepFunctionName,
+            @NonNull Tracer tracer,
+            @NonNull WorkflowRun run) {
         String gitUserName = searchGitUserName(credentialsId, run);
         return createSpanBuilderFromGitDetails(gitUrl, gitBranch, gitUserName, stepFunctionName, tracer);
     }
@@ -57,7 +64,12 @@ public abstract class AbstractGitStepHandler implements StepHandler {
      * Visible for testing. User {@link #createSpanBuilder(String, String, String, String, Tracer, WorkflowRun)} instead of this method
      */
     @VisibleForTesting
-    protected SpanBuilder createSpanBuilderFromGitDetails(@Nullable String gitUrl, @Nullable String gitBranch, @Nullable String gitUserName, @NonNull String stepFunctionName, @NonNull Tracer tracer) {
+    protected SpanBuilder createSpanBuilderFromGitDetails(
+            @Nullable String gitUrl,
+            @Nullable String gitBranch,
+            @Nullable String gitUserName,
+            @NonNull String stepFunctionName,
+            @NonNull Tracer tracer) {
         URIish gitUri;
         try {
             gitUri = new URIish(gitUrl);
@@ -74,38 +86,34 @@ public abstract class AbstractGitStepHandler implements StepHandler {
             String spanName = stepFunctionName + ": " + host + "/" + gitRepositoryPath;
             spanBuilder = tracer.spanBuilder(spanName);
             spanBuilder
-                    .setAttribute(SemanticAttributes.RPC_SYSTEM, gitUri.getScheme())
-                    .setAttribute(SemanticAttributes.RPC_SERVICE, "git")
-                    .setAttribute(SemanticAttributes.RPC_METHOD, "checkout")
-                    .setAttribute(SemanticAttributes.NET_PEER_NAME, host)
-                    .setAttribute(SemanticAttributes.PEER_SERVICE, host)
-                    .setAttribute(SemanticAttributes.HTTP_URL, sanitizeUrl(gitUri))
-                    .setAttribute(SemanticAttributes.HTTP_METHOD, "POST")
-                    .setSpanKind(SpanKind.CLIENT)
-            ;
+                    .setAttribute(RpcIncubatingAttributes.RPC_SYSTEM, gitUri.getScheme())
+                    .setAttribute(RpcIncubatingAttributes.RPC_SERVICE, "git")
+                    .setAttribute(RpcIncubatingAttributes.RPC_METHOD, "checkout")
+                    .setAttribute(ServerAttributes.SERVER_ADDRESS, host)
+                    .setAttribute(PeerIncubatingAttributes.PEER_SERVICE, host)
+                    .setAttribute(UrlAttributes.URL_FULL, sanitizeUrl(gitUri))
+                    .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, "POST")
+                    .setSpanKind(SpanKind.CLIENT);
 
-        } else if ("ssh".equals(gitUri.getScheme())
-                || (gitUri.getScheme() == null && gitUri.getHost() != null)) {
+        } else if ("ssh".equals(gitUri.getScheme()) || (gitUri.getScheme() == null && gitUri.getHost() != null)) {
             // SSH URL e.g. ssh://git@example.com/open-telemetry/opentelemetry-java.git
             // SCP URL e.g. git@github.com:open-telemetry/opentelemetry-java.git
 
             String spanName = stepFunctionName + ": " + host + "/" + gitRepositoryPath;
             spanBuilder = tracer.spanBuilder(spanName);
             spanBuilder
-                    .setAttribute(SemanticAttributes.RPC_SYSTEM, "ssh")
-                    .setAttribute(SemanticAttributes.RPC_SERVICE, "git")
-                    .setAttribute(SemanticAttributes.RPC_METHOD, "checkout")
-                    .setAttribute(SemanticAttributes.NET_PEER_NAME, host)
-                    .setAttribute(SemanticAttributes.PEER_SERVICE, host)
-                    .setAttribute(SemanticAttributes.NET_TRANSPORT, SemanticAttributes.NetTransportValues.IP_TCP)
-                    .setSpanKind(SpanKind.CLIENT)
-            ;
-        } else if (("file".equals(gitUri.getScheme())
-                || (gitUri.getScheme() == null && gitUri.getHost() == null))) {
+                    .setAttribute(RpcIncubatingAttributes.RPC_SYSTEM, "ssh")
+                    .setAttribute(RpcIncubatingAttributes.RPC_SERVICE, "git")
+                    .setAttribute(RpcIncubatingAttributes.RPC_METHOD, "checkout")
+                    .setAttribute(ServerAttributes.SERVER_ADDRESS, host)
+                    .setAttribute(PeerIncubatingAttributes.PEER_SERVICE, host)
+                    .setAttribute(NetworkAttributes.NETWORK_TRANSPORT, NetworkAttributes.NetworkTransportValues.TCP)
+                    .setSpanKind(SpanKind.CLIENT);
+        } else if (("file".equals(gitUri.getScheme()) || (gitUri.getScheme() == null && gitUri.getHost() == null))) {
             // FILE URL e.g. file:///srv/git/project.git
             // IMPLICIT FILE URL e.g. /srv/git/project.git
 
-            String spanName = stepFunctionName + ": " +  gitRepositoryPath;
+            String spanName = stepFunctionName + ": " + gitRepositoryPath;
             spanBuilder = tracer.spanBuilder(spanName);
         } else {
             // TODO document which case it is?
@@ -113,12 +121,12 @@ public abstract class AbstractGitStepHandler implements StepHandler {
             spanBuilder = tracer.spanBuilder(spanName);
         }
 
-        spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.GIT_REPOSITORY, gitRepositoryPath);
+        spanBuilder.setAttribute(ExtendedJenkinsAttributes.GIT_REPOSITORY, gitRepositoryPath);
         if (!Strings.isNullOrEmpty(gitBranch)) {
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.GIT_BRANCH, gitBranch);
+            spanBuilder.setAttribute(ExtendedJenkinsAttributes.GIT_BRANCH, gitBranch);
         }
         if (!Strings.isNullOrEmpty(gitUserName)) {
-            spanBuilder.setAttribute(JenkinsOtelSemanticAttributes.GIT_USERNAME, gitUserName);
+            spanBuilder.setAttribute(ExtendedJenkinsAttributes.GIT_USERNAME, gitUserName);
         }
 
         return spanBuilder;
@@ -130,7 +138,8 @@ public abstract class AbstractGitStepHandler implements StepHandler {
             githubOrgAndRepository = githubOrgAndRepository.substring("/".length());
         }
         if (githubOrgAndRepository.endsWith(".git")) {
-            githubOrgAndRepository = githubOrgAndRepository.substring(0, githubOrgAndRepository.length() - ".git".length());
+            githubOrgAndRepository =
+                    githubOrgAndRepository.substring(0, githubOrgAndRepository.length() - ".git".length());
         }
         return githubOrgAndRepository;
     }

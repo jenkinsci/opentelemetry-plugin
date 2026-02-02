@@ -5,6 +5,9 @@
 
 package io.jenkins.plugins.opentelemetry;
 
+import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
+import static org.junit.Assume.assumeFalse;
+
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.model.Cause;
 import hudson.model.FreeStyleBuild;
@@ -15,8 +18,9 @@ import hudson.tasks.Ant;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.Shell;
 import hudson.tasks._ant.AntTargetNote;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
+import java.util.List;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
@@ -31,19 +35,13 @@ import org.jvnet.hudson.test.SingleFileSCM;
 import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
-import static org.junit.Assume.assumeFalse;
-
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
 
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder();
 
     @Rule
-    public TestRule antTargetNoteEnabled = new FlagRule<Boolean>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
+    public TestRule antTargetNoteEnabled = new FlagRule<>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
 
     @Test
     public void testFreestyleJob() throws Exception {
@@ -53,9 +51,9 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         project.getBuildersList().add(new Shell("set -u && touch \"x\""));
         FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
@@ -75,9 +73,9 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         project.getBuildersList().add(new Shell("set -u && touch \"y\""));
         FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
@@ -97,9 +95,9 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         project.getBuildersList().add(new Shell("set -u && exit 1"));
         FreeStyleBuild build = jenkinsRule.buildAndAssertStatus(Result.FAILURE, project);
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
@@ -121,9 +119,9 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         project.getPublishersList().add(archiver);
         FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "archiveArtifacts", "Phase: Run", rootSpanName);
@@ -147,9 +145,9 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
             project.setAssignedNode(agent);
             FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-            String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+            String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-            Tree<SpanDataWrapper> spans = getGeneratedSpans();
+            Tree<SpanDataWrapper> spans = getBuildTrace();
             checkChainOfSpans(spans, "Phase: Start", rootSpanName);
             checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
             checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
@@ -170,10 +168,12 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
         project.getBuildersList().add(new Shell("set -u && touch \"x\""));
         jenkinsRule.assertBuildStatusSuccess(project.scheduleBuild2(0, new Cause.UserIdCause()));
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_CAUSE), CoreMatchers.is(List.of("UserIdCause:SYSTEM")));
+        MatcherAssert.assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_CAUSE),
+                CoreMatchers.is(List.of("UserIdCause:SYSTEM")));
     }
 
     @Test
@@ -182,33 +182,36 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
         final String jobName = "test-ant-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
-        project.setScm(new SingleFileSCM("build.xml", io.jenkins.plugins.opentelemetry.JenkinsOtelPluginFreestyleIntegrationTest.class.getResource("ant.xml")));
+        project.setScm(new SingleFileSCM(
+                "build.xml",
+                io.jenkins.plugins.opentelemetry.JenkinsOtelPluginFreestyleIntegrationTest.class.getResource(
+                        "ant.xml")));
         String antName = configureDefaultAnt().getName();
-        project.getBuildersList().add(new Ant("foo", antName,null,null,null));
+        project.getBuildersList().add(new Ant("foo", antName, null, null, null));
         final Node agent = jenkinsRule.createOnlineSlave();
         try {
             agent.setLabelString("ant");
             project.setAssignedNode(agent);
             FreeStyleBuild build = jenkinsRule.buildAndAssertSuccess(project);
 
-            String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+            String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-            Tree<SpanDataWrapper> spans = getGeneratedSpans();
+            Tree<SpanDataWrapper> spans = getBuildTrace();
             checkChainOfSpans(spans, "Phase: Start", rootSpanName);
             checkChainOfSpans(spans, "ant", "Phase: Run", rootSpanName);
             checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
             MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
 
             assertFreestyleJobMetadata(build, spans);
-            // Jenkins UTs classloader does not load the plugins :/ so let's use the default value.
-            assertBuildStepMetadata(spans, "ant", JENKINS_CORE);
+            assertBuildStepMetadata(spans, "ant", "ant");
             assertNodeMetadata(spans, rootSpanName, true);
         } finally {
-          jenkinsRule.jenkins.removeNode(agent);
+            jenkinsRule.jenkins.removeNode(agent);
         }
     }
 
-    // See https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
+    // See
+    // https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
     private Ant.AntInstallation configureDefaultAnt() throws Exception {
         return ToolInstallations.configureDefaultAnt(tmp);
     }
@@ -216,7 +219,8 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     @Test
     public void testFreestyleJob_with_culprits() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        // See https://github.com/abayer/jenkins/blob/914963c22317e7d72cf7e3e7d9ed8ab57709ccb0/test/src/test/java/hudson/model/AbstractBuildTest.java#L135-L150
+        // See
+        // https://github.com/abayer/jenkins/blob/914963c22317e7d72cf7e3e7d9ed8ab57709ccb0/test/src/test/java/hudson/model/AbstractBuildTest.java#L135-L150
 
         final String jobName = "test-freestyle-culprits-" + jobNameSuffix.incrementAndGet();
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(jobName);
@@ -227,29 +231,30 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         scm.addChange().withAuthor("alice");
         jenkinsRule.buildAndAssertSuccess(project);
 
-        String rootSpanName = JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
+        String rootSpanName = ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName;
 
-        Tree<SpanDataWrapper> spans = getGeneratedSpans();
+        Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpans(spans, "Phase: Run", rootSpanName);
 
         // 2nd build
         scm.addChange().withAuthor("bob");
         project.getBuildersList().add(new FailureBuilder());
         jenkinsRule.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(0).get());
-        spans = getGeneratedSpans(1);
+        spans = getBuildTrace(1);
         checkChainOfSpans(spans, "Phase: Run", rootSpanName);
 
         // 3rd build. bob continues to be in culprit
         project.getBuildersList().add(new FailureBuilder());
         scm.addChange().withAuthor("charlie");
         FreeStyleBuild build = project.scheduleBuild2(0).get();
-        spans = getGeneratedSpans(2);
+        spans = getBuildTrace(2);
 
         checkChainOfSpans(spans, "Phase: Run", rootSpanName);
 
         List<SpanDataWrapper> root = spans.byDepth().get(0);
         Attributes attributes = root.get(0).spanData.getAttributes();
-        MatcherAssert.assertThat(attributes.get(JenkinsOtelSemanticAttributes.CI_PIPELINE_RUN_COMMITTERS), CoreMatchers.is(List.of("bob")));
+        MatcherAssert.assertThat(
+                attributes.get(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_COMMITTERS), CoreMatchers.is(List.of("bob")));
 
         assertFreestyleJobMetadata(build, spans);
     }

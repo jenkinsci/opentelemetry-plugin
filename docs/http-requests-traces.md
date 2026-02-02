@@ -14,6 +14,12 @@ Monitor and troubleshoot performance problems of the Jenkins Controller using tr
 ```
 otel.instrumentation.jenkins.web.enabled=false
 ```
+* HTTP request parameters can be captured using the standard configuration parameter
+ ([docs](https://opentelemetry.io/docs/zero-code/java/agent/configuration/#capturing-servlet-request-parameters)):
+
+```
+otel.instrumentation.servlet.experimental.capture-request-parameters=<<coma separated list of parameter names>>
+```
 
 * Observability solutions provide aggregated views on the overall activity on the Jenkins Controller UI, often enabling monitoring dashboards, alerting, and automated anomaly detection
 
