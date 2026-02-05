@@ -6,6 +6,9 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import hudson.Extension;
+import hudson.ExtensionList;
+import hudson.init.InitMilestone;
+import hudson.init.Initializer;
 import hudson.init.Terminator;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
@@ -43,6 +46,8 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
 
     private static final Formatter FORMATTER = new AccessibleFormatter();
 
+    private static final ThreadLocal<Boolean> isPublishing = ThreadLocal.withInitial(() -> false);
+
     private boolean captureExperimentalAttributes;
 
     private LoggerProvider loggerProvider;
@@ -55,16 +60,53 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
             // protect against init errors. https://github.com/jenkinsci/opentelemetry-plugin/issues/622
             Context context = Context.current();
             logger.log(Level.FINER, () -> "OtelJulHandler initialization - context: " + context);
-        } catch (NoClassDefFoundError | RuntimeException e) {
-            logger.log(Level.WARNING, "Exception initializing OPenTelemetry SDK logging apis, disable OtelJulHandler");
-            throw e;
+        } catch (Throwable e) {
+            disabled = true;
+            logger.log(Level.WARNING, "Exception initializing OpenTelemetry SDK logging APIs, disable OtelJulHandler");
         }
     }
 
     /**
      * Circuit breaker
      */
-    private boolean disabled = false;
+    private volatile boolean disabled = false;
+
+    /**
+     * Delayed initialization ensures Jenkins core and plugins are fully loaded
+     * before hooking into the root logger, avoiding early OpenTelemetry SDK
+     * initialization and classloading issues during startup.
+     */
+    @SuppressWarnings("unused")
+    @Initializer(after = InitMilestone.JOB_LOADED)
+    public static void registerGlobalHandler() {
+        ExtensionList<OtelJulHandler> list = ExtensionList.lookup(OtelJulHandler.class);
+        if (list.isEmpty()) {
+            return;
+        }
+        list.get(0).register();
+    }
+
+    /**
+     * Internal registration logic that attaches this handler to the Root JUL Logger.
+     */
+    public void register() {
+        if (disabled) {
+            return;
+        }
+        if (this.loggerProvider == null && openTelemetry != null) {
+            try {
+                this.loggerProvider = openTelemetry.getLogsBridge();
+            } catch (Throwable t) {
+                disabled = true;
+                return;
+            }
+        }
+
+        if (this.loggerProvider != null) {
+            Logger.getLogger("").addHandler(this);
+            logger.log(Level.INFO, "OTel logging Handler registered on java.util.logging");
+        }
+    }
 
     /**
      * Map the {@link LogRecord} data model onto the {@link io.opentelemetry.api.logs.LogRecordBuilder}. Unmapped fields include:
@@ -79,7 +121,15 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
         if (disabled) {
             return;
         }
+        if (isPublishing.get()) {
+            return;
+        }
+        if (loggerProvider == null) {
+            return;
+        }
         try {
+            isPublishing.set(true);
+
             String instrumentationName = logRecord.getLoggerName();
             if (instrumentationName == null || instrumentationName.isEmpty()) {
                 instrumentationName = "ROOT";
@@ -128,12 +178,14 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
             logBuilder = logBuilder.setAllAttributes(attributes.build()).setContext(Context.current()); // span context
 
             logBuilder.emit();
-        } catch (RuntimeException e) {
+        } catch (Throwable e) {
             // directly use `System.err` rather than the `logger`
             // because the OTelJulHandler is a handler of this logger, risking an infinite loop
             System.err.println("Exception sending logs to OTLP endpoint, disable OTelJulHandler");
             e.printStackTrace();
             disabled = true;
+        } finally {
+            isPublishing.remove();
         }
     }
 
@@ -171,12 +223,18 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
 
     @PostConstruct
     public void postConstruct() {
-        this.loggerProvider = openTelemetry.getLogsBridge();
-        this.captureExperimentalAttributes = openTelemetry
-                .getConfig()
-                .getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
-        Logger.getLogger("").addHandler(this);
-        logger.log(Level.INFO, "OTel logging Handler registered on java.util.logging");
+        if (disabled) {
+            return;
+        }
+        try {
+            this.loggerProvider = openTelemetry.getLogsBridge();
+            this.captureExperimentalAttributes = openTelemetry
+                    .getConfig()
+                    .getBoolean("otel.instrumentation.java-util-logging.experimental-log-attributes", false);
+        } catch (Throwable e) {
+            disabled = true;
+            logger.log(Level.WARNING, "Exception loading OpenTelemetry config, disabling OtelJulHandler", e);
+        }
     }
 
     /**
