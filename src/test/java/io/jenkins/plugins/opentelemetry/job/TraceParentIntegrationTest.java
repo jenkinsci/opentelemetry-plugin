@@ -4,7 +4,6 @@ import hudson.EnvVars;
 import hudson.model.Job;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import io.jenkins.plugins.opentelemetry.OtelEnvironmentContributor;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -14,11 +13,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Answers; 
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+
 import java.lang.reflect.Field;
 import java.io.IOException;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -38,7 +39,6 @@ public class TraceParentIntegrationTest {
 
     @Mock
     TaskListener listener;
-
     
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     ReconfigurableOpenTelemetry reconfigurableOpenTelemetry;
@@ -54,7 +54,7 @@ public class TraceParentIntegrationTest {
         // Setup Mock Interactions
         when(run.getParent()).thenReturn(job);
         when(job.getFullName()).thenReturn("test-pipeline-job");
-
+        
         // Instantiate the Real Service
         OtelEnvironmentContributorService service = new OtelEnvironmentContributorService();
 
@@ -67,13 +67,13 @@ public class TraceParentIntegrationTest {
 
     @Test
     public void testContextPropagatesToNestedLayer() throws IOException, InterruptedException {
-        // Simulate the Root Layer
+        // Simulate the "Root" Layer
         Span rootSpan = tracer.spanBuilder("root-build").startSpan();
         String rootSpanId = rootSpan.getSpanContext().getSpanId();
 
         try (Scope rootScope = rootSpan.makeCurrent()) {
             
-            // Simulate a Nested Layer
+            // Simulate a "Nested" Layer
             Span stageSpan = tracer.spanBuilder("stage-layer").startSpan();
             String stageSpanId = stageSpan.getSpanContext().getSpanId();
             String stageTraceId = stageSpan.getSpanContext().getTraceId();
@@ -105,6 +105,7 @@ public class TraceParentIntegrationTest {
 
     private void injectDependencyByType(Object target, Object dependency, Class<?> dependencyType) throws Exception {
         boolean found = false;
+       
         for (Field field : target.getClass().getDeclaredFields()) {
             if (field.getType().isAssignableFrom(dependencyType)) {
                 field.setAccessible(true);
@@ -114,7 +115,7 @@ public class TraceParentIntegrationTest {
             }
         }
         if (!found) {
-            // Fallback: Check parent class just in case
+            // Check parent class fields 
              for (Field field : target.getClass().getSuperclass().getDeclaredFields()) {
                  if (field.getType().isAssignableFrom(dependencyType)) {
                      field.setAccessible(true);
