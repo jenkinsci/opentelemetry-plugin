@@ -1,5 +1,9 @@
 package io.jenkins.plugins.opentelemetry.job;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import jenkins.model.GlobalConfiguration;
@@ -9,10 +13,6 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class TraceParentPipelineTest {
 
@@ -30,38 +30,30 @@ public class TraceParentPipelineTest {
         config.setExportOtelConfigurationAsEnvironmentVariables(true);
         config.save();
 
-        WorkflowJob job = jenkinsRule.createProject(
-                WorkflowJob.class,
-                "traceparent-withenv-trycatch-test"
-        );
+        WorkflowJob job = jenkinsRule.createProject(WorkflowJob.class, "traceparent-withenv-trycatch-test");
 
-        String pipelineScript =
-                "node {\n" +
-                "  stage('Stage-A') {\n" +
-                "    sh 'echo a_tp=$TRACEPARENT'\n" +
-                "  }\n" +
-                "\n" +
-                "  withEnv(['FOO=bar']) {\n" +
-                "    stage('Stage-B') {\n" +
-                "      sh 'echo b_tp=$TRACEPARENT'\n" +
-                "      try {\n" +
-                "        sh 'echo try_tp=$TRACEPARENT'\n" +
-                "        sh 'exit 1'\n" +
-                "      } catch (err) {\n" +
-                "        sh 'echo catch_tp=$TRACEPARENT'\n" +
-                "      } finally {\n" +
-                "        sh 'echo final_tp=$TRACEPARENT'\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}";
+        String pipelineScript = "node {\n" + "  stage('Stage-A') {\n"
+                + "    sh 'echo a_tp=$TRACEPARENT'\n"
+                + "  }\n"
+                + "\n"
+                + "  withEnv(['FOO=bar']) {\n"
+                + "    stage('Stage-B') {\n"
+                + "      sh 'echo b_tp=$TRACEPARENT'\n"
+                + "      try {\n"
+                + "        sh 'echo try_tp=$TRACEPARENT'\n"
+                + "        sh 'exit 1'\n"
+                + "      } catch (err) {\n"
+                + "        sh 'echo catch_tp=$TRACEPARENT'\n"
+                + "      } finally {\n"
+                + "        sh 'echo final_tp=$TRACEPARENT'\n"
+                + "      }\n"
+                + "    }\n"
+                + "  }\n"
+                + "}";
 
         job.setDefinition(new CpsFlowDefinition(pipelineScript, true));
 
-        WorkflowRun run = jenkinsRule.assertBuildStatus(
-                Result.SUCCESS,
-                job.scheduleBuild2(0)
-        );
+        WorkflowRun run = jenkinsRule.assertBuildStatus(Result.SUCCESS, job.scheduleBuild2(0));
 
         String logs = JenkinsRule.getLog(run);
 
@@ -90,9 +82,7 @@ public class TraceParentPipelineTest {
     private String extract(String prefix, String log) {
         for (String line : log.split("\n")) {
             if (line.contains(prefix)) {
-                return line.substring(
-                    line.indexOf(prefix) + prefix.length()
-                ).trim();
+                return line.substring(line.indexOf(prefix) + prefix.length()).trim();
             }
         }
         return null;
