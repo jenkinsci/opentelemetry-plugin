@@ -51,15 +51,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
     protected ReconfigurableOpenTelemetry openTelemetry;
 
     public OtelJulHandler() {
-        // Constructor intentionally minimal to avoid circular class loading during initialization
-        // Context.current() call removed to fix ClassCircularityError (issue #1201)
-        // See https://github.com/jenkinsci/opentelemetry-plugin/issues/1201
-        // The original Context.current() call was added for issue #622 but caused circularity
-        try {
-            logger.log(Level.FINER, "OtelJulHandler constructor completed");
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Exception during OtelJulHandler construction", e);
-        }
+        logger.log(Level.FINER, "OtelJulHandler constructor completed");
     }
 
     /**
