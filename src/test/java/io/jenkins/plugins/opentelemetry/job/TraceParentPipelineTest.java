@@ -70,6 +70,11 @@ public class TraceParentPipelineTest {
         assertNotNull(finalTp);
 
         assertNotEquals(aTp, bTp);
+        assertNotEquals(bTp, tryTp);
+        assertNotEquals(bTp, catchTp);
+        assertNotEquals(bTp, finalTp);
+        assertNotEquals(tryTp, catchTp);
+        assertNotEquals(tryTp, finalTp);
 
         String traceId = traceId(aTp);
 
