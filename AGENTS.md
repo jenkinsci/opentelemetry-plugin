@@ -77,6 +77,86 @@ make stop           # Stop all containers
 - Prefer composition over inheritance
 - Use interface-based design for extensibility
 
+### Java Best Practices
+
+#### Code Organization
+- Keep classes focused on a single responsibility (Single Responsibility Principle)
+- Classes should be small: aim for fewer than 200 lines when possible
+- Methods should be concise: aim for fewer than 20 lines
+- Limit method parameters to 3-4; use parameter objects for more complex cases
+- Group related functionality into cohesive packages
+
+#### Naming Conventions
+- Classes/Interfaces: Use `PascalCase` (e.g., `MonitoringRunListener`)
+- Methods/Variables: Use `camelCase` (e.g., `createSpanBuilder`)
+- Constants: Use `UPPER_SNAKE_CASE` (e.g., `MAX_RETRY_ATTEMPTS`)
+- Packages: Use lowercase, concatenated words (e.g., `io.jenkins.plugins.opentelemetry`)
+- Use meaningful, descriptive names that reveal intent
+- Avoid abbreviations unless widely recognized (e.g., `HTTP`, `URL`)
+- Boolean variables/methods should indicate true/false (e.g., `isEnabled`, `hasPermission`)
+
+#### Error Handling
+- Catch specific exceptions rather than generic `Exception`
+- Never catch `Throwable` or `Error` unless absolutely necessary
+- Don't ignore exceptions; at minimum, log them
+- Use try-with-resources for `AutoCloseable` resources
+- Prefer checked exceptions for recoverable conditions
+- Document exceptions with `@throws` in Javadoc
+
+#### Null Safety
+- Prefer `Optional<T>` over returning null for methods that may not have a value
+- Use `@NonNull` and `@CheckForNull` annotations consistently
+- Validate method parameters at the beginning of methods
+- Avoid passing null as arguments; use overloaded methods instead
+- Initialize collections to empty rather than null
+
+#### Collections and Streams
+- Prefer immutable collections when possible (e.g., `List.of()`, `Set.of()`)
+- Use `Collections.unmodifiableList()` for defensive copies
+- Use streams for data processing, but keep pipelines readable (max 3-4 operations)
+- Prefer method references over lambdas when possible (e.g., `String::length`)
+- Use appropriate collection types: `List` for ordered, `Set` for uniqueness, `Map` for key-value
+
+#### Performance Considerations
+- Avoid premature optimization; measure before optimizing
+- Use `StringBuilder` for string concatenation in loops
+- Cache expensive computations when appropriate
+- Be mindful of boxing/unboxing with primitives in collections
+- Use lazy initialization for expensive objects when appropriate
+- Prefer primitive types over wrapper classes when nullability isn't needed
+
+#### Concurrency
+- Minimize mutable shared state
+- Use `java.util.concurrent` classes over raw synchronization
+- Prefer `ExecutorService` over creating threads directly
+- Document thread-safety guarantees in class Javadoc
+- Use `volatile` for flags that need visibility guarantees
+- Avoid `synchronized` on public methods; use private locks instead
+
+#### Testing
+- Write tests for all public APIs
+- Use meaningful test method names that describe what is being tested
+- Follow Arrange-Act-Assert (AAA) pattern
+- Keep tests focused: one logical assertion per test
+- Use `@Test(expected = Exception.class)` or `assertThrows()` for exception testing
+- Mock external dependencies; test units in isolation
+
+#### Code Comments
+- Write self-documenting code; let code explain "what" and comments explain "why"
+- Document all public APIs with Javadoc
+- Include examples in Javadoc for complex methods
+- Keep comments up-to-date; outdated comments are worse than no comments
+- Avoid obvious comments that restate the code
+- Use `TODO` and `FIXME` tags for pending work, with issue references
+
+#### Modern Java Features (Java 17+)
+- Use records for immutable data carriers
+- Use sealed classes for restricted inheritance hierarchies
+- Use pattern matching where applicable (instanceof, switch)
+- Use text blocks for multi-line strings
+- Use var for local variables when type is obvious from context
+- Use enhanced switch expressions with yield
+
 ### Formatting Rules (enforced by Spotless)
 - **Indentation**: 4 spaces for Java, 2 spaces for YAML/JSON
 - **Line length**: Maximum 120 characters
