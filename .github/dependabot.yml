@@ -6,11 +6,15 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "io.opentelemetry*"
+        versions: ["*-alpha", "*-beta", "*-rc*"]
     groups:
       otel-dependencies:
         patterns:
             - "io.opentelemetry*"
             - "opentelemetry*"
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
