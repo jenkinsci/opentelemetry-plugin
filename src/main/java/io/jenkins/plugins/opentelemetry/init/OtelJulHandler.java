@@ -51,14 +51,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
     protected ReconfigurableOpenTelemetry openTelemetry;
 
     public OtelJulHandler() {
-        try {
-            // protect against init errors. https://github.com/jenkinsci/opentelemetry-plugin/issues/622
-            Context context = Context.current();
-            logger.log(Level.FINER, () -> "OtelJulHandler initialization - context: " + context);
-        } catch (NoClassDefFoundError | RuntimeException e) {
-            logger.log(Level.WARNING, "Exception initializing OPenTelemetry SDK logging apis, disable OtelJulHandler");
-            throw e;
-        }
+        logger.log(Level.FINER, "OtelJulHandler constructor completed");
     }
 
     /**
