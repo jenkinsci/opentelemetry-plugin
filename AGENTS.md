@@ -262,6 +262,42 @@ otel:
       timeout: 30
 ```
 
+### Technical Documentation Best Practices
+
+When creating or updating technical documentation, follow these principles:
+
+#### Content Requirements
+- **Correct**: Documentation must be accurate and free from errors. Wrong documentation is worse than no documentation
+- **Current**: Keep documentation up-to-date with code changes. Regular reviews are essential
+- **Understandable**: Write for the target audience. Use clear language, explain reasons, provide context
+- **Relevant**: Focus on task-oriented content that stakeholders actually need
+
+#### Structural Requirements
+- **Referenceable**: Number sections, diagrams, and tables consistently (e.g., "Fig. 3.1", "Table 2.1")
+- **Easy to find**: Organize top-down, use templates (like arc42), provide table of contents with hyperlinks
+- **Maintainable**: Abstract away details when possible, avoid documenting every implementation detail
+
+#### Process Requirements
+- **Version controlled**: All documentation artifacts should be in version control (Git)
+- **Continuously updated**: Document incrementally, include documentation in Definition of Done
+- **Use appropriate tools**: Prefer established tools over new ones to reduce maintenance burden
+
+#### Writing Guidelines
+- Use active voice and positive statements (avoid negation)
+- Keep sentences concise (15-20 words average)
+- Correct spelling and grammar are essential
+- Combine diagrams with explanatory text
+- Provide glossary for specific terms
+- Explain reasons behind decisions, not just what was decided
+
+#### Maintainability Tips
+- Leave out obvious or low-value details
+- Abstract: show aggregations instead of all elements
+- Document what you can promise to maintain
+- Regularly delete outdated content
+- Keep diagram source files under version control
+- Automation helps with publishing, but not with content creation
+
 ### Package Organization
 - `authentication/` - OTLP authentication mechanisms
 - `backend/` - Observability backend integrations
