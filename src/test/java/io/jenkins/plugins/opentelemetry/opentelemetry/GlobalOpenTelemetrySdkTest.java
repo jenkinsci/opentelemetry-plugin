@@ -52,9 +52,9 @@ public class GlobalOpenTelemetrySdkTest {
             int configurationCountBefore = GlobalOpenTelemetrySdk.configurationCounter.get();
             GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
             assertEquals(
-                    "Configuration counter",
                     configurationCountBefore + 1,
-                    GlobalOpenTelemetrySdk.configurationCounter.get());
+                    GlobalOpenTelemetrySdk.configurationCounter.get(),
+                    "Configuration counter");
         } finally {
             GlobalOpenTelemetrySdk.get().close();
         }
@@ -82,9 +82,9 @@ public class GlobalOpenTelemetrySdkTest {
             {
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
                 assertEquals(
-                        "Configuration counter",
                         configurationCountBefore + 1,
-                        GlobalOpenTelemetrySdk.configurationCounter.get());
+                        GlobalOpenTelemetrySdk.configurationCounter.get(),
+                        "Configuration counter");
             }
 
             // CONFIGURE A SECOND TIME WITH SAME CONFIGURATION
@@ -92,9 +92,9 @@ public class GlobalOpenTelemetrySdkTest {
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
                 // verify has been configured just once
                 assertEquals(
-                        "Configuration counter",
                         configurationCountBefore + 1,
-                        GlobalOpenTelemetrySdk.configurationCounter.get());
+                        GlobalOpenTelemetrySdk.configurationCounter.get(),
+                        "Configuration counter");
             }
         } finally {
             GlobalOpenTelemetrySdk.get().close();
@@ -124,9 +124,9 @@ public class GlobalOpenTelemetrySdkTest {
 
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
                 assertEquals(
-                        "Configuration counter",
                         configurationCountBefore + 1,
-                        GlobalOpenTelemetrySdk.configurationCounter.get());
+                        GlobalOpenTelemetrySdk.configurationCounter.get(),
+                        "Configuration counter");
             }
 
             // CONFIGURE A SECOND TIME WITH SAME CONFIG PROPERTIES AND DIFFERENT RESOURCE ATTRIBUTES
@@ -144,9 +144,9 @@ public class GlobalOpenTelemetrySdkTest {
                 GlobalOpenTelemetrySdk.configure(config, differentResourceAttributes, false);
                 // verify has been configured twice
                 assertEquals(
-                        "Configuration counter",
                         configurationCountBefore + 2,
-                        GlobalOpenTelemetrySdk.configurationCounter.get());
+                        GlobalOpenTelemetrySdk.configurationCounter.get(),
+                        "Configuration counter");
             }
         } finally {
             GlobalOpenTelemetrySdk.get().close();
@@ -177,9 +177,9 @@ public class GlobalOpenTelemetrySdkTest {
 
                 GlobalOpenTelemetrySdk.configure(config, resourceAttributes, false);
                 assertEquals(
-                        "Configuration counter",
                         configurationCountBefore + 1,
-                        GlobalOpenTelemetrySdk.configurationCounter.get());
+                        GlobalOpenTelemetrySdk.configurationCounter.get(),
+                        "Configuration counter");
             }
 
             // CONFIGURE A SECOND TIME WITH DIFFERENT CONFIG PROPERTIES AND SAME RESOURCE ATTRIBUTES
@@ -193,9 +193,9 @@ public class GlobalOpenTelemetrySdkTest {
                 GlobalOpenTelemetrySdk.configure(differentConfig, resourceAttributes, false);
                 // verify has been configured twice
                 assertEquals(
-                        "Configuration counter",
                         configurationCountBefore + 2,
-                        GlobalOpenTelemetrySdk.configurationCounter.get());
+                        GlobalOpenTelemetrySdk.configurationCounter.get(),
+                        "Configuration counter");
             }
         } finally {
             GlobalOpenTelemetrySdk.get().close();

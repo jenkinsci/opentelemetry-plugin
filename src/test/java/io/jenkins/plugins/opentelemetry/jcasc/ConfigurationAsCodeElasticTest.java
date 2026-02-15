@@ -21,11 +21,14 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ConfigurationAsCodeElasticTest {
 
-    @ClassRule
+    @RegisterExtension
     @ConfiguredWithCode("elastic.yml")
     public static JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
 
@@ -63,12 +66,12 @@ public class ConfigurationAsCodeElasticTest {
         MatcherAssert.assertThat(exported, CoreMatchers.is(expected));
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         GlobalOpenTelemetry.resetForTest();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
     }

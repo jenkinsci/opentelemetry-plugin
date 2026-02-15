@@ -35,21 +35,19 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-@RunWith(Parameterized.class)
 public class MonitoringPipelineListenerParameterizedTest {
 
-    @ClassRule
+    @RegisterExtension
     public static final JenkinsRule jenkinsRule = new JenkinsRule();
 
     private static final StepContext stepContext = Mockito.mock(StepContext.class);
@@ -60,24 +58,14 @@ public class MonitoringPipelineListenerParameterizedTest {
     private final SpanBuilderMock spanBuilderMock = Mockito.spy(new SpanBuilderMock(WITH_NEW_SPAN_NAME));
     private MonitoringPipelineListener monitoringPipelineListener;
 
-    @BeforeClass
+    @BeforeAll
     public static void commonSetup() throws IOException, InterruptedException {
         // Jenkins must have been initialized.
-        Assert.assertNotNull(Jenkins.getInstanceOrNull());
+        org.junit.jupiter.api.Assertions.assertNotNull(Jenkins.getInstanceOrNull());
 
         Mockito.when(stepContext.get(WorkflowRun.class)).thenReturn(workflowRun);
     }
 
-    @Parameterized.Parameter(0)
-    public String attributeKeyName;
-
-    @Parameterized.Parameter(1)
-    public Object attributeKeyObj;
-
-    @Parameterized.Parameter(2)
-    public Object attributeValueObj;
-
-    @Parameterized.Parameters
     public static Collection<Object[]> argumentsActionScenarios() {
         return Arrays.asList(new Object[][] {
             {"with.new.span.boolean", AttributeKey.booleanKey("with.new.span.boolean"), true},
@@ -87,7 +75,7 @@ public class MonitoringPipelineListenerParameterizedTest {
         });
     }
 
-    @Before
+    @BeforeEach
     public void setup() {
         ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries =
                 jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
@@ -106,19 +94,20 @@ public class MonitoringPipelineListenerParameterizedTest {
         monitoringPipelineListener = new MonitoringPipelineListener();
         monitoringPipelineListener.jenkinsControllerOpenTelemetry = jenkinsControllerOpenTelemetry;
 
-        Assert.assertNull(monitoringPipelineListener.getTracer());
+        Assertions.assertNull(monitoringPipelineListener.getTracer());
         // postConstruct() calls the getDefaultTracer() method which needs to be stubbed in advance before using the
         // tracer.
         // Manually invoke the postConstruct() method to re-apply the @PostConstruct logic.
         monitoringPipelineListener.postConstruct();
 
-        Assert.assertNotNull(monitoringPipelineListener.getTracer());
+        Assertions.assertNotNull(monitoringPipelineListener.getTracer());
 
         monitoringPipelineListener.setOpenTelemetryTracerService(otelTraceService);
     }
 
-    @Test
-    public void testOnStartWithNewSpanStep() {
+    @ParameterizedTest
+    @MethodSource("argumentsActionScenarios")
+    public void testOnStartWithNewSpanStep(String attributeKeyName, Object attributeKeyObj, Object attributeValueObj) {
 
         StepStartNode stepStartNode = Mockito.mock(StepStartNode.class);
         ArgumentsAction action = new ArgumentsAction() {
@@ -146,7 +135,7 @@ public class MonitoringPipelineListenerParameterizedTest {
         Mockito.when(otelTraceService.getSpan(workflowRun, stepStartNode)).thenReturn(rootSpan);
 
         monitoringPipelineListener.setOpenTelemetryTracerService(otelTraceService);
-        Assert.assertNotNull(monitoringPipelineListener.getTracerService().getSpan(workflowRun));
+        Assertions.assertNotNull(monitoringPipelineListener.getTracerService().getSpan(workflowRun));
 
         SpanMock newSpan = Mockito.spy(new SpanMock(WITH_NEW_SPAN_NAME));
         Mockito.when(monitoringPipelineListener
@@ -159,7 +148,7 @@ public class MonitoringPipelineListenerParameterizedTest {
                 MockedStatic<Context> mockedStaticContext = mockStatic(Context.class)) {
             // Span.current() should return the mocked span.
             mockedStaticSpan.when(Span::current).thenReturn(rootSpan);
-            Assert.assertEquals(rootSpan, Span.current());
+            Assertions.assertEquals(rootSpan, Span.current());
 
             mockedStaticSpan.when(() -> Span.fromContext(any())).thenReturn(rootSpan);
 
@@ -168,14 +157,14 @@ public class MonitoringPipelineListenerParameterizedTest {
             mockedStaticContext.when(Context::current).thenReturn(context);
 
             // The span builder shouldn't have any attributes.
-            Assert.assertEquals(0, spanBuilderMock.getAttributes().size());
-            Assert.assertFalse(spanBuilderMock.getAttributes().containsKey(attributeKeyObj));
+            Assertions.assertEquals(0, spanBuilderMock.getAttributes().size());
+            Assertions.assertFalse(spanBuilderMock.getAttributes().containsKey(attributeKeyObj));
 
             monitoringPipelineListener.onStartWithNewSpanStep(stepStartNode, workflowRun);
 
             // After the onStartWithNewSpanStep() call, the spanBuilder should contain the attribute.
-            Assert.assertTrue(spanBuilderMock.getAttributes().containsKey(attributeKeyObj));
-            Assert.assertEquals(
+            Assertions.assertTrue(spanBuilderMock.getAttributes().containsKey(attributeKeyObj));
+            Assertions.assertEquals(
                     attributeValueObj, spanBuilderMock.getAttributes().get(attributeKeyObj));
         }
     }

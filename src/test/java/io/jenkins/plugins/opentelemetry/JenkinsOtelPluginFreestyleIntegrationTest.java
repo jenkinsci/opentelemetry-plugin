@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.model.Cause;
@@ -20,14 +20,14 @@ import hudson.tasks.Shell;
 import hudson.tasks._ant.AntTargetNote;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
+import java.io.IOException;
 import java.util.List;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.rules.TemporaryFolder;
-import org.junit.rules.TestRule;
 import org.jvnet.hudson.test.FailureBuilder;
 import org.jvnet.hudson.test.FakeChangeLogSCM;
 import org.jvnet.hudson.test.FlagRule;
@@ -37,11 +37,11 @@ import org.jvnet.hudson.test.recipes.WithPlugin;
 
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
 
-    @Rule
+    @RegisterExtension
     public TemporaryFolder tmp = new TemporaryFolder();
 
-    @Rule
-    public TestRule antTargetNoteEnabled = new FlagRule<>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
+    @RegisterExtension
+    public FlagRule<Boolean> antTargetNoteEnabled = new FlagRule<>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
 
     @Test
     public void testFreestyleJob() throws Exception {

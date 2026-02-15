@@ -23,14 +23,14 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ConfigurationAsCodeDefaultTest {
 
-    @ClassRule
+    @RegisterExtension
     @ConfiguredWithCode("configuration-as-code-default.yml")
     public static JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
 
@@ -69,12 +69,12 @@ public class ConfigurationAsCodeDefaultTest {
         MatcherAssert.assertThat(exported, CoreMatchers.is(expected));
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         GlobalOpenTelemetry.resetForTest();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
     }

@@ -17,9 +17,9 @@ public class TraceContextServletFilterTest {
 
     private static void test_isJenkinsRemoteBuildURL(String uri) {
         assertTrue(
-                uri + " is remote build",
                 TraceContextServletFilter.JENKINS_TRIGGER_BUILD_URL_PATTERN
                         .matcher(uri)
-                        .matches());
+                        .matches(),
+                uri + " is remote build");
     }
 }
