@@ -253,11 +253,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         // use same Jenkins instance identifier as the Jenkins Support Core plugin. No need to add the complexity of the
         // instance-identity-plugin
         // https://github.com/jenkinsci/support-core-plugin/blob/support-core-2.81/src/main/java/com/cloudbees/jenkins/support/impl/AboutJenkins.java#L401
-        configurationProperties.put(
-                ServiceIncubatingAttributes.SERVICE_INSTANCE_ID.getKey(),
-                Jenkins.get().getLegacyInstanceId());
-        properties.forEach(
-                (k, v) -> configurationProperties.put(Objects.toString(k, "#null#"), Objects.toString(v, "#null#")));
+        // Allow override via system property for environments like CloudBees CI HA where multiple replicas need unique IDs
+        String serviceInstanceId = System.getProperty("io.jenkins.plugins.opentelemetry.service.instance.id");
+        if (serviceInstanceId == null || serviceInstanceId.trim().isEmpty()) {
+            serviceInstanceId = Jenkins.get().getLegacyInstanceId();
+        }
+        configurationProperties.put(ServiceIncubatingAttributes.SERVICE_INSTANCE_ID.getKey(), serviceInstanceId);
+        properties.forEach((k, v) -> configurationProperties.put(Objects.toString(k, "#null#"), Objects.toString(v, "#null#")));
 
         return new OpenTelemetryConfiguration(
                 Optional.ofNullable(this.getEndpoint()),
