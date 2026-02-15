@@ -4,16 +4,17 @@
  */
 package io.jenkins.plugins.opentelemetry.rules;
 
-import org.junit.Assume;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.DockerClientFactory;
 
 /**
- * Rule to check if Docker is available.
+ * Extension to check if Docker is available.
  */
-public class CheckIsDockerAvailable extends ExternalResource {
+public class CheckIsDockerAvailable implements BeforeEachCallback {
     @Override
-    protected void before() {
-        Assume.assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+    public void beforeEach(ExtensionContext context) {
+        Assumptions.assumeTrue(DockerClientFactory.instance().isDockerAvailable());
     }
 }

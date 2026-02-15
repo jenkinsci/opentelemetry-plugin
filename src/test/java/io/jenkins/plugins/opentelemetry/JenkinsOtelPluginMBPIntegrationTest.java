@@ -5,7 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;

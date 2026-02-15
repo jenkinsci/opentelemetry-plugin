@@ -27,7 +27,6 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.FailureBuilder;
 import org.jvnet.hudson.test.FakeChangeLogSCM;
 import org.jvnet.hudson.test.FlagRule;
@@ -36,9 +35,6 @@ import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
-
-    @RegisterExtension
-    public TemporaryFolder tmp = new TemporaryFolder();
 
     @RegisterExtension
     public FlagRule<Boolean> antTargetNoteEnabled = new FlagRule<>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
@@ -213,7 +209,10 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     // See
     // https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
     private Ant.AntInstallation configureDefaultAnt() throws Exception {
-        return ToolInstallations.configureDefaultAnt(tmp);
+        // Inline the logic from ToolInstallations.configureDefaultAnt() to avoid JUnit 4 TemporaryFolder dependency
+        Ant.AntInstallation antInstallation = new Ant.AntInstallation("default", System.getenv("ANT_HOME"), null);
+        jenkinsRule.jenkins.getDescriptorByType(Ant.DescriptorImpl.class).setInstallations(antInstallation);
+        return antInstallation;
     }
 
     @Test

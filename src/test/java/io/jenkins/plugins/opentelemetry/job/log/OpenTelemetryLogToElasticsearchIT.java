@@ -41,8 +41,8 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.core5.http.HttpHost;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class OpenTelemetryLogToElasticsearchIT {
     private static final Random RANDOM = new Random();
@@ -50,7 +50,7 @@ public class OpenTelemetryLogToElasticsearchIT {
     @Test
     public void test() throws Exception {
         InputStream envAsStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
-        Assert.assertNotNull(".env file not found in classpath", envAsStream);
+        Assertions.assertNotNull(envAsStream, ".env file not found in classpath");
         Properties env = new Properties();
         env.load(envAsStream);
         Map<String, String> configuration = new HashMap<>();
@@ -146,7 +146,7 @@ public class OpenTelemetryLogToElasticsearchIT {
             for (Hit<ObjectNode> hit : hits) {
 
                 ObjectNode source = hit.source();
-                Assert.assertNotNull(source);
+                Assertions.assertNotNull(source);
 
                 ObjectNode labels = (ObjectNode) source.findValue("labels");
                 ObjectNode numericLabels = (ObjectNode) source.findValue("numeric_labels");

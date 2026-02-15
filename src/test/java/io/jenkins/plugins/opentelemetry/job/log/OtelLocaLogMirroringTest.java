@@ -2,8 +2,8 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import static com.google.common.base.Verify.verify;
 import static java.util.Optional.of;
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import hudson.ExtensionList;
 import hudson.model.Result;
@@ -27,14 +27,19 @@ import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
 
 public class OtelLocaLogMirroringTest {
 
     private static final Logger LOGGER = Logger.getLogger(OtelLocaLogMirroringTest.class.getName());
 
-    @ClassRule
+    @RegisterExtension
     public static JenkinsRule jenkinsRule = new JenkinsRule();
 
     static ReconfigurableOpenTelemetry openTelemetry;
@@ -45,7 +50,7 @@ public class OtelLocaLogMirroringTest {
     static String printedLine = "message_testing_logs_mirroring";
     static final AtomicInteger jobNameSuffix = new AtomicInteger();
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() throws Exception {
         LOGGER.log(Level.INFO, "beforeClass()");
         LOGGER.log(Level.INFO, "Wait for jenkins to start...");
@@ -73,18 +78,18 @@ public class OtelLocaLogMirroringTest {
                 Collections.emptyMap()));
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() throws Exception {
         ((AutoCloseable) openTelemetry).close();
         GlobalOpenTelemetry.resetForTest();
     }
 
-    @Before
+    @BeforeEach
     public void resetOtelConfig() {
         reInitProvider(new HashMap<>());
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception {
         jenkinsRule.waitUntilNoActivity();
         InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
