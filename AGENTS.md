@@ -275,6 +275,77 @@ When editing documentation files, follow these markdown conventions:
 - No trailing whitespace
 - File should end with single newline
 
+### Mermaid Diagram Best Practices
+
+Use Mermaid for creating diagrams in documentation. Mermaid diagrams are defined in code blocks and render as visual diagrams.
+
+#### When to Use Mermaid
+- Architecture diagrams showing component relationships
+- Sequence diagrams for interaction flows
+- Flowcharts for process logic
+- State diagrams for system states
+- Entity relationship diagrams for data models
+
+#### Diagram Types
+
+**Flowchart** - Component relationships and architecture:
+```mermaid
+flowchart TB
+    A[Component A] --> B[Component B]
+    A --> C[Component C]
+    B --> D[Backend]
+```
+
+**Sequence Diagram** - Interaction flows and timing:
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    Client->>Server: Request
+    Server-->>Client: Response
+```
+
+**Class Diagram** - Object-oriented structure:
+```mermaid
+classDiagram
+    class Handler {
+        +canCreateSpanBuilder()
+        +ordinal()
+    }
+    Handler <|-- RunHandler
+    Handler <|-- StepHandler
+```
+
+#### Best Practices
+- Keep diagrams focused: one purpose per diagram
+- Use descriptive labels for all elements
+- Limit complexity: maximum 7-10 elements per diagram
+- Use consistent naming with codebase (e.g., class names match actual classes)
+- Add direction hints: `TB` (top-bottom), `LR` (left-right)
+- Use quotes for labels with special characters: `["Label with: special"]`
+- Prefer flowcharts for architecture, sequence diagrams for interactions
+- Test diagrams render correctly in GitHub/GitLab preview
+
+#### Styling
+- Use square brackets `[]` for default boxes
+- Use parentheses `()` for rounded boxes
+- Use double parentheses `(())` for circles
+- Use curly braces `{}` for diamonds (decisions)
+- Use `-->` for solid arrows, `-.->` for dashed arrows
+- Use `-->>` for return/response flows in sequence diagrams
+
+#### Common Patterns
+```mermaid
+flowchart LR
+    Request[HTTP Request] --> Filter[Servlet Filter]
+    Filter --> Handler[Request Handler]
+    Handler --> Response[HTTP Response]
+```
+
+#### References
+- [Mermaid Documentation](https://mermaid.js.org/)
+- [Mermaid Live Editor](https://mermaid.live/) for testing diagrams
+
 ### YAML Best Practices
 
 When editing YAML files (JCasC, workflows, configurations), follow these conventions:
