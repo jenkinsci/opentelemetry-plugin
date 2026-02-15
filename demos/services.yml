@@ -4,7 +4,7 @@ services:
     build: config/
     environment:
       CASC_JENKINS_CONFIG: /var/jenkins_home/jcasc
-      JENKINS_URL: ${JENKINS_URL:-http://localhost:8080}
+      JENKINS_URL: ${JENKINS_URL:-http://jenkins:8080}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
       OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS}
       JAVA_OPTS: >-
@@ -15,7 +15,7 @@ services:
         -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000
     healthcheck:
         disable: false
-        test: [ "CMD-SHELL", "curl --fail http://localhost:8080/ || exit 1" ]
+        test: [ "CMD-SHELL", "curl --fail http://jenkins:8080/ || exit 1" ]
         interval: 40s
         timeout: 30s
         retries: 10
