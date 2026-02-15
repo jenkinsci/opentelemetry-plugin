@@ -136,6 +136,132 @@ if (run.getResult() == Result.FAILURE) {
 span.setStatus(StatusCode.ERROR);
 ```
 
+### Markdown Best Practices
+
+When editing documentation files, follow these markdown conventions:
+
+#### Headings
+- Use ATX-style headings (`#`, `##`, `###`) not underline style
+- One H1 (`#`) per document for the title
+- Don't skip heading levels (e.g., don't jump from `##` to `####`)
+- Add blank line before and after headings
+- Use sentence case for headings, not title case
+
+#### Code Blocks
+- Always specify language for syntax highlighting:
+  ```java
+  public class Example {}
+  ```
+- Use `bash` for shell commands, not `sh` or `shell`
+- Use inline code (backticks) for: class names, method names, file paths, commands, property names
+- Examples: `MonitoringRunListener`, `pom.xml`, `./mvnw verify`
+
+#### Links
+- Use descriptive link text, not "click here" or URLs
+- Good: `[OpenTelemetry Specification](https://opentelemetry.io/docs/specs/otel/)`
+- Bad: `Click [here](url)` or bare URLs
+- Use relative paths for internal documentation links
+
+#### Lists
+- Use `-` for unordered lists (consistent bullet style)
+- Add blank line before and after lists
+- Indent nested lists with 2 spaces
+- Use `1.` for ordered lists (number will auto-increment)
+- Keep list items parallel in structure
+
+#### Emphasis
+- Use `**bold**` for UI elements, important terms, emphasis
+- Use `*italic*` sparingly for subtle emphasis or citations
+- Don't use bold for code elements; use backticks instead
+
+#### Line Length
+- Aim for 120 characters maximum per line (matching code style)
+- Break at sentence boundaries when possible
+- Exception: long URLs, code blocks, or tables
+
+#### Tables
+- Align columns for readability in source
+- Include header separator row with at least 3 dashes per column
+- Example:
+  ```markdown
+  | Column 1 | Column 2 |
+  |----------|----------|
+  | Value 1  | Value 2  |
+  ```
+
+#### Spacing
+- One blank line between sections
+- Two blank lines before top-level (`##`) headings for visual separation
+- No trailing whitespace
+- File should end with single newline
+
+### YAML Best Practices
+
+When editing YAML files (JCasC, workflows, configurations), follow these conventions:
+
+#### Indentation and Structure
+- Use **2 spaces** for indentation (never tabs)
+- Keep consistent indentation throughout the file
+- Align nested elements properly
+- Use blank lines to separate logical sections
+
+#### Syntax
+- Use lowercase for: `true`, `false`, `null` (not `True`, `FALSE`, `~`)
+- Quote strings containing special characters: `:`, `{`, `}`, `[`, `]`, `,`, `&`, `*`, `#`, `?`, `|`, `-`, `<`, `>`, `=`, `!`, `%`, `@`, `` ` ``
+- Quote strings that could be interpreted as numbers or booleans: `"1.0"`, `"yes"`, `"no"`
+- Use multiline strings with `|` (literal) or `>` (folded) for long text:
+  ```yaml
+  description: |
+    This is a multiline
+    description that preserves
+    line breaks.
+  ```
+
+#### Lists
+- Use `-` for list items with consistent indentation
+- Prefer flow style `[item1, item2]` only for short, simple lists
+- Keep complex items in block style:
+  ```yaml
+  dependencies:
+    - groupId: io.opentelemetry
+      artifactId: opentelemetry-api
+    - groupId: io.opentelemetry
+      artifactId: opentelemetry-sdk
+  ```
+
+#### Maps/Objects
+- Use explicit keys without quotes when possible
+- Order keys logically (e.g., name/id first, config after)
+- Group related configuration together
+
+#### Comments
+- Use `#` for comments with a space after: `# This is a comment`
+- Add comments above the line they describe, not inline
+- Use comments to explain non-obvious configuration choices
+
+#### Best Practices
+- Keep files under 500 lines; split large configs into multiple files
+- Validate YAML syntax before committing (use `yamllint` or IDE validation)
+- Avoid anchors (`&`) and aliases (`*`) unless necessary for DRY
+- Don't use complex multiline keys or values when simple structures suffice
+- Ensure sensitive values use Jenkins credentials, not plain text
+
+#### Example
+```yaml
+# OpenTelemetry configuration for Jenkins
+otel:
+  endpoint: "http://localhost:4317"
+  protocol: grpc
+  authentication:
+    type: bearer
+    credentials: ${OTEL_TOKEN}
+  
+  exporters:
+    - type: otlp
+      enabled: true
+      timeout: 30
+```
+
 ### Package Organization
 - `authentication/` - OTLP authentication mechanisms
 - `backend/` - Observability backend integrations
