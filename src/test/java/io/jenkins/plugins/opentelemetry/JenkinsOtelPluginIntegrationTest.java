@@ -5,7 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import com.google.common.collect.Iterables;
@@ -38,8 +38,8 @@ import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.steps.EchoStep;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
@@ -104,7 +104,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         */
     }
 
-    @Ignore("Lifecycle problem, the InMemoryMetricExporter gets reset too much and the disk usage is not captured")
+    @Disabled("Lifecycle problem, the InMemoryMetricExporter gets reset too much and the disk usage is not captured")
     @Test
     @WithPlugin("cloudbees-disk-usage-simple")
     public void testMetricsWithDiskUsagePlugin() throws Exception {

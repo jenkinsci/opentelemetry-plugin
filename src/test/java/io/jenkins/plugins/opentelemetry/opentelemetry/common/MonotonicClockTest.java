@@ -5,10 +5,10 @@
 
 package io.jenkins.plugins.opentelemetry.opentelemetry.common;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import io.opentelemetry.sdk.common.Clock;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class MonotonicClockTest {
 

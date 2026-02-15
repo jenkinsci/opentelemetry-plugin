@@ -5,7 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.step;
 
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.model.Result;
@@ -19,15 +19,15 @@ import java.util.Map;
 import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class WithNewSpanStepTest extends BaseIntegrationTest {
 
     private static WorkflowJob pipeline;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
@@ -60,13 +60,13 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         Map<String, List<String>> spansTreeMap = getSpanMapWithChildrenFromTree(spansTree);
 
         // Check that the new spans exist.
-        Assert.assertNotNull(spansTreeMap.get("run-builds"));
-        Assert.assertNotNull(spansTreeMap.get("build-mod1"));
-        Assert.assertNotNull(spansTreeMap.get("build-mod2"));
+        Assertions.assertNotNull(spansTreeMap.get("run-builds"));
+        Assertions.assertNotNull(spansTreeMap.get("build-mod1"));
+        Assertions.assertNotNull(spansTreeMap.get("build-mod2"));
 
         // Check span children.
-        Assert.assertTrue(spansTreeMap.get("run-builds").containsAll(Arrays.asList("build-mod1", "build-mod2")));
-        Assert.assertEquals(2, spansTreeMap.get("run-builds").size());
+        Assertions.assertTrue(spansTreeMap.get("run-builds").containsAll(Arrays.asList("build-mod1", "build-mod2")));
+        Assertions.assertEquals(2, spansTreeMap.get("run-builds").size());
     }
 
     @Test
@@ -91,22 +91,22 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         Map<String, SpanData> spansDataMap = getSpanDataMapFromTree(spansTree);
 
         // Check that the new spans exist.
-        Assert.assertNotNull(spansTreeMap.get("run-builds"));
-        Assert.assertNotNull(spansTreeMap.get("build-mod1"));
+        Assertions.assertNotNull(spansTreeMap.get("run-builds"));
+        Assertions.assertNotNull(spansTreeMap.get("build-mod1"));
 
         // Check span children.
-        Assert.assertTrue(spansTreeMap.get("run-builds").contains("build-mod1"));
-        Assert.assertEquals(1, spansTreeMap.get("run-builds").size());
+        Assertions.assertTrue(spansTreeMap.get("run-builds").contains("build-mod1"));
+        Assertions.assertEquals(1, spansTreeMap.get("run-builds").size());
 
         // Check user-defined span attributes.
         Attributes parentAttributes = spansDataMap.get("run-builds").getAttributes();
-        Assert.assertEquals("2", parentAttributes.get(AttributeKey.stringKey("modules-num")));
-        Assert.assertEquals("build", parentAttributes.get(AttributeKey.stringKey("command")));
+        Assertions.assertEquals("2", parentAttributes.get(AttributeKey.stringKey("modules-num")));
+        Assertions.assertEquals("build", parentAttributes.get(AttributeKey.stringKey("command")));
 
         // Span attributes are also passed to children.
         Attributes childAttributes = spansDataMap.get("build-mod1").getAttributes();
-        Assert.assertEquals("2", childAttributes.get(AttributeKey.stringKey("modules-num")));
-        Assert.assertEquals("build", childAttributes.get(AttributeKey.stringKey("command")));
+        Assertions.assertEquals("2", childAttributes.get(AttributeKey.stringKey("modules-num")));
+        Assertions.assertEquals("build", childAttributes.get(AttributeKey.stringKey("command")));
     }
 
     @Test
@@ -127,17 +127,17 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         Map<String, List<String>> spansTreeMap = getSpanMapWithChildrenFromTree(spansTree);
 
         // Use a non-existent span name.
-        Assert.assertNull(spansTreeMap.get("non-existent-span"));
+        Assertions.assertNull(spansTreeMap.get("non-existent-span"));
 
         // Check that the new spans exist.
-        Assert.assertNotNull(spansTreeMap.get("run-builds"));
-        Assert.assertNotNull(spansTreeMap.get("build-mod1"));
-        Assert.assertNotNull(spansTreeMap.get("build-mod2"));
+        Assertions.assertNotNull(spansTreeMap.get("run-builds"));
+        Assertions.assertNotNull(spansTreeMap.get("build-mod1"));
+        Assertions.assertNotNull(spansTreeMap.get("build-mod2"));
 
         // Check span children.
-        Assert.assertTrue(spansTreeMap.get("run-builds").containsAll(Arrays.asList("build-mod1", "build-mod2")));
-        Assert.assertFalse(spansTreeMap.get("run-builds").containsAll(Arrays.asList("build-mod1", "non-existent")));
-        Assert.assertEquals(2, spansTreeMap.get("run-builds").size());
+        Assertions.assertTrue(spansTreeMap.get("run-builds").containsAll(Arrays.asList("build-mod1", "build-mod2")));
+        Assertions.assertFalse(spansTreeMap.get("run-builds").containsAll(Arrays.asList("build-mod1", "non-existent")));
+        Assertions.assertEquals(2, spansTreeMap.get("run-builds").size());
     }
 
     @Test
@@ -158,11 +158,11 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         Map<String, List<String>> spansTreeMap = getSpanMapWithChildrenFromTree(spansTree);
 
         // Check that the new spans exist.
-        Assert.assertNotNull(spansTreeMap.get("run-builds"));
+        Assertions.assertNotNull(spansTreeMap.get("run-builds"));
 
         // Check span children.
-        Assert.assertTrue(spansTreeMap.get("run-builds").isEmpty());
-        Assert.assertEquals(0, spansTreeMap.get("run-builds").size());
+        Assertions.assertTrue(spansTreeMap.get("run-builds").isEmpty());
+        Assertions.assertEquals(0, spansTreeMap.get("run-builds").size());
     }
 
     @Test
@@ -187,21 +187,21 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         Map<String, SpanData> spansDataMap = getSpanDataMapFromTree(spansTree);
 
         // Check that the new spans exist.
-        Assert.assertNotNull(spansTreeMap.get("run-builds"));
+        Assertions.assertNotNull(spansTreeMap.get("run-builds"));
 
         // Check span children.
-        Assert.assertTrue(spansTreeMap.get("run-builds").contains("build-mod1"));
-        Assert.assertEquals(1, spansTreeMap.get("run-builds").size());
+        Assertions.assertTrue(spansTreeMap.get("run-builds").contains("build-mod1"));
+        Assertions.assertEquals(1, spansTreeMap.get("run-builds").size());
 
         // Check user-defined span attributes.
         Attributes parentAttributes = spansDataMap.get("run-builds").getAttributes();
-        Assert.assertEquals("2", parentAttributes.get(AttributeKey.stringKey("modules-num")));
-        Assert.assertEquals("build", parentAttributes.get(AttributeKey.stringKey("command")));
+        Assertions.assertEquals("2", parentAttributes.get(AttributeKey.stringKey("modules-num")));
+        Assertions.assertEquals("build", parentAttributes.get(AttributeKey.stringKey("command")));
 
         // Span attributes are NOT passed to children.
         Attributes childAttributes = spansDataMap.get("build-mod1").getAttributes();
-        Assert.assertNull(childAttributes.get(AttributeKey.stringKey("modules-num")));
-        Assert.assertNull(childAttributes.get(AttributeKey.stringKey("command")));
+        Assertions.assertNull(childAttributes.get(AttributeKey.stringKey("modules-num")));
+        Assertions.assertNull(childAttributes.get(AttributeKey.stringKey("command")));
     }
 
     @Test
@@ -224,10 +224,10 @@ public class WithNewSpanStepTest extends BaseIntegrationTest {
         Map<String, List<String>> spansTreeMap = getSpanMapWithChildrenFromTree(spansTree);
 
         // Check that the new spans exist.
-        Assert.assertNotNull(spansTreeMap.get("run-builds"));
+        Assertions.assertNotNull(spansTreeMap.get("run-builds"));
 
         // Check span children.
-        Assert.assertTrue(spansTreeMap.get("run-builds").isEmpty());
-        Assert.assertEquals(0, spansTreeMap.get("run-builds").size());
+        Assertions.assertTrue(spansTreeMap.get("run-builds").isEmpty());
+        Assertions.assertEquals(0, spansTreeMap.get("run-builds").size());
     }
 }

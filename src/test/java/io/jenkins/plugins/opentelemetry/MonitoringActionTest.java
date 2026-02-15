@@ -12,9 +12,9 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class MonitoringActionTest {
 
@@ -68,12 +68,12 @@ public class MonitoringActionTest {
         System.out.println(actual);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         GlobalOpenTelemetry.resetForTest();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
     }

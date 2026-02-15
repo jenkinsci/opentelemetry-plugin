@@ -5,8 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.job.runhandler;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class DefaultRunHandlerTest {
 
@@ -69,6 +69,6 @@ public class DefaultRunHandlerTest {
     private void verifyRootSpanName(String jobFullName, String expected) {
         DefaultRunHandler defaultRunHandler = new DefaultRunHandler();
         final String actual = defaultRunHandler.getChangeRequestRootSpanName(jobFullName);
-        Assert.assertEquals(expected, actual);
+        Assertions.assertEquals(expected, actual);
     }
 }

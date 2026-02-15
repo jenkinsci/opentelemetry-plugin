@@ -9,8 +9,8 @@ import io.jenkins.plugins.opentelemetry.job.log.LogsViewHeader;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class LogsViewHeaderTest {
 
@@ -26,6 +26,6 @@ public class LogsViewHeaderTest {
         String expected =
                 "<img src='/plugin/opentelemetry/images/svgs/opentelemetry.svg' /> View logs in <a href='https://observability.example.com/traceId=123456789' target='_blank'>My Logs Capable Observability Backend</a>"
                         + "\n";
-        Assert.assertEquals(expected, actualStringWriter.toString());
+        Assertions.assertEquals(expected, actualStringWriter.toString());
     }
 }

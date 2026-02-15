@@ -22,7 +22,7 @@ import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class JenkinsOtelPluginMBPIntegrationTest extends BaseIntegrationTest {
 

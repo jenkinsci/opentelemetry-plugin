@@ -22,7 +22,7 @@ import okhttp3.RequestBody;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RemoteSpanDisabledTest extends BaseIntegrationTest {
     static final String PARENT_TRACE_ID = "4bf92f3577b34da6a3ce929d0e0e4736";
