@@ -36,19 +36,18 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+@WithJenkins
 public class MonitoringPipelineListenerParameterizedTest {
 
-    @RegisterExtension
-    public static final JenkinsRule jenkinsRule = new JenkinsRule();
+    public JenkinsRule jenkinsRule;
 
     private static final StepContext stepContext = Mockito.mock(StepContext.class);
     private static final OtelTraceService otelTraceService = Mockito.mock(OtelTraceService.class);
@@ -57,14 +56,6 @@ public class MonitoringPipelineListenerParameterizedTest {
     private static final String WITH_NEW_SPAN_NAME = "with-new-span";
     private final SpanBuilderMock spanBuilderMock = Mockito.spy(new SpanBuilderMock(WITH_NEW_SPAN_NAME));
     private MonitoringPipelineListener monitoringPipelineListener;
-
-    @BeforeAll
-    public static void commonSetup() throws IOException, InterruptedException {
-        // Jenkins must have been initialized.
-        org.junit.jupiter.api.Assertions.assertNotNull(Jenkins.getInstanceOrNull());
-
-        Mockito.when(stepContext.get(WorkflowRun.class)).thenReturn(workflowRun);
-    }
 
     public static Collection<Object[]> argumentsActionScenarios() {
         return Arrays.asList(new Object[][] {
@@ -76,7 +67,13 @@ public class MonitoringPipelineListenerParameterizedTest {
     }
 
     @BeforeEach
-    public void setup() {
+    public void setup(JenkinsRule rule) throws IOException, InterruptedException {
+        this.jenkinsRule = rule;
+        // Jenkins must have been initialized.
+        org.junit.jupiter.api.Assertions.assertNotNull(Jenkins.getInstanceOrNull());
+
+        Mockito.when(stepContext.get(WorkflowRun.class)).thenReturn(workflowRun);
+
         ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries =
                 jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
         verify(

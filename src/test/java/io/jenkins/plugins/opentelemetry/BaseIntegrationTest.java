@@ -81,27 +81,17 @@ public class BaseIntegrationTest {
     @RegisterExtension
     public static BuildWatcherExtension buildWatcher = new BuildWatcherExtension();
 
-    public static JenkinsRule jenkinsRule;
+    public JenkinsRule jenkinsRule;
 
     @RegisterExtension
     public ExtendedGitSampleRepoRule sampleRepo = new ExtendedGitSampleRepoRule();
 
-    static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
     @BeforeEach
-    public void beforeEach() throws Exception {}
-
-    @AfterEach
-    public void afterEach() throws Exception {
-        jenkinsRule.waitUntilNoActivity();
-        InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
-        InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
-    }
-
-    @BeforeAll
-    public static void beforeAll(JenkinsRule rule) throws Exception {
-        LOGGER.log(Level.INFO, "beforeClass()");
-        jenkinsRule = rule;
+    public void beforeEach(JenkinsRule rule) throws Exception {
+        this.jenkinsRule = rule;
+        LOGGER.log(Level.INFO, "beforeEach()");
         ConfigurationAsCode.get().configure(BaseIntegrationTest.class.getResource("jcasc-elastic-backend.yml").toExternalForm());
         LOGGER.log(Level.INFO, "Wait for jenkins to start...");
         jenkinsRule.waitUntilNoActivity();
@@ -134,6 +124,14 @@ public class BaseIntegrationTest {
         LOGGER.log(Level.INFO, "OTel plugin initialized");
 
         // jenkinsControllerOpenTelemetry.tracer.setDelegate(jenkinsControllerOpenTelemetry.openTelemetry.getTracer("jenkins"));
+    }
+
+    @AfterEach
+    public void afterEach() throws Exception {
+        jenkinsRule.waitUntilNoActivity();
+        InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
+        InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
+        GlobalOpenTelemetry.resetForTest();
     }
 
     protected void checkChainOfSpans(Tree<SpanDataWrapper> spanTree, String... expectedSpanNames) {
@@ -215,7 +213,7 @@ public class BaseIntegrationTest {
         return getTrace(rootSpanPrefix, traceIndex);
     }
 
-    protected static @NotNull Tree<SpanDataWrapper> getTrace(String rootSpanPrefix, int traceIndex) {
+    protected @NotNull Tree<SpanDataWrapper> getTrace(String rootSpanPrefix, int traceIndex) {
         CompletableResultCode completableResultCode = jenkinsControllerOpenTelemetry
                 .getOpenTelemetrySdk()
                 .getSdkTracerProvider()
@@ -390,11 +388,6 @@ public class BaseIntegrationTest {
         System.out.println("---%<--- " + indexing.getUrl());
         indexing.writeWholeLogTo(System.out);
         System.out.println("---%<--- ");
-    }
-
-    @AfterAll
-    public static void afterAll() {
-        GlobalOpenTelemetry.resetForTest();
     }
 
     public static class SpanDataWrapper {

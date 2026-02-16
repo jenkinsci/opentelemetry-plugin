@@ -24,18 +24,17 @@ import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+@WithJenkins
 public class MonitoringPipelineListenerNonParameterizedTest {
 
-    @RegisterExtension
-    public static final JenkinsRule jenkinsRule = new JenkinsRule();
+    public JenkinsRule jenkinsRule;
 
     private static final StepContext stepContext = Mockito.mock(StepContext.class);
     private static final OtelTraceService otelTraceService = Mockito.mock(OtelTraceService.class);
@@ -46,16 +45,14 @@ public class MonitoringPipelineListenerNonParameterizedTest {
     private final MonitoringPipelineListener monitoringPipelineListener = new MonitoringPipelineListener();
     private SpanMock testSpan;
 
-    @BeforeAll
-    public static void commonSetup() throws IOException, InterruptedException {
+    @BeforeEach
+    public void setup(JenkinsRule rule) throws IOException, InterruptedException {
+        this.jenkinsRule = rule;
         // Jenkins must have been initialized.
         org.junit.jupiter.api.Assertions.assertNotNull(Jenkins.getInstanceOrNull());
 
         Mockito.when(stepContext.get(WorkflowRun.class)).thenReturn(workflowRun);
-    }
 
-    @BeforeEach
-    public void setup() throws IOException, InterruptedException {
         monitoringPipelineListener.setOpenTelemetryTracerService(otelTraceService);
 
         testSpan = new SpanMock(TEST_SPAN_NAME);

@@ -27,32 +27,32 @@ import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
+@WithJenkins
 public class OtelLocaLogMirroringTest {
 
     private static final Logger LOGGER = Logger.getLogger(OtelLocaLogMirroringTest.class.getName());
 
-    @RegisterExtension
-    public static JenkinsRule jenkinsRule = new JenkinsRule();
+    public JenkinsRule jenkinsRule;
 
-    static ReconfigurableOpenTelemetry openTelemetry;
-    static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    ReconfigurableOpenTelemetry openTelemetry;
+    JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
-    static WorkflowJob pipeline;
+    WorkflowJob pipeline;
 
-    static String printedLine = "message_testing_logs_mirroring";
-    static final AtomicInteger jobNameSuffix = new AtomicInteger();
+    String printedLine = "message_testing_logs_mirroring";
+    final AtomicInteger jobNameSuffix = new AtomicInteger();
 
-    @BeforeAll
-    public static void beforeClass() throws Exception {
-        LOGGER.log(Level.INFO, "beforeClass()");
+    @BeforeEach
+    public void beforeEach(JenkinsRule rule) throws Exception {
+        this.jenkinsRule = rule;
+        LOGGER.log(Level.INFO, "beforeEach()");
         LOGGER.log(Level.INFO, "Wait for jenkins to start...");
         jenkinsRule.waitUntilNoActivity();
         LOGGER.log(Level.INFO, "Jenkins started");
@@ -76,16 +76,6 @@ public class OtelLocaLogMirroringTest {
                 Optional.empty(),
                 Optional.empty(),
                 Collections.emptyMap()));
-    }
-
-    @AfterAll
-    public static void afterClass() throws Exception {
-        ((AutoCloseable) openTelemetry).close();
-        GlobalOpenTelemetry.resetForTest();
-    }
-
-    @BeforeEach
-    public void resetOtelConfig() {
         reInitProvider(new HashMap<>());
     }
 
@@ -94,6 +84,8 @@ public class OtelLocaLogMirroringTest {
         jenkinsRule.waitUntilNoActivity();
         InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
         InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
+        ((AutoCloseable) openTelemetry).close();
+        GlobalOpenTelemetry.resetForTest();
     }
 
     private WorkflowRun runBuild() throws Exception {

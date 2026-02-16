@@ -20,15 +20,15 @@ import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class WithNewSpanStepTest extends BaseIntegrationTest {
 
-    private static WorkflowJob pipeline;
+    private WorkflowJob pipeline;
 
-    @BeforeAll
-    public static void setUp() throws Exception {
+    @BeforeEach
+    public void setUp() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
 
         jenkinsRule.createOnlineSlave();
