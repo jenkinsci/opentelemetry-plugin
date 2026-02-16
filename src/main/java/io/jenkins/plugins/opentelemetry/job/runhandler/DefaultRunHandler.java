@@ -9,9 +9,6 @@ import com.google.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Run;
-import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
-import io.opentelemetry.api.trace.SpanBuilder;
-import io.opentelemetry.api.trace.Tracer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -21,8 +18,8 @@ import jenkins.scm.api.mixin.ChangeRequestCheckoutStrategy;
 import jenkins.scm.api.mixin.ChangeRequestSCMHead;
 
 /**
- * Use same root span name for all pull change request pipelines (pull request, merge request)
- * Use different span names for different branches.
+ * Use same short pipeline name for all change request pipelines (pull request, merge request)
+ * Use different short pipeline name for different branches.
  */
 @Extension
 public class DefaultRunHandler implements RunHandler {
@@ -32,21 +29,21 @@ public class DefaultRunHandler implements RunHandler {
             "-" + ChangeRequestCheckoutStrategy.MERGE.name().toLowerCase(Locale.ENGLISH)));
 
     @Override
-    public boolean canCreateSpanBuilder(@NonNull Run<?, ?> run) {
+    public boolean matches(@NonNull Run<?, ?> run) {
         return true;
     }
 
     @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer) {
+    public String getPipelineShortName(@NonNull Run<?, ?> run) {
         SCMHead head = SCMHead.HeadByItem.findHead(run.getParent());
-        String spanName;
+        String pipelineShortName;
         if (head instanceof ChangeRequestSCMHead) {
-            spanName = getChangeRequestRootSpanName(run.getParent().getFullName());
+            pipelineShortName = getChangeRequestRootSpanName(run.getParent().getFullName());
         } else {
-            spanName = run.getParent().getFullName();
+            pipelineShortName = run.getParent().getFullName();
         }
-        return tracer.spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
+        return pipelineShortName;
     }
 
     @VisibleForTesting
