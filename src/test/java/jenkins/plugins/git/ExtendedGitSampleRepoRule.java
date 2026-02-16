@@ -18,13 +18,18 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.htmlunit.WebResponse;
 import org.htmlunit.util.NameValuePair;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionConfigurationException;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.jvnet.hudson.test.JenkinsRule;
 
 /**
  * Manages a sample Git repository.
  * Extension of {@link GitSampleRepoRule}
  */
-public final class ExtendedGitSampleRepoRule extends AbstractSampleDVCSRepoRule {
+public final class ExtendedGitSampleRepoRule extends AbstractSampleDVCSRepoRule
+        implements BeforeEachCallback, AfterEachCallback {
 
     private static boolean initialized = false;
 
@@ -153,5 +158,19 @@ public final class ExtendedGitSampleRepoRule extends AbstractSampleDVCSRepoRule 
         return gitMajor > neededMajor
                 || (gitMajor == neededMajor && gitMinor > neededMinor)
                 || (gitMajor == neededMajor && gitMinor == neededMinor && gitPatch >= neededPatch);
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) {
+        try {
+            this.before();
+        } catch (Throwable t) {
+            throw new ExtensionConfigurationException(t.getMessage(), t);
+        }
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) {
+        this.after();
     }
 }

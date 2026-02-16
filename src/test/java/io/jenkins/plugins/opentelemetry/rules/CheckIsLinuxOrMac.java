@@ -5,15 +5,16 @@
 package io.jenkins.plugins.opentelemetry.rules;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.Assume;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
- * Rule to check the Operating system where the test run.
+ * Extension to check the Operating system where the test run.
  */
-public class CheckIsLinuxOrMac extends ExternalResource {
+public class CheckIsLinuxOrMac implements BeforeEachCallback {
     @Override
-    protected void before() throws Throwable {
-        Assume.assumeTrue(SystemUtils.IS_OS_MAC || SystemUtils.IS_OS_LINUX);
+    public void beforeEach(ExtensionContext context) {
+        Assumptions.assumeTrue(SystemUtils.IS_OS_MAC || SystemUtils.IS_OS_LINUX);
     }
 }

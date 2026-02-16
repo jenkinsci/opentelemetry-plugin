@@ -5,14 +5,20 @@
 
 package io.jenkins.plugins.opentelemetry.init;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
+@WithJenkins
 public class GitHubClientMonitoringTest {
 
-    @Rule
-    public JenkinsRule r = new JenkinsRule();
+    private JenkinsRule r;
+
+    @BeforeEach
+    public void setUp(JenkinsRule rule) {
+        r = rule;
+    }
 
     @Test
     public void testIntrospectionCode() throws Exception {

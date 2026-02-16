@@ -22,20 +22,19 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+@WithJenkins
 public class MonitoringPipelineListenerNonParameterizedTest {
 
-    @ClassRule
-    public static final JenkinsRule jenkinsRule = new JenkinsRule();
+    public JenkinsRule jenkinsRule;
 
     private static final StepContext stepContext = Mockito.mock(StepContext.class);
     private static final OtelTraceService otelTraceService = Mockito.mock(OtelTraceService.class);
@@ -46,16 +45,14 @@ public class MonitoringPipelineListenerNonParameterizedTest {
     private final MonitoringPipelineListener monitoringPipelineListener = new MonitoringPipelineListener();
     private SpanMock testSpan;
 
-    @BeforeClass
-    public static void commonSetup() throws IOException, InterruptedException {
+    @BeforeEach
+    public void setup(JenkinsRule rule) throws IOException, InterruptedException {
+        this.jenkinsRule = rule;
         // Jenkins must have been initialized.
-        Assert.assertNotNull(Jenkins.getInstanceOrNull());
+        org.junit.jupiter.api.Assertions.assertNotNull(Jenkins.getInstanceOrNull());
 
         Mockito.when(stepContext.get(WorkflowRun.class)).thenReturn(workflowRun);
-    }
 
-    @Before
-    public void setup() throws IOException, InterruptedException {
         monitoringPipelineListener.setOpenTelemetryTracerService(otelTraceService);
 
         testSpan = new SpanMock(TEST_SPAN_NAME);
@@ -67,7 +64,7 @@ public class MonitoringPipelineListenerNonParameterizedTest {
         Mockito.when(otelTraceService.getSpan(workflowRun, flowNode)).thenReturn(testSpan);
     }
 
-    @After
+    @AfterEach
     public void cleanup() {
         testSpan.end();
     }
@@ -80,26 +77,26 @@ public class MonitoringPipelineListenerNonParameterizedTest {
         try (MockedStatic<Span> mockedStatic = mockStatic(Span.class)) {
             // Span.current() should return the mocked span.
             mockedStatic.when(Span::current).thenReturn(testSpan);
-            Assert.assertEquals(testSpan, Span.current());
+            Assertions.assertEquals(testSpan, Span.current());
 
             // The span should contain only 1 attribute.
-            Assert.assertEquals(1, testSpan.getAttributes().keySet().size());
-            Assert.assertTrue(testSpan.getAttributes().containsKey(AttributeKey.stringKey("caller.name")));
-            Assert.assertEquals("testuser", testSpan.getAttributes().get(AttributeKey.stringKey("caller.name")));
+            Assertions.assertEquals(1, testSpan.getAttributes().keySet().size());
+            Assertions.assertTrue(testSpan.getAttributes().containsKey(AttributeKey.stringKey("caller.name")));
+            Assertions.assertEquals("testuser", testSpan.getAttributes().get(AttributeKey.stringKey("caller.name")));
 
             Step step = Mockito.mock(Step.class);
             monitoringPipelineListener.notifyOfNewStep(step, stepContext);
 
             // The span should now contain the computer and child action attributes as well.
-            Assert.assertEquals(3, testSpan.getAttributes().keySet().size());
-            Assert.assertTrue(testSpan.getAttributes().containsKey(AttributeKey.stringKey("caller.name")));
-            Assert.assertEquals("testuser", testSpan.getAttributes().get(AttributeKey.stringKey("caller.name")));
+            Assertions.assertEquals(3, testSpan.getAttributes().keySet().size());
+            Assertions.assertTrue(testSpan.getAttributes().containsKey(AttributeKey.stringKey("caller.name")));
+            Assertions.assertEquals("testuser", testSpan.getAttributes().get(AttributeKey.stringKey("caller.name")));
 
             for (String component : Arrays.asList("computer", "child")) {
                 AttributeKey<String> attributeKey =
                         AttributeKey.stringKey("attribute.from." + component + ".action.applied");
-                Assert.assertTrue(testSpan.getAttributes().containsKey(attributeKey));
-                Assert.assertEquals("true", testSpan.getAttributes().get(attributeKey));
+                Assertions.assertTrue(testSpan.getAttributes().containsKey(attributeKey));
+                Assertions.assertEquals("true", testSpan.getAttributes().get(attributeKey));
             }
         }
     }
@@ -111,16 +108,16 @@ public class MonitoringPipelineListenerNonParameterizedTest {
 
         SpanMock shSpan = new SpanMock(SH_STEP_SPAN_NAME);
 
-        Assert.assertNotEquals(
+        Assertions.assertNotEquals(
                 testSpan.getSpanContext().getSpanId(), shSpan.getSpanContext().getSpanId());
 
         try (MockedStatic<Span> mockedStatic = mockStatic(Span.class)) {
             // Span.current() should return the mocked span.
             mockedStatic.when(Span::current).thenReturn(shSpan);
-            Assert.assertEquals(shSpan, Span.current());
+            Assertions.assertEquals(shSpan, Span.current());
 
             // The span doesn't have any attributes.
-            Assert.assertEquals(0, shSpan.getAttributes().keySet().size());
+            Assertions.assertEquals(0, shSpan.getAttributes().keySet().size());
 
             Step step = Mockito.mock(Step.class);
             monitoringPipelineListener.notifyOfNewStep(step, stepContext);
@@ -129,11 +126,11 @@ public class MonitoringPipelineListenerNonParameterizedTest {
             // The computer action allowedSpanIdList is empty while
             // the child action allowedSpanIdList has an id.
             // The id on the list is different from the id of the current span.
-            Assert.assertEquals(1, shSpan.getAttributes().keySet().size());
+            Assertions.assertEquals(1, shSpan.getAttributes().keySet().size());
 
             AttributeKey<String> attributeKey = AttributeKey.stringKey("attribute.from.computer.action.applied");
-            Assert.assertTrue(shSpan.getAttributes().containsKey(attributeKey));
-            Assert.assertEquals("true", shSpan.getAttributes().get(attributeKey));
+            Assertions.assertTrue(shSpan.getAttributes().containsKey(attributeKey));
+            Assertions.assertEquals("true", shSpan.getAttributes().get(attributeKey));
         }
     }
 

@@ -14,7 +14,7 @@ import java.nio.file.Files;
 import java.util.Map;
 import java.util.Optional;
 import jenkins.model.Jenkins;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.Issue;
@@ -32,7 +32,7 @@ public class JenkinsOpenTelemetryPluginConfigurationIntegrationTest {
         GlobalOpenTelemetry.resetForTest();
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception {
         InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
     }

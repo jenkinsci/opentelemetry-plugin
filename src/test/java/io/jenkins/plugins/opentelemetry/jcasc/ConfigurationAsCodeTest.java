@@ -14,6 +14,7 @@ import io.jenkins.plugins.casc.ConfigurationContext;
 import io.jenkins.plugins.casc.ConfiguratorRegistry;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.casc.misc.junit.jupiter.WithJenkinsConfiguredWithCode;
 import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
@@ -26,16 +27,16 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import jenkins.model.GlobalConfiguration;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
+@WithJenkinsConfiguredWithCode
 public class ConfigurationAsCodeTest {
 
-    @ClassRule
-    @ConfiguredWithCode("configuration-as-code.yml")
-    public static JenkinsConfiguredWithCodeRule j = new JenkinsConfiguredWithCodeRule();
-
     @Test
-    public void should_support_configuration_as_code() {
+    @ConfiguredWithCode("configuration-as-code.yml")
+    public void should_support_configuration_as_code(JenkinsConfiguredWithCodeRule j) {
         final JenkinsOpenTelemetryPluginConfiguration configuration =
                 GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
 
@@ -71,7 +72,8 @@ public class ConfigurationAsCodeTest {
     }
 
     @Test
-    public void should_support_configuration_export() throws Exception {
+    @ConfiguredWithCode("configuration-as-code.yml")
+    public void should_support_configuration_export(JenkinsConfiguredWithCodeRule j) throws Exception {
         ConfiguratorRegistry registry = ConfiguratorRegistry.get();
         ConfigurationContext context = new ConfigurationContext(registry);
         CNode yourAttribute = getUnclassifiedRoot(context).get("openTelemetry");
@@ -83,12 +85,12 @@ public class ConfigurationAsCodeTest {
         MatcherAssert.assertThat(exported, CoreMatchers.is(expected));
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         GlobalOpenTelemetry.resetForTest();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         GlobalOpenTelemetry.resetForTest();
     }

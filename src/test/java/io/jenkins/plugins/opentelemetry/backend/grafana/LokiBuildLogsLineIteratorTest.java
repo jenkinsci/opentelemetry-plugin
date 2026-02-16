@@ -5,8 +5,8 @@
 
 package io.jenkins.plugins.opentelemetry.backend.grafana;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.jenkins.plugins.opentelemetry.job.log.LogLine;
@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class LokiBuildLogsLineIteratorTest {
 

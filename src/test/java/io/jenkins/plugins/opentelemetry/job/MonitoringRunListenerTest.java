@@ -5,11 +5,11 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class MonitoringRunListenerTest {
 

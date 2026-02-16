@@ -73,6 +73,7 @@
     <error-prone.version>2.47.0</error-prone.version>
     <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
     <spotless.check.skip>false</spotless.check.skip>
+    <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
   </properties>
 
   <dependencyManagement>
@@ -528,7 +529,7 @@
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
+      <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

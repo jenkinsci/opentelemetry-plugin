@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class StaplerInstrumentationServletFilterTest {
 
@@ -90,7 +90,7 @@ public class StaplerInstrumentationServletFilterTest {
         StaplerInstrumentationServletFilter.ParsedJobUrl actual =
                 newStaplerInstrumentationServletFilter().parseJobUrl(pathInfoTokens);
         System.out.println(actual);
-        Assert.assertEquals(expected, actual);
+        Assertions.assertEquals(expected, actual);
     }
 
     @Test
@@ -318,7 +318,7 @@ public class StaplerInstrumentationServletFilterTest {
                     staplerInstrumentationServletFilter.parseBlueOceanRestPipelineUrl(pathInfoTokens);
 
             System.out.println(actual);
-            Assert.assertEquals(expected, actual);
+            Assertions.assertEquals(expected, actual);
         } catch (IndexOutOfBoundsException e) {
             throw new AssertionError("Exception parsing " + pathInfo + " - " + e.getMessage(), e);
         }

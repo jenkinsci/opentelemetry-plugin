@@ -6,8 +6,8 @@
 package io.jenkins.plugins.opentelemetry.job.log;
 
 import java.nio.charset.StandardCharsets;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ConsoleNotesTest {
     @Test
@@ -39,6 +39,6 @@ public class ConsoleNotesTest {
         ConsoleNotes.TextAndAnnotations textAndAnnotations = ConsoleNotes.parse(dataAsBytes, dataAsBytes.length);
         // attributes.asMap().forEach((k, v) -> System.out.println(k + ": " + v));
         String actualMessage = textAndAnnotations.text;
-        Assert.assertEquals(expectedMessage, actualMessage);
+        Assertions.assertEquals(expectedMessage, actualMessage);
     }
 }

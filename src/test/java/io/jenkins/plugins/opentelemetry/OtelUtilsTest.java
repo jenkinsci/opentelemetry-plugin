@@ -5,7 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import hudson.matrix.AxisList;
 import hudson.matrix.MatrixBuild;
@@ -27,7 +27,7 @@ import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class OtelUtilsTest extends BaseIntegrationTest {
 

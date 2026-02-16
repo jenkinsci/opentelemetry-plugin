@@ -2,8 +2,8 @@ package io.jenkins.plugins.opentelemetry.job.log;
 
 import static com.google.common.base.Verify.verify;
 import static java.util.Optional.of;
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import hudson.ExtensionList;
 import hudson.model.Result;
@@ -27,27 +27,31 @@ import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
+@WithJenkins
 public class OtelLocaLogMirroringTest {
 
     private static final Logger LOGGER = Logger.getLogger(OtelLocaLogMirroringTest.class.getName());
 
-    @ClassRule
-    public static JenkinsRule jenkinsRule = new JenkinsRule();
+    public JenkinsRule jenkinsRule;
 
-    static ReconfigurableOpenTelemetry openTelemetry;
-    static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    ReconfigurableOpenTelemetry openTelemetry;
+    JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
-    static WorkflowJob pipeline;
+    WorkflowJob pipeline;
 
-    static String printedLine = "message_testing_logs_mirroring";
-    static final AtomicInteger jobNameSuffix = new AtomicInteger();
+    String printedLine = "message_testing_logs_mirroring";
+    final AtomicInteger jobNameSuffix = new AtomicInteger();
 
-    @BeforeClass
-    public static void beforeClass() throws Exception {
-        LOGGER.log(Level.INFO, "beforeClass()");
+    @BeforeEach
+    public void beforeEach(JenkinsRule rule) throws Exception {
+        this.jenkinsRule = rule;
+        LOGGER.log(Level.INFO, "beforeEach()");
         LOGGER.log(Level.INFO, "Wait for jenkins to start...");
         jenkinsRule.waitUntilNoActivity();
         LOGGER.log(Level.INFO, "Jenkins started");
@@ -71,24 +75,16 @@ public class OtelLocaLogMirroringTest {
                 Optional.empty(),
                 Optional.empty(),
                 Collections.emptyMap()));
-    }
-
-    @AfterClass
-    public static void afterClass() throws Exception {
-        ((AutoCloseable) openTelemetry).close();
-        GlobalOpenTelemetry.resetForTest();
-    }
-
-    @Before
-    public void resetOtelConfig() {
         reInitProvider(new HashMap<>());
     }
 
-    @After
+    @AfterEach
     public void after() throws Exception {
         jenkinsRule.waitUntilNoActivity();
         InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
         InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
+        ((AutoCloseable) openTelemetry).close();
+        GlobalOpenTelemetry.resetForTest();
     }
 
     private WorkflowRun runBuild() throws Exception {

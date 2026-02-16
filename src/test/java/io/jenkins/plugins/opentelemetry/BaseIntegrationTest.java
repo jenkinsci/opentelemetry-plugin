@@ -8,7 +8,7 @@ package io.jenkins.plugins.opentelemetry;
 import static com.google.common.base.Verify.verify;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.cloudbees.hudson.plugins.folder.computed.FolderComputation;
 import com.github.rutledgepaulv.prune.Tree;
@@ -18,13 +18,11 @@ import hudson.ExtensionList;
 import hudson.model.AbstractBuild;
 import hudson.model.Run;
 import hudson.plugins.git.GitSCM;
-import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
-import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.casc.ConfigurationAsCode;
 import io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributorService;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -57,16 +55,16 @@ import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.jvnet.hudson.test.BuildWatcher;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.BuildWatcherExtension;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
+@WithJenkins
 public class BaseIntegrationTest {
+
     private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 
     static {
@@ -77,31 +75,24 @@ public class BaseIntegrationTest {
 
     public static final AtomicInteger jobNameSuffix = new AtomicInteger();
 
-    @ClassRule
-    public static BuildWatcher buildWatcher = new BuildWatcher();
+    @RegisterExtension
+    public static BuildWatcherExtension buildWatcher = new BuildWatcherExtension();
 
-    @ClassRule
-    @ConfiguredWithCode("jcasc-elastic-backend.yml")
-    public static JenkinsConfiguredWithCodeRule jenkinsRule = new JenkinsConfiguredWithCodeRule();
+    public JenkinsRule jenkinsRule;
 
-    @Rule
+    @RegisterExtension
     public ExtendedGitSampleRepoRule sampleRepo = new ExtendedGitSampleRepoRule();
 
-    static JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+    JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
-    @Before
-    public void before() throws Exception {}
-
-    @After
-    public void after() throws Exception {
-        jenkinsRule.waitUntilNoActivity();
-        InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
-        InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
-    }
-
-    @BeforeClass
-    public static void beforeClass() throws Exception {
-        LOGGER.log(Level.INFO, "beforeClass()");
+    @BeforeEach
+    public void beforeEach(JenkinsRule rule) throws Exception {
+        this.jenkinsRule = rule;
+        LOGGER.log(Level.INFO, "beforeEach()");
+        ConfigurationAsCode.get()
+                .configure(BaseIntegrationTest.class
+                        .getResource("jcasc-elastic-backend.yml")
+                        .toExternalForm());
         LOGGER.log(Level.INFO, "Wait for jenkins to start...");
         jenkinsRule.waitUntilNoActivity();
         LOGGER.log(Level.INFO, "Jenkins started");
@@ -135,11 +126,45 @@ public class BaseIntegrationTest {
         // jenkinsControllerOpenTelemetry.tracer.setDelegate(jenkinsControllerOpenTelemetry.openTelemetry.getTracer("jenkins"));
     }
 
+    @AfterEach
+    public void afterEach() throws Exception {
+        jenkinsRule.waitUntilNoActivity();
+
+        // Reset the executor service BEFORE other cleanup
+        // to avoid stale Context wrapping in subsequent tests
+        try {
+            Class<?> stepExecClass = org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution.class;
+            java.lang.reflect.Field executorServiceField = stepExecClass.getDeclaredField("executorService");
+            executorServiceField.setAccessible(true);
+            java.util.concurrent.ExecutorService executorService =
+                    (java.util.concurrent.ExecutorService) executorServiceField.get(null);
+            if (executorService != null) {
+                LOGGER.log(
+                        Level.FINE,
+                        "Shutting down executor service: "
+                                + executorService.getClass().getName());
+                executorService.shutdown();
+            }
+            executorServiceField.set(null, null);
+            LOGGER.log(Level.FINE, "Reset executor service field to null");
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to reset executor service", e);
+        }
+
+        InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
+        InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
+        // NOTE: Not calling GlobalOpenTelemetry.resetForTest() here because it breaks
+        // span creation in subsequent tests (span builder returns existing span instead
+        // of creating new ones). Instead, we rely on resetting the exporters which
+        // clears the captured spans between tests.
+        // GlobalOpenTelemetry.resetForTest();
+    }
+
     protected void checkChainOfSpans(Tree<SpanDataWrapper> spanTree, String... expectedSpanNames) {
         final List<String> expectedSpanNamesList = Arrays.asList(expectedSpanNames);
         final Iterator<String> expectedSpanNamesIt = expectedSpanNamesList.iterator();
         if (!expectedSpanNamesIt.hasNext()) {
-            Assert.fail("No element in the list of expected spans for " + Arrays.asList(expectedSpanNames));
+            fail("No element in the list of expected spans for " + Arrays.asList(expectedSpanNames));
         }
         final String leafSpanName = expectedSpanNamesIt.next();
         Optional<Tree.Node<SpanDataWrapper>> actualNodeOptional = spanTree.breadthFirstSearchNodes(node -> {
@@ -214,7 +239,7 @@ public class BaseIntegrationTest {
         return getTrace(rootSpanPrefix, traceIndex);
     }
 
-    protected static @NotNull Tree<SpanDataWrapper> getTrace(String rootSpanPrefix, int traceIndex) {
+    protected @NotNull Tree<SpanDataWrapper> getTrace(String rootSpanPrefix, int traceIndex) {
         CompletableResultCode completableResultCode = jenkinsControllerOpenTelemetry
                 .getOpenTelemetrySdk()
                 .getSdkTracerProvider()
@@ -389,11 +414,6 @@ public class BaseIntegrationTest {
         System.out.println("---%<--- " + indexing.getUrl());
         indexing.writeWholeLogTo(System.out);
         System.out.println("---%<--- ");
-    }
-
-    @AfterClass
-    public static void afterClass() {
-        GlobalOpenTelemetry.resetForTest();
     }
 
     public static class SpanDataWrapper {

@@ -68,6 +68,8 @@ public class SpanContextPropagationSynchronousNonBlockingTestStep extends Step i
 
         @Override
         protected Void run() throws Exception {
+            // Get fresh tracer to avoid stale GlobalOpenTelemetry instance
+            Tracer tracer = GlobalOpenTelemetry.get().getTracer("io.jenkins.opentelemetry.test");
 
             Span span = tracer.spanBuilder("SpanContextPropagationSynchronousNonBlockingTestStep.execution")
                     .startSpan();

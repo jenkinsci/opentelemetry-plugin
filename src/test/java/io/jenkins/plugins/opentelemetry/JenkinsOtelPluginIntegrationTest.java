@@ -5,7 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry;
 
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import com.google.common.collect.Iterables;
@@ -14,6 +14,7 @@ import hudson.Functions;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.job.step.SpanContextPropagationSynchronousNonBlockingTestStep;
 import io.jenkins.plugins.opentelemetry.job.step.SpanContextPropagationSynchronousTestStep;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
@@ -38,8 +39,8 @@ import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.steps.EchoStep;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
@@ -104,7 +105,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         */
     }
 
-    @Ignore("Lifecycle problem, the InMemoryMetricExporter gets reset too much and the disk usage is not captured")
+    @Disabled("Lifecycle problem, the InMemoryMetricExporter gets reset too much and the disk usage is not captured")
     @Test
     @WithPlugin("cloudbees-disk-usage-simple")
     public void testMetricsWithDiskUsagePlugin() throws Exception {
@@ -669,7 +670,10 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testSpanContextPropagationSynchronousNonBlockingTestStep() throws Exception {
-        Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class)
+        Set.of(
+                        EchoStep.class,
+                        EchoStep.DescriptorImpl.class,
+                        SpanContextPropagationSynchronousNonBlockingTestStep.class)
                 .forEach(c -> System.out.println(c + " -> " + ExtensionList.lookup(c)));
 
         String pipelineScript = "node() {\n" + "    stage('ze-stage1') {\n"
@@ -679,7 +683,8 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 + "}";
         jenkinsRule.createOnlineSlave();
 
-        final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
+        final String jobName =
+                "test-SpanContextPropagationSynchronousNonBlockingTestStep-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));

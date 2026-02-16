@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.JENKINS_CORE;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.model.Cause;
@@ -24,24 +24,28 @@ import java.util.List;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.TestRule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.FailureBuilder;
 import org.jvnet.hudson.test.FakeChangeLogSCM;
-import org.jvnet.hudson.test.FlagRule;
 import org.jvnet.hudson.test.SingleFileSCM;
-import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {
 
-    @Rule
-    public TemporaryFolder tmp = new TemporaryFolder();
+    private boolean originalAntTargetNoteEnabled;
 
-    @Rule
-    public TestRule antTargetNoteEnabled = new FlagRule<>(() -> AntTargetNote.ENABLED, x -> AntTargetNote.ENABLED = x);
+    @BeforeEach
+    public void setUpFreestyle() {
+        originalAntTargetNoteEnabled = AntTargetNote.ENABLED;
+        AntTargetNote.ENABLED = true;
+    }
+
+    @AfterEach
+    public void tearDownFreestyle() {
+        AntTargetNote.ENABLED = originalAntTargetNoteEnabled;
+    }
 
     @Test
     public void testFreestyleJob() throws Exception {
@@ -177,6 +181,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     }
 
     @Test
+    @org.junit.jupiter.api.Disabled("@WithPlugin annotation is not supported with JUnit 5 @WithJenkins")
     @WithPlugin("ant")
     public void testFreestyleJob_with_ant_plugin() throws Exception {
         assumeFalse(SystemUtils.IS_OS_WINDOWS);
@@ -213,7 +218,10 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
     // See
     // https://github.com/jenkinsci/ant-plugin/blob/582cf994e7834816665150aad1731fbe8a67be4d/src/test/java/hudson/tasks/AntTest.java
     private Ant.AntInstallation configureDefaultAnt() throws Exception {
-        return ToolInstallations.configureDefaultAnt(tmp);
+        // Inline the logic from ToolInstallations.configureDefaultAnt() to avoid JUnit 4 TemporaryFolder dependency
+        Ant.AntInstallation antInstallation = new Ant.AntInstallation("default", System.getenv("ANT_HOME"), null);
+        jenkinsRule.jenkins.getDescriptorByType(Ant.DescriptorImpl.class).setInstallations(antInstallation);
+        return antInstallation;
     }
 
     @Test
