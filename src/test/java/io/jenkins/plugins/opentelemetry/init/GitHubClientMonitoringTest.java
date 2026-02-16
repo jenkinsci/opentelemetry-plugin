@@ -6,7 +6,7 @@
 package io.jenkins.plugins.opentelemetry.init;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter. api.Test;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 

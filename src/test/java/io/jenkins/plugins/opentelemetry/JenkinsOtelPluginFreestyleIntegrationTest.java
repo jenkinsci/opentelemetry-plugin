@@ -20,7 +20,6 @@ import hudson.tasks.Shell;
 import hudson.tasks._ant.AntTargetNote;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.Attributes;
-import java.io.IOException;
 import java.util.List;
 import org.apache.commons.lang3.SystemUtils;
 import org.hamcrest.CoreMatchers;
@@ -31,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.FailureBuilder;
 import org.jvnet.hudson.test.FakeChangeLogSCM;
 import org.jvnet.hudson.test.SingleFileSCM;
-import org.jvnet.hudson.test.ToolInstallations;
 import org.jvnet.hudson.test.recipes.WithPlugin;
 
 public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTest {

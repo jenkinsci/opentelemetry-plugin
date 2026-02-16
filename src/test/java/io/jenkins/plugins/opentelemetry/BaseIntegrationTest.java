@@ -23,8 +23,6 @@ import io.jenkins.plugins.opentelemetry.job.OtelEnvironmentContributorService;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
-import jenkins.plugins.git.ExtendedGitSampleRepoRule;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -50,15 +48,14 @@ import java.util.function.BiPredicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import jenkins.plugins.git.ExtendedGitSampleRepoRule;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -92,7 +89,10 @@ public class BaseIntegrationTest {
     public void beforeEach(JenkinsRule rule) throws Exception {
         this.jenkinsRule = rule;
         LOGGER.log(Level.INFO, "beforeEach()");
-        ConfigurationAsCode.get().configure(BaseIntegrationTest.class.getResource("jcasc-elastic-backend.yml").toExternalForm());
+        ConfigurationAsCode.get()
+                .configure(BaseIntegrationTest.class
+                        .getResource("jcasc-elastic-backend.yml")
+                        .toExternalForm());
         LOGGER.log(Level.INFO, "Wait for jenkins to start...");
         jenkinsRule.waitUntilNoActivity();
         LOGGER.log(Level.INFO, "Jenkins started");
@@ -136,9 +136,13 @@ public class BaseIntegrationTest {
             Class<?> stepExecClass = org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution.class;
             java.lang.reflect.Field executorServiceField = stepExecClass.getDeclaredField("executorService");
             executorServiceField.setAccessible(true);
-            java.util.concurrent.ExecutorService executorService = (java.util.concurrent.ExecutorService) executorServiceField.get(null);
+            java.util.concurrent.ExecutorService executorService =
+                    (java.util.concurrent.ExecutorService) executorServiceField.get(null);
             if (executorService != null) {
-                LOGGER.log(Level.FINE, "Shutting down executor service: " + executorService.getClass().getName());
+                LOGGER.log(
+                        Level.FINE,
+                        "Shutting down executor service: "
+                                + executorService.getClass().getName());
                 executorService.shutdown();
             }
             executorServiceField.set(null, null);

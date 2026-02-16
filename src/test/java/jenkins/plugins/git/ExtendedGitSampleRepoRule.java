@@ -28,7 +28,8 @@ import org.jvnet.hudson.test.JenkinsRule;
  * Manages a sample Git repository.
  * Extension of {@link GitSampleRepoRule}
  */
-public final class ExtendedGitSampleRepoRule extends AbstractSampleDVCSRepoRule implements BeforeEachCallback, AfterEachCallback {
+public final class ExtendedGitSampleRepoRule extends AbstractSampleDVCSRepoRule
+        implements BeforeEachCallback, AfterEachCallback {
 
     private static boolean initialized = false;
 
