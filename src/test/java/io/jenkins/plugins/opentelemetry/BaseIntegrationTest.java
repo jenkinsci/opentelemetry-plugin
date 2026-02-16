@@ -129,9 +129,31 @@ public class BaseIntegrationTest {
     @AfterEach
     public void afterEach() throws Exception {
         jenkinsRule.waitUntilNoActivity();
+
+        // Reset the executor service BEFORE other cleanup
+        // to avoid stale Context wrapping in subsequent tests
+        try {
+            Class<?> stepExecClass = org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution.class;
+            java.lang.reflect.Field executorServiceField = stepExecClass.getDeclaredField("executorService");
+            executorServiceField.setAccessible(true);
+            java.util.concurrent.ExecutorService executorService = (java.util.concurrent.ExecutorService) executorServiceField.get(null);
+            if (executorService != null) {
+                LOGGER.log(Level.FINE, "Shutting down executor service: " + executorService.getClass().getName());
+                executorService.shutdown();
+            }
+            executorServiceField.set(null, null);
+            LOGGER.log(Level.FINE, "Reset executor service field to null");
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to reset executor service", e);
+        }
+
         InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
         InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.reset();
-        GlobalOpenTelemetry.resetForTest();
+        // NOTE: Not calling GlobalOpenTelemetry.resetForTest() here because it breaks
+        // span creation in subsequent tests (span builder returns existing span instead
+        // of creating new ones). Instead, we rely on resetting the exporters which
+        // clears the captured spans between tests.
+        // GlobalOpenTelemetry.resetForTest();
     }
 
     protected void checkChainOfSpans(Tree<SpanDataWrapper> spanTree, String... expectedSpanNames) {

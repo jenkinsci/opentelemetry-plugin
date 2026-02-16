@@ -14,6 +14,7 @@ import hudson.Functions;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
+import io.jenkins.plugins.opentelemetry.job.step.SpanContextPropagationSynchronousNonBlockingTestStep;
 import io.jenkins.plugins.opentelemetry.job.step.SpanContextPropagationSynchronousTestStep;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
@@ -669,7 +670,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testSpanContextPropagationSynchronousNonBlockingTestStep() throws Exception {
-        Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousTestStep.class)
+        Set.of(EchoStep.class, EchoStep.DescriptorImpl.class, SpanContextPropagationSynchronousNonBlockingTestStep.class)
                 .forEach(c -> System.out.println(c + " -> " + ExtensionList.lookup(c)));
 
         String pipelineScript = "node() {\n" + "    stage('ze-stage1') {\n"
@@ -679,7 +680,7 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
                 + "}";
         jenkinsRule.createOnlineSlave();
 
-        final String jobName = "test-SpanContextPropagationSynchronousTestStep-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "test-SpanContextPropagationSynchronousNonBlockingTestStep-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
         jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
