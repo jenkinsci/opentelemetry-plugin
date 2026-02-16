@@ -151,6 +151,12 @@
         <artifactId>parsson</artifactId>
         <version>1.1.7</version>
       </dependency>
+      <dependency>
+        <!-- TODO remove incremental version when released -->
+        <groupId>org.jenkins-ci.plugins.workflow</groupId>
+        <artifactId>workflow-step-api</artifactId>
+        <version>707.v76364b_2b_6818</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <dependencies>
@@ -388,6 +394,10 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-multibranch</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins.workflow</groupId>
+      <artifactId>workflow-step-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jenkinsci.plugins</groupId>
