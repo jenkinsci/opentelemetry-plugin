@@ -52,6 +52,10 @@ public final class ConfigurationKey {
             new ConfigurationKey("otel.instrumentation.jenkins.run.metric.duration.allow_list");
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST =
             new ConfigurationKey("otel.instrumentation.jenkins.run.metric.duration.deny_list");
+    public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_RUN_ALLOW_LIST =
+            new ConfigurationKey("otel.instrumentation.jenkins.run.metric.allow_list");
+    public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_RUN_DENY_LIST =
+            new ConfigurationKey("otel.instrumentation.jenkins.run.metric.deny_list");
     /**
      * Instrument Jenkins Remoting from the Jenkins controller to Jenkins build agents
      */

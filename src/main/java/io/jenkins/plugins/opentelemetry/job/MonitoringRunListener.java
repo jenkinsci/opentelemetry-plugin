@@ -108,6 +108,12 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
     @VisibleForTesting
     Pattern runDurationHistogramDenyList;
 
+    @VisibleForTesting
+    Pattern runAllowList;
+
+    @VisibleForTesting
+    Pattern runDenyList;
+
     @PostConstruct
     public void postConstruct() {
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins build executions...");
@@ -135,6 +141,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                 .build();
         runDurationHistogramAllowList = MATCH_ANYTHING; // allow all
         runDurationHistogramDenyList = MATCH_NOTHING; // deny nothing
+
+        runAllowList = MATCH_NOTHING;
+        runDenyList = MATCH_NOTHING;
 
         meter.gaugeBuilder(JenkinsMetrics.CI_PIPELINE_RUN_ACTIVE)
                 .ofLongs()
@@ -195,6 +204,30 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
         }
         this.runDurationHistogramAllowList = newRunDurationHistogramAllowList;
         this.runDurationHistogramDenyList = newRunDurationHistogramDenyList;
+
+        try {
+            this.runAllowList = Optional.ofNullable(configProperties.getString(
+                            ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_RUN_ALLOW_LIST.asProperty()))
+                    .map(Pattern::compile)
+                    .orElse(MATCH_NOTHING);
+        } catch (PatternSyntaxException e) {
+            throw new IllegalArgumentException(
+                    "Invalid regex for '" + ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_RUN_ALLOW_LIST.asProperty()
+                            + "'",
+                    e);
+        }
+
+        try {
+            this.runDenyList = Optional.ofNullable(configProperties.getString(
+                            ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_RUN_DENY_LIST.asProperty()))
+                    .map(Pattern::compile)
+                    .orElse(MATCH_NOTHING);
+        } catch (PatternSyntaxException e) {
+            throw new IllegalArgumentException(
+                    "Invalid regex for '" + ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_RUN_DENY_LIST.asProperty()
+                            + "'",
+                    e);
+        }
     }
 
     @NonNull
@@ -360,7 +393,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
 
             this.getTraceService().putRunPhaseSpan(run, startSpan);
             try (final Scope startSpanScope = startSpan.makeCurrent()) {
-                this.runLaunchedCounter.add(1);
+                this.runLaunchedCounter.add(
+                        1, Attributes.of(ExtendedJenkinsAttributes.CI_PIPELINE_ID, getPipelineIdForCounters(run)));
             }
         }
     }
@@ -375,7 +409,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
             LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - begin " + OtelUtils.toDebugString(runSpan));
             try (Scope scope = runSpan.makeCurrent()) {
                 this.getTraceService().putRunPhaseSpan(run, runSpan);
-                this.runStartedCounter.add(1);
+                this.runStartedCounter.add(
+                        1, Attributes.of(ExtendedJenkinsAttributes.CI_PIPELINE_ID, getPipelineIdForCounters(run)));
             }
         }
     }
@@ -459,36 +494,51 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
 
             Result result = verifyNotNull(run.getResult(), "%s", run);
 
+            String counterPipelineId = getPipelineIdForCounters(run);
+            Attributes counterAttributes = Attributes.of(ExtendedJenkinsAttributes.CI_PIPELINE_ID, counterPipelineId);
+
+            String durationPipelineId = getPipelineIdForDuration(run);
+
             if (result.isCompleteBuild()) {
                 LOGGER.log(Level.FINE, () -> "Increment completion counters");
-                this.runCompletedCounter.add(1);
+                this.runCompletedCounter.add(1, counterAttributes);
                 if (result.equals(Result.SUCCESS)) {
-                    this.runSuccessCounter.add(1);
+                    this.runSuccessCounter.add(1, counterAttributes);
                 } else {
-                    this.runFailedCounter.add(1);
+                    this.runFailedCounter.add(1, counterAttributes);
                 }
             } else {
-                this.runAbortedCounter.add(1);
+                this.runAbortedCounter.add(1, counterAttributes);
             }
 
-            String jobFullName = run.getParent().getFullName();
-            String pipelineId =
-                    runDurationHistogramAllowList.matcher(jobFullName).matches()
-                                    && !runDurationHistogramDenyList
-                                            .matcher(jobFullName)
-                                            .matches()
-                            ? jobFullName
-                            : "#other#";
             runDurationHistogram.record(
                     TimeUnit.SECONDS.convert(run.getDuration(), TimeUnit.MILLISECONDS),
                     Attributes.of(
                             ExtendedJenkinsAttributes.CI_PIPELINE_ID,
-                            pipelineId,
+                            durationPipelineId,
                             ExtendedJenkinsAttributes.CI_PIPELINE_RUN_RESULT,
                             result.toString()));
         } finally {
             activeRunGauge.decrementAndGet();
         }
+    }
+
+    @NonNull
+    String getPipelineIdForCounters(@NonNull Run<?, ?> run) {
+        String jobFullName = run.getParent().getFullName();
+        return runAllowList.matcher(jobFullName).matches()
+                        && !runDenyList.matcher(jobFullName).matches()
+                ? jobFullName
+                : "#other#";
+    }
+
+    @NonNull
+    String getPipelineIdForDuration(@NonNull Run<?, ?> run) {
+        String jobFullName = run.getParent().getFullName();
+        return runDurationHistogramAllowList.matcher(jobFullName).matches()
+                        && !runDurationHistogramDenyList.matcher(jobFullName).matches()
+                ? jobFullName
+                : "#other#";
     }
 
     @NonNull
