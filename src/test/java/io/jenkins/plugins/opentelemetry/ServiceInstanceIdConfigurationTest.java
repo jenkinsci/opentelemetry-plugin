@@ -1,3 +1,7 @@
+/*
+ * Copyright The Original Author or Authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package io.jenkins.plugins.opentelemetry;
 
 import static org.awaitility.Awaitility.await;
@@ -5,7 +9,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 
-import hudson.ExtensionList;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.resources.Resource;
@@ -13,11 +17,13 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.Issue;
+import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 /**
@@ -30,18 +36,33 @@ import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 @WithJenkins
 @Issue("JENKINS-1154")
 public class ServiceInstanceIdConfigurationTest {
+    static {
+        OpenTelemetryConfiguration.TESTING_INMEMORY_MODE = true;
+    }
 
     private static final String SYSTEM_PROPERTY_NAME = "io.jenkins.plugins.opentelemetry.service.instance.id";
+    private JenkinsRule jenkinsRule;
     private JenkinsOpenTelemetryPluginConfiguration plugin;
 
-    @Before
-    public void setup() {
-        plugin = ExtensionList.lookupSingleton(JenkinsOpenTelemetryPluginConfiguration.class);
+    @BeforeEach()
+    public void setUp() {
+        GlobalOpenTelemetry.resetForTest();
+    }
+
+    @BeforeEach
+    public void setup(JenkinsRule rule) {
+        this.jenkinsRule = rule;
+        plugin = GlobalConfiguration.all().get(JenkinsOpenTelemetryPluginConfiguration.class);
+        if (plugin == null) {
+            // If the configuration doesn't exist, create one
+            plugin = new JenkinsOpenTelemetryPluginConfiguration();
+            jenkinsRule.jenkins.getDescriptorByType(JenkinsOpenTelemetryPluginConfiguration.class);
+        }
         plugin.setServiceName("test-service");
         plugin.setServiceNamespace("test-namespace");
     }
 
-    @After
+    @AfterEach
     public void teardown() {
         // Clean up system property after each test to prevent interference
         System.clearProperty(SYSTEM_PROPERTY_NAME);
