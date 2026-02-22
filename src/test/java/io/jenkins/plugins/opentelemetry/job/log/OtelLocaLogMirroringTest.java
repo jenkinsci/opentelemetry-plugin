@@ -8,6 +8,7 @@ import static org.junit.Assume.assumeFalse;
 import hudson.ExtensionList;
 import hudson.model.Result;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -119,6 +121,15 @@ public class OtelLocaLogMirroringTest {
                 Optional.empty(),
                 Optional.empty(),
                 configuration));
+
+        // Initialize the LogStorageRetriever required for tests with OTLP logs exporter
+        // Convert configuration map to properties format
+        String configProperties = configuration.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue())
+                .collect(Collectors.joining("\n"));
+        JenkinsOpenTelemetryPluginConfiguration config = JenkinsOpenTelemetryPluginConfiguration.get();
+        config.setConfigurationProperties(configProperties);
+        config.configureOpenTelemetrySdk();
     }
 
     @Test
