@@ -634,7 +634,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return logStorageRetriever;
     }
 
-    @NonNull
     @MustBeClosed
     @SuppressWarnings("MustBeClosedChecker")
     // false positive invoking backend.getLogStorageRetriever(templateBindingsProvider)
@@ -675,7 +674,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                             new GStringTemplateEngine()
                                     .createTemplate(
                                             "https://plugins.jenkins.io/opentelemetry/"), // TODO better documentation
-                            // URL
                             TemplateBindingsProvider.of(
                                     ObservabilityBackend.TemplateBindings.BACKEND_NAME,
                                             "See documentation on missing logs visualization URL",
