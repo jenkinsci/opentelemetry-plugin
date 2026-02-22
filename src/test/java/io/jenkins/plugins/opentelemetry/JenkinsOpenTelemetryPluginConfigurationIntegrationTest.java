@@ -2,6 +2,8 @@ package io.jenkins.plugins.opentelemetry;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -20,8 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @WithJenkins
 public class JenkinsOpenTelemetryPluginConfigurationIntegrationTest {
@@ -78,8 +78,10 @@ public class JenkinsOpenTelemetryPluginConfigurationIntegrationTest {
         extension.configureOpenTelemetrySdk();
 
         // When logs exporter is set to 'none', logStorageRetriever should not be initialized
-        assertThrows(IllegalStateException.class, () -> extension.getLogStorageRetriever(),
-            "Expected getLogStorageRetriever to throw IllegalStateException when logs exporter is 'none'");
+        assertThrows(
+                IllegalStateException.class,
+                () -> extension.getLogStorageRetriever(),
+                "Expected getLogStorageRetriever to throw IllegalStateException when logs exporter is 'none'");
     }
 
     @Test
@@ -93,8 +95,8 @@ public class JenkinsOpenTelemetryPluginConfigurationIntegrationTest {
         extension.configureOpenTelemetrySdk();
 
         // When logs exporter is configured, logStorageRetriever should be initialized
-        assertNotNull(extension.getLogStorageRetriever(),
-            "Expected logStorageRetriever to be initialized when logs exporter is configured");
+        assertNotNull(
+                extension.getLogStorageRetriever(),
+                "Expected logStorageRetriever to be initialized when logs exporter is configured");
     }
-
 }

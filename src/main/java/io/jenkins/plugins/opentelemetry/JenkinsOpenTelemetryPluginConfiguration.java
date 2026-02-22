@@ -12,7 +12,6 @@ import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXP
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_INSECURE;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_TIMEOUT;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS;
-import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_LOGS_EXPORTER;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_METRIC_EXPORT_INTERVAL;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_TRACES_EXPORTER;
 
@@ -641,7 +640,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     // false positive invoking backend.getLogStorageRetriever(templateBindingsProvider)
     private LogStorageRetriever resolveLogStorageRetriever() {
         LogStorageRetriever logStorageRetriever = null;
-        if (JenkinsControllerOpenTelemetry.get().isLogsEnabled() ) {
+        if (JenkinsControllerOpenTelemetry.get().isLogsEnabled()) {
             Resource otelSdkResource = openTelemetry.getResource();
             String serviceName = Objects.requireNonNull(
                     otelSdkResource.getAttribute(ServiceAttributes.SERVICE_NAME), "service.name can't be null");
