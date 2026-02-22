@@ -12,7 +12,6 @@ import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import jenkins.model.Jenkins;
 import org.junit.After;
@@ -65,12 +64,16 @@ public class ServiceInstanceIdConfigurationTest {
         plugin.configureOpenTelemetrySdk();
 
         // Wait for metrics to be exported
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE
+                .getFinishedMetricItems()
+                .isEmpty());
 
         // Assert: Verify service.instance.id matches legacy instance ID
         String actualInstanceId = getServiceInstanceIdFromLastExportedMetric();
-        assertThat("service.instance.id should use Jenkins.getLegacyInstanceId() when no system property is set",
-                   actualInstanceId, is(expectedInstanceId));
+        assertThat(
+                "service.instance.id should use Jenkins.getLegacyInstanceId() when no system property is set",
+                actualInstanceId,
+                is(expectedInstanceId));
     }
 
     /**
@@ -87,12 +90,16 @@ public class ServiceInstanceIdConfigurationTest {
         plugin.configureOpenTelemetrySdk();
 
         // Wait for metrics to be exported
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE
+                .getFinishedMetricItems()
+                .isEmpty());
 
         // Assert: Verify service.instance.id uses the custom value
         String actualInstanceId = getServiceInstanceIdFromLastExportedMetric();
-        assertThat("service.instance.id should use system property value when set",
-                   actualInstanceId, is(customInstanceId));
+        assertThat(
+                "service.instance.id should use system property value when set",
+                actualInstanceId,
+                is(customInstanceId));
     }
 
     /**
@@ -109,12 +116,16 @@ public class ServiceInstanceIdConfigurationTest {
         plugin.configureOpenTelemetrySdk();
 
         // Wait for metrics to be exported
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE
+                .getFinishedMetricItems()
+                .isEmpty());
 
         // Assert: Verify service.instance.id falls back to legacy ID
         String actualInstanceId = getServiceInstanceIdFromLastExportedMetric();
-        assertThat("service.instance.id should fall back to Jenkins.getLegacyInstanceId() when system property is empty",
-                   actualInstanceId, is(expectedInstanceId));
+        assertThat(
+                "service.instance.id should fall back to Jenkins.getLegacyInstanceId() when system property is empty",
+                actualInstanceId,
+                is(expectedInstanceId));
     }
 
     /**
@@ -131,12 +142,16 @@ public class ServiceInstanceIdConfigurationTest {
         plugin.configureOpenTelemetrySdk();
 
         // Wait for metrics to be exported
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE
+                .getFinishedMetricItems()
+                .isEmpty());
 
         // Assert: Verify service.instance.id falls back to legacy ID
         String actualInstanceId = getServiceInstanceIdFromLastExportedMetric();
-        assertThat("service.instance.id should fall back to Jenkins.getLegacyInstanceId() when system property is whitespace-only",
-                   actualInstanceId, is(expectedInstanceId));
+        assertThat(
+                "service.instance.id should fall back to Jenkins.getLegacyInstanceId() when system property is whitespace-only",
+                actualInstanceId,
+                is(expectedInstanceId));
     }
 
     /**
