@@ -6,11 +6,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 
 import hudson.ExtensionList;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsOtelSemanticAttributes;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.resources.Resource;
-import java.util.Collections;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
+import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import jenkins.model.Jenkins;
 import org.junit.After;
@@ -32,12 +34,10 @@ public class ServiceInstanceIdConfigurationTest {
 
     private static final String SYSTEM_PROPERTY_NAME = "io.jenkins.plugins.opentelemetry.service.instance.id";
     private JenkinsOpenTelemetryPluginConfiguration plugin;
-    private InMemoryMetricExporterProvider inMemoryMetricExporter;
 
     @Before
     public void setup() {
         plugin = ExtensionList.lookupSingleton(JenkinsOpenTelemetryPluginConfiguration.class);
-        inMemoryMetricExporter = ExtensionList.lookupSingleton(InMemoryMetricExporterProvider.class);
         plugin.setServiceName("test-service");
         plugin.setServiceNamespace("test-namespace");
     }
@@ -46,8 +46,8 @@ public class ServiceInstanceIdConfigurationTest {
     public void teardown() {
         // Clean up system property after each test to prevent interference
         System.clearProperty(SYSTEM_PROPERTY_NAME);
-        if (inMemoryMetricExporter != null) {
-            inMemoryMetricExporter.reset();
+        if (InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE != null) {
+            InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
         }
     }
 
@@ -61,11 +61,11 @@ public class ServiceInstanceIdConfigurationTest {
         System.clearProperty(SYSTEM_PROPERTY_NAME);
         String expectedInstanceId = Jenkins.get().getLegacyInstanceId();
 
-        // Act: Trigger metric export by running a Jenkins job or operation
-        plugin.configure();
+        // Act: Configure the OpenTelemetry SDK
+        plugin.configureOpenTelemetrySdk();
 
         // Wait for metrics to be exported
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !inMemoryMetricExporter.getFinishedMetricItems().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems().isEmpty());
 
         // Assert: Verify service.instance.id matches legacy instance ID
         String actualInstanceId = getServiceInstanceIdFromLastExportedMetric();
@@ -83,11 +83,11 @@ public class ServiceInstanceIdConfigurationTest {
         String customInstanceId = "custom-ha-replica-01";
         System.setProperty(SYSTEM_PROPERTY_NAME, customInstanceId);
 
-        // Act: Trigger metric export
-        plugin.configure();
+        // Act: Configure the OpenTelemetry SDK
+        plugin.configureOpenTelemetrySdk();
 
         // Wait for metrics to be exported
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !inMemoryMetricExporter.getFinishedMetricItems().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems().isEmpty());
 
         // Assert: Verify service.instance.id uses the custom value
         String actualInstanceId = getServiceInstanceIdFromLastExportedMetric();
@@ -105,11 +105,11 @@ public class ServiceInstanceIdConfigurationTest {
         System.setProperty(SYSTEM_PROPERTY_NAME, "");
         String expectedInstanceId = Jenkins.get().getLegacyInstanceId();
 
-        // Act: Trigger metric export
-        plugin.configure();
+        // Act: Configure the OpenTelemetry SDK
+        plugin.configureOpenTelemetrySdk();
 
         // Wait for metrics to be exported
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !inMemoryMetricExporter.getFinishedMetricItems().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems().isEmpty());
 
         // Assert: Verify service.instance.id falls back to legacy ID
         String actualInstanceId = getServiceInstanceIdFromLastExportedMetric();
@@ -127,11 +127,11 @@ public class ServiceInstanceIdConfigurationTest {
         System.setProperty(SYSTEM_PROPERTY_NAME, "   ");
         String expectedInstanceId = Jenkins.get().getLegacyInstanceId();
 
-        // Act: Trigger metric export
-        plugin.configure();
+        // Act: Configure the OpenTelemetry SDK
+        plugin.configureOpenTelemetrySdk();
 
         // Wait for metrics to be exported
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !inMemoryMetricExporter.getFinishedMetricItems().isEmpty());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> !InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems().isEmpty());
 
         // Assert: Verify service.instance.id falls back to legacy ID
         String actualInstanceId = getServiceInstanceIdFromLastExportedMetric();
@@ -146,16 +146,16 @@ public class ServiceInstanceIdConfigurationTest {
      * @return The service.instance.id value from the last exported metric, or null if not found
      */
     private String getServiceInstanceIdFromLastExportedMetric() {
-        List<InMemoryMetricExporter.FinishedMetricItem> metrics = inMemoryMetricExporter.getFinishedMetricItems();
+        List<MetricData> metrics = InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems();
         assertThat("At least one metric should be exported", metrics, notNullValue());
         assertThat("Metrics list should not be empty", !metrics.isEmpty());
 
         // Get the last exported metric
-        InMemoryMetricExporter.FinishedMetricItem lastMetric = metrics.get(metrics.size() - 1);
+        MetricData lastMetric = metrics.get(metrics.size() - 1);
         Resource resource = lastMetric.getResource();
         Attributes attributes = resource.getAttributes();
 
         // Extract service.instance.id from resource attributes
-        return attributes.get(io.opentelemetry.semconv.ResourceAttributes.SERVICE_INSTANCE_ID);
+        return attributes.get(ServiceIncubatingAttributes.SERVICE_INSTANCE_ID);
     }
 }
