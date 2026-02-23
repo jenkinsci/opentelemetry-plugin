@@ -198,8 +198,7 @@ public class OtelTraceService {
                         span.getSpanContext().getSpanId()))
                 .findFirst()
                 .ifPresentOrElse(FlowNodeMonitoringAction::purgeSpanAndCloseAssociatedScopes, () -> {
-                    if (!Objects.equals(
-                            span, Span.getInvalid())) { // recovery of a previous error, skip the invalid span
+                    if (!isInvalidSpan(span)) { // recovery of a previous error, skip invalid spans
                         String msg = "span not found to be purged: " + OtelUtils.toDebugString(span) + " ending "
                                 + OtelUtils.toDebugString(startSpanNode) + " in " + run;
                         if (STRICT_MODE) {
@@ -221,11 +220,20 @@ public class OtelTraceService {
                         span.getSpanContext().getSpanId()))
                 .findFirst()
                 .ifPresentOrElse(BuildStepMonitoringAction::purgeSpanAndCloseAssociatedScopes, () -> {
-                    if (!Objects.equals(
-                            span, Span.getInvalid())) { // recovery of a previous error, skip the invalid span
-                        throw new IllegalStateException("span not found to be purged: " + span + " for " + buildStep);
+                    if (!isInvalidSpan(span)) { // recovery of a previous error, skip invalid spans
+                        String message = "span not found to be purged: " + OtelUtils.toDebugString(span) + " for "
+                                + buildStep + " in " + build;
+                        if (STRICT_MODE) {
+                            throw new IllegalStateException(message);
+                        } else {
+                            LOGGER.log(Level.WARNING, message);
+                        }
                     }
                 });
+    }
+
+    private boolean isInvalidSpan(@NonNull Span span) {
+        return Objects.equals(span, Span.getInvalid()) || !span.getSpanContext().isValid();
     }
 
     public void purgeRun(@NonNull Run<?, ?> run) {
