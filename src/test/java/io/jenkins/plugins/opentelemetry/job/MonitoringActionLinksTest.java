@@ -46,9 +46,31 @@ public class MonitoringActionLinksTest {
                 "Fallback message should be shown when no backend configured");
     }
 
+    @Test
+    public void testTracesExporterNoneHidesLinks(JenkinsRule j) throws Exception {
+        JenkinsOpenTelemetryPluginConfiguration config = JenkinsOpenTelemetryPluginConfiguration.get();
+
+        config.setEndpoint("http://localhost:4317");
+        config.setHideMonitoringLinks(false);
+        config.setConfigurationProperties("otel.traces.exporter=none");
+        config.configureOpenTelemetrySdk();
+
+        FreeStyleProject project = j.createFreeStyleProject();
+        FreeStyleBuild run = j.buildAndAssertSuccess(project);
+
+        Span span = Span.getInvalid();
+        MonitoringAction action = new MonitoringAction(span);
+        action.onAttached(run);
+
+        assertTrue(action.getLinks().isEmpty(), "Links should be hidden when traces exporter is set to none");
+    }
+
     @AfterEach
     void resetConfig() {
         JenkinsOpenTelemetryPluginConfiguration config = JenkinsOpenTelemetryPluginConfiguration.get();
         config.setHideMonitoringLinks(false);
+        config.setEndpoint(null);
+        config.setConfigurationProperties(null);
+        config.configureOpenTelemetrySdk();
     }
 }
