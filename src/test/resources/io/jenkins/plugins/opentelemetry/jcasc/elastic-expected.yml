@@ -5,6 +5,7 @@ configurationProperties: "otel.exporter.otlp.protocol=grpc"
 disabledResourceProviders: "io.opentelemetry.instrumentation.resources.ProcessResourceProvider"
 endpoint: "https://my-deployment.otel.example.com"
 exportOtelConfigurationAsEnvironmentVariables: false
+hideMonitoringLinks: false
 ignoredSteps: "dir,echo,isUnix,pwd,properties"
 observabilityBackends:
 - elastic:

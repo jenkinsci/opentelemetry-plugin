@@ -132,6 +132,17 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private boolean exportOtelConfigurationAsEnvironmentVariables;
 
+    private boolean hideMonitoringLinks;
+
+    public boolean isHideMonitoringLinks() {
+        return hideMonitoringLinks;
+    }
+
+    @DataBoundSetter
+    public void setHideMonitoringLinks(boolean hideMonitoringLinks) {
+        this.hideMonitoringLinks = hideMonitoringLinks;
+    }
+
     private final transient ConcurrentMap<String, StepPlugin> loadedStepsPlugins = new ConcurrentHashMap<>();
 
     private String configurationProperties;

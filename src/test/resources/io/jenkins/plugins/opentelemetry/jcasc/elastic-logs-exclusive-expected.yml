@@ -2,6 +2,7 @@ authentication: "noAuthentication"
 disabledResourceProviders: "io.opentelemetry.instrumentation.resources.ProcessResourceProvider"
 endpoint: "http://otel-collector-contrib:4317"
 exportOtelConfigurationAsEnvironmentVariables: false
+hideMonitoringLinks: false
 ignoredSteps: "dir,echo,isUnix,pwd,properties"
 observabilityBackends:
 - elastic:

@@ -132,6 +132,16 @@ public class MonitoringAction extends AbstractMonitoringAction
 
     @NonNull
     public List<ObservabilityBackendLink> getLinks() {
+        JenkinsOpenTelemetryPluginConfiguration config = JenkinsOpenTelemetryPluginConfiguration.get();
+
+        if (config.isHideMonitoringLinks()) {
+            return Collections.emptyList();
+        }
+
+        String tracesExporter = config.getConfigProperties().getString("otel.traces.exporter");
+        if ("none".equals(tracesExporter)) {
+            return Collections.emptyList();
+        }
         List<ObservabilityBackend> tracingCapableBackends =
                 JenkinsOpenTelemetryPluginConfiguration.get().getObservabilityBackends().stream()
                         .filter(backend -> backend.getTraceVisualisationUrlTemplate() != null)
