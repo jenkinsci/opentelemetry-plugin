@@ -62,16 +62,24 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
 
     @Override
     public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {
-        // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
-        configProperties.put(
-                OTEL_EXPORTER_OTLP_HEADERS.asProperty(), "Authorization=Bearer " + this.getAuthenticationHeaderValue());
+        String bearerHeader = "Authorization=Bearer " + this.getAuthenticationHeaderValue();
+        String existing = configProperties.get(OTEL_EXPORTER_OTLP_HEADERS.asProperty());
+        if (existing != null && !existing.isEmpty()) {
+            configProperties.put(OTEL_EXPORTER_OTLP_HEADERS.asProperty(), existing + "," + bearerHeader);
+        } else {
+            configProperties.put(OTEL_EXPORTER_OTLP_HEADERS.asProperty(), bearerHeader);
+        }
     }
 
     @Override
     public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
-        // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
-        environmentVariables.put(
-                OTEL_EXPORTER_OTLP_HEADERS.asEnvVar(), "authorization=Bearer " + this.getAuthenticationHeaderValue());
+        String bearerHeader = "authorization=Bearer " + this.getAuthenticationHeaderValue();
+        String existing = environmentVariables.get(OTEL_EXPORTER_OTLP_HEADERS.asEnvVar());
+        if (existing != null && !existing.isEmpty()) {
+            environmentVariables.put(OTEL_EXPORTER_OTLP_HEADERS.asEnvVar(), existing + "," + bearerHeader);
+        } else {
+            environmentVariables.put(OTEL_EXPORTER_OTLP_HEADERS.asEnvVar(), bearerHeader);
+        }
     }
 
     public String getTokenId() {
