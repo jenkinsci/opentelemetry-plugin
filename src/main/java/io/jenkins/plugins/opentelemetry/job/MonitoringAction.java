@@ -79,7 +79,11 @@ public class MonitoringAction extends AbstractMonitoringAction
 
     @Override
     public Collection<? extends Action> getProjectActions() {
-        return run.getParent().getLastSuccessfulBuild().getActions(MonitoringAction.class);
+        Run<?, ?> lastSuccessfulBuild = run.getParent().getLastSuccessfulBuild();
+        if (lastSuccessfulBuild == null) {
+            return Collections.emptyList();
+        }
+        return lastSuccessfulBuild.getActions(MonitoringAction.class);
     }
 
     @Override
