@@ -87,7 +87,7 @@ public class ZipkinBackend extends ObservabilityBackend {
 
     @Override
     public boolean equals(Object obj) {
-        return obj != null && obj instanceof ZipkinBackend;
+        return obj instanceof ZipkinBackend;
     }
 
     @Override

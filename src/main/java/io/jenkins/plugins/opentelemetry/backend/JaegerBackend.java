@@ -87,7 +87,7 @@ public class JaegerBackend extends ObservabilityBackend {
 
     @Override
     public boolean equals(Object obj) {
-        return obj != null && obj instanceof JaegerBackend;
+        return obj instanceof JaegerBackend;
     }
 
     @Override
