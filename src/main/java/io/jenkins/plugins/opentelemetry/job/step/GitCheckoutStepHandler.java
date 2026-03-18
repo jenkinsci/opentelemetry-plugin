@@ -122,7 +122,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
                 gitBranch = null;
             } else {
                 final Map<String, ?> branch = Iterables.getFirst(branches, null);
-                gitBranch = (String) branch.get("name");
+                gitBranch = branch != null ? (String) branch.get("name") : null;
             }
             return addCloneAttributes(
                     super.createSpanBuilder(gitUrl, gitBranch, credentialsId, stepFunctionName, tracer, run),
