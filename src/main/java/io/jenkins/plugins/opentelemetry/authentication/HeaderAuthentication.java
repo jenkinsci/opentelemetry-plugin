@@ -56,18 +56,24 @@ public class HeaderAuthentication extends OtlpAuthentication {
 
     @Override
     public void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties) {
-        // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
-        configProperties.put(
-                OTEL_EXPORTER_OTLP_HEADERS.asProperty(),
-                this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
+        String header = this.getHeaderName() + "=" + this.getAuthenticationHeaderValue();
+        String existing = configProperties.get(OTEL_EXPORTER_OTLP_HEADERS.asProperty());
+        if (existing != null && !existing.isEmpty()) {
+            configProperties.put(OTEL_EXPORTER_OTLP_HEADERS.asProperty(), existing + "," + header);
+        } else {
+            configProperties.put(OTEL_EXPORTER_OTLP_HEADERS.asProperty(), header);
+        }
     }
 
     @Override
     public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
-        // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
-        environmentVariables.put(
-                OTEL_EXPORTER_OTLP_HEADERS.asEnvVar(),
-                this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
+        String header = this.getHeaderName() + "=" + this.getAuthenticationHeaderValue();
+        String existing = environmentVariables.get(OTEL_EXPORTER_OTLP_HEADERS.asEnvVar());
+        if (existing != null && !existing.isEmpty()) {
+            environmentVariables.put(OTEL_EXPORTER_OTLP_HEADERS.asEnvVar(), existing + "," + header);
+        } else {
+            environmentVariables.put(OTEL_EXPORTER_OTLP_HEADERS.asEnvVar(), header);
+        }
     }
 
     public String getHeaderName() {
@@ -87,21 +93,6 @@ public class HeaderAuthentication extends OtlpAuthentication {
     public void setHeaderValueId(String headerValueId) {
         this.headerValueId = headerValueId;
     }
-
-    //    public ListBoxModel doFillHeaderValueIdItems() {
-    //        if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
-    //            return new StandardListBoxModel().includeCurrentValue(this.headerValueId);
-    //        }
-    //        return new StandardListBoxModel()
-    //                .includeEmptyValue()
-    //                .includeMatchingAs(
-    //                        ACL.SYSTEM,
-    //                        Jenkins.get(),
-    //                        StringCredentials.class,
-    //                        Collections.<DomainRequirement>emptyList(),
-    //                        CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StringCredentials.class)))
-    //                .includeCurrentValue(headerValueId);
-    //    }
 
     @Override
     public String toString() {
