@@ -24,6 +24,16 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Holds the OpenTelemetry configuration for the Jenkins plugin, including
+ * the OTLP endpoint, authentication, service identity, and additional
+ * SDK configuration properties.
+ *
+ * <p>An instance of this class is constructed from the Jenkins plugin
+ * configuration UI and converted into OpenTelemetry SDK properties via
+ * {@link #toOpenTelemetryProperties()} and resource attributes via
+ * {@link #toOpenTelemetryResource()}.</p>
+ */
 public class OpenTelemetryConfiguration {
 
     @SuppressFBWarnings
@@ -38,6 +48,23 @@ public class OpenTelemetryConfiguration {
     private final Optional<String> disabledResourceProviders;
     private final Map<String, String> configurationProperties;
 
+    /**
+     * Constructs a new {@code OpenTelemetryConfiguration} with the given settings.
+     *
+     * <p>Blank strings in {@code Optional} fields are treated as empty
+     * (i.e., the field is considered not configured). The endpoint, if present,
+     * must start with {@code http://} or {@code https://}.</p>
+     *
+     * @param endpoint                  the OTLP endpoint URL, e.g. {@code http://otel-collector:4317}
+     * @param trustedCertificatesPem    PEM-encoded trusted TLS certificate for the OTLP endpoint
+     * @param authentication            the authentication mechanism for the OTLP endpoint
+     * @param serviceName               the {@code service.name} OpenTelemetry resource attribute
+     * @param serviceNamespace          the {@code service.namespace} OpenTelemetry resource attribute
+     * @param disabledResourceProviders comma-separated list of resource provider class names to disable
+     * @param configurationProperties   additional OpenTelemetry SDK autoconfigure properties
+     * @throws IllegalArgumentException if the endpoint is present but does not start with
+     *                                  {@code http://} or {@code https://}
+     */
     public OpenTelemetryConfiguration(
             Optional<String> endpoint,
             Optional<String> trustedCertificatesPem,
@@ -61,26 +88,91 @@ public class OpenTelemetryConfiguration {
                         ep));
     }
 
+    /**
+     * Returns the OTLP endpoint URL configured for this Jenkins instance.
+     *
+     * <p>The endpoint must include the protocol scheme, for example
+     * {@code http://otel-collector:4317} for gRPC or
+     * {@code http://otel-collector:4318} for HTTP/Protobuf.
+     * Returns an empty {@code Optional} if no endpoint is configured or
+     * if the configured value is blank.</p>
+     *
+     * @return an {@code Optional} containing the OTLP endpoint URL,
+     *         or {@code Optional.empty()} if not configured
+     */
     public Optional<String> getEndpoint() {
         return endpoint;
     }
 
+    /**
+     * Returns the {@code service.name} OpenTelemetry resource attribute.
+     *
+     * <p>This value appears as the service name in traces and metrics in
+     * your observability backend (e.g. Jaeger, Elastic, Prometheus).
+     * Defaults to {@code jenkins} if not explicitly configured.</p>
+     *
+     * @return an {@code Optional} containing the service name,
+     *         or {@code Optional.empty()} if not configured
+     */
     public Optional<String> getServiceName() {
         return serviceName;
     }
 
+    /**
+     * Returns the {@code service.namespace} OpenTelemetry resource attribute.
+     *
+     * <p>Used to group related services in your observability backend.
+     * For example, setting this to {@code ci} groups Jenkins alongside
+     * other CI/CD tools emitting telemetry to the same backend.</p>
+     *
+     * @return an {@code Optional} containing the service namespace,
+     *         or {@code Optional.empty()} if not configured
+     */
     public Optional<String> getServiceNamespace() {
         return serviceNamespace;
     }
 
+    /**
+     * Returns the authentication configuration used when connecting to the
+     * OTLP endpoint.
+     *
+     * <p>Supported implementations include no authentication, header-based
+     * authentication, and Bearer token authentication. See
+     * {@link OtlpAuthentication} for available options.</p>
+     *
+     * @return an {@code Optional} containing the authentication configuration,
+     *         or {@code Optional.empty()} if no authentication is configured
+     */
     public Optional<OtlpAuthentication> getAuthentication() {
         return authentication;
     }
 
+    /**
+     * Returns the PEM-encoded trusted TLS certificate for the OTLP endpoint.
+     *
+     * <p>Use this when the OTLP endpoint uses a TLS certificate signed by a
+     * private or internal CA that is not trusted by the default JVM truststore.
+     * The value should be the full PEM certificate string including the
+     * {@code -----BEGIN CERTIFICATE-----} header and footer.</p>
+     *
+     * @return an {@code Optional} containing the PEM certificate string,
+     *         or {@code Optional.empty()} if no custom certificate is configured
+     */
     public Optional<String> getTrustedCertificatesPem() {
         return trustedCertificatesPem;
     }
 
+    /**
+     * Returns the comma-separated list of OpenTelemetry Java resource provider
+     * class names that should be disabled.
+     *
+     * <p>Maps to the {@code otel.java.disabled.resource.providers} SDK property.
+     * Use this to suppress resource attributes contributed by specific providers,
+     * for example to avoid slow classpath scanning on large Jenkins instances.</p>
+     *
+     * @return an {@code Optional} containing the comma-separated provider class names,
+     *         or {@code Optional.empty()} if no providers are disabled
+     */
     public Optional<String> getDisabledResourceProviders() {
         return disabledResourceProviders;
     }
