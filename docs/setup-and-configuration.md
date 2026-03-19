@@ -14,8 +14,7 @@ alt="Configuration - Elastic Observability Backend - Advanced configuration"
 src="images/jenkins-config-elastic-logs-with-visualization-through-jenkins.png" />
 
 _Jenkins OpenTelemetry set up with Elastic including storing logs in Elastic visualizing logs both in Elastic Kibana and through Jenkins_
-
-```yaml
+yaml
 exporters:
   otlp/elastic:
     endpoint: "***.apm.***.cloud.es.io:443"
@@ -40,7 +39,7 @@ service:
         exporters:
             - otlp/elastic # requires Elastic v8.1+
     ...
-```
+
 _OpenTelemetry Collector configuration to export traces, metrics, and logs to Elastic_
 
 | Jenkins Monitoring with Elastic | Jenkins Monitoring with Elastic and OpenTelemetry Collector |
@@ -55,8 +54,7 @@ Configure the Jenkins Controller to send OpenTelemetry data to an OpenTelemetry 
 ℹ️ Note that Prometheus only supports metrics; traces and logs require other observability backends.
 
 ℹ️ Enable `resource_to_telemetry_conversion` on the OpenTelemetry Collector exporter for Prometheus in order to have the OpenTelemetry metrics resource attributes converted to Prometheus labels to differentiate the different Jenkins Controllers.
-
-```yaml
+yaml
 exporters:
   prometheus:
     endpoint: 0.0.0.0:1234
@@ -72,7 +70,7 @@ service:
         - prometheus
     traces:
       ...
-```
+
 _OpenTelemetry Collector configuration to export metric to Prometheus_
 
 
@@ -81,8 +79,7 @@ _OpenTelemetry Collector configuration to export metric to Prometheus_
 Configure the Jenkins Controller to send OpenTelemetry data to an OpenTelemetry Collector and define on this OpenTelemetry a [Jaeger exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/jaegerexporter) on this collector.
 
 ℹ️ Note that Jaeger only supports traces; metrics and logs require other observability backends.
-
-```yaml
+yaml
 exporters:
   jaeger:
       endpoint: localhost:14250
@@ -96,7 +93,7 @@ service:
       exporters:
         - jaeger
     ...
-```
+
 _OpenTelemetry Collector configuration to export traces to Jaeger_
 
 <img alt="Jenkins monitoring with Jaeger and Prometheus" width="400" src="images/jenkins-opentelemetry-architecture-jaeger-prometheus.png" >
@@ -119,8 +116,7 @@ Advanced configuration settings
 The Jenkins OpenTelemetry plugin supports configuration as code using the [Jenkins Configuration as Code](https://www.jenkins.io/projects/jcasc/) (aka JCasC).
 
 Example:
-
-```yaml
+yaml
 unclassified:
   openTelemetry:
     authentication: "noAuthentication"
@@ -147,7 +143,7 @@ unclassified:
           zipkinBaseUrl: "http://localhost:9411/"
           name: "Zipkin"
     serviceName: "my-jenkins"
-```
+
 
 ℹ️ be careful of the misalignment of spelling between  `metricsVisualizationUrlTemplate` and `traceVisualisationUrlTemplate`.
 This misalignment ("visualisation" versus "visualization") will be fixed soon aligning on "visualization" while supporting backward compatibility.
@@ -186,6 +182,87 @@ Note that the key-value pairs of the `OTEL_RESOURCE_ATTRIBUTES` attributes are m
 
 All the system properties and environment variables of the [OpenTelemetry SDK Auto Configuration Extension](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md) (`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_METRICS_EXPORTER`, `OTEL_LOGS_EXPORTER`, `OTEL_RESOURCE_ATTRIBUTES`...) are supported at the exception to the settings of Zipkin exporter which is not included.
 
+### OTLP exporter configuration
+
+The OTLP exporter sends traces, metrics, and logs to any backend that supports the OpenTelemetry Protocol (OTLP), such as the OpenTelemetry Collector, Elastic, Grafana, Dynatrace, and others.
+
+#### Using gRPC (default)
+
+The default OTLP transport is gRPC on port `4317`:
+properties
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+OTEL_TRACES_EXPORTER=otlp
+OTEL_METRICS_EXPORTER=otlp
+OTEL_LOGS_EXPORTER=otlp
+
+
+#### Using HTTP/Protobuf instead of gRPC
+
+To switch from gRPC to HTTP/Protobuf (port `4318`), set the following in
+**Manage Jenkins → Configure System → OpenTelemetry → Advanced →
+Configuration Properties**:
+properties
+otel.exporter.otlp.protocol=http/protobuf
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+
+
+#### Sending only specific signals via OTLP
+
+You can send only traces, only metrics, or only logs by configuring
+per-signal exporters:
+properties
+# Send only traces and metrics via OTLP, disable logs
+OTEL_TRACES_EXPORTER=otlp
+OTEL_METRICS_EXPORTER=otlp
+OTEL_LOGS_EXPORTER=none
+
+
+#### OTLP with authentication
+
+To add a Bearer token for authenticated OTLP endpoints:
+properties
+OTEL_EXPORTER_OTLP_ENDPOINT=https://otel-collector:4317
+OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer YOUR_TOKEN
+
+
+ℹ️ The same token can be configured through the Jenkins UI under
+**Manage Jenkins → Configure System → OpenTelemetry → Authentication →
+Bearer Token Authentication**, which is the recommended approach as it
+uses Jenkins credential management.
+
+#### OTLP with custom TLS certificate
+
+If your OTLP endpoint uses a certificate signed by a private CA:
+properties
+OTEL_EXPORTER_OTLP_CERTIFICATE=/path/to/ca-cert.pem
+
+
+### Logging exporter (troubleshooting)
+
+The logging exporter writes telemetry data to stdout and is useful for
+verifying that the plugin is generating traces and metrics before
+configuring a production backend.
+properties
+OTEL_TRACES_EXPORTER=logging
+OTEL_METRICS_EXPORTER=logging
+OTEL_LOGS_EXPORTER=logging
+
+
+⚠️ Do not use the logging exporter in production — it generates
+significant log volume and has no retention or querying capability.
+
+### Configuring the service name and resource attributes
+
+The `service.name` and other resource attributes can be set using the
+`OTEL_RESOURCE_ATTRIBUTES` environment variable:
+properties
+OTEL_RESOURCE_ATTRIBUTES=service.name=my-jenkins,service.namespace=ci,deployment.environment=production
+
+
+ℹ️ Resource attributes set via `OTEL_RESOURCE_ATTRIBUTES` are merged
+with the values configured in the Jenkins plugin UI. The plugin UI values
+take precedence for `service.name` and `service.namespace` if both are set.
+
 ## TCP Keepalive
 
 TCP Keepalive is enabled by default in the Elasticsearch connections, a keepalive is sent every 30 seconds.
@@ -193,40 +270,33 @@ It is possible to change this behaviout by using system properties.
 To disable keepalive, set `io.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever.keepAlive.enabled` to `false`, to change the keepalive interval, set `io.jenkins.plugins.opentelemetry.backend.ElasticsearchLogStorageRetriever.elastic.keepAlive.interval` to the desired value in miliseconds.
 
 The following command disables the keepalive
-
-```shell
+shell
 java -Dio.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever.keepAlive.enabled=false -jar jenkins.war
-```
+
 
 The following command changes the keepalive interval to 10 seconds
-
-```shell
+shell
 java -Dio.jenkins.plugins.opentelemetry.backend.elastic.ElasticsearchLogStorageRetriever.keepAlive.interval=10000 -jar jenkins.war
-```
+
 
 ## Remote Trace Context Propagation
 
 Since version 2.17.0, the Jenkins OpenTelemetry plugin supports remote trace context propagation when a build is triggered by Jenkins HTTP API calls. This feature is based on the [W3C Trace Context](https://www.w3.org/TR/trace-context/) standard.
 
 To enable this feature, set the property `otel.instrumentation.jenkins.remote.span.enabled` to `true`. The Jenkins OpenTelemetry properties can be set either through the plugin configuration screen ("Advanced / Configuration Properties" section) or as a JVM system property.
-
-```shell
+shell
 java -Dotel.instrumentation.jenkins.remote.span.enabled=true -jar jenkins.war
-```
+
 
 Then from your remote system, you can trigger a build using the Jenkins REST API and include the trace context headers in the request. The Jenkins OpenTelemetry plugin will propagate the trace context to the build.
-
-```shell
+shell
 curl -X POST http://jenkins.example.com/job/my-job/build \
   -H "Jenkins-Crumb: 1234567890abcdef" \
   -H "traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01" 
-```
 
-## Using the OpenTelemetry OTLP/HTTP rather than OTLP/GRPC protocol
+
+## Using the OpenTelemetry OTLP/HTTP rather than OTLP/GRPC protocol
 
 Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" section, add to the "Configuration Properties" text area the following:
 
-```
 otel.exporter.otlp.protocol=http/protobuf
-```
-
