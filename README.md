@@ -75,6 +75,11 @@ For details to set up Jenkins with Elastic, Jaeger or Prometheus, to configure t
 Configuration as Code,
 see [Setup and Configuration](https://github.com/jenkinsci/opentelemetry-plugin/blob/master/docs/setup-and-configuration.md).
 
+## Troubleshooting
+
+For common issues such as OTLP endpoint connection failures, authentication errors, missing metrics, and how to enable
+debug logging, see [Troubleshooting](docs/troubleshooting.md).
+
 ## Troubleshooting and Optimizing Jenkins Jobs and Pipelines Using Tracing on the Builds
 
 For details on how to explore and troubleshoot jobs and pipelines builds as traces,
