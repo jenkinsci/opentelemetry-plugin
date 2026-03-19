@@ -204,6 +204,7 @@ public class OtelTraceService {
                         if (STRICT_MODE) {
                             throw new IllegalStateException(msg);
                         } else {
+                            LOGGER.log(Level.FINE, msg);
                             LOGGER.log(Level.WARNING, msg);
                         }
                     }
@@ -226,6 +227,7 @@ public class OtelTraceService {
                         if (STRICT_MODE) {
                             throw new IllegalStateException(message);
                         } else {
+                            LOGGER.log(Level.FINE, message);
                             LOGGER.log(Level.WARNING, message);
                         }
                     }
