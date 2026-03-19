@@ -27,11 +27,12 @@ import jenkins.model.Jenkins;
 
 /**
  * <p>
- * Monitor the Jenkins plugins
+ * Monitor the Jenkins plugins. Reports the following metrics:
  * </p>
- * <p>
- * TODO report on `hasUpdate` plugin count.
- * </p>
+ * <ul>
+ *   <li>{@code jenkins.plugins.count} — active, inactive, and failed plugin counts</li>
+ *   <li>{@code jenkins.plugins.updates} — plugins with available updates vs up-to-date</li>
+ * </ul>
  */
 @Extension(dynamicLoadable = YesNoMaybe.MAYBE, optional = true)
 public class PluginMonitoringInitializer implements OpenTelemetryLifecycleListener {
