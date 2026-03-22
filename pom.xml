@@ -281,6 +281,7 @@
     </dependency>
     <dependency>
       <groupId>io.opentelemetry.instrumentation</groupId>
+      <!-- TODO it is deprecated at 1.60.1 we will have to migrate it again when we update https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/instrumentation/runtime-telemetry/library/README.md -->
       <artifactId>opentelemetry-runtime-telemetry-java17</artifactId>
       <version>${opentelemetry-instrumentation.version}-alpha</version>
     </dependency>
