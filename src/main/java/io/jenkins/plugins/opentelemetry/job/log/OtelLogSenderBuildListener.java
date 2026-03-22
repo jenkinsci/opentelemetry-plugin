@@ -43,7 +43,7 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
 
     /**
      * Timestamps of the logs emitted by the Jenkins Agents must be chronologically ordered with the timestamps of
-     * the logs & traces emitted on the Jenkins controller even if the system clock are not perfectly synchronized
+        * the logs &amp; traces emitted on the Jenkins controller even if the system clock are not perfectly synchronized
      */
     @SuppressFBWarnings("IS2_INCONSISTENT_SYNC")
     transient Clock clock;

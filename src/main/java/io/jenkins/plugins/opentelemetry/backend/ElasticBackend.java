@@ -174,7 +174,6 @@ public class ElasticBackend extends ObservabilityBackend {
     @NonNull
     @Override
     public Map<String, String> getOtelConfigurationProperties() {
-        // FIXME related to https://github.com/jenkinsci/opentelemetry-plugin/issues/683
         if (elasticLogsBackend == null) {
             return Collections.emptyMap();
         } else {
@@ -311,6 +310,11 @@ public class ElasticBackend extends ObservabilityBackend {
         String KIBANA_SPACE_IDENTIFIER = "kibanaSpaceIdentifier";
     }
 
+    /**
+     * Returns the configured Elastic backend, if present.
+     *
+     * @return the configured {@link ElasticBackend}, or an empty optional when not configured
+     */
     public static Optional<ElasticBackend> get() {
         Optional<ElasticBackend> ret = null;
         final JenkinsOpenTelemetryPluginConfiguration configuration =

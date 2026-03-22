@@ -96,6 +96,11 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
                 configuration.toOpenTelemetryProperties(), configuration.toOpenTelemetryResource(), true);
     }
 
+    /**
+     * Returns the singleton controller OpenTelemetry extension.
+     *
+     * @return the Jenkins controller OpenTelemetry extension
+     */
     public static JenkinsControllerOpenTelemetry get() {
         return ExtensionList.lookupSingleton(JenkinsControllerOpenTelemetry.class);
     }

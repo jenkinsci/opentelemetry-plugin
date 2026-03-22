@@ -47,6 +47,12 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
 
+/**
+ * Shared utility methods for Jenkins OpenTelemetry instrumentation.
+ * <p>
+ * This class centralizes helpers for run type detection, debug formatting, version lookup,
+ * URL encoding, configuration reporting, and W3C trace-context propagation.
+ */
 public class OtelUtils {
 
     public static final String FREESTYLE = "freestyle";
@@ -61,6 +67,15 @@ public class OtelUtils {
     public static final String JENKINS_CORE = "jenkins-core";
     public static final String UNKNOWN_VALUE = "#unknown";
 
+    /**
+     * Resolves a configuration value from either Java system properties or environment variables.
+     * <p>
+     * The environment variable name is converted to a system property name by replacing underscores
+     * with dots and lowercasing. System property values take precedence over environment variables.
+     *
+     * @param environmentVariableName the environment variable name to resolve
+     * @return the configured value, or {@code null} if neither source defines a non-blank value
+     */
     @CheckForNull
     public static String getSystemPropertyOrEnvironmentVariable(String environmentVariableName) {
         String systemPropertyName = environmentVariableName.replace('_', '.').toLowerCase(Locale.ROOT);
@@ -75,6 +90,11 @@ public class OtelUtils {
         return null;
     }
 
+    /**
+     * Returns a formatter that converts spans to compact debug strings.
+     *
+     * @return a formatter function for span debug logging
+     */
     @NonNull
     public static Function<Span, String> spanToDebugString() {
         return span -> {
@@ -93,6 +113,12 @@ public class OtelUtils {
         };
     }
 
+    /**
+     * Determines the Jenkins project type associated with a run.
+     *
+     * @param run the Jenkins run to inspect
+     * @return one of the predefined project type constants
+     */
     @NonNull
     public static String getProjectType(Run<?, ?> run) {
         if (isFreestyle(run)) {
@@ -113,6 +139,12 @@ public class OtelUtils {
         return UNKNOWN;
     }
 
+    /**
+     * Determines the multibranch subtype associated with a run.
+     *
+     * @param run the Jenkins run to inspect
+     * @return {@code change_request}, {@code branch}, {@code tag}, or {@code unknown}
+     */
     @NonNull
     public static String getMultibranchType(Run<?, ?> run) {
         if (isMultibranch(run)) {
@@ -129,6 +161,12 @@ public class OtelUtils {
         return UNKNOWN;
     }
 
+    /**
+     * Returns whether the run belongs to a multibranch tag build.
+     *
+     * @param run the Jenkins run to inspect
+     * @return {@code true} if the run is a multibranch tag build
+     */
     public static boolean isMultibranchTag(Run<?, ?> run) {
         if (isMultibranch(run)) {
             return (SCMHead.HeadByItem.findHead(run.getParent()) instanceof TagSCMHead);
@@ -136,6 +174,12 @@ public class OtelUtils {
         return false;
     }
 
+    /**
+     * Returns whether the run belongs to a multibranch change request build.
+     *
+     * @param run the Jenkins run to inspect
+     * @return {@code true} if the run is a change request build
+     */
     public static boolean isMultibranchChangeRequest(Run<?, ?> run) {
         if (isMultibranch(run)) {
             return (SCMHead.HeadByItem.findHead(run.getParent()) instanceof ChangeRequestSCMHead);
@@ -143,6 +187,12 @@ public class OtelUtils {
         return false;
     }
 
+    /**
+     * Returns whether the run belongs to a regular multibranch branch build.
+     *
+     * @param run the Jenkins run to inspect
+     * @return {@code true} if the run is a non-tag, non-change-request branch build
+     */
     public static boolean isMultibranchBranch(Run<?, ?> run) {
         if (isMultibranch(run)) {
             return !(isMultibranchChangeRequest(run) || isMultibranchTag(run));
@@ -150,6 +200,12 @@ public class OtelUtils {
         return false;
     }
 
+    /**
+     * Returns whether the run belongs to a workflow multibranch project.
+     *
+     * @param run the Jenkins run to inspect
+     * @return {@code true} if the run is from a workflow multibranch project
+     */
     public static boolean isMultibranch(Run<?, ?> run) {
         if (run == null) {
             return false;
@@ -157,6 +213,12 @@ public class OtelUtils {
         return (run instanceof WorkflowRun && run.getParent().getParent() instanceof WorkflowMultiBranchProject);
     }
 
+    /**
+     * Returns whether the run belongs to a non-multibranch workflow job.
+     *
+     * @param run the Jenkins run to inspect
+     * @return {@code true} if the run is a standalone workflow run
+     */
     public static boolean isWorkflow(Run<?, ?> run) {
         if (run == null) {
             return false;
@@ -164,6 +226,12 @@ public class OtelUtils {
         return (run instanceof WorkflowRun && !(run.getParent().getParent() instanceof WorkflowMultiBranchProject));
     }
 
+    /**
+     * Returns whether the run belongs to a freestyle build.
+     *
+     * @param run the Jenkins run to inspect
+     * @return {@code true} if the run is a freestyle build
+     */
     public static boolean isFreestyle(Run<?, ?> run) {
         if (run == null) {
             return false;
@@ -171,6 +239,12 @@ public class OtelUtils {
         return (run instanceof FreeStyleBuild);
     }
 
+    /**
+     * Returns whether the run belongs to a matrix build family.
+     *
+     * @param run the Jenkins run to inspect
+     * @return {@code true} if the run matches known matrix classes
+     */
     public static boolean isMatrix(Run<?, ?> run) {
         if (run == null) {
             return false;
@@ -180,6 +254,12 @@ public class OtelUtils {
                 || isInstance(run, "hudson.matrix.MatrixRun");
     }
 
+    /**
+     * Returns whether the run belongs to a Maven build family.
+     *
+     * @param run the Jenkins run to inspect
+     * @return {@code true} if the run matches known Maven build classes
+     */
     public static boolean isMaven(Run<?, ?> run) {
         if (run == null) {
             return false;
@@ -193,16 +273,33 @@ public class OtelUtils {
         return o != null && o.getClass().getName().equals(clazz);
     }
 
+    /**
+     * Formats a span into a compact debug string.
+     *
+     * @param span the span to format
+     * @return a debug representation of the span
+     */
     @NonNull
     public static String toDebugString(@Nullable Span span) {
         return spanToDebugString().apply(span);
     }
 
+    /**
+     * Formats a flow node into a compact debug string.
+     *
+     * @param flowNode the flow node to format
+     * @return a debug representation of the flow node
+     */
     @NonNull
     public static String toDebugString(FlowNode flowNode) {
         return flowNodeToDebugString().apply(flowNode);
     }
 
+    /**
+     * Returns a formatter that converts flow nodes to debug strings.
+     *
+     * @return a formatter function for flow-node debug logging
+     */
     @NonNull
     public static Function<FlowNode, String> flowNodeToDebugString() {
         return flowNode -> flowNode == null
@@ -211,6 +308,13 @@ public class OtelUtils {
                         + ", id: " + flowNode.getId() + "]";
     }
 
+    /**
+     * URL-encodes a value using UTF-8.
+     *
+     * @param value the value to encode
+     * @return the encoded value
+     * @throws IllegalStateException if encoding fails unexpectedly
+     */
     @NonNull
     public static String urlEncode(String value) {
         try {
@@ -221,6 +325,11 @@ public class OtelUtils {
         }
     }
 
+    /**
+     * Returns the running Jenkins core version.
+     *
+     * @return the Jenkins version string, or {@code #unknown} when unavailable
+     */
     @NonNull
     public static String getJenkinsVersion() {
         final VersionNumber versionNumber = Jenkins.getVersion();
@@ -229,6 +338,11 @@ public class OtelUtils {
                 : versionNumber.toString(); // should not be null except maybe in development of Jenkins itself
     }
 
+    /**
+     * Returns the installed OpenTelemetry plugin version.
+     *
+     * @return the plugin version, or {@code #unknown} when the plugin instance is unavailable
+     */
     @NonNull
     public static String getOpentelemetryPluginVersion() {
         final Jenkins instance = Jenkins.getInstanceOrNull();
@@ -254,6 +368,12 @@ public class OtelUtils {
             OTEL_EXPORTER_PROMETHEUS_PORT,
             OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED);
 
+    /**
+     * Extracts a sorted map of noteworthy OpenTelemetry configuration properties.
+     *
+     * @param configProperties OpenTelemetry configuration properties
+     * @return a map containing configured noteworthy properties
+     */
     public static Map<String, String> noteworthyConfigProperties(ConfigProperties configProperties) {
         Map<String, String> noteworthyConfigProperties = new TreeMap<>();
         noteworthyConfigurationPropertyNames.forEach(k -> {
@@ -264,6 +384,12 @@ public class OtelUtils {
         return noteworthyConfigProperties;
     }
 
+    /**
+     * Creates a W3C trace-context carrier map from the given span.
+     *
+     * @param span the span whose context should be injected
+     * @return a map containing W3C trace-context headers
+     */
     public static Map<String, String> getW3cTraceContext(Span span) {
         Map<String, String> w3cTraceContext = new HashMap<>(2);
         try (Scope ignored = span.makeCurrent()) {
@@ -276,7 +402,16 @@ public class OtelUtils {
         return w3cTraceContext;
     }
 
+    /**
+     * HTTP header getter used by OpenTelemetry propagators when extracting context from servlet requests.
+     */
     public static class HttpServletRequestTextMapGetter implements TextMapGetter<HttpServletRequest> {
+        /**
+         * Returns all header names available on the servlet request.
+         *
+         * @param request the servlet request
+         * @return iterable of header names
+         */
         @Override
         public Iterable<String> keys(@NonNull HttpServletRequest request) {
             return () -> Optional.of(request)
@@ -285,6 +420,13 @@ public class OtelUtils {
                     .orElseGet(Collections::emptyIterator);
         }
 
+        /**
+         * Returns the header value for a given key.
+         *
+         * @param request the servlet request
+         * @param key the header name
+         * @return the header value, or {@code null} if not present
+         */
         @Override
         public String get(@javax.annotation.Nullable HttpServletRequest request, @NonNull String key) {
             return Optional.ofNullable(request).map(c -> c.getHeader(key)).orElse(null);

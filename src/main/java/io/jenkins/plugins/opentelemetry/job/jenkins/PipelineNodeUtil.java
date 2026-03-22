@@ -58,6 +58,12 @@ public class PipelineNodeUtil {
         return node.getAction(LabelAction.class) != null;
     }
 
+    /**
+     * Returns whether the node starts a {@code withNewSpan} step.
+     *
+     * @param node the flow node to inspect
+     * @return {@code true} when the node starts a {@code withNewSpan} step
+     */
     public static boolean isStartWithNewSpan(FlowNode node) {
         if (node == null) {
             return false;
@@ -166,6 +172,12 @@ public class PipelineNodeUtil {
         return threadNameAction != null;
     }
 
+    /**
+     * Returns whether the node starts an executor allocation block.
+     *
+     * @param node the flow node to inspect
+     * @return {@code true} when the node is the executor allocation start node
+     */
     public static boolean isStartExecutorNode(@Nullable FlowNode node) {
         if (node == null) {
             return false;
@@ -208,6 +220,12 @@ public class PipelineNodeUtil {
         return threadNameAction == null;
     }
 
+    /**
+     * Returns whether the node closes a parallel block.
+     *
+     * @param node the flow node to inspect
+     * @return {@code true} when the node ends a parallel block
+     */
     public static boolean isEndParallelBlock(@Nullable FlowNode node) {
         if (node == null) {
             return false;
@@ -219,6 +237,12 @@ public class PipelineNodeUtil {
         return isStartParallelBlock(stepEndNode.getStartNode());
     }
 
+    /**
+     * Returns whether the node represents execution of an allocated executor node body.
+     *
+     * @param node the flow node to inspect
+     * @return {@code true} when the node is an executor step body invocation start
+     */
     public static boolean isStartExecutorNodeExecution(@NonNull FlowNode node) {
         if (node == null) {
             return false;
@@ -258,6 +282,12 @@ public class PipelineNodeUtil {
         return Iterables.getFirst(parents, null);
     }
 
+    /**
+     * Returns the workflow run owning the given flow node.
+     *
+     * @param flowNode the flow node to inspect
+     * @return the owning workflow run, or {@code null} when unavailable
+     */
     @CheckForNull
     public static WorkflowRun getWorkflowRun(@NonNull FlowNode flowNode) {
         Queue.Executable executable;
@@ -275,6 +305,12 @@ public class PipelineNodeUtil {
         return null;
     }
 
+    /**
+     * Returns a concise debug representation of a flow node.
+     *
+     * @param flowNode the flow node to describe
+     * @return debug text for the flow node
+     */
     @NonNull
     public static String getDebugString(@Nullable FlowNode flowNode) {
         if (flowNode == null) {
@@ -297,6 +333,12 @@ public class PipelineNodeUtil {
         return value;
     }
 
+    /**
+     * Returns a detailed debug representation of a flow node.
+     *
+     * @param flowNode the flow node to describe
+     * @return detailed debug text for the flow node
+     */
     @NonNull
     public static String getDetailedDebugString(@Nullable FlowNode flowNode) {
         if (flowNode == null) {

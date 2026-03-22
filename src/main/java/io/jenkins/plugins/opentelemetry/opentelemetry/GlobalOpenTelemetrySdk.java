@@ -55,22 +55,41 @@ public final class GlobalOpenTelemetrySdk {
      */
     static final AtomicInteger configurationCounter = new AtomicInteger();
 
+    /**
+     * Returns the global reconfigurable OpenTelemetry facade.
+     *
+     * @return the global OpenTelemetry facade
+     */
     @Nonnull
     public static ReconfigurableOpenTelemetry get() {
         return GlobalOpenTelemetrySdk.openTelemetry;
     }
 
+    /**
+     * Returns whether the global OpenTelemetry facade has been initialized.
+     *
+     * @return {@code true} when initialized
+     */
     public static boolean isInitialized() {
         return GlobalOpenTelemetrySdk.openTelemetry != null;
     }
 
+    /**
+     * Returns the global OpenTelemetry logs bridge logger.
+     *
+     * @return the OpenTelemetry logger used by the plugin
+     */
     @Nonnull
     public static io.opentelemetry.api.logs.Logger getOtelLogger() {
         return otelLogger;
     }
 
     /**
-     * Configure if configuration has changed
+     * Reconfigures the global SDK when configuration values change.
+     *
+     * @param configurationProperties OpenTelemetry configuration properties
+     * @param resourceAttributes resource attributes to merge into the SDK resource
+     * @param registerShutDownHook whether SDK shutdown hook registration is enabled
      */
     public static synchronized void configure(
             Map<String, String> configurationProperties,

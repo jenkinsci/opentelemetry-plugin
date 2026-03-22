@@ -22,6 +22,14 @@ public class FlowNodeTraceContext extends RunTraceContext {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Creates a {@link FlowNodeTraceContext} from a run, flow node, and active span.
+     *
+     * @param run the Jenkins run owning the flow node
+     * @param flowNode the flow node associated with the span
+     * @param span the active span for the flow node
+     * @return a flow-node trace context snapshot
+     */
     public static FlowNodeTraceContext newFlowNodeTraceContext(
             @NonNull Run run, @NonNull FlowNode flowNode, @NonNull Span span) {
         String spanId = span.getSpanContext().getSpanId();

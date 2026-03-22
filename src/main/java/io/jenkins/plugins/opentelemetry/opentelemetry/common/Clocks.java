@@ -14,21 +14,40 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Clocks {
     private Clocks() {}
 
+    /**
+     * Returns a monotonic clock whose values are offset from the default clock.
+     *
+     * @param offsetInNanos offset added to each time reading
+     * @return a monotonic offset clock
+     */
     public static Clock monotonicOffsetClock(long offsetInNanos) {
         return new MonotonicClock(new OffsetClock(offsetInNanos, Clock.getDefault()));
     }
 
     /**
      * @param offsetInNanos the duration to add, in nanos
+     * @param baseClock the base clock to offset
+     * @return an offset clock using the provided base clock
      */
     public static Clock offsetClock(long offsetInNanos, Clock baseClock) {
         return new OffsetClock(offsetInNanos, baseClock);
     }
 
+    /**
+     * Wraps the given clock to guarantee strictly increasing values.
+     *
+     * @param delegate the clock to wrap
+     * @return a monotonic clock wrapper
+     */
     public static Clock monotonicClock(Clock delegate) {
         return new MonotonicClock(delegate);
     }
 
+    /**
+     * Returns a monotonic wrapper around the default OpenTelemetry clock.
+     *
+     * @return a monotonic clock
+     */
     public static Clock monotonicClock() {
         return monotonicClock(Clock.getDefault());
     }

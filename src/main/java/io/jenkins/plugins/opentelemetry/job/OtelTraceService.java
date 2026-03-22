@@ -319,6 +319,11 @@ public class OtelTraceService {
         }
     }
 
+    /**
+     * Returns the singleton trace service extension.
+     *
+     * @return the registered trace service
+     */
     public static OtelTraceService get() {
         return ExtensionList.lookupSingleton(OtelTraceService.class);
     }

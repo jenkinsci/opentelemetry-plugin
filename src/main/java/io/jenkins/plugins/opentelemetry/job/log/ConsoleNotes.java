@@ -26,6 +26,13 @@ public class ConsoleNotes {
 
     private ConsoleNotes() {}
 
+    /**
+     * Parses one console log line and extracts Jenkins console-note annotations.
+     *
+     * @param bytes the raw log line bytes
+     * @param len the number of valid bytes in {@code bytes}
+     * @return parsed plain text and extracted annotations
+     */
     public static TextAndAnnotations parse(byte[] bytes, int len) {
         assert len > 0 && len <= bytes.length;
         int endOfLine = len;
@@ -83,6 +90,13 @@ public class ConsoleNotes {
         }
     }
 
+    /**
+     * Rebuilds the console message by reinserting serialized console-note annotations.
+     *
+     * @param message plain console message text
+     * @param annotations serialized annotations, if any
+     * @return formatted message with console-note markers
+     */
     public static String readFormattedMessage(String message, @Nullable JSONArray annotations) {
         if (annotations == null) {
             return message;

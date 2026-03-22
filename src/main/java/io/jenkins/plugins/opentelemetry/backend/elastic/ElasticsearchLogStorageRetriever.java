@@ -322,7 +322,6 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
     /**
      * Find the cause of the error in the Elasticsearch exception.
-     * @param elasticsearchUsername the username used to connect to Elasticsearch
      * @param e the Elasticsearch exception
      * @return a list of FormValidation objects representing the error cause
      */
