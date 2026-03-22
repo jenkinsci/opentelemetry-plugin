@@ -164,6 +164,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     // needed by CloudBees HA see https://github.com/jenkinsci/opentelemetry-plugin/issues/1156
+    /**
+     * Reloads persisted configuration and reconfigures SDK if already initialized.
+     */
     @Override
     public void load() {
         super.load();
@@ -175,6 +178,14 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         }
     }
 
+    /**
+     * Binds Jenkins global-configuration form data and applies SDK reconfiguration.
+     *
+     * @param req stapler request
+     * @param json submitted JSON payload
+     * @return {@code true} when configuration is accepted
+     * @throws FormException if SDK configuration fails
+     */
     @Override
     public boolean configure(StaplerRequest2 req, JSONObject json) throws FormException {
         LOGGER.log(Level.FINE, "Configure...");
@@ -193,6 +204,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return true;
     }
 
+    /**
+     * Migrates legacy fields while restoring configuration state from XML.
+     *
+     * @return this configuration after migration
+     */
     protected Object readResolve() {
         LOGGER.log(Level.FINE, "readResolve()");
         boolean configModified = false;
@@ -231,6 +247,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return this;
     }
 
+    /**
+     * Builds runtime OpenTelemetry configuration from Jenkins global settings.
+     *
+     * @return aggregated OpenTelemetry configuration
+     */
     @NonNull
     public OpenTelemetryConfiguration toOpenTelemetryConfiguration() {
         Properties properties = new Properties();
@@ -331,6 +352,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return sanitizeOtlpEndpoint(this.endpoint);
     }
 
+    /**
+     * Sets OTLP endpoint value after normalization.
+     *
+     * @param endpoint OTLP endpoint as entered in Jenkins UI
+     */
     @DataBoundSetter
     public void setEndpoint(String endpoint) {
         this.endpoint = sanitizeOtlpEndpoint(endpoint);
@@ -338,31 +364,61 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         LOGGER.log(Level.FINE, () -> "setEndpoint(" + endpoint + ")");
     }
 
+    /**
+     * Returns configured OTLP authentication strategy.
+     *
+     * @return authentication strategy, defaults to {@link NoAuthentication}
+     */
     @NonNull
     public OtlpAuthentication getAuthentication() {
         return this.authentication == null ? new NoAuthentication() : this.authentication;
     }
 
+    /**
+     * Sets OTLP authentication strategy.
+     *
+     * @param authentication authentication strategy
+     */
     @DataBoundSetter
     public void setAuthentication(OtlpAuthentication authentication) {
         this.authentication = authentication;
     }
 
+    /**
+     * Returns configured trusted certificates PEM.
+     *
+     * @return PEM content, or {@code null}
+     */
     @CheckForNull
     public String getTrustedCertificatesPem() {
         return trustedCertificatesPem;
     }
 
+    /**
+     * Sets trusted certificates PEM.
+     *
+     * @param trustedCertificatesPem PEM content
+     */
     @DataBoundSetter
     public void setTrustedCertificatesPem(String trustedCertificatesPem) {
         this.trustedCertificatesPem = trustedCertificatesPem;
     }
 
+    /**
+     * Sets configured observability backends.
+     *
+     * @param observabilityBackends configured backend list
+     */
     @DataBoundSetter
     public void setObservabilityBackends(List<ObservabilityBackend> observabilityBackends) {
         this.observabilityBackends = observabilityBackends == null ? Collections.emptyList() : observabilityBackends;
     }
 
+    /**
+     * Returns configured observability backends.
+     *
+     * @return mutable backend list
+     */
     @NonNull
     public List<ObservabilityBackend> getObservabilityBackends() {
         if (observabilityBackends == null) {
@@ -371,63 +427,132 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return observabilityBackends;
     }
 
+    /**
+     * Returns legacy exporter timeout configuration.
+     *
+     * @return timeout in milliseconds, or {@code null}
+     * @deprecated migrated to generic properties map
+     */
     @Deprecated
     public Integer getExporterTimeoutMillis() {
         return exporterTimeoutMillis;
     }
 
+    /**
+     * Sets legacy exporter timeout configuration.
+     *
+     * @param exporterTimeoutMillis timeout in milliseconds
+     * @deprecated migrated to generic properties map
+     */
     @Deprecated
     @DataBoundSetter
     public void setExporterTimeoutMillis(Integer exporterTimeoutMillis) {
         this.exporterTimeoutMillis = exporterTimeoutMillis;
     }
 
+    /**
+     * Returns legacy exporter interval configuration.
+     *
+     * @return interval in milliseconds, or {@code null}
+     * @deprecated migrated to generic properties map
+     */
     @Deprecated
     public Integer getExporterIntervalMillis() {
         return exporterIntervalMillis;
     }
 
+    /**
+     * Sets legacy exporter interval configuration.
+     *
+     * @param exporterIntervalMillis interval in milliseconds
+     * @deprecated migrated to generic properties map
+     */
     @DataBoundSetter
     public void setExporterIntervalMillis(Integer exporterIntervalMillis) {
         this.exporterIntervalMillis = exporterIntervalMillis;
     }
 
+    /**
+     * Returns comma-separated pipeline steps ignored by span creation.
+     *
+     * @return ignored steps string
+     */
     public String getIgnoredSteps() {
         return ignoredSteps;
     }
 
+    /**
+     * Sets comma-separated pipeline steps ignored by span creation.
+     *
+     * @param ignoredSteps ignored steps string
+     */
     @DataBoundSetter
     public void setIgnoredSteps(String ignoredSteps) {
         this.ignoredSteps = ignoredSteps;
     }
 
+    /**
+     * Returns interruption causes mapped to span status {@code UNSET}.
+     *
+     * @return immutable list of interruption cause class names
+     */
     public List<String> getStatusUnsetCausesOfInterruption() {
         return statusUnsetCausesOfInterruption;
     }
 
+    /**
+     * Returns disabled OpenTelemetry resource providers.
+     *
+     * @return disabled provider list string
+     */
     public String getDisabledResourceProviders() {
         return disabledResourceProviders;
     }
 
+    /**
+     * Sets disabled OpenTelemetry resource providers.
+     *
+     * @param disabledResourceProviders disabled provider list string
+     */
     @DataBoundSetter
     public void setDisabledResourceProviders(String disabledResourceProviders) {
         this.disabledResourceProviders = disabledResourceProviders;
     }
 
+    /**
+     * Returns whether OTEL config should be exported as environment variables.
+     *
+     * @return {@code true} when env var export is enabled
+     */
     public boolean isExportOtelConfigurationAsEnvironmentVariables() {
         return exportOtelConfigurationAsEnvironmentVariables;
     }
 
+    /**
+     * Sets whether OTEL config should be exported as environment variables.
+     *
+     * @param exportOtelConfigurationAsEnvironmentVariables enable flag
+     */
     @DataBoundSetter
     public void setExportOtelConfigurationAsEnvironmentVariables(
             boolean exportOtelConfigurationAsEnvironmentVariables) {
         this.exportOtelConfigurationAsEnvironmentVariables = exportOtelConfigurationAsEnvironmentVariables;
     }
 
+    /**
+     * Returns raw additional configuration properties.
+     *
+     * @return multi-line properties text
+     */
     public String getConfigurationProperties() {
         return configurationProperties;
     }
 
+    /**
+     * Sets raw additional configuration properties.
+     *
+     * @param configurationProperties multi-line properties text
+     */
     @DataBoundSetter
     public void setConfigurationProperties(String configurationProperties) {
         this.configurationProperties = configurationProperties;
@@ -460,6 +585,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private JenkinsLocationConfiguration jenkinsLocationConfiguration;
 
+    /**
+     * Injects Jenkins location configuration used to publish Jenkins URL attributes.
+     *
+     * @param jenkinsLocationConfiguration Jenkins location configuration
+     */
     @Inject
     public void setJenkinsLocationConfiguration(@NonNull JenkinsLocationConfiguration jenkinsLocationConfiguration) {
         this.jenkinsLocationConfiguration = jenkinsLocationConfiguration;
@@ -482,6 +612,12 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return loadedStepsPlugins;
     }
 
+    /**
+     * Adds discovered plugin metadata for a step symbol.
+     *
+     * @param stepName step symbol
+     * @param c plugin metadata
+     */
     public void addStepPlugin(String stepName, StepPlugin c) {
         loadedStepsPlugins.put(stepName, c);
     }
@@ -508,16 +644,37 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return Jenkins.get().getDescriptor((Class<? extends Describable<?>>) buildStep.getClass());
     }
 
+    /**
+     * Resolves plugin metadata for a freestyle build step.
+     *
+     * @param buildStepName step symbol
+     * @param buildStep build step instance
+     * @return resolved plugin metadata or default placeholder
+     */
     @NonNull
     public StepPlugin findStepPluginOrDefault(@NonNull String buildStepName, @NonNull BuildStep buildStep) {
         return findStepPluginOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
     }
 
+    /**
+     * Resolves plugin metadata for an atomic pipeline step.
+     *
+     * @param stepName step symbol
+     * @param node pipeline step node
+     * @return resolved plugin metadata or default placeholder
+     */
     @NonNull
     public StepPlugin findStepPluginOrDefault(@NonNull String stepName, @NonNull StepAtomNode node) {
         return findStepPluginOrDefault(stepName, getStepDescriptor(node, node.getDescriptor()));
     }
 
+    /**
+     * Resolves plugin metadata for a step start node.
+     *
+     * @param stepName step symbol
+     * @param node pipeline step start node
+     * @return resolved plugin metadata or default placeholder
+     */
     @NonNull
     public StepPlugin findStepPluginOrDefault(@NonNull String stepName, @NonNull StepStartNode node) {
         return findStepPluginOrDefault(stepName, getStepDescriptor(node, node.getDescriptor()));
@@ -544,6 +701,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return data;
     }
 
+    /**
+     * Resolves symbol for a freestyle build step descriptor.
+     *
+     * @param buildStepName fallback symbol
+     * @param buildStep build step instance
+     * @return resolved symbol or fallback
+     */
     @NonNull
     public String findSymbolOrDefault(@NonNull String buildStepName, @NonNull BuildStep buildStep) {
         return findSymbolOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
@@ -567,6 +731,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return (Strings.isNullOrEmpty(this.serviceName)) ? ExtendedJenkinsAttributes.JENKINS : this.serviceName;
     }
 
+    /**
+     * Sets configured OpenTelemetry service name.
+     *
+     * @param serviceName service name
+     */
     @DataBoundSetter
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
@@ -581,6 +750,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                 : this.serviceNamespace;
     }
 
+    /**
+     * Sets configured OpenTelemetry service namespace.
+     *
+     * @param serviceNamespace service namespace
+     */
     @DataBoundSetter
     public void setServiceNamespace(String serviceNamespace) {
         this.serviceNamespace = serviceNamespace;
@@ -626,6 +800,12 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                 .collect(Collectors.joining("\r\n"));
     }
 
+    /**
+     * Returns currently resolved log storage retriever.
+     *
+     * @return log storage retriever
+     * @throws IllegalStateException when retriever is not initialized
+     */
     @NonNull
     public LogStorageRetriever getLogStorageRetriever() {
         if (logStorageRetriever == null) {
