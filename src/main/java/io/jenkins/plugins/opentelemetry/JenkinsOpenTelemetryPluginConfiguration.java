@@ -158,6 +158,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      */
     protected transient OpenTelemetryConfiguration currentOpenTelemetryConfiguration;
 
+    /**
+     * Creates global plugin configuration bound from persisted data.
+     */
     @DataBoundConstructor
     public JenkinsOpenTelemetryPluginConfiguration() {
         load();
@@ -558,6 +561,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.configurationProperties = configurationProperties;
     }
 
+    /**
+     * Builds OpenTelemetry-related environment variables from current plugin configuration.
+     *
+     * @return map of environment variable names to values
+     */
     @NonNull
     public Map<String, String> getOtelConfigurationAsEnvironmentVariables() {
         if (this.endpoint == null) {
@@ -607,6 +615,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                         .collect(Collectors.joining(", "));
     }
 
+    /**
+     * Returns cache of discovered pipeline step plugins keyed by step symbol.
+     *
+     * @return loaded step plugin metadata map
+     */
     @NonNull
     public ConcurrentMap<String, StepPlugin> getLoadedStepsPlugins() {
         return loadedStepsPlugins;
@@ -680,6 +693,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return findStepPluginOrDefault(stepName, getStepDescriptor(node, node.getDescriptor()));
     }
 
+    /**
+     * Resolves plugin metadata for a step symbol from descriptor information.
+     *
+     * @param stepName step symbol
+     * @param descriptor step descriptor, when available
+     * @return resolved plugin metadata or default placeholder
+     */
     @NonNull
     public StepPlugin findStepPluginOrDefault(
             @NonNull String stepName, @Nullable Descriptor<? extends Describable<?>> descriptor) {
@@ -713,6 +733,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         return findSymbolOrDefault(buildStepName, getBuildStepDescriptor(buildStep));
     }
 
+    /**
+     * Resolves symbol for a descriptor-backed build step.
+     *
+     * @param buildStepName fallback symbol
+     * @param descriptor descriptor to inspect for symbol metadata
+     * @return resolved symbol or fallback
+     */
     @NonNull
     public String findSymbolOrDefault(
             @NonNull String buildStepName, @Nullable Descriptor<? extends Describable<?>> descriptor) {
@@ -760,6 +787,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.serviceNamespace = serviceNamespace;
     }
 
+    /**
+     * Returns resource attributes currently associated with the OpenTelemetry SDK.
+     *
+     * @return SDK resource attributes, or empty resource when unavailable
+     */
     @NonNull
     public Resource getResource() {
         if (this.openTelemetry == null) {
@@ -780,6 +812,11 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
                 .collect(Collectors.joining("\r\n"));
     }
 
+    /**
+     * Returns active OpenTelemetry SDK configuration properties.
+     *
+     * @return SDK config properties, or empty defaults when unavailable
+     */
     @NonNull
     public ConfigProperties getConfigProperties() {
         if (this.openTelemetry == null) {
@@ -955,33 +992,65 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         }
     }
 
+    /**
+     * Immutable metadata for the Jenkins plugin that contributes a pipeline step.
+     */
     @Immutable
     public static class StepPlugin {
         final String name;
         final String version;
 
+        /**
+         * Creates step plugin metadata.
+         *
+         * @param name plugin short name
+         * @param version plugin version
+         */
         public StepPlugin(String name, String version) {
             this.name = name;
             this.version = version;
         }
 
+        /**
+         * Creates an unknown step plugin placeholder.
+         */
         public StepPlugin() {
             this.name = UNKNOWN;
             this.version = UNKNOWN;
         }
 
+        /**
+         * Returns plugin short name.
+         *
+         * @return plugin short name
+         */
         public String getName() {
             return name;
         }
 
+        /**
+         * Returns plugin version.
+         *
+         * @return plugin version
+         */
         public String getVersion() {
             return version;
         }
 
+        /**
+         * Returns whether metadata is unresolved.
+         *
+         * @return {@code true} when both name and version are unknown
+         */
         public boolean isUnknown() {
             return getName().equals(UNKNOWN) && getVersion().equals(UNKNOWN);
         }
 
+        /**
+         * Returns readable representation of step plugin metadata.
+         *
+         * @return printable step plugin metadata
+         */
         @Override
         public String toString() {
             return "StepPlugin{" + "name=" + name + ", version=" + version + '}';
