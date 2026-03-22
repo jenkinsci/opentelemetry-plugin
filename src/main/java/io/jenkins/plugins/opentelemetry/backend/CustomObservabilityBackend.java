@@ -28,51 +28,97 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     @DataBoundConstructor
     public CustomObservabilityBackend() {}
 
+    /**
+     * Sets the trace visualization URL template.
+     *
+     * @param traceVisualisationUrlTemplate Groovy template used to build trace links
+     */
     @DataBoundSetter
     public void setTraceVisualisationUrlTemplate(String traceVisualisationUrlTemplate) {
         this.traceVisualisationUrlTemplate = traceVisualisationUrlTemplate;
     }
 
+    /**
+     * Sets the metrics visualization URL template.
+     *
+     * @param metricsVisualizationUrlTemplate Groovy template used to build metrics links
+     */
     @DataBoundSetter
     public void setMetricsVisualizationUrlTemplate(String metricsVisualizationUrlTemplate) {
         this.metricsVisualizationUrlTemplate = metricsVisualizationUrlTemplate;
     }
 
+    /**
+     * Returns bindings unchanged because custom backend does not add extra template values.
+     *
+     * @param bindings base template bindings
+     * @return the same bindings map
+     */
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         return bindings;
     }
 
+    /**
+     * Returns the configured trace visualization template.
+     *
+     * @return template string, or {@code null} when not configured
+     */
     @CheckForNull
     @Override
     public String getTraceVisualisationUrlTemplate() {
         return this.traceVisualisationUrlTemplate;
     }
 
+    /**
+     * Returns the configured metrics visualization template.
+     *
+     * @return template string, or {@code null} when not configured
+     */
     @CheckForNull
     @Override
     public String getMetricsVisualizationUrlTemplate() {
         return this.metricsVisualizationUrlTemplate;
     }
 
+    /**
+     * Returns the icon class used in Jenkins UI.
+     *
+     * @return icon class name
+     */
     @CheckForNull
     @Override
     public String getIconPath() {
         return "icon-monitor";
     }
 
+    /**
+     * Returns the environment variable name associated with this backend URL.
+     *
+     * @return environment variable name
+     */
     @CheckForNull
     @Override
     public String getEnvVariableName() {
         return OTEL_CUSTOM_URL;
     }
 
+    /**
+     * Returns the default backend display name.
+     *
+     * @return default backend name
+     */
     @CheckForNull
     @Override
     public String getDefaultName() {
         return DEFAULT_NAME;
     }
 
+    /**
+     * Returns a debug-friendly representation of this backend.
+     *
+     * @return textual representation
+     */
     @Override
     public String toString() {
         return "CustomBackend{" + "traceVisualisationUrlTemplate='"
@@ -80,6 +126,12 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
                 + metricsVisualizationUrlTemplate + '\'' + '}';
     }
 
+    /**
+     * Compares custom backends by their configured URL templates.
+     *
+     * @param o object to compare
+     * @return {@code true} when templates match
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -89,11 +141,21 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
                 && Objects.equals(metricsVisualizationUrlTemplate, that.metricsVisualizationUrlTemplate);
     }
 
+    /**
+     * Returns hash code consistent with {@link #equals(Object)}.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(traceVisualisationUrlTemplate, metricsVisualizationUrlTemplate);
     }
 
+    /**
+     * Returns default template bindings exposed to custom backend templates.
+     *
+     * @return backend bindings map
+     */
     @Override
     public Map<String, Object> getBindings() {
         return Map.of(
@@ -106,6 +168,11 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
     @Extension
     @Symbol("customObservabilityBackend")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
+        /**
+         * Returns descriptor display name for Jenkins configuration UI.
+         *
+         * @return descriptor display name
+         */
         @NonNull
         @Override
         public String getDisplayName() {

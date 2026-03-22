@@ -14,7 +14,15 @@ import hudson.model.Descriptor;
 import java.util.Map;
 import jenkins.model.Jenkins;
 
+/**
+ * Base extension point for OTLP authentication strategies.
+ */
 public abstract class OtlpAuthentication implements Describable<OtlpAuthentication>, ExtensionPoint {
+    /**
+     * Enriches OpenTelemetry autoconfiguration properties with authentication settings.
+     *
+     * @param configProperties mutable OpenTelemetry properties map
+     */
     public abstract void enrichOpenTelemetryAutoConfigureConfigProperties(Map<String, String> configProperties);
 
     /**
@@ -24,6 +32,11 @@ public abstract class OtlpAuthentication implements Describable<OtlpAuthenticati
      */
     public abstract void enrichOtelEnvironmentVariables(@NonNull Map<String, String> environmentVariables);
 
+    /**
+     * Returns the Jenkins descriptor for this authentication implementation.
+     *
+     * @return descriptor for this authentication type
+     */
     @Override
     public Descriptor<OtlpAuthentication> getDescriptor() {
         return Jenkins.get().getDescriptorOrDie(getClass());
@@ -36,6 +49,9 @@ public abstract class OtlpAuthentication implements Describable<OtlpAuthenticati
         return Jenkins.get().getDescriptorList(OtlpAuthentication.class);
     }
 
+    /**
+     * Descriptor base type for OTLP authentication implementations.
+     */
     public abstract static class AbstractDescriptor extends Descriptor<OtlpAuthentication>
             implements Comparable<AbstractDescriptor> {
         /**
@@ -46,6 +62,12 @@ public abstract class OtlpAuthentication implements Describable<OtlpAuthenticati
             return 0;
         }
 
+        /**
+         * Compares descriptors by ordinal then display name.
+         *
+         * @param o the other descriptor
+         * @return comparison result for deterministic ordering
+         */
         @Override
         public int compareTo(OtlpAuthentication.AbstractDescriptor o) {
             return ComparisonChain.start()

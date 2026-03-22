@@ -47,6 +47,9 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
         super();
     }
 
+    /**
+     * Initializes default tracer and meter instances for Jenkins instrumentation.
+     */
     @PostConstruct
     public void postConstruct() {
         String opentelemetryPluginVersion = OtelUtils.getOpentelemetryPluginVersion();
@@ -62,21 +65,41 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
                 .build();
     }
 
+    /**
+     * Returns the default tracer used by plugin components.
+     *
+     * @return the default tracer
+     */
     @NonNull
     public Tracer getDefaultTracer() {
         return defaultTracer;
     }
 
+    /**
+     * Returns the default meter used by plugin components.
+     *
+     * @return the default meter
+     */
     @NonNull
     public Meter getDefaultMeter() {
         return defaultMeter;
     }
 
+    /**
+     * Returns whether OpenTelemetry log export is enabled.
+     *
+     * @return {@code true} when logs exporter is not configured as {@code none}
+     */
     public boolean isLogsEnabled() {
         String otelLogsExporter = openTelemetry.getConfig().getString(OTEL_LOGS_EXPORTER.asProperty(), "none");
         return !Objects.equals(otelLogsExporter, "none");
     }
 
+    /**
+     * Returns whether OTLP logs should also be mirrored to Jenkins disk logs.
+     *
+     * @return {@code true} when disk mirroring is enabled
+     */
     public boolean isOtelLogsMirrorToDisk() {
         String mirrorLogsToDisk = openTelemetry.getConfig().getString(OTEL_LOGS_MIRROR_TO_DISK.asProperty(), "false");
         return Objects.equals(mirrorLogsToDisk, "true");
@@ -91,6 +114,11 @@ public class JenkinsControllerOpenTelemetry implements ExtensionPoint {
                 .orElseThrow(() -> new IllegalStateException("OpenTelemetry not initialized"));
     }
 
+    /**
+     * Applies a new OpenTelemetry configuration to the controller SDK.
+     *
+     * @param configuration the OpenTelemetry configuration to apply
+     */
     public void initialize(@NonNull OpenTelemetryConfiguration configuration) {
         openTelemetry.configure(
                 configuration.toOpenTelemetryProperties(), configuration.toOpenTelemetryResource(), true);

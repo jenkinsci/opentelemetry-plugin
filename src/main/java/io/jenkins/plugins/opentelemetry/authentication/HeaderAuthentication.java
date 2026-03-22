@@ -70,19 +70,39 @@ public class HeaderAuthentication extends OtlpAuthentication {
                 this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
     }
 
+    /**
+     * Returns the HTTP header name used for authentication.
+     *
+     * @return header name
+     */
     public String getHeaderName() {
         return headerName;
     }
 
+    /**
+     * Sets the HTTP header name used for authentication.
+     *
+     * @param headerName header name
+     */
     @DataBoundSetter
     public void setHeaderName(String headerName) {
         this.headerName = headerName;
     }
 
+    /**
+     * Returns the Jenkins credentials ID providing header value.
+     *
+     * @return credentials ID
+     */
     public String getHeaderValueId() {
         return headerValueId;
     }
 
+    /**
+     * Sets the Jenkins credentials ID providing header value.
+     *
+     * @param headerValueId credentials ID
+     */
     @DataBoundSetter
     public void setHeaderValueId(String headerValueId) {
         this.headerValueId = headerValueId;
@@ -103,6 +123,11 @@ public class HeaderAuthentication extends OtlpAuthentication {
     //                .includeCurrentValue(headerValueId);
     //    }
 
+    /**
+     * Returns a debug-friendly representation of this authentication.
+     *
+     * @return textual representation
+     */
     @Override
     public String toString() {
         return "OtlpHeaderAuthentication{" + "headerName='"
@@ -110,6 +135,12 @@ public class HeaderAuthentication extends OtlpAuthentication {
                 + headerValueId + '\'' + '}';
     }
 
+    /**
+     * Compares header authentication objects by header name and credential ID.
+     *
+     * @param o object to compare
+     * @return {@code true} when fields match
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -118,6 +149,11 @@ public class HeaderAuthentication extends OtlpAuthentication {
         return Objects.equals(headerName, that.headerName) && Objects.equals(headerValueId, that.headerValueId);
     }
 
+    /**
+     * Returns hash code consistent with {@link #equals(Object)}.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(headerName, headerValueId);
@@ -126,11 +162,21 @@ public class HeaderAuthentication extends OtlpAuthentication {
     @Extension
     @Symbol("otlpHeaderAuthentication")
     public static class DescriptorImpl extends AbstractDescriptor {
+        /**
+         * Returns the descriptor display name shown in Jenkins UI.
+         *
+         * @return display name
+         */
         @Override
         public String getDisplayName() {
             return "Header Authentication";
         }
 
+        /**
+         * Populates credential IDs for header value selection in descriptor forms.
+         *
+         * @return list-box model of available string credentials
+         */
         public ListBoxModel doFillHeaderValueIdItems() {
             if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
                 return new StandardListBoxModel();

@@ -35,6 +35,11 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
     // Used to control attribute inheritance to children spans.
     private transient List<String> inheritanceAllowedSpanIdList;
 
+    /**
+     * Returns mutable OpenTelemetry attributes attached to this action.
+     *
+     * @return attribute map, lazily initialized
+     */
     @NonNull
     public Map<AttributeKey<?>, Object> getAttributes() {
         if (attributes == null) {
@@ -55,6 +60,11 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
         return appliedToSpans.add(spanId);
     }
 
+    /**
+     * Adds a span ID that is allowed to inherit these attributes.
+     *
+     * @param spanId the span ID allowed for inheritance
+     */
     public void addSpanIdToInheritanceAllowedList(String spanId) {
         if (inheritanceAllowedSpanIdList == null) {
             inheritanceAllowedSpanIdList = new ArrayList<>();
@@ -62,6 +72,11 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
         inheritanceAllowedSpanIdList.add(spanId);
     }
 
+    /**
+     * Returns whether inheritance restrictions are not configured.
+     *
+     * @return {@code true} when no allowed span IDs are configured
+     */
     public boolean inheritanceAllowedSpanIdListIsEmpty() {
         if (inheritanceAllowedSpanIdList == null) {
             return true;
@@ -69,6 +84,12 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
         return inheritanceAllowedSpanIdList.isEmpty();
     }
 
+    /**
+     * Returns whether a span ID is allowed to inherit these attributes.
+     *
+     * @param spanId the span ID to test
+     * @return {@code true} if inheritance is allowed for the span ID
+     */
     public boolean isSpanIdAllowedToInheritAttributes(String spanId) {
         if (inheritanceAllowedSpanIdList == null) {
             return false;
@@ -76,6 +97,11 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
         return inheritanceAllowedSpanIdList.contains(spanId);
     }
 
+    /**
+     * Returns a debug representation of this action and its attributes.
+     *
+     * @return textual representation of the action
+     */
     @Override
     public String toString() {
         return "OpenTelemetryAttributesAction{" + "attributes="

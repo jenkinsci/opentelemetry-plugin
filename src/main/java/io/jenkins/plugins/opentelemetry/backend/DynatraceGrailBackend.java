@@ -41,6 +41,12 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
         this.url = url;
     }
 
+    /**
+     * Merges default bindings with Dynatrace Grail-specific template bindings.
+     *
+     * @param bindings base bindings
+     * @return merged bindings including Dynatrace URL
+     */
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
@@ -66,6 +72,11 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
         return "${dynatraceBaseUrl}" + filtersAndColumns;
     }
 
+    /**
+     * Returns configured Dynatrace base URL.
+     *
+     * @return Dynatrace base URL
+     */
     public String getUrl() {
         return url;
     }
@@ -88,6 +99,12 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
         return DEFAULT_NAME;
     }
 
+    /**
+     * Compares Dynatrace Grail backends by URL.
+     *
+     * @param o object to compare
+     * @return {@code true} when URLs match
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -100,11 +117,21 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
         return Objects.equals(url, that.url);
     }
 
+    /**
+     * Returns hash code consistent with {@link #equals(Object)}.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(url);
     }
 
+    /**
+     * Returns template bindings exposed by this backend.
+     *
+     * @return backend bindings map
+     */
     @Override
     public Map<String, Object> getBindings() {
         return Map.of(
@@ -117,6 +144,11 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
     @Extension
     @Symbol("dynatrace")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
+        /**
+         * Returns descriptor display name for Jenkins configuration UI.
+         *
+         * @return descriptor display name
+         */
         @Override
         @NonNull
         public String getDisplayName() {

@@ -74,20 +74,41 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
                 OTEL_EXPORTER_OTLP_HEADERS.asEnvVar(), "authorization=Bearer " + this.getAuthenticationHeaderValue());
     }
 
+    /**
+     * Returns the Jenkins credentials ID for the bearer token.
+     *
+     * @return credentials ID
+     */
     public String getTokenId() {
         return tokenId;
     }
 
+    /**
+     * Sets the Jenkins credentials ID for the bearer token.
+     *
+     * @param tokenId credentials ID
+     */
     @DataBoundSetter
     public void setTokenId(String tokenId) {
         this.tokenId = tokenId;
     }
 
+    /**
+     * Returns a debug-friendly representation of this authentication.
+     *
+     * @return textual representation
+     */
     @Override
     public String toString() {
         return "BearerTokenAuthentication{" + "tokenId='" + tokenId + '\'' + '}';
     }
 
+    /**
+     * Compares bearer token authentication objects by token ID.
+     *
+     * @param o object to compare
+     * @return {@code true} when token IDs match
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -96,11 +117,21 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
         return Objects.equals(tokenId, that.tokenId);
     }
 
+    /**
+     * Returns hash code consistent with {@link #equals(Object)}.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(tokenId);
     }
 
+    /**
+     * Populates credential IDs for bearer token selection in configuration forms.
+     *
+     * @return list-box model of available string credentials
+     */
     public ListBoxModel doFillTokenIdItems() {
         if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
             return new StandardListBoxModel().includeCurrentValue(this.tokenId);
@@ -119,11 +150,21 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
     @Extension
     @Symbol("bearerTokenAuthentication")
     public static class DescriptorImpl extends AbstractDescriptor {
+        /**
+         * Returns the descriptor display name shown in Jenkins UI.
+         *
+         * @return display name
+         */
         @Override
         public String getDisplayName() {
             return "Bearer Token Authentication";
         }
 
+        /**
+         * Populates credential IDs for bearer token selection in descriptor forms.
+         *
+         * @return list-box model of available string credentials
+         */
         public ListBoxModel doFillTokenIdItems() {
             if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
                 return new StandardListBoxModel();

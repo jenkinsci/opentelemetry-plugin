@@ -61,26 +61,56 @@ public class OpenTelemetryConfiguration {
                         ep));
     }
 
+    /**
+     * Returns the configured OTLP endpoint.
+     *
+     * @return optional OTLP endpoint
+     */
     public Optional<String> getEndpoint() {
         return endpoint;
     }
 
+    /**
+     * Returns the configured service name.
+     *
+     * @return optional service name
+     */
     public Optional<String> getServiceName() {
         return serviceName;
     }
 
+    /**
+     * Returns the configured service namespace.
+     *
+     * @return optional service namespace
+     */
     public Optional<String> getServiceNamespace() {
         return serviceNamespace;
     }
 
+    /**
+     * Returns the configured OTLP authentication strategy.
+     *
+     * @return optional authentication strategy
+     */
     public Optional<OtlpAuthentication> getAuthentication() {
         return authentication;
     }
 
+    /**
+     * Returns configured trusted certificates PEM content.
+     *
+     * @return optional trusted certificates PEM
+     */
     public Optional<String> getTrustedCertificatesPem() {
         return trustedCertificatesPem;
     }
 
+    /**
+     * Returns disabled OpenTelemetry resource providers.
+     *
+     * @return optional comma-separated disabled providers list
+     */
     public Optional<String> getDisabledResourceProviders() {
         return disabledResourceProviders;
     }
@@ -169,6 +199,7 @@ public class OpenTelemetryConfiguration {
 
         return resourceBuilder.build();
     }
+
     /**
      * @see io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder#addResourceCustomizer(BiFunction)
      */
@@ -189,6 +220,12 @@ public class OpenTelemetryConfiguration {
         return resourceMap;
     }
 
+    /**
+     * Compares configurations for semantic equality.
+     *
+     * @param o the object to compare
+     * @return {@code true} when all configuration fields are equal
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -203,6 +240,11 @@ public class OpenTelemetryConfiguration {
                 && Objects.equals(configurationProperties, that.configurationProperties);
     }
 
+    /**
+     * Returns hash code consistent with {@link #equals(Object)}.
+     *
+     * @return configuration hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(
@@ -215,6 +257,11 @@ public class OpenTelemetryConfiguration {
                 configurationProperties);
     }
 
+    /**
+     * Returns a debug-friendly representation of this configuration.
+     *
+     * @return textual configuration summary
+     */
     @Override
     public String toString() {
         return "OpenTelemetryConfiguration{" + "endpoint='"
