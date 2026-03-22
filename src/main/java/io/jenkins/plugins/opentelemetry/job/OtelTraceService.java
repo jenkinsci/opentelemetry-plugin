@@ -51,9 +51,14 @@ import org.jenkinsci.plugins.workflow.support.steps.ExecutorStep;
 public class OtelTraceService {
     private static final Logger LOGGER = Logger.getLogger(OtelTraceService.class.getName());
 
+    /**
+     * When {@code true}, the trace service throws exceptions on invalid state rather than logging warnings.
+     * Enables strict validation during tests.
+     */
     @SuppressFBWarnings("MS_SHOULD_BE_FINAL")
     public static boolean STRICT_MODE = false;
 
+    /** Creates a new OtelTraceService. Instances are managed by Jenkins as an extension. */
     public OtelTraceService() {}
 
     /**
@@ -83,6 +88,14 @@ public class OtelTraceService {
                 .orElse(Span.getInvalid());
     }
 
+    /**
+     * Returns the active (non-ended) span associated with the given flow node,
+     * walking up the ancestor chain until a span is found. Falls back to the current run phase span.
+     *
+     * @param run      the workflow run
+     * @param flowNode the flow node for which to find the enclosing span
+     * @return the span for the given flow node, or the run phase span as a fallback
+     */
     @NonNull
     public Span getSpan(@NonNull Run<?, ?> run, FlowNode flowNode) {
         Iterable<FlowNode> ancestors = getAncestors(flowNode);
@@ -101,6 +114,14 @@ public class OtelTraceService {
         return getSpan(run);
     }
 
+    /**
+     * Returns the active (non-ended) span for the given build step within a freestyle build,
+     * falling back to the current run phase span when no build step span is found.
+     *
+     * @param build     the abstract build
+     * @param buildStep the build step for which to find the span
+     * @return the span for the build step, or the run phase span as a fallback
+     */
     @NonNull
     public Span getSpan(@NonNull AbstractBuild<?, ?> build, @NonNull BuildStep buildStep) {
         return ImmutableList.copyOf(build.getActions(BuildStepMonitoringAction.class))
@@ -164,6 +185,14 @@ public class OtelTraceService {
         return ancestors;
     }
 
+    /**
+     * Removes the span associated with the given pipeline flow node and closes all
+     * OTel {@link io.opentelemetry.context.Scope} objects that were opened for that span.
+     *
+     * @param run      the workflow run
+     * @param flowNode the flow node whose span should be removed
+     * @param span     the span to remove
+     */
     public void removePipelineStepSpanAndCloseAssociatedScopes(
             @NonNull WorkflowRun run, @NonNull FlowNode flowNode, @NonNull Span span) {
         FlowNode startSpanNode;
@@ -211,8 +240,22 @@ public class OtelTraceService {
                 });
     }
 
+    /**
+     * Removes a pipeline job phase span from the run's tracking state.
+     * This is a no-op stub; phase spans are closed by the phase transition logic.
+     *
+     * @param run  the run whose phase span is being removed
+     * @param span the phase span to remove
+     */
     public void removeJobPhaseSpan(@NonNull Run<?, ?> run, @NonNull Span span) {}
 
+    /**
+     * Removes the span for the given build step and closes all associated OTel scopes.
+     *
+     * @param build     the abstract build
+     * @param buildStep the build step whose span is being removed
+     * @param span      the span to remove
+     */
     public void removeBuildStepSpan(
             @NonNull AbstractBuild<?, ?> build, @NonNull BuildStep buildStep, @NonNull Span span) {
         ImmutableList.copyOf(build.getActions(BuildStepMonitoringAction.class)).reverse().stream()
@@ -228,6 +271,12 @@ public class OtelTraceService {
                 });
     }
 
+    /**
+     * Purges all span tracking state for the given run, closing any open scopes.
+     * Should be called once a run has been finalized to release resources.
+     *
+     * @param run the run whose trace state should be purged
+     */
     public void purgeRun(@NonNull Run<?, ?> run) {
         run.getActions(OtelMonitoringAction.class).forEach(OtelMonitoringAction::purgeSpanAndCloseAssociatedScopes);
         // TODO verify we don't need this cleanup
@@ -243,6 +292,12 @@ public class OtelTraceService {
         }
     }
 
+    /**
+     * Associates a root span with the given freestyle build.
+     *
+     * @param build the freestyle build
+     * @param span  the root span for the build
+     */
     public void putSpan(@NonNull AbstractBuild<?, ?> build, @NonNull Span span) {
         build.addAction(new MonitoringAction(span));
         LOGGER.log(
@@ -250,6 +305,13 @@ public class OtelTraceService {
                 () -> "putSpan(" + build.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
+    /**
+     * Associates a span with a build step within a freestyle build.
+     *
+     * @param build     the freestyle build
+     * @param buildStep the build step
+     * @param span      the span for the build step
+     */
     public void putSpan(AbstractBuild<?, ?> build, BuildStep buildStep, Span span) {
         build.addAction(new BuildStepMonitoringAction(span));
         LOGGER.log(
@@ -258,12 +320,25 @@ public class OtelTraceService {
                         + ")");
     }
 
+    /**
+     * Associates a root span with the given run.
+     *
+     * @param run  the run
+     * @param span the root span for the run
+     */
     public void putSpan(@NonNull Run<?, ?> run, @NonNull Span span) {
         run.addAction(new MonitoringAction(span));
         LOGGER.log(
                 Level.FINEST, () -> "putSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
+    /**
+     * Associates a pipeline run-phase span with the given run and copies any
+     * OTel attributes from a previously attached {@link OpenTelemetryAttributesAction}.
+     *
+     * @param run  the run
+     * @param span the phase span
+     */
     public void putRunPhaseSpan(@NonNull Run<?, ?> run, @NonNull Span span) {
         run.addAction(new RunPhaseMonitoringAction(span));
         // Phase spans do not get the attributes from the StepContext.
@@ -275,6 +350,14 @@ public class OtelTraceService {
                 () -> "putRunPhaseSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
+    /**
+     * Associates an agent span with the given run and flow node, also propagating
+     * any OTel attributes set on the run.
+     *
+     * @param run      the run
+     * @param span     the agent span
+     * @param flowNode the flow node representing the agent allocation
+     */
     public void putAgentSpan(@NonNull Run<?, ?> run, @NonNull Span span, @NonNull FlowNode flowNode) {
         // Agent spans do not get the attributes from the StepContext.
         // To ensure that attributes of child spans of the root span are set correctly we read them from an
@@ -286,6 +369,13 @@ public class OtelTraceService {
                 () -> "putAgentSpan(" + run.getFullDisplayName() + "," + OtelUtils.toDebugString(span) + ")");
     }
 
+    /**
+     * Associates a span with the given flow node within a run.
+     *
+     * @param run      the run
+     * @param span     the span to associate
+     * @param flowNode the flow node to annotate
+     */
     public void putSpan(@NonNull Run<?, ?> run, @NonNull Span span, @NonNull FlowNode flowNode) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration
         flowNode.addAction(new FlowNodeMonitoringAction(span));
@@ -296,6 +386,15 @@ public class OtelTraceService {
                         + OtelUtils.toDebugString(span) + ")");
     }
 
+    /**
+     * Associates a span and its open OTel scopes with the given flow node within a run.
+     * The scopes are closed when {@link #removePipelineStepSpanAndCloseAssociatedScopes} is called.
+     *
+     * @param run      the run
+     * @param span     the span to associate
+     * @param flowNode the flow node to annotate
+     * @param scopes   the open scopes that must be closed when the span ends
+     */
     public void putSpanAndScopes(
             @NonNull Run<?, ?> run, @NonNull Span span, @NonNull FlowNode flowNode, List<Scope> scopes) {
         // FYI for agent allocation, we have 2 FlowNodeMonitoringAction to track the agent allocation duration

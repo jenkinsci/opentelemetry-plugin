@@ -14,21 +14,26 @@ import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 public class AbstractPipelineListener implements PipelineListener {
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onStartPipeline(@NonNull FlowNode node, @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onStartNodeStep(
             @NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onStartStageStep(
             @NonNull StepStartNode stepStartNode, @NonNull String stageName, @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onAfterStartNodeStep(
             @NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onEndNodeStep(
             @NonNull StepEndNode nodeStepEndNode,
@@ -36,6 +41,7 @@ public class AbstractPipelineListener implements PipelineListener {
             FlowNode nextNode,
             @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onEndStageStep(
             @NonNull StepEndNode stageStepEndNode,
@@ -43,23 +49,29 @@ public class AbstractPipelineListener implements PipelineListener {
             FlowNode nextNode,
             @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onStartWithNewSpanStep(@NonNull StepStartNode stepStartNode, @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onEndWithNewSpanStep(
             @NonNull StepEndNode nodeStepEndNode, FlowNode nextNode, @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onAfterAtomicStep(@NonNull StepAtomNode stepAtomNode, FlowNode nextNode, @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onStartParallelStepBranch(
             @NonNull StepStartNode stepStartNode, @NonNull String branchName, @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onEndParallelStepBranch(
             @NonNull StepEndNode stepStepNode,
@@ -67,6 +79,7 @@ public class AbstractPipelineListener implements PipelineListener {
             FlowNode nextNode,
             @NonNull WorkflowRun run) {}
 
+    /** {@inheritDoc} Default no-op implementation. */
     @Override
     public void onEndPipeline(@NonNull FlowNode node, @NonNull WorkflowRun run) {}
 }

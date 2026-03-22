@@ -42,6 +42,12 @@ import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 public class GraphListenerAdapterToPipelineListener implements StepListener, GraphListener.Synchronous {
     private static final Logger LOGGER = Logger.getLogger(GraphListenerAdapterToPipelineListener.class.getName());
 
+    /**
+     * Called when a new {@link FlowNode} head is reached in the pipeline graph.
+     * Processes the previous nodes (closing spans) and the current node (opening spans).
+     *
+     * @param node the new head flow node
+     */
     @Override
     public final void onNewHead(FlowNode node) {
         WorkflowRun run = PipelineNodeUtil.getWorkflowRun(node);
@@ -118,6 +124,13 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Notified when a pipeline step is about to execute on a particular computer.
+     * Logs diagnostic information about the step's computer context.
+     *
+     * @param step    the step that is about to execute
+     * @param context the step execution context
+     */
     @Override
     public void notifyOfNewStep(@NonNull Step step, @NonNull StepContext context) {
         try {
@@ -197,6 +210,13 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         });
     }
 
+    /**
+     * Fires the {@code onAfterAtomicStep} event to all registered {@link PipelineListener}s.
+     *
+     * @param stepAtomNode the completed atomic step node
+     * @param nextNode     the next flow node in the graph, or {@code null}
+     * @param run          the workflow run
+     */
     public void fireOnAfterAtomicStep(@NonNull StepAtomNode stepAtomNode, FlowNode nextNode, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onAfterAtomicStep(" + stepAtomNode.getDisplayName() + "): " + pipelineListener.toString());
@@ -208,6 +228,12 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Fires the {@code onEndPipeline} event to all registered {@link PipelineListener}s.
+     *
+     * @param node the pipeline end flow node
+     * @param run  the workflow run
+     */
     public void fireOnEndPipeline(@NonNull FlowEndNode node, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onEndPipeline(" + node.getDisplayName() + "): " + pipelineListener.toString());
@@ -219,6 +245,12 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Fires the {@code onStartPipeline} event to all registered {@link PipelineListener}s.
+     *
+     * @param node the pipeline start flow node
+     * @param run  the workflow run
+     */
     public void fireOnStartPipeline(@NonNull FlowStartNode node, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onStartPipeline(" + node.getDisplayName() + ") run " + run.getFullDisplayName()
@@ -231,6 +263,14 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Fires the {@code onEndNodeStep} event to all registered {@link PipelineListener}s after a node step ends.
+     *
+     * @param node     the end node step flow node
+     * @param nodeName the display name of the node
+     * @param nextNode the next flow node in the graph, or {@code null}
+     * @param run      the workflow run
+     */
     public void fireOnAfterEndNodeStep(
             @NonNull StepEndNode node, @NonNull String nodeName, FlowNode nextNode, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
@@ -244,6 +284,14 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Fires the {@code onEndStageStep} event to all registered {@link PipelineListener}s after a stage step ends.
+     *
+     * @param node      the end stage step flow node
+     * @param stageName the name of the stage
+     * @param nextNode  the next flow node in the graph, or {@code null}
+     * @param run       the workflow run
+     */
     public void fireOnAfterEndStageStep(
             @NonNull StepEndNode node, @NonNull String stageName, FlowNode nextNode, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
@@ -257,6 +305,12 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Fires the {@code onStartWithNewSpanStep} event to all registered {@link PipelineListener}s.
+     *
+     * @param node the start node of the {@code withNewSpan} step
+     * @param run  the workflow run
+     */
     public void fireOnBeforeWithNewSpanStep(@NonNull StepStartNode node, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onBeforeWithNewSpanStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
@@ -269,6 +323,13 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Fires the {@code onEndWithNewSpanStep} event to all registered {@link PipelineListener}s.
+     *
+     * @param node     the end node of the {@code withNewSpan} step
+     * @param nextNode the next flow node in the graph, or {@code null}
+     * @param run      the workflow run
+     */
     public void fireOnAfterEndWithNewSpanStep(@NonNull StepEndNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onAfterEndWithNewSpanStep(" + node.getDisplayName() + "): " + pipelineListener.toString()
@@ -284,6 +345,12 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Fires the {@code onAtomicStep} event to all registered {@link PipelineListener}s before an atomic step executes.
+     *
+     * @param node the atomic step flow node
+     * @param run  the workflow run
+     */
     public void fireOnBeforeAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onBeforeAtomicStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
@@ -295,6 +362,13 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Fires the {@code onStartNodeStep} event to all registered {@link PipelineListener}s.
+     *
+     * @param node      the start node-step flow node
+     * @param nodeLabel the agent label expression
+     * @param run       the workflow run
+     */
     public void fireOnStartNodeStep(@NonNull StepStartNode node, @NonNull String nodeLabel, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
             log(() -> "onStartNodeStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
@@ -306,6 +380,13 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Fires the {@code onAfterStartNodeStep} event to all registered {@link PipelineListener}s.
+     *
+     * @param node      the start node-step flow node
+     * @param nodeLabel the agent label expression
+     * @param run       the workflow run
+     */
     public void fireOnAfterStartNodeStep(
             @NonNull StepStartNode node, @NonNull String nodeLabel, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
@@ -318,6 +399,13 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
         }
     }
 
+    /**
+     * Fires the {@code onStartStageStep} event to all registered {@link PipelineListener}s.
+     *
+     * @param node      the start stage step flow node
+     * @param stageName the name of the stage
+     * @param run       the workflow run
+     */
     public void fireOnBeforeStartStageStep(
             @NonNull StepStartNode node, @NonNull String stageName, @NonNull WorkflowRun run) {
         for (PipelineListener pipelineListener : PipelineListener.all()) {
