@@ -123,23 +123,23 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         return disableSslVerifications;
     }
 
-    @DataBoundSetter
     /**
      * Sets whether SSL verification is disabled for Elasticsearch connections.
      *
      * @param disableSslVerifications disable SSL verification flag
      */
+    @DataBoundSetter
     public void setDisableSslVerifications(boolean disableSslVerifications) {
         this.disableSslVerifications = disableSslVerifications;
     }
 
-    @Override
     /**
      * Compares backend configuration values for equality.
      *
      * @param o object to compare
      * @return {@code true} when configurations are equivalent
      */
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -149,22 +149,22 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                 && Objects.equals(elasticsearchCredentialsId, that.elasticsearchCredentialsId);
     }
 
-    @Override
     /**
      * Returns hash code for backend configuration.
      *
      * @return hash code
      */
+    @Override
     public int hashCode() {
         return Objects.hash(elasticsearchUrl, disableSslVerifications, elasticsearchCredentialsId);
     }
 
-    @Override
     /**
      * Returns string representation for diagnostics.
      *
      * @return printable backend configuration
      */
+    @Override
     public String toString() {
         return "ElasticLogsBackendWithVisualizationJenkins{" + "elasticsearchUrl='"
                 + elasticsearchUrl + '\'' + ", disableSslVerifications='"
@@ -174,12 +174,12 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
 
     @Extension(ordinal = 0)
     public static class DescriptorImpl extends ElasticLogsBackend.DescriptorImpl {
-        @Override
         /**
          * Returns display name used in global configuration.
          *
          * @return logs backend display name
          */
+        @Override
         public String getDisplayName() {
             return "Store pipeline logs In Elastic and visualize logs both in Elastic and through Jenkins";
         }
@@ -218,13 +218,13 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
                     .includeCurrentValue(elasticsearchCredentialsId);
         }
 
-        @RequirePOST
         /**
          * Validates selected Elasticsearch credentials.
          *
          * @param elasticsearchCredentialsId credentials id
          * @return validation result
          */
+        @RequirePOST
         public FormValidation doCheckElasticsearchCredentialsId(@QueryParameter String elasticsearchCredentialsId) {
             if (!isAuthorized()) {
                 return FormValidation.error("You do not have permission to configure this setting.");

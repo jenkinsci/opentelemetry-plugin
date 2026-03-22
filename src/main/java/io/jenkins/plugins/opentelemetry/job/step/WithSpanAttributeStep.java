@@ -39,9 +39,19 @@ public class WithSpanAttributeStep extends Step {
 
     SpanAttributeTarget target;
 
+    /**
+     * Creates a withSpanAttribute step with defaults.
+     */
     @DataBoundConstructor
     public WithSpanAttributeStep() {}
 
+    /**
+     * Starts execution of this step.
+     *
+     * @param context step execution context
+     * @return step execution
+     * @throws Exception if execution cannot be started
+     */
     @Override
     public StepExecution start(StepContext context) throws Exception {
         if (value == null) {
@@ -75,24 +85,49 @@ public class WithSpanAttributeStep extends Step {
                 List.of(new SpanAttribute(key, value, type, target)), context.hasBody(), context);
     }
 
+    /**
+     * Returns span attribute key.
+     *
+     * @return attribute key
+     */
     public String getKey() {
         return key;
     }
 
+    /**
+     * Sets span attribute key.
+     *
+     * @param key attribute key
+     */
     @DataBoundSetter
     public void setKey(String key) {
         this.key = key;
     }
 
+    /**
+     * Returns span attribute value.
+     *
+     * @return attribute value
+     */
     public Object getValue() {
         return value;
     }
 
+    /**
+     * Sets span attribute value.
+     *
+     * @param value attribute value
+     */
     @DataBoundSetter
     public void setValue(Object value) {
         this.value = value;
     }
 
+    /**
+     * Returns span attribute type name.
+     *
+     * @return attribute type name, or {@code null} if not explicitly set
+     */
     @CheckForNull
     public String getType() {
         return Optional.ofNullable(type).map(AttributeType::name).orElse(null);
@@ -124,6 +159,11 @@ public class WithSpanAttributeStep extends Step {
                 .orElse(null);
     }
 
+    /**
+     * Returns span attribute target name.
+     *
+     * @return attribute target name, or {@code null} if not explicitly set
+     */
     @CheckForNull
     public String getTarget() {
         return Optional.ofNullable(target).map(SpanAttributeTarget::name).orElse(null);
@@ -133,22 +173,44 @@ public class WithSpanAttributeStep extends Step {
     public static final class DescriptorImpl extends StepDescriptor {
         public static final String FUNCTION_NAME = "withSpanAttribute";
 
+        /**
+         * Returns required context types for this step.
+         *
+         * @return required context set
+         */
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
         }
 
+        /**
+         * Returns Pipeline DSL function name for this step.
+         *
+         * @return DSL function name
+         */
         @Override
         public String getFunctionName() {
             return FUNCTION_NAME;
         }
 
+        /**
+         * Returns display name used in Pipeline snippet generator.
+         *
+         * @return step display name
+         */
         @NonNull
         @Override
         public String getDisplayName() {
             return "Set Span Attribute";
         }
 
+        /**
+         * Populates attribute type selector.
+         *
+         * @param item ancestor item
+         * @param context ancestor item group
+         * @return attribute type list box model
+         */
         public ListBoxModel doFillTypeItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
             List<AttributeType> supportedAttributeTypes = Arrays.asList(
                     AttributeType.STRING, AttributeType.LONG, AttributeType.BOOLEAN, AttributeType.DOUBLE);
@@ -157,6 +219,13 @@ public class WithSpanAttributeStep extends Step {
                     .collect(Collectors.toList()));
         }
 
+        /**
+         * Populates attribute target selector.
+         *
+         * @param item ancestor item
+         * @param context ancestor item group
+         * @return attribute target list box model
+         */
         public ListBoxModel doFillTargetItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
             return new ListBoxModel(Arrays.stream(SpanAttributeTarget.values())
                     .map(t -> new ListBoxModel.Option(t.name(), t.name()))

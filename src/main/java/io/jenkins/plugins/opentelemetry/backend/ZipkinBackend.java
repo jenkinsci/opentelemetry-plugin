@@ -31,9 +31,18 @@ public class ZipkinBackend extends ObservabilityBackend {
                 new Icon("icon-otel-zipkin icon-xlg", ICONS_PREFIX + "zipkin.svg", Icon.ICON_XLARGE_STYLE));
     }
 
+    /**
+     * Creates a Zipkin backend configuration with defaults.
+     */
     @DataBoundConstructor
     public ZipkinBackend() {}
 
+    /**
+     * Merges Zipkin-specific bindings into existing template bindings.
+     *
+     * @param bindings existing bindings
+     * @return merged bindings including Zipkin base URL
+     */
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
@@ -41,16 +50,31 @@ public class ZipkinBackend extends ObservabilityBackend {
         return mergedBindings;
     }
 
+    /**
+     * Returns Zipkin trace URL template.
+     *
+     * @return Zipkin trace URL template string
+     */
     @CheckForNull
     @Override
     public String getTraceVisualisationUrlTemplate() {
         return "${zipkinBaseUrl}traces/${traceId}";
     }
 
+    /**
+     * Returns Zipkin base URL.
+     *
+     * @return Zipkin base URL
+     */
     public String getZipkinBaseUrl() {
         return zipkinBaseUrl;
     }
 
+    /**
+     * Sets Zipkin base URL.
+     *
+     * @param zipkinBaseUrl Zipkin base URL
+     */
     @DataBoundSetter
     public void setZipkinBaseUrl(String zipkinBaseUrl) {
         // warning, Zipkin gets wrong when using // like
@@ -61,40 +85,76 @@ public class ZipkinBackend extends ObservabilityBackend {
         this.zipkinBaseUrl = zipkinBaseUrl;
     }
 
+    /**
+     * Returns icon CSS class name for Zipkin.
+     *
+     * @return icon CSS class name
+     */
     @CheckForNull
     @Override
     public String getIconPath() {
         return "icon-otel-zipkin";
     }
 
+    /**
+     * Returns environment variable name for Zipkin endpoint.
+     *
+     * @return environment variable name
+     */
     @CheckForNull
     @Override
     public String getEnvVariableName() {
         return OTEL_ZIPKIN_URL;
     }
 
+    /**
+     * Returns default display name for this backend.
+     *
+     * @return default backend name
+     */
     @CheckForNull
     @Override
     public String getDefaultName() {
         return DEFAULT_NAME;
     }
 
+    /**
+     * Returns metrics visualization URL template.
+     *
+     * @return {@code null} — Zipkin does not support metrics visualization
+     */
     @CheckForNull
     @Override
     public String getMetricsVisualizationUrlTemplate() {
         return null;
     }
 
+    /**
+     * Compares by backend type.
+     *
+     * @param obj object to compare
+     * @return {@code true} when {@code obj} is a ZipkinBackend
+     */
     @Override
     public boolean equals(Object obj) {
         return obj != null && obj instanceof ZipkinBackend;
     }
 
+    /**
+     * Returns hash code for this backend.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return ZipkinBackend.class.hashCode();
     }
 
+    /**
+     * Returns template variable bindings for Zipkin.
+     *
+     * @return bindings map with backend name and icon URL
+     */
     @Override
     public Map<String, Object> getBindings() {
         return Map.of(
@@ -107,6 +167,11 @@ public class ZipkinBackend extends ObservabilityBackend {
     @Extension
     @Symbol("zipkin")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
+        /**
+         * Returns display name used in global configuration.
+         *
+         * @return backend display name
+         */
         @NonNull
         @Override
         public String getDisplayName() {

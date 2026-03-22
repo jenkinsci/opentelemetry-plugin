@@ -915,13 +915,13 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
             this.stepId = stepId;
         }
 
-        @Override
         /**
          * Compares Blue Ocean parsed job URL values for equality.
          *
          * @param o object to compare
          * @return {@code true} when URLs are equivalent
          */
+        @Override
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -931,23 +931,23 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
             return Objects.equals(flowNodeId, that.flowNodeId) && Objects.equals(stepId, that.stepId);
         }
 
-        @Override
         /**
          * Returns hash code for Blue Ocean parsed job URL.
          *
          * @return hash code
          */
         @Override
+        @Override
         public int hashCode() {
             return Objects.hash(super.hashCode(), flowNodeId, stepId);
         }
 
-        @Override
         /**
          * Returns string representation for diagnostics.
          *
          * @return printable Blue Ocean parsed job URL
          */
+        @Override
         @Override
         public String toString() {
             return "ParsedBlueOceanPipelineJobUrl{" + "jobName='"
@@ -959,7 +959,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
         }
     }
 
-    @Override
     /**
      * Returns whether this filter is equal to another object.
      *
@@ -967,28 +966,29 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
      * @return {@code true} when both are the same filter type
      */
     @Override
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         return o != null && getClass() == o.getClass();
     }
 
-    @Override
     /**
      * Returns hash code for this filter.
      *
      * @return hash code
      */
     @Override
+    @Override
     public int hashCode() {
         return Objects.hashCode(getClass());
     }
 
-    @Inject
     /**
      * Injects OpenTelemetry SDK and configures tracer and meter.
      *
      * @param openTelemetry reconfigurable OpenTelemetry instance
      */
+    @Inject
     public void setTracer(ReconfigurableOpenTelemetry openTelemetry) {
         this.tracer = openTelemetry.getTracer("io.jenkins.stapler");
         this.meter = openTelemetry.getMeter("io.jenkins.stapler");

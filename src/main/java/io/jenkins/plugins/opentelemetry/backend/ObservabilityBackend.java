@@ -40,28 +40,64 @@ public abstract class ObservabilityBackend
 
     private String name;
 
+    /**
+     * Returns the Groovy template string used to generate the trace visualization URL.
+     *
+     * @return trace visualization URL template, or {@code null} if not configured
+     */
     @CheckForNull
     public abstract String getTraceVisualisationUrlTemplate();
 
     private transient Template traceVisualisationUrlGTemplate;
 
+    /**
+     * Returns the Groovy template string used to generate the metrics visualization URL.
+     *
+     * @return metrics visualization URL template, or {@code null} if not configured
+     */
     @CheckForNull
     public abstract String getMetricsVisualizationUrlTemplate();
 
     private transient Template metricsVisualizationUrlGTemplate;
 
+    /**
+     * Returns icon CSS class name for this backend.
+     *
+     * @return icon CSS class name, or {@code null} if not configured
+     */
     @CheckForNull
     public abstract String getIconPath();
 
+    /**
+     * Returns environment variable name for this backend's endpoint.
+     *
+     * @return environment variable name, or {@code null} if not applicable
+     */
     @CheckForNull
     public abstract String getEnvVariableName();
 
+    /**
+     * Returns default display name for this backend.
+     *
+     * @return default backend name, or {@code null} if not defined
+     */
     @CheckForNull
     public abstract String getDefaultName();
 
+    /**
+     * Compares by backend type and configuration values.
+     *
+     * @param obj object to compare
+     * @return {@code true} when backends are equivalent
+     */
     @Override
     public abstract boolean equals(Object obj);
 
+    /**
+     * Returns hash code for this backend.
+     *
+     * @return hash code
+     */
     @Override
     public abstract int hashCode();
 
@@ -86,6 +122,11 @@ public abstract class ObservabilityBackend
         return Strings.isNullOrEmpty(name) ? getDefaultName() : name;
     }
 
+    /**
+     * Sets user-defined display name for this backend.
+     *
+     * @param name display name, or {@code null} to use default
+     */
     @DataBoundSetter
     public void setName(String name) {
         this.name = name;
@@ -119,6 +160,12 @@ public abstract class ObservabilityBackend
         return traceVisualisationUrlGTemplate.make(mergedBindings).toString();
     }
 
+    /**
+     * Returns metrics visualization URL for the given resource.
+     *
+     * @param resource the OpenTelemetry resource whose metrics to visualize
+     * @return metrics visualization URL, or {@code null} if template is not configured or has errors
+     */
     public String getMetricsVisualizationUrl(Resource resource) {
         if (Strings.isNullOrEmpty(this.getMetricsVisualizationUrlTemplate())) {
             return null;
@@ -156,9 +203,19 @@ public abstract class ObservabilityBackend
         }
     }
 
+    /**
+     * Returns template variable bindings contributed by this backend.
+     *
+     * @return bindings map
+     */
     @Override
     public abstract Map<String, Object> getBindings();
 
+    /**
+     * Returns the descriptor for this backend.
+     *
+     * @return backend descriptor
+     */
     @SuppressWarnings("unchecked")
     @Override
     public Descriptor<ObservabilityBackend> getDescriptor() {
@@ -216,6 +273,12 @@ public abstract class ObservabilityBackend
             return 0;
         }
 
+        /**
+         * Compares descriptors by ordinal then display name for ordered listing.
+         *
+         * @param o descriptor to compare
+         * @return comparison result
+         */
         @Override
         public int compareTo(ObservabilityBackendDescriptor o) {
             return ComparisonChain.start()
