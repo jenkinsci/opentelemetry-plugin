@@ -36,10 +36,15 @@ import org.kohsuke.stapler.QueryParameter;
 
 public class ElasticBackend extends ObservabilityBackend {
 
+    /** Environment variable name used to pass the Elastic APM server URL to the agent. */
     public static final String OTEL_ELASTIC_URL = "OTEL_ELASTIC_URL";
+    /** Default display name for the Elastic Observability backend. */
     public static final String DEFAULT_BACKEND_NAME = "Elastic Observability";
+    /** Default title for the Kibana Jenkins overview dashboard. */
     public static final String DEFAULT_KIBANA_DASHBOARD_TITLE = "Jenkins Overview";
+    /** Default Kibana space identifier (empty string means the default space). */
     public static final String DEFAULT_KIBANA_SPACE_IDENTIFIER = "";
+    /** Default URL query parameters appended to Kibana dashboard links. */
     public static final String DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS = "title=${kibanaDashboardTitle}&"
             + "_g=(filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))";
 
@@ -106,6 +111,11 @@ public class ElasticBackend extends ObservabilityBackend {
         return bindings;
     }
 
+    /**
+     * Returns the URL template for opening a trace in the Elastic APM UI.
+     *
+     * @return trace visualization URL template, or {@code null} when Kibana is not configured
+     */
     @CheckForNull
     @Override
     public String getTraceVisualisationUrlTemplate() {
@@ -145,24 +155,45 @@ public class ElasticBackend extends ObservabilityBackend {
         this.kibanaBaseUrl = kibanaBaseUrl;
     }
 
+    /**
+     * Returns the icon path for this Elastic backend.
+     *
+     * @return icon identifier string
+     */
     @CheckForNull
     @Override
     public String getIconPath() {
         return "icon-otel-elastic";
     }
 
+    /**
+     * Returns the environment variable name used to pass the Elastic URL to the agent.
+     *
+     * @return environment variable name
+     */
     @CheckForNull
     @Override
     public String getEnvVariableName() {
         return OTEL_ELASTIC_URL;
     }
 
+    /**
+     * Returns the default display name for this backend.
+     *
+     * @return default backend name
+     */
     @CheckForNull
     @Override
     public String getDefaultName() {
         return DEFAULT_BACKEND_NAME;
     }
 
+    /**
+     * Returns the URL template for opening the Kibana metrics dashboard, or {@code null}
+     * when the dashboard link is disabled or no dashboard is configured.
+     *
+     * @return metrics dashboard URL template, or {@code null}
+     */
     @CheckForNull
     @Override
     public String getMetricsVisualizationUrlTemplate() {
@@ -194,6 +225,12 @@ public class ElasticBackend extends ObservabilityBackend {
         this.elasticLogsBackend = elasticLogsBackend;
     }
 
+    /**
+     * Creates a log storage retriever that delegates to the configured Elastic logs backend.
+     *
+     * @param templateBindingsProvider provider for template bindings used to construct log query URLs
+     * @return a log storage retriever, or {@code null} when no logs backend is configured
+     */
     @Nullable
     @Override
     @MustBeClosed
@@ -205,11 +242,14 @@ public class ElasticBackend extends ObservabilityBackend {
         }
     }
 
+    /**
+     * Returns OTel SDK configuration properties contributed by the Elastic logs backend.
+     *
+     * @return a map of OTel configuration properties, or an empty map when no logs backend is set
+     */
     @NonNull
     @Override
     public Map<String, String> getOtelConfigurationProperties() {
-        if (elasticLogsBackend == null) {
-            return Collections.emptyMap();
         } else {
             return elasticLogsBackend.getOtelConfigurationProperties();
         }
@@ -361,6 +401,7 @@ public class ElasticBackend extends ObservabilityBackend {
                 elasticLogsBackend);
     }
 
+    /** Descriptor for the Elastic Observability backend configuration in the Jenkins UI. */
     @Extension
     @Symbol("elastic")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {

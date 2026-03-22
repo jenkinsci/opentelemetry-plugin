@@ -32,11 +32,14 @@ import org.kohsuke.stapler.QueryParameter;
 
 public class GrafanaBackend extends ObservabilityBackend {
 
+    /** Default display name for the Grafana backend. */
     public static final String DEFAULT_BACKEND_NAME = "Grafana";
 
+    /** Environment variable name used to pass the Grafana base URL to the agent. */
     public static final String OTEL_GRAFANA_URL = "OTEL_GRAFANA_URL";
 
     private static final String DEFAULT_TEMPO_DATA_SOURCE_IDENTIFIER = "grafanacloud-traces";
+    /** Default Loki data source identifier used when none is configured. */
     public static final String DEFAULT_LOKI_DATA_SOURCE_IDENTIFIER = "grafanacloud-logs";
 
     private static final String DEFAULT_GRAFANA_ORG_ID = "1";
@@ -108,18 +111,33 @@ public class GrafanaBackend extends ObservabilityBackend {
         return grafanaMetricsDashboard;
     }
 
+    /**
+     * Returns the icon path for this Grafana backend.
+     *
+     * @return icon identifier string
+     */
     @Nullable
     @Override
     public String getIconPath() {
         return "icon-otel-grafana";
     }
 
+    /**
+     * Returns the environment variable name used to pass the Grafana URL to the agent.
+     *
+     * @return environment variable name
+     */
     @Nullable
     @Override
     public String getEnvVariableName() {
         return OTEL_GRAFANA_URL;
     }
 
+    /**
+     * Returns the default display name for this backend.
+     *
+     * @return default backend name
+     */
     @Nullable
     @Override
     public String getDefaultName() {
@@ -191,6 +209,12 @@ public class GrafanaBackend extends ObservabilityBackend {
         }
     }
 
+    /**
+     * Creates a log storage retriever that delegates to the configured Grafana logs backend.
+     *
+     * @param templateBindingsProvider provider for template bindings used to construct log query URLs
+     * @return a log storage retriever, or {@code null} when no logs backend is configured
+     */
     @CheckForNull
     @Override
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
@@ -307,6 +331,11 @@ public class GrafanaBackend extends ObservabilityBackend {
         this.grafanaLogsBackend = grafanaLogsBackend;
     }
 
+    /**
+     * Returns OTel SDK configuration properties contributed by the Grafana logs backend.
+     *
+     * @return a map of OTel configuration properties, or an empty map when no logs backend is set
+     */
     @NonNull
     @Override
     public Map<String, String> getOtelConfigurationProperties() {
@@ -317,6 +346,7 @@ public class GrafanaBackend extends ObservabilityBackend {
         }
     }
 
+    /** Descriptor for the Grafana backend configuration in the Jenkins UI. */
     @Extension
     @Symbol("grafana")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {

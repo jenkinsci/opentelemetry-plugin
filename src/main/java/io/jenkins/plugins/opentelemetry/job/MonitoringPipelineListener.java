@@ -90,6 +90,10 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
     @Inject
     protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
+    /**
+     * Initializes pipeline listener dependencies including the tracer, ignored steps, and
+     * interruption cause configuration obtained from the global plugin configuration.
+     */
     @PostConstruct
     public void postConstruct() {
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins pipeline executions...");
@@ -103,6 +107,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
                 new HashSet<>(jenkinsOpenTelemetryPluginConfiguration.getStatusUnsetCausesOfInterruption());
     }
 
+    /**
+     * Handles the start of a node (agent) step within a pipeline run.
+     * Creates an agent span with relevant step attributes and stores it in the trace service.
+     *
+     * @param stepStartNode the flow node that represents the start of the node step
+     * @param agentLabel    the label designating the agent, or {@code null} for any
+     * @param run           the associated workflow run
+     */
     @Override
     public void onStartNodeStep(
             @NonNull StepStartNode stepStartNode, @Nullable String agentLabel, @NonNull WorkflowRun run) {
@@ -168,6 +180,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         }
     }
 
+    /**
+     * Handles the end of the agent-allocation phase after a node step has started.
+     * Closes the agent-allocate span that was opened in {@link #onStartNodeStep}.
+     *
+     * @param stepStartNode the flow node that started the node step
+     * @param nodeLabel     the agent label, or {@code null}
+     * @param run           the associated workflow run
+     */
     @Override
     public void onAfterStartNodeStep(
             @NonNull StepStartNode stepStartNode, @Nullable String nodeLabel, @NonNull WorkflowRun run) {
@@ -175,6 +195,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         endCurrentSpan(stepStartNode, run, null);
     }
 
+    /**
+     * Handles the start of a pipeline stage step.
+     * Creates a named stage span and places it on the current trace context.
+     *
+     * @param stepStartNode the flow node that represents the start of the stage
+     * @param stageName     the name of the stage
+     * @param run           the associated workflow run
+     */
     @Override
     public void onStartStageStep(
             @NonNull StepStartNode stepStartNode, @NonNull String stageName, @NonNull WorkflowRun run) {
@@ -204,6 +232,15 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         }
     }
 
+    /**
+     * Handles the end of a node (agent) step.
+     * Computes the step status and closes the associated agent span.
+     *
+     * @param node     the end flow node for the node step
+     * @param nodeName the agent label associated with the node step
+     * @param nextNode the next node in the flow execution graph, or {@code null}
+     * @param run      the associated workflow run
+     */
     @Override
     public void onEndNodeStep(
             @NonNull StepEndNode node, @NonNull String nodeName, FlowNode nextNode, @NonNull WorkflowRun run) {
@@ -212,6 +249,15 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         endCurrentSpan(node, run, nodeStatus);
     }
 
+    /**
+     * Handles the end of a pipeline stage step.
+     * Computes the stage status and closes the associated stage span.
+     *
+     * @param node      the end flow node for the stage
+     * @param stageName the name of the stage
+     * @param nextNode  the next node in the flow execution graph, or {@code null}
+     * @param run       the associated workflow run
+     */
     @Override
     public void onEndStageStep(
             @NonNull StepEndNode node, @NonNull String stageName, FlowNode nextNode, @NonNull WorkflowRun run) {
@@ -229,6 +275,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         return this.stepHandlers;
     }
 
+    /**
+     * Handles the start of an atomic (leaf) pipeline step.
+     * Selects the appropriate {@link StepHandler}, creates a span with step attributes,
+     * and stores the span and its scope in the trace service.
+     *
+     * @param node the atom step flow node
+     * @param run  the associated workflow run
+     */
     @Override
     public void onAtomicStep(@NonNull StepAtomNode node, @NonNull WorkflowRun run) {
         if (isIgnoredStep(node.getDescriptor())) {
@@ -278,6 +332,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
                 .putSpanAndScopes(run, atomicStepSpan, node, Arrays.asList(encapsulatingNodeScope, atomicStepScope));
     }
 
+    /**
+     * Handles the completion of an atomic step.
+     * Computes the step status and closes the associated span, unless the step is ignored.
+     *
+     * @param node     the completed atom step flow node
+     * @param nextNode the next node in the flow execution graph, or {@code null}
+     * @param run      the associated workflow run
+     */
     @Override
     public void onAfterAtomicStep(@NonNull StepAtomNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
         if (isIgnoredStep(node.getDescriptor())) {
@@ -356,6 +418,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         return null;
     }
 
+    /**
+     * Handles the start of a parallel branch step.
+     * Creates a named span for the branch and stores it in the trace service.
+     *
+     * @param stepStartNode the flow node that starts the parallel branch
+     * @param branchName    the name of the parallel branch
+     * @param run           the associated workflow run
+     */
     @Override
     public void onStartParallelStepBranch(
             @NonNull StepStartNode stepStartNode, @NonNull String branchName, @NonNull WorkflowRun run) {
@@ -384,6 +454,15 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         }
     }
 
+    /**
+     * Handles the end of a parallel branch step.
+     * Computes the branch status and closes the associated span.
+     *
+     * @param node       the end flow node for the parallel branch
+     * @param branchName the name of the parallel branch
+     * @param nextNode   the next node in the flow execution graph, or {@code null}
+     * @param run        the associated workflow run
+     */
     @Override
     public void onEndParallelStepBranch(
             @NonNull StepEndNode node, @NonNull String branchName, FlowNode nextNode, @NonNull WorkflowRun run) {
@@ -455,6 +534,13 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         }
     }
 
+    /**
+     * Handles the start of a {@code withNewSpan} step.
+     * Creates a custom span with the label and attributes specified in the step arguments.
+     *
+     * @param stepStartNode the flow node that starts the withNewSpan step
+     * @param run           the associated workflow run
+     */
     @Override
     public void onStartWithNewSpanStep(@NonNull StepStartNode stepStartNode, @NonNull WorkflowRun run) {
         try (Scope ignored = setupContext(run, stepStartNode)) {
@@ -520,6 +606,14 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         }
     }
 
+    /**
+     * Handles the end of a {@code withNewSpan} step.
+     * Computes the span status and closes the span created by {@link #onStartWithNewSpanStep}.
+     *
+     * @param node     the end flow node for the withNewSpan step
+     * @param nextNode the next node in the flow execution graph, or {@code null}
+     * @param run      the associated workflow run
+     */
     @Override
     public void onEndWithNewSpanStep(@NonNull StepEndNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
         StepStartNode nodeStartNode = node.getStartNode();
@@ -527,6 +621,13 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         endCurrentSpan(node, run, nodeStatus);
     }
 
+    /**
+     * Notified when a new step is about to execute on a particular computer.
+     * Propagates computer and child OTel attributes to the current span.
+     *
+     * @param step    the step that is about to run
+     * @param context the step execution context providing access to the run and computer
+     */
     @Override
     public void notifyOfNewStep(@NonNull Step step, @NonNull StepContext context) {
         try {
@@ -624,21 +725,41 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         return span.makeCurrent();
     }
 
+    /**
+     * Injects the OTel trace service used to manage spans for pipeline runs.
+     *
+     * @param otelTraceService the trace service to inject
+     */
     @Inject
     public final void setOpenTelemetryTracerService(@NonNull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
     }
 
+    /**
+     * Returns the OTel trace service used to manage spans for pipeline runs.
+     *
+     * @return the trace service
+     */
     @NonNull
     public OtelTraceService getTracerService() {
         return otelTraceService;
     }
 
+    /**
+     * Returns the OTel tracer used to create spans.
+     *
+     * @return the tracer
+     */
     @NonNull
     public Tracer getTracer() {
         return tracer;
     }
 
+    /**
+     * Returns a string representation of this listener.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         return "TracingPipelineListener{}";

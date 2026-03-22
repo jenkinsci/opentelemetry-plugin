@@ -18,7 +18,9 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class DynatraceGrailBackend extends ObservabilityBackend {
 
+    /** Environment variable name used to pass the Dynatrace base URL to the agent. */
     public static final String OTEL_DYNATRACE_URL = "OTEL_DYNATRACE_URL";
+    /** Default display name for the Dynatrace (Grail) backend. */
     public static final String DEFAULT_NAME = "Dynatrace (Grail)";
     private final String url;
 
@@ -33,6 +35,12 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
                 new Icon("icon-otel-dynatrace icon-xlg", ICONS_PREFIX + "dynatrace.svg", Icon.ICON_XLARGE_STYLE));
     }
 
+    /**
+     * Creates Dynatrace Grail backend configuration with the given environment URL.
+     * A trailing slash is appended automatically when absent.
+     *
+     * @param url Dynatrace base URL
+     */
     @DataBoundConstructor
     public DynatraceGrailBackend(String url) {
         if (url != null && !url.endsWith("/")) {
@@ -54,6 +62,11 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
         return mergedBindings;
     }
 
+    /**
+     * Returns the URL template for opening a trace in the Dynatrace Grail distributed tracing UI.
+     *
+     * @return trace visualization URL template
+     */
     @NonNull
     @Override
     public String getTraceVisualisationUrlTemplate() {
@@ -62,6 +75,11 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
         return "${dynatraceBaseUrl}ui/apps/dynatrace.distributedtracing/explorer?v=spans&filter=trace.id+%3D+${traceId}&traceId=${traceId}&cv=a%2Cfalse&sidebar=a%2Cfalse";
     }
 
+    /**
+     * Returns the URL template for opening the Dynatrace Grail pipeline metrics explorer.
+     *
+     * @return metrics visualization URL template
+     */
     @Override
     @CheckForNull
     public String getMetricsVisualizationUrlTemplate() {
@@ -81,18 +99,33 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
         return url;
     }
 
+    /**
+     * Returns the icon path for this Dynatrace Grail backend.
+     *
+     * @return icon identifier string
+     */
     @NonNull
     @Override
     public String getIconPath() {
         return "icon-otel-dynatrace";
     }
 
+    /**
+     * Returns the environment variable name used to pass the Dynatrace URL to the agent.
+     *
+     * @return environment variable name
+     */
     @NonNull
     @Override
     public String getEnvVariableName() {
         return OTEL_DYNATRACE_URL;
     }
 
+    /**
+     * Returns the default display name for this backend.
+     *
+     * @return default backend name
+     */
     @NonNull
     @Override
     public String getDefaultName() {
@@ -141,6 +174,7 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
                 "/plugin/opentelemetry/images/svgs/dynatrace.svg");
     }
 
+    /** Descriptor for the Dynatrace (Grail) backend configuration in the Jenkins UI. */
     @Extension
     @Symbol("dynatrace")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {

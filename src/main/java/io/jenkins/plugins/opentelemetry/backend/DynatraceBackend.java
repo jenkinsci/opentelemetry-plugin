@@ -20,7 +20,9 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 public class DynatraceBackend extends ObservabilityBackend {
 
+    /** Environment variable name used to pass the Dynatrace base URL to the agent. */
     public static final String OTEL_DYNATRACE_URL = "OTEL_DYNATRACE_URL";
+    /** Default display name for the Dynatrace backend. */
     public static final String DEFAULT_NAME = "Dynatrace";
     private final String url;
     private String managementZoneId;
@@ -39,6 +41,12 @@ public class DynatraceBackend extends ObservabilityBackend {
                 new Icon("icon-otel-dynatrace icon-xlg", ICONS_PREFIX + "dynatrace.svg", Icon.ICON_XLARGE_STYLE));
     }
 
+    /**
+     * Creates Dynatrace backend configuration with the given Dynatrace environment URL.
+     * A trailing slash is appended automatically when absent.
+     *
+     * @param url Dynatrace base URL
+     */
     @DataBoundConstructor
     public DynatraceBackend(String url) {
         if (url != null && !url.endsWith("/")) {
@@ -125,12 +133,23 @@ public class DynatraceBackend extends ObservabilityBackend {
         return mergedBindings;
     }
 
+    /**
+     * Returns the URL template for opening a trace in the Dynatrace distributed tracing UI.
+     *
+     * @return trace visualization URL template
+     */
     @NonNull
     @Override
     public String getTraceVisualisationUrlTemplate() {
         return "${dynatraceBaseUrl}#trace;gf=${managementZoneId};traceId=${traceId}";
     }
 
+    /**
+     * Returns the URL template for opening the Dynatrace metrics dashboard, or {@code null}
+     * when no dashboard ID is configured.
+     *
+     * @return metrics dashboard URL template, or {@code null}
+     */
     @Override
     @CheckForNull
     public String getMetricsVisualizationUrlTemplate() {
@@ -150,18 +169,33 @@ public class DynatraceBackend extends ObservabilityBackend {
         return url;
     }
 
+    /**
+     * Returns the icon path for this Dynatrace backend.
+     *
+     * @return icon identifier string
+     */
     @NonNull
     @Override
     public String getIconPath() {
         return "icon-otel-dynatrace";
     }
 
+    /**
+     * Returns the environment variable name used to pass the Dynatrace URL to the agent.
+     *
+     * @return environment variable name
+     */
     @NonNull
     @Override
     public String getEnvVariableName() {
         return OTEL_DYNATRACE_URL;
     }
 
+    /**
+     * Returns the default display name for this backend.
+     *
+     * @return default backend name
+     */
     @NonNull
     @Override
     public String getDefaultName() {
@@ -210,6 +244,7 @@ public class DynatraceBackend extends ObservabilityBackend {
                 "/plugin/opentelemetry/images/svgs/dynatrace.svg");
     }
 
+    /** Descriptor for the Dynatrace backend configuration in the Jenkins UI. */
     @Extension
     @Symbol("dynatrace")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
@@ -224,4 +259,3 @@ public class DynatraceBackend extends ObservabilityBackend {
             return DEFAULT_NAME;
         }
     }
-}
