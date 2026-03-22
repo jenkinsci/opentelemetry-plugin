@@ -7,49 +7,71 @@ import java.util.Objects;
  */
 public final class ConfigurationKey {
 
+    /** Configuration key for the Jaeger gRPC/HTTP exporter endpoint. */
     public static final ConfigurationKey OTEL_EXPORTER_JAEGER_ENDPOINT =
             new ConfigurationKey("otel.exporter.jaeger.endpoint");
+    /** Configuration key for the OTLP exporter TLS certificate file path. */
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_CERTIFICATE =
             new ConfigurationKey("otel.exporter.otlp.certificate");
+    /** Configuration key for the OTLP exporter endpoint (traces, metrics, and logs). */
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_ENDPOINT =
             new ConfigurationKey("otel.exporter.otlp.endpoint");
+    /** Configuration key for the OTLP exporter key-value header list. */
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_HEADERS =
             new ConfigurationKey("otel.exporter.otlp.headers");
+    /** Configuration key for disabling TLS verification on the OTLP exporter. */
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_INSECURE =
             new ConfigurationKey("otel.exporter.otlp.insecure");
+    /** Configuration key for the OTLP metrics-specific exporter endpoint. */
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_METRICS_ENDPOINT =
             new ConfigurationKey("otel.exporter.otlp.metrics.endpoint");
+    /** Configuration key for the OTLP exporter wire protocol (e.g. {@code grpc} or {@code http/protobuf}). */
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_PROTOCOL =
             new ConfigurationKey("otel.exporter.otlp.protocol");
+    /** Configuration key for the OTLP exporter request timeout. */
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_TIMEOUT =
             new ConfigurationKey("otel.exporter.otlp.timeout");
+    /** Configuration key for the OTLP traces-specific exporter endpoint. */
     public static final ConfigurationKey OTEL_EXPORTER_OTLP_TRACES_ENDPOINT =
             new ConfigurationKey("otel.exporter.otlp.traces.endpoint");
+    /** Configuration key for the Prometheus scrape port. */
     public static final ConfigurationKey OTEL_EXPORTER_PROMETHEUS_PORT =
             new ConfigurationKey("otel.exporter.prometheus.port");
 
+    /** Configuration key for the list of Java resource providers to disable. */
     public static final ConfigurationKey OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS =
             new ConfigurationKey("otel.java.disabled.resource.providers");
 
+    /** Configuration key for the logs exporter type. */
     public static final ConfigurationKey OTEL_LOGS_EXPORTER = new ConfigurationKey("otel.logs.exporter");
+    /** Configuration key for enabling disk-mirroring of exported logs. */
     public static final ConfigurationKey OTEL_LOGS_MIRROR_TO_DISK = new ConfigurationKey("otel.logs.mirror_to_disk");
 
+    /** Configuration key for the metric export interval in milliseconds. */
     public static final ConfigurationKey OTEL_METRIC_EXPORT_INTERVAL =
             new ConfigurationKey("otel.metric.export.interval");
+    /** Configuration key for the metrics exporter type. */
     public static final ConfigurationKey OTEL_METRICS_EXPORTER = new ConfigurationKey("otel.metrics.exporter");
 
+    /** Configuration key for additional resource attributes as a comma-separated key=value list. */
     public static final ConfigurationKey OTEL_RESOURCE_ATTRIBUTES = new ConfigurationKey("otel.resource.attributes");
 
+    /** Configuration key for the {@code service.name} resource attribute. */
     public static final ConfigurationKey OTEL_SERVICE_NAME = new ConfigurationKey("otel.service.name");
 
+    /** Configuration key for the traces exporter type. */
     public static final ConfigurationKey OTEL_TRACES_EXPORTER = new ConfigurationKey("otel.traces.exporter");
 
+    /** Configuration key for enabling Jenkins HTTP/web instrumentation. */
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_WEB_ENABLED =
             new ConfigurationKey("otel.instrumentation.jenkins.web.enabled");
+    /** Configuration key for enabling remote span propagation from controller to agents. */
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_REMOTE_SPAN_ENABLED =
             new ConfigurationKey("otel.instrumentation.jenkins.remote.span.enabled");
+    /** Configuration key for the allow-list of job names tracked for run-duration metrics. */
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_ALLOW_LIST =
             new ConfigurationKey("otel.instrumentation.jenkins.run.metric.duration.allow_list");
+    /** Configuration key for the deny-list of job names excluded from run-duration metrics. */
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_RUN_DURATION_DENY_LIST =
             new ConfigurationKey("otel.instrumentation.jenkins.run.metric.duration.deny_list");
     /**
@@ -63,6 +85,7 @@ public final class ConfigurationKey {
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED =
             new ConfigurationKey("otel.instrumentation.jenkins.agent.enabled");
 
+    /** Configuration key for exporting OTel SDK configuration as environment variables to build agents. */
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS =
             new ConfigurationKey("otel.instrumentation.jenkins.export_otel_config_as_env_vars");
 
@@ -102,6 +125,12 @@ public final class ConfigurationKey {
         return propertyName;
     }
 
+    /**
+     * Compares configuration keys by property and environment variable names.
+     *
+     * @param o the object to compare
+     * @return {@code true} when both keys represent the same configuration parameter
+     */
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
@@ -110,11 +139,21 @@ public final class ConfigurationKey {
                 && Objects.equals(propertyName, that.propertyName);
     }
 
+    /**
+     * Returns hash code for this configuration key.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(environmentVariableName, propertyName);
     }
 
+    /**
+     * Returns a debug-friendly representation of this configuration key.
+     *
+     * @return string containing the property name
+     */
     @Override
     public String toString() {
         return "ConfigurationParameter{" + propertyName + '}';

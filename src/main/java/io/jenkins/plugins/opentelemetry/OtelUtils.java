@@ -55,16 +55,27 @@ import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject;
  */
 public class OtelUtils {
 
+    /** Job type identifier for classic freestyle projects. */
     public static final String FREESTYLE = "freestyle";
+    /** Job type identifier for matrix (multi-configuration) projects. */
     public static final String MATRIX = "matrix";
+    /** Job type identifier for Maven projects. */
     public static final String MAVEN = "maven";
+    /** Job type identifier for multibranch pipeline projects. */
     public static final String MULTIBRANCH = "multibranch";
+    /** Job type identifier for workflow (scripted/declarative pipeline) projects. */
     public static final String WORKFLOW = "workflow";
+    /** Fallback job type identifier used when the type cannot be determined. */
     public static final String UNKNOWN = "unknown";
+    /** Job type identifier for branch-based builds within multibranch projects. */
     public static final String BRANCH = "branch";
+    /** Job type identifier for change-request (pull/merge-request) builds. */
     public static final String CHANGE_REQUEST = "change_request";
+    /** Job type identifier for tag-triggered builds. */
     public static final String TAG = "tag";
+    /** Attribute value used to represent the Jenkins core component. */
     public static final String JENKINS_CORE = "jenkins-core";
+    /** Placeholder value used when an attribute value is unknown. */
     public static final String UNKNOWN_VALUE = "#unknown";
 
     /**
