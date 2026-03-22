@@ -91,6 +91,12 @@ import org.kohsuke.stapler.StaplerRequest2;
                 Integer.MAX_VALUE
                         - 1 /* initialize OTel ASAP, just after loading JenkinsControllerOpenTelemetry as GlobalOpenTelemetry */)
 @Symbol("openTelemetry")
+/**
+ * Global Jenkins configuration for the OpenTelemetry plugin.
+ * <p>
+ * Manages OTLP endpoint, authentication, observability backends, pipeline step ignore lists,
+ * resource attributes, and SDK lifecycle configuration.
+ */
 public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration {
     private static final Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());
 
