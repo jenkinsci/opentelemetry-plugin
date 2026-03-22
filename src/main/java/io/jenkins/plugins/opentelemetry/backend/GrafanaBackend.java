@@ -65,9 +65,17 @@ public class GrafanaBackend extends ObservabilityBackend {
 
     private GrafanaLogsBackend grafanaLogsBackend;
 
+    /**
+     * Creates Grafana backend configuration with defaults.
+     */
     @DataBoundConstructor
     public GrafanaBackend() {}
 
+    /**
+     * Returns URL template to open a trace in Grafana Explore.
+     *
+     * @return trace visualization URL template
+     */
     @Nullable
     @Override
     public String getTraceVisualisationUrlTemplate() {
@@ -118,6 +126,12 @@ public class GrafanaBackend extends ObservabilityBackend {
         return DEFAULT_BACKEND_NAME;
     }
 
+    /**
+     * Compares backend configuration values.
+     *
+     * @param o object to compare
+     * @return {@code true} when configurations are equivalent
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -129,11 +143,22 @@ public class GrafanaBackend extends ObservabilityBackend {
                 && Objects.equals(tempoQueryType, that.tempoQueryType);
     }
 
+    /**
+     * Returns hash code for backend configuration.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(grafanaBaseUrl, tempoDataSourceIdentifier, grafanaOrgId, tempoQueryType);
     }
 
+    /**
+     * Merges provided template bindings with backend-specific bindings.
+     *
+     * @param bindings base bindings
+     * @return merged bindings
+     */
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
@@ -141,6 +166,11 @@ public class GrafanaBackend extends ObservabilityBackend {
         return mergedBindings;
     }
 
+    /**
+     * Returns template bindings used to render Grafana links.
+     *
+     * @return Grafana-specific bindings
+     */
     @Override
     public Map<String, Object> getBindings() {
         Map<String, Object> bindings = Map.of(
@@ -169,54 +199,109 @@ public class GrafanaBackend extends ObservabilityBackend {
                 .orElse(null);
     }
 
+            /**
+             * Returns configured Grafana base URL.
+             *
+             * @return Grafana base URL
+             */
     public String getGrafanaBaseUrl() {
         return grafanaBaseUrl;
     }
 
+            /**
+             * Sets Grafana base URL.
+             *
+             * @param grafanaBaseUrl Grafana base URL
+             */
     @DataBoundSetter
     public void setGrafanaBaseUrl(String grafanaBaseUrl) {
         this.grafanaBaseUrl = grafanaBaseUrl;
     }
 
+            /**
+             * Returns Tempo data source identifier.
+             *
+             * @return Tempo data source identifier
+             */
     @DataBoundSetter
     public String getTempoDataSourceIdentifier() {
         return tempoDataSourceIdentifier;
     }
 
+            /**
+             * Sets Tempo data source identifier.
+             *
+             * @param tempoDataSourceIdentifier Tempo data source identifier
+             */
     @DataBoundSetter
     public void setTempoDataSourceIdentifier(String tempoDataSourceIdentifier) {
         this.tempoDataSourceIdentifier = tempoDataSourceIdentifier;
     }
 
+            /**
+             * Sets Grafana metrics dashboard URL.
+             *
+             * @param grafanaMetricsDashboard metrics dashboard URL
+             */
     @DataBoundSetter
     public void setGrafanaMetricsDashboard(String grafanaMetricsDashboard) {
         this.grafanaMetricsDashboard = grafanaMetricsDashboard;
     }
 
+            /**
+             * Returns Grafana organization identifier.
+             *
+             * @return Grafana org id
+             */
     public String getGrafanaOrgId() {
         return grafanaOrgId;
     }
 
+            /**
+             * Sets Grafana organization identifier.
+             *
+             * @param grafanaOrgId Grafana org id
+             */
     @DataBoundSetter
     public void setGrafanaOrgId(String grafanaOrgId) {
         this.grafanaOrgId = grafanaOrgId;
     }
 
+            /**
+             * Returns Tempo query type.
+             *
+             * @return Tempo query type
+             */
     @DataBoundSetter
     public String getTempoQueryType() {
         return tempoQueryType;
     }
 
+            /**
+             * Sets Tempo query type.
+             *
+             * @param tempoQueryType Tempo query type
+             */
     @DataBoundSetter
     public void setTempoQueryType(String tempoQueryType) {
         this.tempoQueryType = tempoQueryType;
     }
 
+            /**
+             * Returns nested Grafana logs backend configuration.
+             *
+             * @return Grafana logs backend, or {@code null} when unset
+             */
     @CheckForNull
     public GrafanaLogsBackend getGrafanaLogsBackend() {
         return grafanaLogsBackend;
     }
 
+            /**
+             * Sets nested Grafana logs backend configuration.
+             *
+             * @param grafanaLogsBackend Grafana logs backend
+             */
     @DataBoundSetter
     public void setGrafanaLogsBackend(GrafanaLogsBackend grafanaLogsBackend) {
         this.grafanaLogsBackend = grafanaLogsBackend;
@@ -236,24 +321,50 @@ public class GrafanaBackend extends ObservabilityBackend {
     @Symbol("grafana")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
 
+        /**
+         * Returns display name used in Jenkins backend selector.
+         *
+         * @return backend display name
+         */
         @NonNull
         @Override
         public String getDisplayName() {
             return DEFAULT_BACKEND_NAME;
         }
 
+        /**
+         * Returns default Grafana organization identifier.
+         *
+         * @return default Grafana org id
+         */
         public String getDefaultGrafanaOrgId() {
             return DEFAULT_GRAFANA_ORG_ID;
         }
 
+        /**
+         * Returns default Tempo data source identifier.
+         *
+         * @return default Tempo data source identifier
+         */
         public String getDefaultTempoDataSourceIdentifier() {
             return DEFAULT_TEMPO_DATA_SOURCE_IDENTIFIER;
         }
 
+        /**
+         * Returns default Tempo query type.
+         *
+         * @return default Tempo query type
+         */
         public String getDefaultTempoQueryType() {
             return DEFAULT_TEMPO_QUERY_TYPE;
         }
 
+        /**
+         * Validates Grafana base URL entered in global configuration.
+         *
+         * @param grafanaBaseUrl user-provided Grafana base URL
+         * @return validation result
+         */
         public FormValidation doCheckGrafanaBaseUrl(@QueryParameter("grafanaBaseUrl") String grafanaBaseUrl) {
             if (StringUtils.isEmpty(grafanaBaseUrl)) {
                 return FormValidation.ok();
@@ -266,6 +377,11 @@ public class GrafanaBackend extends ObservabilityBackend {
             return FormValidation.ok();
         }
 
+        /**
+         * Returns available Tempo query types for configuration UI.
+         *
+         * @return list box model with supported query types
+         */
         public ListBoxModel doFillTempoQueryTypeItems() {
             ListBoxModel items = new ListBoxModel();
             items.add("Query Tempo using TraceQL", "traceql");
