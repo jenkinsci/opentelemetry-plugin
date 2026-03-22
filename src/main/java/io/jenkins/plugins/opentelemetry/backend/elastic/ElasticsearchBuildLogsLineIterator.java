@@ -48,8 +48,11 @@ import net.sf.json.JSONArray;
 public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>, Closeable {
     private static final Logger logger = Logger.getLogger(ElasticsearchBuildLogsLineIterator.class.getName());
 
+    /** Duration for which the Elasticsearch point-in-time handle is kept alive. */
     public static final Time POINT_IN_TIME_KEEP_ALIVE = Time.of(builder -> builder.time("30s"));
+    /** Number of log lines fetched per Elasticsearch search page. */
     public static final int PAGE_SIZE = 200;
+    /** Maximum total lines retrieved via paginated Elasticsearch queries. */
     public static final int MAX_LINES_PAGINATED = 10_000;
 
     final String jobFullName;
@@ -71,6 +74,15 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
     Iterator<LogLine<Long>> delegate;
     boolean endOfStream;
 
+    /**
+     * Creates an iterator for the overall (non-step-scoped) build log of a pipeline run.
+     *
+     * @param jobFullName the full name of the Jenkins job
+     * @param runNumber   the build number
+     * @param traceId     the OTel trace ID
+     * @param esClient    the Elasticsearch client
+     * @param tracer      the OTel tracer
+     */
     public ElasticsearchBuildLogsLineIterator(
             @NonNull String jobFullName,
             int runNumber,
@@ -81,6 +93,17 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
         setEDOTMode();
     }
 
+    /**
+     * Creates an iterator for the log of a specific pipeline step, or for the overall run when
+     * {@code flowNodeId} is {@code null}.
+     *
+     * @param jobFullName the full name of the Jenkins job
+     * @param runNumber   the build number
+     * @param traceId     the OTel trace ID
+     * @param flowNodeId  the flow node ID of the step, or {@code null} for the overall log
+     * @param esClient    the Elasticsearch client
+     * @param tracer      the OTel tracer
+     */
     public ElasticsearchBuildLogsLineIterator(
             @NonNull String jobFullName,
             int runNumber,
@@ -149,6 +172,11 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
         }
     }
 
+    /**
+     * Closes the Elasticsearch point-in-time handle, releasing server-side resources.
+     *
+     * @throws IOException if closing the point-in-time handle fails
+     */
     @Override
     public void close() throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE)
@@ -180,11 +208,22 @@ public class ElasticsearchBuildLogsLineIterator implements LogLineIterator<Long>
         }
     }
 
+    /**
+     * Returns {@code true} when there are more log lines available.
+     *
+     * @return {@code true} if more lines remain
+     */
     @Override
     public boolean hasNext() {
         return getCurrentIterator().hasNext();
     }
 
+    /**
+     * Returns the next log line.
+     *
+     * @return the next log line
+     * @throws java.util.NoSuchElementException if the iterator is exhausted
+     */
     @Override
     public LogLine<Long> next() {
         return getCurrentIterator().next();

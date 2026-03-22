@@ -76,15 +76,21 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
     private static final Logger logger = Logger.getLogger(ElasticsearchLogStorageRetriever.class.getName());
 
     // the duration in ms for which it is safe to keep the connection idle.
+    /** Default HTTP keep-alive idle interval in milliseconds (30 seconds). */
     public static final String KEEPALIVE_INTERVAL_DEFAULT = "30000"; /* 30 seconds */
     // keepalive enabled by default.
+    /** Default HTTP keep-alive enabled state (true). */
     public static final String KEEPALIVE_DEFAULT = "true";
+    /** System property name to override the HTTP keep-alive interval. */
     public static final String KEEPALIVE_INTERVAL_PROPERTY =
             ElasticsearchLogStorageRetriever.class.getName() + ".keepAlive.interval";
+    /** System property name to override whether HTTP keep-alive is enabled. */
     public static final String KEEPALIVE_PROPERTY =
             ElasticsearchLogStorageRetriever.class.getName() + ".keepAlive.enabled";
+    /** Effective HTTP keep-alive interval in milliseconds, read from the system property. */
     public static final int KEEPALIVE_INTERVAL =
             Integer.parseInt(System.getProperty(KEEPALIVE_INTERVAL_PROPERTY, KEEPALIVE_INTERVAL_DEFAULT));
+    /** Whether HTTP keep-alive is enabled, read from the system property. */
     public static final boolean KEEPALIVE =
             Boolean.parseBoolean(System.getProperty(KEEPALIVE_PROPERTY, KEEPALIVE_DEFAULT));
 
@@ -110,6 +116,15 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
 
     private Tracer _tracer;
 
+    /**
+     * Creates an Elasticsearch log storage retriever.
+     *
+     * @param elasticsearchUrl                   Elasticsearch endpoint URL
+     * @param disableSslVerifications            when {@code true}, SSL certificate validation is skipped
+     * @param elasticsearchCredentialsId         Jenkins credentials ID for Elasticsearch authentication
+     * @param buildLogsVisualizationUrlTemplate  Freemarker template for generating Kibana log links
+     * @param templateBindingsProvider           provider for template variable bindings
+     */
     @MustBeClosed
     public ElasticsearchLogStorageRetriever(
             @NonNull String elasticsearchUrl,
@@ -168,6 +183,18 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         this.templateBindingsProvider = templateBindingsProvider;
     }
 
+    /**
+     * Retrieves the complete log output for a pipeline run from Elasticsearch.
+     *
+     * @param jobFullName the full name of the Jenkins job
+     * @param runNumber   the build number
+     * @param traceId     the OTel trace ID of the root span
+     * @param spanId      the OTel span ID
+     * @param complete    whether the run has completed
+     * @param startTime   the run start time
+     * @param endTime     the run end time, or {@code null} if not yet finished
+     * @return a {@link LogsQueryResult} with the log byte stream and visualization header
+     */
     @NonNull
     @Override
     public LogsQueryResult overallLog(
@@ -222,6 +249,19 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         }
     }
 
+    /**
+     * Retrieves the log output for a specific pipeline step from Elasticsearch.
+     *
+     * @param jobFullName the full name of the Jenkins job
+     * @param runNumber   the build number
+     * @param flowNodeId  the flow node ID of the step
+     * @param traceId     the OTel trace ID of the root span
+     * @param spanId      the OTel span ID of the step span
+     * @param complete    whether the step has completed
+     * @param startTime   the step start time
+     * @param endTime     the step end time, or {@code null} if not yet finished
+     * @return a {@link LogsQueryResult} with the log byte stream and visualization header
+     */
     @NonNull
     @Override
     public LogsQueryResult stepLog(
@@ -373,6 +413,11 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         return phaseName + "[" + retentionPolicySpec + "]";
     }
 
+    /**
+     * Closes the underlying Elasticsearch transport and REST client, releasing all resources.
+     *
+     * @throws IOException if closing the transport or client fails
+     */
     @Override
     public void close() throws IOException {
         logger.log(Level.FINE, () -> "Shutdown Elasticsearch client...");
@@ -380,6 +425,11 @@ public class ElasticsearchLogStorageRetriever implements LogStorageRetriever, Cl
         this.restClient.close();
     }
 
+    /**
+     * Returns a string representation of this retriever.
+     *
+     * @return string representation including the Elasticsearch URL
+     */
     @Override
     public String toString() {
         return "ElasticsearchLogStorageRetriever{" + "elasticsearchUrl=" + elasticsearchUrl + '}';

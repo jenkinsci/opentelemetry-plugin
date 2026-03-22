@@ -50,6 +50,12 @@ public class RunTraceContext implements Serializable {
         this.w3cTraceContext = Collections.unmodifiableMap(w3cTraceContext);
     }
 
+    /**
+     * Converts this trace context into OpenTelemetry {@link Attributes} containing the pipeline
+     * name and run number.
+     *
+     * @return attributes for the associated run
+     */
     @NonNull
     public Attributes toAttributes() {
         return Attributes.builder()
@@ -58,10 +64,20 @@ public class RunTraceContext implements Serializable {
                 .build();
     }
 
+    /**
+     * Returns the full name of the Jenkins job.
+     *
+     * @return job full name
+     */
     public String getJobFullName() {
         return jobFullName;
     }
 
+    /**
+     * Returns the build run number.
+     *
+     * @return run number
+     */
     public int getRunNumber() {
         return runNumber;
     }
@@ -73,6 +89,11 @@ public class RunTraceContext implements Serializable {
         return w3cTraceContext;
     }
 
+    /**
+     * Extracts the OpenTelemetry {@link Context} from the stored W3C trace context map.
+     *
+     * @return the extracted context
+     */
     public Context getContext() {
         return W3CTraceContextPropagator.getInstance()
                 .extract(Context.current(), getW3cTraceContext(), new TextMapGetter<>() {
@@ -90,6 +111,11 @@ public class RunTraceContext implements Serializable {
                 });
     }
 
+    /**
+     * Returns a string representation of this trace context.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         return "RunTraceContext{" + "jobFullName='"
@@ -99,6 +125,12 @@ public class RunTraceContext implements Serializable {
                 + traceId + '\'' + '}';
     }
 
+    /**
+     * Compares this context by job name and run number.
+     *
+     * @param o object to compare
+     * @return {@code true} when both represent the same run
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -110,15 +142,30 @@ public class RunTraceContext implements Serializable {
                 && Objects.equal(spanId, runTraceContext.spanId);
     }
 
+    /**
+     * Returns hash code based on job name and run number.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hashCode(jobFullName, runNumber, traceId, spanId);
     }
 
+    /**
+     * Returns the OTel trace ID for the root span of this run.
+     *
+     * @return trace ID
+     */
     public String getTraceId() {
         return traceId;
     }
 
+    /**
+     * Returns the OTel span ID for this run.
+     *
+     * @return span ID
+     */
     public String getSpanId() {
         return spanId;
     }
