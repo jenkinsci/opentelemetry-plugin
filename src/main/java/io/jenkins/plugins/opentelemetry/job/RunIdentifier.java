@@ -25,6 +25,12 @@ public class RunIdentifier implements Comparable<RunIdentifier> {
         return new RunIdentifier(build.getParent().getFullName(), build.getNumber());
     }
 
+    /**
+     * Creates a run identifier.
+     *
+     * @param jobName full job name
+     * @param runNumber build run number
+     */
     public RunIdentifier(@NonNull String jobName, @NonNull int runNumber) {
         this.jobName = jobName;
         this.runNumber = runNumber;
@@ -38,6 +44,12 @@ public class RunIdentifier implements Comparable<RunIdentifier> {
         return jobName + "#" + runNumber;
     }
 
+    /**
+     * Compares by job name and run number.
+     *
+     * @param o object to compare
+     * @return {@code true} when both identify the same run
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -46,24 +58,50 @@ public class RunIdentifier implements Comparable<RunIdentifier> {
         return runNumber == that.runNumber && jobName.equals(that.jobName);
     }
 
+    /**
+     * Returns hash code for this run identifier.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(jobName, runNumber);
     }
 
+    /**
+     * Returns string representation for diagnostics.
+     *
+     * @return printable run identifier
+     */
     @Override
     public String toString() {
         return "RunIdentifier{" + "jobName='" + jobName + '\'' + ", runNumber=" + runNumber + '}';
     }
 
+    /**
+     * Returns full job name.
+     *
+     * @return full job name
+     */
     public String getJobName() {
         return jobName;
     }
 
+    /**
+     * Returns build run number.
+     *
+     * @return run number
+     */
     public int getRunNumber() {
         return runNumber;
     }
 
+    /**
+     * Compares run identifiers by job name then run number.
+     *
+     * @param o run identifier to compare
+     * @return comparison result
+     */
     @Override
     public int compareTo(RunIdentifier o) {
         return ComparisonChain.start()

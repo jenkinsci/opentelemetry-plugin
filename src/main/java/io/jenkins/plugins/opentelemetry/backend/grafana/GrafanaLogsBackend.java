@@ -44,6 +44,11 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
             this.displayName = displayName;
         }
 
+        /**
+         * Returns display name for the Loki log format.
+         *
+         * @return Loki log format display name
+         */
         public String getDisplayName() {
             return displayName;
         }
@@ -62,6 +67,11 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
     @MustBeClosed
     public abstract LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider);
 
+    /**
+     * Returns Groovy template for the build logs visualization link message.
+     *
+     * @return build logs Grafana link message template
+     */
     @NonNull
     public Template getBuildLogsVisualizationMessageTemplate() {
         try {
@@ -71,6 +81,11 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
         }
     }
 
+    /**
+     * Returns Groovy template for the Grafana build logs visualization URL.
+     *
+     * @return Grafana Loki build logs URL template
+     */
     @NonNull
     public Template getBuildLogsVisualizationUrlTemplate() {
         if (this.buildLogsVisualizationUrlGTemplate == null) {
@@ -163,15 +178,30 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
         return buildLogsVisualizationUrlGTemplate;
     }
 
+    /**
+     * Returns OpenTelemetry configuration properties for Loki log export.
+     *
+     * @return OTel configuration properties map
+     */
     public Map<String, String> getOtelConfigurationProperties() {
         return Collections.singletonMap("otel.logs.exporter", "otlp");
     }
 
+    /**
+     * Returns the descriptor for this Grafana logs backend.
+     *
+     * @return backend descriptor
+     */
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
     }
 
+    /**
+     * Returns the configured Loki OTel log format name.
+     *
+     * @return Loki OTel log format name
+     */
     @NonNull
     public String getLokiOTelLogFormat() {
         return Optional.ofNullable(lokiOTelLogFormat)
@@ -179,6 +209,11 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
                 .orElse(getDescriptor().getDefaultLokiOTelLogFormat());
     }
 
+    /**
+     * Sets the Loki OTel log format.
+     *
+     * @param lokiOTelLogFormat Loki OTel log format name
+     */
     @DataBoundSetter
     public void setLokiOTelLogFormat(String lokiOTelLogFormat) {
         this.lokiOTelLogFormat = LokiOTelLogFormat.valueOf(lokiOTelLogFormat);
@@ -192,6 +227,11 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
     }
 
     public abstract static class DescriptorImpl extends Descriptor<GrafanaLogsBackend> {
+        /**
+         * Populates Loki OTel log format selector.
+         *
+         * @return Loki log format list box model
+         */
         public ListBoxModel doFillLokiOTelLogFormatItems() {
             ListBoxModel items = new ListBoxModel();
             for (LokiOTelLogFormat lokiOTelLogFormat : LokiOTelLogFormat.values()) {
@@ -200,6 +240,11 @@ public abstract class GrafanaLogsBackend extends AbstractDescribableImpl<Grafana
             return items;
         }
 
+        /**
+         * Returns the default Loki OTel log format name.
+         *
+         * @return default Loki OTel log format name
+         */
         public abstract String getDefaultLokiOTelLogFormat();
     }
 }

@@ -28,11 +28,23 @@ public class WithSpanAttributesStep extends Step {
 
     List<SpanAttribute> spanAttributes;
 
+    /**
+     * Creates a withSpanAttributes step with the given attribute list.
+     *
+     * @param spanAttributes span attributes to set
+     */
     @DataBoundConstructor
     public WithSpanAttributesStep(List<SpanAttribute> spanAttributes) {
         this.spanAttributes = spanAttributes;
     }
 
+    /**
+     * Starts execution of this step.
+     *
+     * @param context step execution context
+     * @return step execution
+     * @throws Exception if the step cannot be started
+     */
     @Override
     public StepExecution start(StepContext context) throws Exception {
         if (spanAttributes == null) {
@@ -76,22 +88,44 @@ public class WithSpanAttributesStep extends Step {
     public static final class DescriptorImpl extends StepDescriptor {
         public static final String FUNCTION_NAME = "withSpanAttributes";
 
+        /**
+         * Returns required context types for this step.
+         *
+         * @return required context set
+         */
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
             return Collections.singleton(TaskListener.class);
         }
 
+        /**
+         * Returns Pipeline DSL function name for this step.
+         *
+         * @return DSL function name
+         */
         @Override
         public String getFunctionName() {
             return FUNCTION_NAME;
         }
 
+        /**
+         * Returns display name used in Pipeline snippet generator.
+         *
+         * @return step display name
+         */
         @NonNull
         @Override
         public String getDisplayName() {
             return "Set Span Attributes on child spans";
         }
 
+        /**
+         * Populates attribute type selector.
+         *
+         * @param item ancestor item
+         * @param context ancestor item group
+         * @return attribute type list box model
+         */
         public ListBoxModel doFillTypeItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
             List<AttributeType> supportedAttributeTypes = Arrays.asList(
                     AttributeType.STRING, AttributeType.LONG, AttributeType.BOOLEAN, AttributeType.DOUBLE);
@@ -100,12 +134,24 @@ public class WithSpanAttributesStep extends Step {
                     .collect(Collectors.toList()));
         }
 
+        /**
+         * Populates attribute target selector.
+         *
+         * @param item ancestor item
+         * @param context ancestor item group
+         * @return attribute target list box model
+         */
         public ListBoxModel doFillTargetItems(@AncestorInPath Item item, @AncestorInPath ItemGroup context) {
             return new ListBoxModel(Arrays.stream(SpanAttributeTarget.values())
                     .map(t -> new ListBoxModel.Option(t.name(), t.name()))
                     .collect(Collectors.toList()));
         }
 
+        /**
+         * Returns whether this step takes a block body.
+         *
+         * @return {@code true} as withSpanAttributes wraps a block
+         */
         @Override
         public boolean takesImplicitBlockArgument() {
             return true;

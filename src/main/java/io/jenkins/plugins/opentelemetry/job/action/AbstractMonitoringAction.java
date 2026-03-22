@@ -61,29 +61,57 @@ public abstract class AbstractMonitoringAction implements OtelMonitoringAction {
                                 .orElse(", null spanAndScopes"));
     }
 
+    /**
+     * Returns the span name.
+     *
+     * @return span name
+     */
     public String getSpanName() {
         return spanName;
     }
 
+    /**
+     * Returns W3C trace context propagation headers.
+     *
+     * @return immutable W3C trace context map
+     */
     @Override
     public Map<String, String> getW3cTraceContext() {
         return Collections.unmodifiableMap(w3cTraceContext);
     }
 
+    /**
+     * Returns the active span, or {@code null} if already purged.
+     *
+     * @return active span, or {@code null}
+     */
     @Override
     @CheckForNull
     public Span getSpan() {
         return spanAndScopes == null ? null : spanAndScopes.span;
     }
 
+    /**
+     * Returns trace ID.
+     *
+     * @return trace ID
+     */
     public String getTraceId() {
         return traceId;
     }
 
+    /**
+     * Returns span ID.
+     *
+     * @return span ID
+     */
     public String getSpanId() {
         return spanId;
     }
 
+    /**
+     * Purges the span reference and closes all associated scopes.
+     */
     @Override
     public void purgeSpanAndCloseAssociatedScopes() {
         LOGGER.log(
@@ -98,6 +126,11 @@ public abstract class AbstractMonitoringAction implements OtelMonitoringAction {
         this.spanAndScopes = null;
     }
 
+    /**
+     * Returns string representation for diagnostics.
+     *
+     * @return printable monitoring action
+     */
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" + "traceId='"
@@ -106,6 +139,11 @@ public abstract class AbstractMonitoringAction implements OtelMonitoringAction {
                 + spanName + '\'' + '}';
     }
 
+    /**
+     * Returns whether the associated span has ended.
+     *
+     * @return {@code true} when the span has ended or is no longer tracked
+     */
     @Override
     public boolean hasEnded() {
         return Optional.ofNullable(spanAndScopes)
