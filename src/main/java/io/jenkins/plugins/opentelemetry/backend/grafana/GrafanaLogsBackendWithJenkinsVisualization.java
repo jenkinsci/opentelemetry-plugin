@@ -307,6 +307,15 @@ public class GrafanaLogsBackendWithJenkinsVisualization extends GrafanaLogsBacke
             return FormValidation.ok();
         }
 
+            /**
+             * Validates Loki connectivity and authentication with the submitted settings.
+             *
+             * @param lokiUrl Loki endpoint URL
+             * @param disableSslVerifications whether SSL verification is disabled
+             * @param lokiCredentialsId credentials identifier
+             * @param lokiTenantId Loki tenant identifier
+             * @return validation result
+             */
         @RequirePOST
         public FormValidation doValidate(
                 @QueryParameter String lokiUrl,
