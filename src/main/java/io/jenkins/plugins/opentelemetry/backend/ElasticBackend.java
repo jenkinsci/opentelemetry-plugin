@@ -71,9 +71,18 @@ public class ElasticBackend extends ObservabilityBackend {
 
     private boolean enableEDOT;
 
+    /**
+     * Creates Elastic backend configuration with defaults.
+     */
     @DataBoundConstructor
     public ElasticBackend() {}
 
+    /**
+     * Merges provided template bindings with backend-specific bindings.
+     *
+     * @param bindings base bindings
+     * @return merged bindings
+     */
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
@@ -81,6 +90,11 @@ public class ElasticBackend extends ObservabilityBackend {
         return mergedBindings;
     }
 
+    /**
+     * Returns template bindings used to render Elastic links.
+     *
+     * @return Elastic-specific bindings
+     */
     @Override
     public Map<String, Object> getBindings() {
         Map<String, Object> bindings = new LinkedHashMap<>();
@@ -108,6 +122,11 @@ public class ElasticBackend extends ObservabilityBackend {
                 + "&traceId=${traceId}";
     }
 
+    /**
+     * Returns configured Kibana base URL with trailing slash removed.
+     *
+     * @return Kibana base URL, or {@code null} when unset
+     */
     @CheckForNull
     public String getKibanaBaseUrl() {
         if (kibanaBaseUrl != null && kibanaBaseUrl.endsWith("/")) {
@@ -116,6 +135,11 @@ public class ElasticBackend extends ObservabilityBackend {
         return kibanaBaseUrl;
     }
 
+    /**
+     * Sets Kibana base URL.
+     *
+     * @param kibanaBaseUrl Kibana base URL
+     */
     @DataBoundSetter
     public void setKibanaBaseUrl(String kibanaBaseUrl) {
         this.kibanaBaseUrl = kibanaBaseUrl;
@@ -151,10 +175,20 @@ public class ElasticBackend extends ObservabilityBackend {
         return kibanaSpaceBaseUrl;
     }
 
+    /**
+     * Returns nested Elastic logs backend configuration.
+     *
+     * @return Elastic logs backend, or {@code null} when unset
+     */
     public ElasticLogsBackend getElasticLogsBackend() {
         return elasticLogsBackend;
     }
 
+    /**
+     * Sets nested Elastic logs backend configuration.
+     *
+     * @param elasticLogsBackend Elastic logs backend
+     */
     @DataBoundSetter
     public void setElasticLogsBackend(ElasticLogsBackend elasticLogsBackend) {
         this.elasticLogsBackend = elasticLogsBackend;
@@ -181,48 +215,98 @@ public class ElasticBackend extends ObservabilityBackend {
         }
     }
 
+    /**
+     * Returns Kibana space identifier.
+     *
+     * @return configured space identifier, or default when unset
+     */
     @NonNull
     public String getKibanaSpaceIdentifier() {
         return Objects.toString(kibanaSpaceIdentifier, DEFAULT_KIBANA_SPACE_IDENTIFIER);
     }
 
+    /**
+     * Sets Kibana space identifier.
+     *
+     * @param kibanaSpaceIdentifier Kibana space identifier
+     */
     @DataBoundSetter
     public void setKibanaSpaceIdentifier(String kibanaSpaceIdentifier) {
         this.kibanaSpaceIdentifier = kibanaSpaceIdentifier;
     }
 
+    /**
+     * Returns Kibana dashboard title.
+     *
+     * @return configured dashboard title, or default when unset
+     */
     @NonNull
     public String getKibanaDashboardTitle() {
         return Objects.toString(kibanaDashboardTitle, DEFAULT_KIBANA_DASHBOARD_TITLE);
     }
 
+    /**
+     * Sets Kibana dashboard title.
+     *
+     * @param kibanaDashboardTitle dashboard title
+     */
     @DataBoundSetter
     public void setKibanaDashboardTitle(String kibanaDashboardTitle) {
         this.kibanaDashboardTitle = kibanaDashboardTitle;
     }
 
+    /**
+     * Returns dashboard URL query parameters.
+     *
+     * @return configured query parameters, or defaults when unset
+     */
     public String getKibanaDashboardUrlParameters() {
         return Objects.toString(kibanaDashboardUrlParameters, DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS);
     }
 
+    /**
+     * Sets dashboard URL query parameters.
+     *
+     * @param kibanaDashboardUrlParameters URL query parameters
+     */
     @DataBoundSetter
     public void setKibanaDashboardUrlParameters(String kibanaDashboardUrlParameters) {
         this.kibanaDashboardUrlParameters = kibanaDashboardUrlParameters;
     }
 
+    /**
+     * Returns whether dashboard link should be shown in Jenkins UI.
+     *
+     * @return {@code true} when dashboard link is enabled
+     */
     public boolean isDisplayKibanaDashboardLink() {
         return displayKibanaDashboardLink;
     }
 
+    /**
+     * Sets whether dashboard link should be shown in Jenkins UI.
+     *
+     * @param displayKibanaDashboardLink enable flag
+     */
     @DataBoundSetter
     public void setDisplayKibanaDashboardLink(boolean displayKibanaDashboardLink) {
         this.displayKibanaDashboardLink = displayKibanaDashboardLink;
     }
 
+    /**
+     * Returns whether EDOT transaction type compatibility mode is enabled.
+     *
+     * @return {@code true} when EDOT mode is enabled
+     */
     public boolean isEnableEDOT() {
         return enableEDOT;
     }
 
+    /**
+     * Sets whether EDOT transaction type compatibility mode is enabled.
+     *
+     * @param enableEDOT enable flag
+     */
     @DataBoundSetter
     public void setEnableEDOT(boolean enableEDOT) {
         this.enableEDOT = enableEDOT;
@@ -242,6 +326,12 @@ public class ElasticBackend extends ObservabilityBackend {
         return effectiveUrl;
     }
 
+    /**
+     * Compares backend configuration values.
+     *
+     * @param o object to compare
+     * @return {@code true} when configurations are equivalent
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -255,6 +345,11 @@ public class ElasticBackend extends ObservabilityBackend {
                 && Objects.equals(elasticLogsBackend, that.elasticLogsBackend);
     }
 
+    /**
+     * Returns hash code for backend configuration.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return Objects.hash(
@@ -270,24 +365,50 @@ public class ElasticBackend extends ObservabilityBackend {
     @Symbol("elastic")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
 
+        /**
+         * Returns display name used in Jenkins backend selector.
+         *
+         * @return backend display name
+         */
         @NonNull
         @Override
         public String getDisplayName() {
             return DEFAULT_BACKEND_NAME;
         }
 
+        /**
+         * Returns default dashboard query parameters.
+         *
+         * @return default dashboard query parameters
+         */
         public String getDefaultKibanaDashboardUrlParameters() {
             return DEFAULT_KIBANA_DASHBOARD_QUERY_PARAMETERS;
         }
 
+        /**
+         * Returns default dashboard title.
+         *
+         * @return default dashboard title
+         */
         public String getDefaultKibanaDashboardTitle() {
             return DEFAULT_KIBANA_DASHBOARD_TITLE;
         }
 
+        /**
+         * Returns default Kibana space identifier.
+         *
+         * @return default space identifier
+         */
         public String getDefaultKibanaSpaceIdentifier() {
             return DEFAULT_KIBANA_SPACE_IDENTIFIER;
         }
 
+        /**
+         * Validates Kibana base URL entered in global configuration.
+         *
+         * @param kibanaBaseUrl user-provided Kibana base URL
+         * @return validation result
+         */
         public FormValidation doCheckKibanaBaseUrl(@QueryParameter("kibanaBaseUrl") String kibanaBaseUrl) {
             if (StringUtils.isEmpty(kibanaBaseUrl)) {
                 return FormValidation.ok();
