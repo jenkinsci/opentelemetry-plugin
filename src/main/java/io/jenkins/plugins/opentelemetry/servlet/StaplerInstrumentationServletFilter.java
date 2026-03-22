@@ -70,11 +70,19 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     Meter meter;
     OperationListener httpServerMetrics;
 
+    /**
+     * Initializes HTTP server metrics after injection.
+     */
     @PostConstruct
     public void postConstruct() {
         httpServerMetrics = HttpServerMetrics.get().create(meter);
     }
 
+    /**
+     * Reconfigures the filter after SDK configuration changes.
+     *
+     * @param configProperties updated SDK configuration properties
+     */
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
         enabled.set(configProperties.getBoolean(
@@ -790,11 +798,25 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     }
 
     public static class ParsedJobUrl {
+        /**
+         * Creates a parsed job URL from token lists.
+         *
+         * @param jobName list of job name segments
+         * @param runNumber optional build number, or {@code null}
+         * @param urlPattern list of URL pattern segments
+         */
         public ParsedJobUrl(List<String> jobName, @Nullable Long runNumber, List<String> urlPattern) {
             this(String.join("/", jobName), runNumber, "/" + String.join("/", urlPattern));
         }
 
-        public ParsedJobUrl(@Nullable String jobName, @Nullable Long runNumber, String urlPattern) {
+    /**
+     * Creates a parsed job URL.
+     *
+     * @param jobName fully qualified job name, or {@code null}
+     * @param runNumber optional build number, or {@code null}
+     * @param urlPattern normalized URL pattern string
+     */
+    public ParsedJobUrl(@Nullable String jobName, @Nullable Long runNumber, String urlPattern) {
             this.jobName = jobName;
             this.urlPattern = urlPattern;
             this.runNumber = runNumber;
@@ -808,6 +830,11 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
 
         final String urlPattern;
 
+        /**
+         * Returns string representation for diagnostics.
+         *
+         * @return printable parsed job URL
+         */
         @Override
         public String toString() {
             return "ParsedJobUrl{" + "jobName='"
@@ -816,6 +843,12 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
                     + urlPattern + '\'' + '}';
         }
 
+        /**
+         * Compares parsed job URL values for equality.
+         *
+         * @param o object to compare
+         * @return {@code true} when URLs are equivalent
+         */
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -826,6 +859,11 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
                     && Objects.equals(urlPattern, that.urlPattern);
         }
 
+        /**
+         * Returns hash code for parsed job URL.
+         *
+         * @return hash code
+         */
         @Override
         public int hashCode() {
             return Objects.hash(jobName, runNumber, urlPattern);
@@ -837,28 +875,53 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
         final String flowNodeId;
         final Integer stepId;
 
+        /**
+         * Creates a parsed Blue Ocean pipeline job URL from token lists.
+         *
+         * @param jobName list of job name segments
+         * @param runNumber optional build number, or {@code null}
+         * @param urlPattern list of URL pattern segments
+         * @param flowNodeId optional pipeline flow node id
+         * @param stepId optional pipeline step id
+         */
         public ParsedBlueOceanPipelineJobUrl(
-                List<String> jobName,
-                @Nullable Long runNumber,
-                List<String> urlPattern,
-                @Nullable String flowNodeId,
-                @Nullable Integer stepId) {
+            List<String> jobName,
+            @Nullable Long runNumber,
+            List<String> urlPattern,
+            @Nullable String flowNodeId,
+            @Nullable Integer stepId) {
             super(jobName, runNumber, urlPattern);
             this.flowNodeId = flowNodeId;
             this.stepId = stepId;
         }
 
+        /**
+         * Creates a parsed Blue Ocean pipeline job URL.
+         *
+         * @param jobName fully qualified job name
+         * @param runNumber optional build number, or {@code null}
+         * @param flowNodeId optional pipeline flow node id
+         * @param stepId optional pipeline step id
+         * @param urlPattern normalized URL pattern
+         */
         public ParsedBlueOceanPipelineJobUrl(
-                @Nullable String jobName,
-                @Nullable Long runNumber,
-                @Nullable String flowNodeId,
-                @Nullable Integer stepId,
-                @Nullable String urlPattern) {
+            @Nullable String jobName,
+            @Nullable Long runNumber,
+            @Nullable String flowNodeId,
+            @Nullable Integer stepId,
+            @Nullable String urlPattern) {
             super(jobName, runNumber, urlPattern);
             this.flowNodeId = flowNodeId;
             this.stepId = stepId;
         }
 
+        @Override
+        /**
+         * Compares Blue Ocean parsed job URL values for equality.
+         *
+         * @param o object to compare
+         * @return {@code true} when URLs are equivalent
+         */
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -869,10 +932,22 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
         }
 
         @Override
+        /**
+         * Returns hash code for Blue Ocean parsed job URL.
+         *
+         * @return hash code
+         */
+        @Override
         public int hashCode() {
             return Objects.hash(super.hashCode(), flowNodeId, stepId);
         }
 
+        @Override
+        /**
+         * Returns string representation for diagnostics.
+         *
+         * @return printable Blue Ocean parsed job URL
+         */
         @Override
         public String toString() {
             return "ParsedBlueOceanPipelineJobUrl{" + "jobName='"
@@ -885,17 +960,35 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
     }
 
     @Override
+    /**
+     * Returns whether this filter is equal to another object.
+     *
+     * @param o object to compare
+     * @return {@code true} when both are the same filter type
+     */
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         return o != null && getClass() == o.getClass();
     }
 
     @Override
+    /**
+     * Returns hash code for this filter.
+     *
+     * @return hash code
+     */
+    @Override
     public int hashCode() {
         return Objects.hashCode(getClass());
     }
 
     @Inject
+    /**
+     * Injects OpenTelemetry SDK and configures tracer and meter.
+     *
+     * @param openTelemetry reconfigurable OpenTelemetry instance
+     */
     public void setTracer(ReconfigurableOpenTelemetry openTelemetry) {
         this.tracer = openTelemetry.getTracer("io.jenkins.stapler");
         this.meter = openTelemetry.getMeter("io.jenkins.stapler");

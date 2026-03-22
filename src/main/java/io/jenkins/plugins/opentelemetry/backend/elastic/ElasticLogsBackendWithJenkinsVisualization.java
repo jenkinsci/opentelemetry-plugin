@@ -44,9 +44,19 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
     private boolean disableSslVerifications;
     private String elasticsearchCredentialsId;
 
+    /**
+     * Creates Elastic logs backend configuration with defaults.
+     */
     @DataBoundConstructor
     public ElasticLogsBackendWithJenkinsVisualization() {}
 
+    /**
+     * Creates a log storage retriever backed by Elasticsearch.
+     *
+     * @param templateBindingsProvider template bindings provider
+     * @return Elasticsearch log storage retriever
+     * @throws IllegalStateException when Elasticsearch URL is not configured
+     */
     @Override
     @MustBeClosed
     public LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider) {
@@ -64,36 +74,72 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         }
     }
 
+    /**
+     * Sets Elasticsearch credentials identifier.
+     *
+     * @param elasticsearchCredentialsId credentials identifier
+     */
     @DataBoundSetter
     public void setElasticsearchCredentialsId(@CheckForNull String elasticsearchCredentialsId) {
         this.elasticsearchCredentialsId = elasticsearchCredentialsId;
     }
 
+    /**
+     * Returns Elasticsearch credentials identifier.
+     *
+     * @return credentials identifier, or {@code null} if not configured
+     */
     @CheckForNull
     public String getElasticsearchCredentialsId() {
         return elasticsearchCredentialsId;
     }
 
+    /**
+     * Returns Elasticsearch base URL.
+     *
+     * @return Elasticsearch base URL, or {@code null} if not configured
+     */
     @CheckForNull
     public String getElasticsearchUrl() {
         return elasticsearchUrl;
     }
 
+    /**
+     * Sets Elasticsearch base URL.
+     *
+     * @param elasticsearchUrl Elasticsearch base URL
+     */
     @DataBoundSetter
     public void setElasticsearchUrl(@CheckForNull String elasticsearchUrl) {
         this.elasticsearchUrl = Util.fixNull(elasticsearchUrl);
     }
 
+    /**
+     * Returns whether SSL verification is disabled for Elasticsearch connections.
+     *
+     * @return {@code true} when SSL verification is disabled
+     */
     public boolean isDisableSslVerifications() {
         return disableSslVerifications;
     }
 
     @DataBoundSetter
+    /**
+     * Sets whether SSL verification is disabled for Elasticsearch connections.
+     *
+     * @param disableSslVerifications disable SSL verification flag
+     */
     public void setDisableSslVerifications(boolean disableSslVerifications) {
         this.disableSslVerifications = disableSslVerifications;
     }
 
     @Override
+    /**
+     * Compares backend configuration values for equality.
+     *
+     * @param o object to compare
+     * @return {@code true} when configurations are equivalent
+     */
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -104,11 +150,21 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
     }
 
     @Override
+    /**
+     * Returns hash code for backend configuration.
+     *
+     * @return hash code
+     */
     public int hashCode() {
         return Objects.hash(elasticsearchUrl, disableSslVerifications, elasticsearchCredentialsId);
     }
 
     @Override
+    /**
+     * Returns string representation for diagnostics.
+     *
+     * @return printable backend configuration
+     */
     public String toString() {
         return "ElasticLogsBackendWithVisualizationJenkins{" + "elasticsearchUrl='"
                 + elasticsearchUrl + '\'' + ", disableSslVerifications='"
@@ -119,6 +175,11 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
     @Extension(ordinal = 0)
     public static class DescriptorImpl extends ElasticLogsBackend.DescriptorImpl {
         @Override
+        /**
+         * Returns display name used in global configuration.
+         *
+         * @return logs backend display name
+         */
         public String getDisplayName() {
             return "Store pipeline logs In Elastic and visualize logs both in Elastic and through Jenkins";
         }
@@ -139,6 +200,12 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
             return FormValidation.ok();
         }
 
+        /**
+         * Populates credentials selector for Elasticsearch authentication.
+         *
+         * @param elasticsearchCredentialsId currently selected credentials id
+         * @return credentials list box model
+         */
         @RequirePOST
         public ListBoxModel doFillElasticsearchCredentialsIdItems(@QueryParameter String elasticsearchCredentialsId) {
             if (!isAuthorized()) {
@@ -152,6 +219,12 @@ public class ElasticLogsBackendWithJenkinsVisualization extends ElasticLogsBacke
         }
 
         @RequirePOST
+        /**
+         * Validates selected Elasticsearch credentials.
+         *
+         * @param elasticsearchCredentialsId credentials id
+         * @return validation result
+         */
         public FormValidation doCheckElasticsearchCredentialsId(@QueryParameter String elasticsearchCredentialsId) {
             if (!isAuthorized()) {
                 return FormValidation.error("You do not have permission to configure this setting.");
