@@ -35,11 +35,21 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     private Meter meter;
     private ConfigProperties configProperties;
 
+    /**
+     * Injects the trace service used to look up active spans.
+     *
+     * @param otelTraceService OTel trace service
+     */
     @Inject
     public final void setOpenTelemetryTracerService(@NonNull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
     }
 
+    /**
+     * Injects the Jenkins controller OpenTelemetry to obtain tracer and meter instances.
+     *
+     * @param jenkinsControllerOpenTelemetry Jenkins controller OpenTelemetry
+     */
     @Inject
     public final void setJenkinsControllerOpenTelemetry(
             @NonNull JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
@@ -47,6 +57,11 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         this.meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
     }
 
+    /**
+     * Injects OpenTelemetry SDK to read configuration properties.
+     *
+     * @param jenkinsControllerOpenTelemetry reconfigurable OpenTelemetry instance
+     */
     @Inject
     public final void setOpenTelemetry(@NonNull ReconfigurableOpenTelemetry jenkinsControllerOpenTelemetry) {
         this.configProperties = jenkinsControllerOpenTelemetry.getConfig();
@@ -60,6 +75,13 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         }
     }
 
+    /**
+     * Hook called when a run completes, with the run span already activated.
+     * Subclasses override this instead of {@link #onCompleted}.
+     *
+     * @param run completed run
+     * @param listener task listener
+     */
     public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {}
 
     @Override
@@ -70,6 +92,11 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         }
     }
 
+    /**
+     * Hook called when a run is finalized, with the run span already activated.
+     *
+     * @param run finalized run
+     */
     public void _onFinalized(Run<?, ?> run) {}
 
     @Override
@@ -77,6 +104,11 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         this._onInitialize(run);
     }
 
+    /**
+     * Hook called when a run is initialized.
+     *
+     * @param run initializing run
+     */
     public void _onInitialize(@NonNull Run<?, ?> run) {}
 
     @Override
@@ -87,6 +119,12 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         }
     }
 
+    /**
+     * Hook called when a run starts, with the run span already activated.
+     *
+     * @param run started run
+     * @param listener task listener
+     */
     public void _onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {}
 
     @Override
@@ -99,6 +137,17 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         }
     }
 
+    /**
+     * Hook to set up the build environment, with the run span already activated.
+     *
+     * @param build abstract build
+     * @param launcher launcher
+     * @param listener build listener
+     * @return environment setup by this listener
+     * @throws IOException on I/O failures
+     * @throws InterruptedException when the build is interrupted
+     * @throws Run.RunnerAbortedException when the runner requests abort
+     */
     @NonNull
     public Environment _setUpEnvironment(
             @NonNull AbstractBuild build, @NonNull Launcher launcher, @NonNull BuildListener listener)
@@ -114,18 +163,38 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         }
     }
 
+    /**
+     * Hook called when a run is deleted, with the run span already activated.
+     *
+     * @param run deleted run
+     */
     public void _onDeleted(@NonNull Run<?, ?> run) {}
 
+    /**
+     * Returns the OTel trace service.
+     *
+     * @return OTel trace service
+     */
     @NonNull
     public OtelTraceService getTraceService() {
         return otelTraceService;
     }
 
+    /**
+     * Returns the default tracer.
+     *
+     * @return tracer
+     */
     @NonNull
     public Tracer getTracer() {
         return tracer;
     }
 
+    /**
+     * Returns the default meter.
+     *
+     * @return meter
+     */
     @NonNull
     public Meter getMeter() {
         return meter;

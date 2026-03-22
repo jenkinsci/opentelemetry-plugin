@@ -51,6 +51,11 @@ public class MonitoringAction extends AbstractMonitoringAction
 
     private transient Run run;
 
+    /**
+     * Creates a monitoring action backed by the given span.
+     *
+     * @param span root span for the build
+     */
     public MonitoringAction(Span span) {
         super(span, Collections.emptyList());
         this.rootSpanName = super.getSpanName();
@@ -67,21 +72,41 @@ public class MonitoringAction extends AbstractMonitoringAction
         this.run = r;
     }
 
+    /**
+     * Returns icon file name for the action sidebar link.
+     *
+     * @return {@code null} — this action has no sidebar icon
+     */
     @Override
     public String getIconFileName() {
         return null;
     }
 
+    /**
+     * Returns display name label for the action.
+     *
+     * @return display name
+     */
     @Override
     public String getDisplayName() {
         return "OpenTelemetry";
     }
 
+    /**
+     * Returns project-level actions from the last successful build.
+     *
+     * @return project-level monitoring actions
+     */
     @Override
     public Collection<? extends Action> getProjectActions() {
         return run.getParent().getLastSuccessfulBuild().getActions(MonitoringAction.class);
     }
 
+    /**
+     * Returns URL path segment for the action.
+     *
+     * @return {@code null} — this action has no dedicated URL
+     */
     @Override
     public String getUrlName() {
         return null;
@@ -108,6 +133,12 @@ public class MonitoringAction extends AbstractMonitoringAction
         return this;
     }
 
+    /**
+     * Returns W3C trace context for a specific pipeline flow node.
+     *
+     * @param flowNodeId pipeline flow node identifier
+     * @return W3C trace context map, or {@code null} when unavailable
+     */
     @CheckForNull
     public Map<String, String> getW3cTraceContext(@NonNull String flowNodeId) {
         Optional<FlowNode> flowNode = Optional.ofNullable(((WorkflowRun) run).getExecution())
@@ -130,6 +161,11 @@ public class MonitoringAction extends AbstractMonitoringAction
                         .orElse(Collections.emptyMap()));
     }
 
+    /**
+     * Returns observability backend links generated from configured backends for the current run.
+     *
+     * @return list of backend trace visualization links
+     */
     @NonNull
     public List<ObservabilityBackendLink> getLinks() {
         List<ObservabilityBackend> tracingCapableBackends =
@@ -174,6 +210,14 @@ public class MonitoringAction extends AbstractMonitoringAction
         final String iconClass;
         final String environmentVariableName;
 
+        /**
+         * Creates an observability backend link.
+         *
+         * @param label human-readable link label
+         * @param url observability backend URL
+         * @param iconClass CSS icon class
+         * @param environmentVariableName environment variable name for this backend
+         */
         public ObservabilityBackendLink(String label, String url, String iconClass, String environmentVariableName) {
             this.label = label;
             this.url = url;
@@ -181,18 +225,38 @@ public class MonitoringAction extends AbstractMonitoringAction
             this.environmentVariableName = environmentVariableName;
         }
 
+        /**
+         * Returns human-readable link label.
+         *
+         * @return link label
+         */
         public String getLabel() {
             return label;
         }
 
+        /**
+         * Returns observability backend URL.
+         *
+         * @return backend URL
+         */
         public String getUrl() {
             return url;
         }
 
+        /**
+         * Returns CSS icon class for the link.
+         *
+         * @return CSS icon class
+         */
         public String getIconClass() {
             return iconClass;
         }
 
+        /**
+         * Returns environment variable name that holds this backend URL.
+         *
+         * @return environment variable name
+         */
         public String getEnvironmentVariableName() {
             return environmentVariableName;
         }

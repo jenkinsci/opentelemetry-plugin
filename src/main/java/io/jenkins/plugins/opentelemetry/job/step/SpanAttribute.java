@@ -34,6 +34,14 @@ public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implem
 
     private transient Span targetSpan;
 
+    /**
+     * Creates a span attribute definition.
+     *
+     * @param key attribute key name
+     * @param value attribute value
+     * @param attributeType OpenTelemetry attribute type
+     * @param target which span to apply the attribute to
+     */
     @DataBoundConstructor
     public SpanAttribute(String key, Object value, AttributeType attributeType, SpanAttributeTarget target) {
         this.key = key;
@@ -49,6 +57,9 @@ public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implem
         return this;
     }
 
+    /**
+     * Infers the attribute type from the value when no explicit type is configured.
+     */
     public void setDefaultType() {
         if (attributeType != null) {
             return;
@@ -67,6 +78,11 @@ public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implem
         }
     }
 
+    /**
+     * Converts the raw value and constructs the typed {@link AttributeKey} according to the configured type.
+     *
+     * @throws IllegalArgumentException when the attribute type is not supported
+     */
     public void convert() {
         switch (attributeType) {
             case BOOLEAN:
@@ -110,50 +126,110 @@ public class SpanAttribute extends AbstractDescribableImpl<SpanAttribute> implem
         }
     }
 
+    /**
+     * Returns attribute key name.
+     *
+     * @return attribute key name
+     */
     public String getKey() {
         return key;
     }
 
+    /**
+     * Sets attribute key name.
+     *
+     * @param key attribute key name
+     */
     public void setKey(String key) {
         this.key = key;
     }
 
+    /**
+     * Returns raw attribute value.
+     *
+     * @return raw attribute value
+     */
     public Object getValue() {
         return value;
     }
 
+    /**
+     * Sets raw attribute value.
+     *
+     * @param value raw attribute value
+     */
     public void setValue(Object value) {
         this.value = value;
     }
 
+    /**
+     * Returns OpenTelemetry attribute type.
+     *
+     * @return attribute type
+     */
     public AttributeType getAttributeType() {
         return attributeType;
     }
 
+    /**
+     * Sets OpenTelemetry attribute type.
+     *
+     * @param attributeType attribute type
+     */
     public void setAttributeType(AttributeType attributeType) {
         this.attributeType = attributeType;
     }
 
+    /**
+     * Returns which span should receive this attribute.
+     *
+     * @return span attribute target
+     */
     public SpanAttributeTarget getTarget() {
         return target;
     }
 
+    /**
+     * Sets which span should receive this attribute.
+     *
+     * @param target span attribute target
+     */
     public void setTarget(SpanAttributeTarget target) {
         this.target = target;
     }
 
+    /**
+     * Returns typed {@link AttributeKey} produced by {@link #convert()}.
+     *
+     * @return typed attribute key
+     */
     public AttributeKey getAttributeKey() {
         return attributeKey;
     }
 
+    /**
+     * Returns the converted value produced by {@link #convert()}.
+     *
+     * @return converted attribute value
+     */
     public Object getConvertedValue() {
         return convertedValue;
     }
 
+    /**
+     * Returns the resolved span that will receive this attribute.
+     *
+     * @return target span
+     */
     public Span getTargetSpan() {
         return targetSpan;
     }
 
+    /**
+     * Sets the resolved span that will receive this attribute.
+     *
+     * @param targetSpan target span
+     */
     public void setTargetSpan(Span targetSpan) {
         this.targetSpan = targetSpan;
     }
