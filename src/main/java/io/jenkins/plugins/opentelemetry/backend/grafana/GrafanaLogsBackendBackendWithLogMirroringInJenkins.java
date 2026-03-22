@@ -18,6 +18,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * from the Jenkins home directory.
  */
 public class GrafanaLogsBackendBackendWithLogMirroringInJenkins extends GrafanaLogsBackend {
+    /** Creates the backend descriptor binding for log mirroring in Jenkins. */
     @DataBoundConstructor
     public GrafanaLogsBackendBackendWithLogMirroringInJenkins() {}
 
@@ -41,17 +42,29 @@ public class GrafanaLogsBackendBackendWithLogMirroringInJenkins extends GrafanaL
         return properties;
     }
 
+    /**
+     * Compares by concrete type because this backend has no mutable configuration fields.
+     *
+     * @param o object to compare
+     * @return {@code true} when both objects are of the same backend type
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         return o != null && getClass() == o.getClass();
     }
 
+    /**
+     * Returns a stable hash code for this stateless backend type.
+     *
+     * @return hash code for this backend type
+     */
     @Override
     public int hashCode() {
         return NoGrafanaLogsBackend.class.hashCode();
     }
 
+    /** Descriptor for the log-mirroring Grafana backend. */
     @Extension(ordinal = 100)
     public static class DescriptorImpl extends GrafanaLogsBackend.DescriptorImpl {
         @Override

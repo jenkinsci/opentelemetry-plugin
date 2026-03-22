@@ -32,6 +32,9 @@ import java.util.logging.Logger;
 import javax.inject.Inject;
 import jenkins.YesNoMaybe;
 
+/**
+ * Listens to freestyle build-step lifecycle events and creates child spans for each executed step.
+ */
 @Extension(dynamicLoadable = YesNoMaybe.YES)
 public class MonitoringBuildStepListener extends BuildStepListener {
 
@@ -118,10 +121,20 @@ public class MonitoringBuildStepListener extends BuildStepListener {
     }
 
     @Inject
+    /**
+     * Injects the trace service used to store and retrieve step spans.
+     *
+     * @param otelTraceService trace service instance
+     */
     public final void setOpenTelemetryTracerService(@NonNull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
     }
 
+    /**
+     * Returns the configured trace service.
+     *
+     * @return trace service
+     */
     @NonNull
     public OtelTraceService getTracerService() {
         return otelTraceService;

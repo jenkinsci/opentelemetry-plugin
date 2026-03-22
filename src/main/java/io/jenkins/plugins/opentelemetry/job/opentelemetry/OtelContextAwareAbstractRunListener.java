@@ -67,6 +67,12 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         this.configProperties = jenkinsControllerOpenTelemetry.getConfig();
     }
 
+    /**
+     * Activates the run span context and delegates completion handling to {@link #_onCompleted(Run, TaskListener)}.
+     *
+     * @param run completed run
+     * @param listener task listener
+     */
     @Override
     public final void onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
         Span span = getTraceService().getSpan(run);
@@ -84,6 +90,11 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
      */
     public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {}
 
+    /**
+     * Activates the run span context and delegates finalization handling to {@link #_onFinalized(Run)}.
+     *
+     * @param run finalized run
+     */
     @Override
     public final void onFinalized(@NonNull Run<?, ?> run) {
         Span span = getTraceService().getSpan(run);
@@ -99,6 +110,11 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
      */
     public void _onFinalized(Run<?, ?> run) {}
 
+    /**
+     * Delegates initialization handling to {@link #_onInitialize(Run)}.
+     *
+     * @param run initializing run
+     */
     @Override
     public final void onInitialize(@NonNull Run<?, ?> run) {
         this._onInitialize(run);
@@ -111,6 +127,12 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
      */
     public void _onInitialize(@NonNull Run<?, ?> run) {}
 
+    /**
+     * Activates the run span context and delegates start handling to {@link #_onStarted(Run, TaskListener)}.
+     *
+     * @param run started run
+     * @param listener task listener
+     */
     @Override
     public final void onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
         Span span = getTraceService().getSpan(run);
@@ -127,6 +149,17 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
      */
     public void _onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {}
 
+    /**
+     * Activates the run span context and delegates environment setup to {@link #_setUpEnvironment(AbstractBuild, Launcher, BuildListener)}.
+     *
+     * @param build abstract build
+     * @param launcher launcher
+     * @param listener build listener
+     * @return environment setup by this listener
+     * @throws IOException on I/O failures
+     * @throws InterruptedException when the build is interrupted
+     * @throws Run.RunnerAbortedException when the runner requests abort
+     */
     @Override
     public final Environment setUpEnvironment(
             @NonNull AbstractBuild build, @NonNull Launcher launcher, @NonNull BuildListener listener)
@@ -155,6 +188,11 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         return new Environment() {};
     }
 
+    /**
+     * Activates the run span context and delegates deletion handling to {@link #_onDeleted(Run)}.
+     *
+     * @param run deleted run
+     */
     @Override
     public final void onDeleted(@NonNull Run<?, ?> run) {
         Span span = getTraceService().getSpan(run);

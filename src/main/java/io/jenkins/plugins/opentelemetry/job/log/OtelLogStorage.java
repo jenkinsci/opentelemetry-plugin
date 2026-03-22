@@ -47,6 +47,13 @@ class OtelLogStorage implements LogStorage {
 
     final OtelTraceService otelTraceService;
 
+    /**
+     * Creates log storage for a run, binding run tracing metadata and the trace service used to find spans.
+     *
+     * @param run Jenkins run
+     * @param otelTraceService trace service used to resolve run and step spans
+     * @param tracer tracer used for internal instrumentation spans
+     */
     public OtelLogStorage(@NonNull Run run, @NonNull OtelTraceService otelTraceService, @NonNull Tracer tracer) {
         this.run = run;
         MonitoringAction monitoringAction = Optional.ofNullable(run.getAction(MonitoringAction.class))
@@ -63,6 +70,12 @@ class OtelLogStorage implements LogStorage {
         this.runFolderPath = run.getRootDir().getPath();
     }
 
+    /**
+     * Returns a build listener that streams logs to OpenTelemetry, optionally mirrored to disk.
+     *
+     * @return listener used for overall build log emission
+     * @throws IOException if mirror log listener creation fails
+     */
     @NonNull
     @Override
     public BuildListener overallListener() throws IOException {
@@ -191,6 +204,13 @@ class OtelLogStorage implements LogStorage {
         }
     }
 
+    /**
+     * Returns step log text for a specific pipeline node from mirrored disk logs or the configured backend.
+     *
+     * @param flowNode pipeline flow node
+     * @param complete whether the step execution has completed
+     * @return annotated step log content
+     */
     @NonNull
     @Override
     public AnnotatedLargeText<FlowNode> stepLog(@NonNull FlowNode flowNode, boolean complete) {
@@ -239,6 +259,13 @@ class OtelLogStorage implements LogStorage {
         }
     }
 
+    /**
+     * Materializes the overall build log into a file for legacy consumers requiring file-based access.
+     *
+     * @param build executable build context
+     * @param complete whether the build has completed
+     * @return log file containing the current full log snapshot
+     */
     @Deprecated
     @Override
     public File getLogFile(@NonNull FlowExecutionOwner.Executable build, boolean complete) {
@@ -280,11 +307,21 @@ class OtelLogStorage implements LogStorage {
         }
     }
 
+    /**
+     * Returns a debug representation containing the run trace context.
+     *
+     * @return debug representation of this storage instance
+     */
     @Override
     public String toString() {
         return "OtelLogStorage{" + "context=" + runTraceContext + '}';
     }
 
+    /**
+     * Returns the currently configured backend-specific log retriever.
+     *
+     * @return log storage retriever selected by plugin configuration
+     */
     @NonNull
     public LogStorageRetriever getLogStorageRetriever() {
         return JenkinsOpenTelemetryPluginConfiguration.get().getLogStorageRetriever();

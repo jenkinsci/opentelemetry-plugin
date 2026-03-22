@@ -21,6 +21,9 @@ import java.util.Objects;
 import java.util.Optional;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
+/**
+ * Log storage retriever that only returns a logs visualization link and no inline log content.
+ */
 public class CustomLogStorageRetriever implements LogStorageRetriever {
 
     @NonNull
@@ -29,6 +32,12 @@ public class CustomLogStorageRetriever implements LogStorageRetriever {
     @NonNull
     private final TemplateBindingsProvider templateBindingsProvider;
 
+        /**
+         * Creates a retriever backed by custom URL templates.
+         *
+         * @param buildLogsVisualizationUrlTemplate template that renders the logs visualization URL
+         * @param templateBindingsProvider provider for additional template bindings
+         */
     public CustomLogStorageRetriever(
             @NonNull Template buildLogsVisualizationUrlTemplate,
             @NonNull TemplateBindingsProvider templateBindingsProvider) {
@@ -36,6 +45,18 @@ public class CustomLogStorageRetriever implements LogStorageRetriever {
         this.templateBindingsProvider = templateBindingsProvider;
     }
 
+        /**
+         * Returns the synthetic overall-log query result with generated visualization metadata.
+         *
+         * @param jobFullName Jenkins job full name
+         * @param runNumber build number
+         * @param traceId OpenTelemetry trace identifier
+         * @param spanId OpenTelemetry span identifier
+         * @param complete whether the build is complete
+         * @param startTime build start time
+         * @param endTime build end time, or {@code null}
+         * @return synthetic query result containing only header/link metadata
+         */
     @NonNull
     @Override
     public LogsQueryResult overallLog(

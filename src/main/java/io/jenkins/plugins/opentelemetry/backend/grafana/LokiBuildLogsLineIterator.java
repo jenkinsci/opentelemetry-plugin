@@ -41,6 +41,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoCloseable {
 
     protected static final Logger logger = Logger.getLogger(LokiBuildLogsLineIterator.class.getName());
+    /** Circuit-breaker threshold limiting the number of Loki range queries per iterator instance. */
     public static final int MAX_QUERIES = 100;
 
     protected final LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters;
@@ -60,6 +61,17 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
     Iterator<LogLine<Long>> delegate;
     boolean endOfStream;
 
+    /**
+     * Creates an iterator that pages build log lines from Loki.
+     *
+     * @param lokiQueryParameters query parameters used for each Loki request
+     * @param httpClient HTTP client used to execute Loki API calls
+     * @param httpContext HTTP context shared across requests
+     * @param lokiUrl base Loki URL
+     * @param httpAuthHeaderFactory optional factory for adding an authorization header
+     * @param lokiTenantId optional Loki tenant identifier
+     * @param tracer tracer used for diagnostics spans
+     */
     public LokiBuildLogsLineIterator(
             @NonNull LokiGetJenkinsBuildLogsQueryParameters lokiQueryParameters,
             @NonNull CloseableHttpClient httpClient,
@@ -176,6 +188,11 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
         return new CloseableIterator<>(logLineIterator, lokiQueryResponseInputStream);
     }
 
+    /**
+     * Repositions the iterator start time so subsequent queries resume after the provided timestamp.
+     *
+     * @param lastLogTimestampInNanos timestamp of the last log line already consumed
+     */
     @Override
     public void skipLines(Long lastLogTimestampInNanos) {
         Tracer tracer = logger.isLoggable(Level.FINE)
@@ -210,16 +227,27 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
         }
     }
 
+    /**
+     * Indicates whether another log line is currently available.
+     *
+     * @return {@code true} when at least one more log line can be read
+     */
     @Override
     public boolean hasNext() {
         return getCurrentIterator().hasNext();
     }
 
+    /**
+     * Returns the next available log line.
+     *
+     * @return next Loki log line
+     */
     @Override
     public LogLine<Long> next() {
         return getCurrentIterator().next();
     }
 
+    /** Closes the delegate iterator and underlying HTTP client resources. */
     @Override
     public void close() throws Exception {
         if (delegate instanceof AutoCloseable) {

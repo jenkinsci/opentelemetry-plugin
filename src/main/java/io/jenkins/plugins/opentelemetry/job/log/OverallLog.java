@@ -23,12 +23,25 @@ import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
+/**
+ * Annotated build log wrapper that serves progressive and full log views with tracing instrumentation.
+ */
 public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable> {
     private static final Logger logger = Logger.getLogger(OverallLog.class.getName());
     private final FlowExecutionOwner.Executable context;
     private final transient Tracer tracer;
     private final LogsViewHeader logsViewHeader;
 
+    /**
+     * Creates an {@link OverallLog} backed by the provided in-memory byte buffer.
+     *
+     * @param memory byte buffer containing build log data
+     * @param logsViewHeader metadata rendered in the log UI header
+     * @param charset character set used to decode log bytes
+     * @param completed whether the log source is complete
+     * @param context executable run context associated with this log
+     * @param tracer tracer used to instrument log-serving operations
+     */
     public OverallLog(
             ByteBuffer memory,
             LogsViewHeader logsViewHeader,
@@ -73,6 +86,13 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
         }
     }
 
+    /**
+     * Serves incremental plain-text log updates for progressive console rendering.
+     *
+     * @param req incoming request containing the cursor position
+     * @param rsp outgoing response receiving the incremental log payload
+     * @throws IOException if reading or writing log content fails
+     */
     @Override
     public void doProgressiveText(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE)
@@ -93,6 +113,14 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
         }
     }
 
+    /**
+     * Writes log content from the requested offset into the provided writer.
+     *
+     * @param start byte offset from which to start writing
+     * @param w writer receiving formatted log output
+     * @return new byte offset after writing
+     * @throws IOException if writing fails
+     */
     @Override
     public long writeLogTo(long start, Writer w) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE)
@@ -193,6 +221,12 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
         }
     }
 
+    /**
+     * Reads all available log content as a character stream.
+     *
+     * @return reader over the entire log content
+     * @throws IOException if the log cannot be read
+     */
     @Override
     public Reader readAll() throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE)
@@ -209,6 +243,13 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
         }
     }
 
+    /**
+     * Serves incremental log updates for Blue Ocean text endpoints.
+     *
+     * @param req incoming request containing the cursor position
+     * @param rsp outgoing response receiving text payload and progress headers
+     * @throws IOException if reading or writing log content fails
+     */
     @Override
     public void doProgressText(StaplerRequest2 req, StaplerResponse2 rsp) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE)
@@ -237,6 +278,7 @@ public class OverallLog extends AnnotatedLargeText<FlowExecutionOwner.Executable
         }
     }
 
+    /** Marks this log as complete so callers stop polling for additional log content. */
     @Override
     public void markAsComplete() {
         Tracer tracer = logger.isLoggable(Level.FINE)

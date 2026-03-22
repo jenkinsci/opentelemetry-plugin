@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
 
+/** Base contract for Elastic-backed log retrieval and visualization settings. */
 public abstract class ElasticLogsBackend extends AbstractDescribableImpl<ElasticLogsBackend> implements ExtensionPoint {
     private static final Logger logger = Logger.getLogger(ElasticLogsBackend.class.getName());
 
@@ -37,6 +38,11 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
     @MustBeClosed
     public abstract LogStorageRetriever newLogStorageRetriever(TemplateBindingsProvider templateBindingsProvider);
 
+    /**
+     * Returns the default user-facing message template shown next to the logs visualization link.
+     *
+     * @return Groovy template for the build logs visualization message
+     */
     public Template getBuildLogsVisualizationMessageTemplate() {
         try {
             return new GStringTemplateEngine().createTemplate("View build logs in ${backendName}");
@@ -45,6 +51,11 @@ public abstract class ElasticLogsBackend extends AbstractDescribableImpl<Elastic
         }
     }
 
+    /**
+     * Returns the Kibana Discover URL template used to open logs for the current trace.
+     *
+     * @return Groovy template that renders a Kibana logs URL
+     */
     public Template getBuildLogsVisualizationUrlTemplate() {
         // see https://www.elastic.co/guide/en/kibana/6.8/sharing-dashboards.html
 

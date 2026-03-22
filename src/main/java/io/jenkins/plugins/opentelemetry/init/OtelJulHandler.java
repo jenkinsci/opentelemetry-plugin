@@ -37,6 +37,9 @@ import jenkins.YesNoMaybe;
         dynamicLoadable = YesNoMaybe.YES,
         optional = true,
         ordinal = Integer.MAX_VALUE - 10 /* very high but OTel Config should happen before*/)
+/**
+ * JUL {@link Handler} that forwards Jenkins java.util.logging records to OpenTelemetry logs.
+ */
 public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleListener {
 
     private static final Logger logger = Logger.getLogger(OtelJulHandler.class.getName());
@@ -50,6 +53,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
     @Inject
     protected ReconfigurableOpenTelemetry openTelemetry;
 
+    /** Creates the JUL-to-OpenTelemetry bridge handler. */
     public OtelJulHandler() {
         logger.log(Level.FINER, "OtelJulHandler constructor completed");
     }
@@ -156,12 +160,15 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
         return Severity.FATAL;
     }
 
+    /** Flush is a no-op because records are emitted immediately. */
     @Override
     public void flush() {}
 
+    /** Close is a no-op because resource lifecycle is managed by Jenkins and OTel SDK. */
     @Override
     public void close() throws SecurityException {}
 
+    /** Registers this handler on the root JUL logger after OpenTelemetry is configured. */
     @PostConstruct
     public void postConstruct() {
         this.loggerProvider = openTelemetry.getLogsBridge();
@@ -194,6 +201,12 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
     // this is just needed for calling formatMessage in abstract super class
     private static class AccessibleFormatter extends Formatter {
 
+        /**
+         * Unused formatter implementation required by {@link Formatter}; this handler uses {@code formatMessage}.
+         *
+         * @param record log record to format
+         * @return never returns normally
+         */
         @Override
         public String format(LogRecord record) {
             throw new UnsupportedOperationException();

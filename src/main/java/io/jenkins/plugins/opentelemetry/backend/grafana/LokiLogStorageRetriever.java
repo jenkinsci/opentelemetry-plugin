@@ -62,6 +62,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
+/** Retrieves Jenkins build logs stored in Loki, forwarding them to the caller on demand. */
 public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
     private static final Logger logger = Logger.getLogger(LokiLogStorageRetriever.class.getName());
 
@@ -79,6 +80,18 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
     private final OpenTelemetry openTelemetry;
     private final Tracer tracer;
 
+        /**
+         * Creates a new {@code LokiLogStorageRetriever} that connects to the specified Loki instance.
+         *
+         * @param lokiUrl base URL of the Loki server
+         * @param disableSslVerifications when {@code true}, TLS certificate verification is disabled
+         * @param httpAuthHeaderFactory factory that produces the {@code Authorization} request header, or empty
+         * @param lokiTenantId Loki tenant header value, or empty for single-tenant deployments
+         * @param buildLogsVisualizationUrlTemplate Grafana URL template used to generate a log-view link
+         * @param templateBindingsProvider provides additional template bindings when rendering the URL
+         * @param serviceName OTel service name used to filter Loki log streams
+         * @param serviceNamespace OTel service namespace used to filter Loki log streams, or empty
+         */
     @MustBeClosed
     public LokiLogStorageRetriever(
             @Nonnull String lokiUrl,
@@ -125,6 +138,18 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         this.templateBindingsProvider = templateBindingsProvider;
     }
 
+        /**
+         * Returns the full build log for the given run by querying Loki with the run trace context.
+         *
+         * @param jobFullName Jenkins job full name
+         * @param runNumber build number
+         * @param traceId OpenTelemetry trace identifier for the run
+         * @param spanId OpenTelemetry span identifier for the run root span
+         * @param complete whether the run has completed
+         * @param startTime run start time used as Loki query lower bound
+         * @param endTime run end time used as Loki query upper bound, or {@code null} while running
+         * @return query result containing log bytes and the logs view header metadata
+         */
     @Nonnull
     @Override
     public LogsQueryResult overallLog(
@@ -203,6 +228,19 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         }
     }
 
+        /**
+         * Returns the log for a specific pipeline step by querying Loki with the step trace context.
+         *
+         * @param jobFullName Jenkins job full name
+         * @param runNumber build number
+         * @param flowNodeId pipeline flow-node identifier
+         * @param traceId OpenTelemetry trace identifier for the run
+         * @param spanId OpenTelemetry span identifier for the step span
+         * @param complete whether the step has completed
+         * @param startTime step start time used as Loki query lower bound
+         * @param endTime step end time used as Loki query upper bound, or {@code null} while running
+         * @return query result containing log bytes and the logs view header metadata
+         */
     @Nonnull
     @Override
     public LogsQueryResult stepLog(
@@ -284,6 +322,11 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         }
     }
 
+        /**
+         * Validates Loki connectivity by running a lightweight query against the configured endpoint.
+         *
+         * @return validation results reporting connection success or failure details
+         */
     public List<FormValidation> checkLokiSetup() {
         List<FormValidation> validations = new ArrayList<>();
 
@@ -328,6 +371,7 @@ public class LokiLogStorageRetriever implements LogStorageRetriever, Closeable {
         return validations;
     }
 
+        /** Closes the underlying HTTP client used for Loki API requests. */
     @Override
     public void close() throws IOException {
         this.httpClient.close();
