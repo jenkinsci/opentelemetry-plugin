@@ -8,11 +8,11 @@ package io.jenkins.plugins.opentelemetry.opentelemetry;
 import com.google.common.annotations.VisibleForTesting;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
+import io.opentelemetry.common.ComponentLoader;
 import io.opentelemetry.instrumentation.resources.ContainerResourceProvider;
 import io.opentelemetry.instrumentation.resources.HostIdResourceProvider;
 import io.opentelemetry.instrumentation.resources.HostResourceProvider;
 import io.opentelemetry.instrumentation.resources.OsResourceProvider;
-import io.opentelemetry.common.ComponentLoader;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
@@ -86,10 +86,8 @@ public final class GlobalOpenTelemetrySdk {
         }
         logger.log(Level.FINEST, () -> "Configure OpenTelemetry SDK...");
 
-        ConfigProperties configProperties =
-                DefaultConfigProperties.create(
-                        configurationProperties,
-                        ComponentLoader.forClassLoader(GlobalOpenTelemetrySdk.class.getClassLoader()));
+        ConfigProperties configProperties = DefaultConfigProperties.create(
+                configurationProperties, ComponentLoader.forClassLoader(GlobalOpenTelemetrySdk.class.getClassLoader()));
         ResourceBuilder resourceBuilder = Resource.builder();
         resourceBuilder.putAll(new HostResourceProvider().createResource(configProperties));
         resourceBuilder.putAll(new HostIdResourceProvider().createResource(configProperties));
