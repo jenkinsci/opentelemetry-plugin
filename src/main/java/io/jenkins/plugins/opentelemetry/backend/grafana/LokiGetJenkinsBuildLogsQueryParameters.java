@@ -23,6 +23,9 @@ import javax.annotation.Nonnull;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 
+/**
+ * Encapsulates the query parameters needed to fetch Jenkins build logs from Loki via the HTTP API.
+ */
 public class LokiGetJenkinsBuildLogsQueryParameters {
     @NonNull
     private final String jobFullName;
@@ -47,7 +50,19 @@ public class LokiGetJenkinsBuildLogsQueryParameters {
     @NonNull
     private final Optional<String> serviceNamespace;
 
-    public LokiGetJenkinsBuildLogsQueryParameters(
+        /**
+         * Creates a new set of Loki query parameters.
+         *
+         * @param jobFullName      the full Jenkins job name
+         * @param runNumber        the Jenkins build number
+         * @param traceId          the OTel trace ID
+         * @param flowNodeId       optional pipeline flow node ID (empty for overall log)
+         * @param startTimeInNanos the log start time as an {@link Instant}
+         * @param endTime          optional log end time
+         * @param serviceName      the OTel service name
+         * @param serviceNamespace the optional OTel service namespace
+         */
+        public LokiGetJenkinsBuildLogsQueryParameters(
             @NonNull String jobFullName,
             int runNumber,
             @NonNull String traceId,
@@ -66,6 +81,12 @@ public class LokiGetJenkinsBuildLogsQueryParameters {
         this.serviceNamespace = serviceNamespace;
     }
 
+    /**
+     * Builds the Loki HTTP query-range request for this set of parameters.
+     *
+     * @param lokiUrl the Loki base URL
+     * @return the constructed HTTP request
+     */
     public ClassicHttpRequest toHttpRequest(@Nonnull String lokiUrl) {
         // https://grafana.com/docs/loki/latest/reference/loki-http-api/#query-logs-within-a-range-of-time
 
@@ -97,6 +118,11 @@ public class LokiGetJenkinsBuildLogsQueryParameters {
         return lokiQueryRangeRequestBuilder.build();
     }
 
+    /**
+     * Returns the query parameters as OTel {@link io.opentelemetry.api.common.Attributes} for span annotation.
+     *
+     * @return OTel attributes representing this query
+     */
     public Attributes toAttributes() {
         final AttributesBuilder attributesBuilder = Attributes.builder();
         attributesBuilder.put("query." + META_DATA_TRACE_ID, traceId);
@@ -111,15 +137,30 @@ public class LokiGetJenkinsBuildLogsQueryParameters {
         return attributesBuilder.build();
     }
 
+    /**
+     * Overrides the log start time in epoch nanoseconds.
+     *
+     * @param startTimeInNanos new start time in nanoseconds since epoch
+     */
     public void setStartTimeInNanos(long startTimeInNanos) {
         this.startTimeInNanos = startTimeInNanos;
     }
 
+    /**
+     * Returns the log start time in epoch nanoseconds.
+     *
+     * @return start time in nanoseconds since epoch
+     */
     @NonNull
     public Long getStartTimeInNanos() {
         return startTimeInNanos;
     }
 
+    /**
+     * Returns a debug-friendly representation of the query parameters.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         return "LokiGetJenkinsBuildLogsQueryParameters{" + "jobFullName='"

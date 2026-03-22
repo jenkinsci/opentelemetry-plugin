@@ -20,9 +20,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
+/**
+ * ObservabilityBackend for the Jaeger distributed tracing platform.
+ */
 public class JaegerBackend extends ObservabilityBackend {
 
+    /** Environment variable name used to pass the Jaeger base URL to build agents. */
     public static final String OTEL_JAEGER_URL = "OTEL_JAEGER_URL";
+    /** Default display name for the Jaeger backend. */
     public static final String DEFAULT_NAME = "Jaeger";
 
     private String jaegerBaseUrl;
@@ -85,24 +90,44 @@ public class JaegerBackend extends ObservabilityBackend {
         this.jaegerBaseUrl = jaegerBaseUrl;
     }
 
+    /**
+     * Returns the icon CSS class for the Jaeger backend.
+     *
+     * @return icon CSS class
+     */
     @CheckForNull
     @Override
     public String getIconPath() {
         return "icon-otel-jaeger";
     }
 
+    /**
+     * Returns the environment variable name for the Jaeger URL.
+     *
+     * @return environment variable name
+     */
     @CheckForNull
     @Override
     public String getEnvVariableName() {
         return OTEL_JAEGER_URL;
     }
 
+    /**
+     * Returns the default display name for this backend.
+     *
+     * @return default name
+     */
     @CheckForNull
     @Override
     public String getDefaultName() {
         return DEFAULT_NAME;
     }
 
+    /**
+     * Returns {@code null} because Jaeger does not provide a metrics visualization URL.
+     *
+     * @return {@code null}
+     */
     @CheckForNull
     @Override
     public String getMetricsVisualizationUrlTemplate() {
@@ -144,6 +169,9 @@ public class JaegerBackend extends ObservabilityBackend {
                 "/plugin/opentelemetry/images/24x24/jaeger.png");
     }
 
+    /**
+     * Descriptor for the Jaeger observability backend.
+     */
     @Extension
     @Symbol("jaeger")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {

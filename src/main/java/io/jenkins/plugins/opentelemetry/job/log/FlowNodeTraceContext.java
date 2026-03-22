@@ -17,6 +17,9 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 
+/**
+ * A {@link RunTraceContext} that additionally captures the pipeline flow node ID.
+ */
 public class FlowNodeTraceContext extends RunTraceContext {
 
     @Serial
@@ -41,7 +44,17 @@ public class FlowNodeTraceContext extends RunTraceContext {
 
     private final String flowNodeId;
 
-    public FlowNodeTraceContext(
+        /**
+         * Creates a flow-node trace context.
+         *
+         * @param jobFullName     full Jenkins job name
+         * @param runNumber       Jenkins build number
+         * @param flowNodeId      pipeline flow node ID
+         * @param traceId         OTel trace ID
+         * @param spanId          OTel span ID for the flow node
+         * @param w3cTraceContext W3C trace context propagation headers
+         */
+        public FlowNodeTraceContext(
             String jobFullName,
             int runNumber,
             String flowNodeId,
@@ -52,10 +65,20 @@ public class FlowNodeTraceContext extends RunTraceContext {
         this.flowNodeId = flowNodeId;
     }
 
+    /**
+     * Returns the pipeline flow node ID associated with this context.
+     *
+     * @return flow node ID
+     */
     public String getFlowNodeId() {
         return flowNodeId;
     }
 
+    /**
+     * Returns a debug-friendly representation including flow node details.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         return "FlowNodeTraceContext{" + "jobFullName='"
@@ -66,6 +89,12 @@ public class FlowNodeTraceContext extends RunTraceContext {
                 + traceId + '\'' + '}';
     }
 
+    /**
+     * Compares by job name, run number, flow node ID, trace ID and span ID.
+     *
+     * @param o object to compare
+     * @return {@code true} when all fields are equal
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -78,11 +107,19 @@ public class FlowNodeTraceContext extends RunTraceContext {
                 && Objects.equal(spanId, traceContext.spanId);
     }
 
+    /**
+     * Returns hash code including flow node ID.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return java.util.Objects.hash(super.hashCode(), flowNodeId);
     }
 
+    /**
+     * {@inheritDoc} Adds the flow node ID attribute on top of the parent attributes.
+     */
     @Nonnull
     @Override
     public Attributes toAttributes() {
