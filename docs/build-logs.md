@@ -185,3 +185,76 @@ We would like to implement this as well, it's an Open Source initiative, contrib
 That happens if the Jenkins logging was enabled for any of the classes of the OpenTelemetry plugin.
 
 Please remove them from your Jenkins controller in, http://jenkins:8080/manage/log/
+
+
+## Troubleshooting
+
+
+### Build logs are truncated when a pipeline step outputs a large number of lines
+
+**Symptom:** A pipeline step that produces a high volume of log output (e.g. `sh "cat bigfile.txt"` or any step
+echoing thousands of lines) results in only a portion of the lines being stored in the observability backend.
+Subsequent steps log correctly; only the large burst of output is cut short.
+
+**Root cause:** The OpenTelemetry Java SDK ships a `BatchLogRecordProcessor` with a default in-memory queue size
+of 2048 log records. When a pipeline step emits logs faster than the exporter can drain the queue, the queue
+fills up and new records are dropped. The SDK exposes an internal metric to confirm this:
+
+```
+Metric name: processedLogs
+Description: The number of logs processed by the BatchLogRecordProcessor.
+             [dropped=true if they were dropped due to high throughput]
+Attributes:  dropped=true, processorType=BatchLogRecordProcessor
+```
+
+If the counter for `dropped=true` is non-zero after a build, queue overflow is occurring.
+
+**Fix:** Increase the queue size via the `otel.blrp.max.queue.size` configuration property. Add the property in
+the **"Configuration properties"** field of the plugin **Advanced** section:
+
+```
+otel.blrp.max.queue.size=<value>
+```
+
+A value of roughly **75 % of the maximum number of log lines** expected in a single step is a good starting
+point (e.g. `otel.blrp.max.queue.size=6000` for a step that can emit ~8000 lines).
+
+**Related configuration properties:**
+
+| Property | Default | Description |
+| -------- | ------- | ----------- |
+| `otel.blrp.max.queue.size` | 2048 | Maximum number of log records held in the in-memory queue before records are dropped. |
+| `otel.blrp.max.export.batch.size` | 512 | Maximum number of records sent to the exporter in a single batch. |
+| `otel.blrp.schedule.delay` | 1000 ms | Delay between consecutive export attempts when the batch has not yet reached its maximum size. |
+
+> **Note:** Tuning the plugin alone may not be sufficient. The OpenTelemetry Collector and the observability
+> backend (e.g. Elastic APM Server) must also be able to handle the increased throughput. See
+> [Enabling logs forwarding on the OpenTelemetry Collector](#enabling-logs-forwarding-on-the-opentelemetry-collector)
+> and the section below.
+
+
+### Log records are rejected by the Elastic APM Server with an "event too large" error
+
+**Symptom:** Log lines are emitted by Jenkins but are not stored in Elasticsearch. The APM Server logs contain
+an error similar to:
+
+```
+event exceeded the permitted size
+```
+
+**Root cause:** The Elastic APM Server enforces a configurable maximum size per event
+(`apm-server.max_event_size`, default 300 KiB). A single log record that exceeds this limit is silently
+dropped by the server.
+
+**Fix:** Either reduce the size of individual log records or increase the limit in the APM Server
+configuration:
+
+```yaml
+apm-server:
+  max_event_size: 614400  # 600 KiB – adjust as needed
+```
+
+Refer to the Elastic documentation for details:
+
+- [Common problems – event too large](https://www.elastic.co/guide/en/apm/server/current/common-problems.html#event-too-large)
+- [APM Server process configuration – max_event_size](https://www.elastic.co/guide/en/observability/current/apm-configuration-process.html#apm-max_event_size)
