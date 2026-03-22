@@ -36,9 +36,18 @@ public class JaegerBackend extends ObservabilityBackend {
                 new Icon("icon-otel-jaeger icon-xlg", ICONS_PREFIX + "jaeger.svg", Icon.ICON_XLARGE_STYLE));
     }
 
+    /**
+     * Creates Jaeger backend configuration with defaults.
+     */
     @DataBoundConstructor
     public JaegerBackend() {}
 
+    /**
+     * Merges provided bindings with Jaeger-specific bindings.
+     *
+     * @param bindings base bindings
+     * @return merged bindings
+     */
     @Override
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
@@ -46,16 +55,31 @@ public class JaegerBackend extends ObservabilityBackend {
         return mergedBindings;
     }
 
+    /**
+     * Returns URL template that opens a trace in Jaeger UI.
+     *
+     * @return trace visualization URL template
+     */
     @CheckForNull
     @Override
     public String getTraceVisualisationUrlTemplate() {
         return "${jaegerBaseUrl}/trace/${traceId}";
     }
 
+    /**
+     * Returns configured Jaeger base URL.
+     *
+     * @return Jaeger base URL
+     */
     public String getJaegerBaseUrl() {
         return jaegerBaseUrl;
     }
 
+    /**
+     * Sets Jaeger base URL.
+     *
+     * @param jaegerBaseUrl Jaeger base URL
+     */
     @DataBoundSetter
     public void setJaegerBaseUrl(String jaegerBaseUrl) {
         this.jaegerBaseUrl = jaegerBaseUrl;
@@ -85,16 +109,32 @@ public class JaegerBackend extends ObservabilityBackend {
         return null;
     }
 
+    /**
+     * Compares backend configuration values.
+     *
+     * @param obj object to compare
+     * @return {@code true} when the object is also a {@link JaegerBackend}
+     */
     @Override
     public boolean equals(Object obj) {
         return obj != null && obj instanceof JaegerBackend;
     }
 
+    /**
+     * Returns hash code for backend configuration.
+     *
+     * @return hash code
+     */
     @Override
     public int hashCode() {
         return JaegerBackend.class.hashCode();
     }
 
+    /**
+     * Returns template bindings contributed by this backend.
+     *
+     * @return Jaeger-specific bindings
+     */
     @Override
     public Map<String, Object> getBindings() {
         return Map.of(
@@ -107,12 +147,23 @@ public class JaegerBackend extends ObservabilityBackend {
     @Extension
     @Symbol("jaeger")
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
+        /**
+         * Returns display name used in Jenkins backend selector.
+         *
+         * @return backend display name
+         */
         @NonNull
         @Override
         public String getDisplayName() {
             return DEFAULT_NAME;
         }
 
+        /**
+         * Validates Jaeger base URL entered in global configuration.
+         *
+         * @param jaegerBaseUrl user-provided Jaeger base URL
+         * @return validation result
+         */
         public FormValidation doCheckJaegerBaseUrl(@QueryParameter String jaegerBaseUrl) {
             if (jaegerBaseUrl == null || jaegerBaseUrl.isEmpty()) {
                 return FormValidation.ok();
