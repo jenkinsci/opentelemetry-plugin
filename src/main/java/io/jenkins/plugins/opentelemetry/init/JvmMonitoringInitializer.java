@@ -8,7 +8,8 @@ package io.jenkins.plugins.opentelemetry.init;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
-import io.opentelemetry.instrumentation.runtimemetrics.java8.RuntimeMetrics;
+import io.opentelemetry.instrumentation.runtimemetrics.java17.JfrFeature;
+import io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,8 +43,15 @@ public class JvmMonitoringInitializer implements OpenTelemetryLifecycleListener 
         }
 
         LOGGER.log(Level.FINE, "Start monitoring Jenkins Controller JVM...");
-        // Use RuntimeMetrics from the deprecated java8 API
-        // This automatically registers all JVM metrics
-        runtimeMetrics = RuntimeMetrics.create(openTelemetry);
+        // Use RuntimeMetrics (Java 17+) with experimental features enabled
+        // Combines JMX metrics (Java 8+) and JFR metrics (Java 17+)
+        runtimeMetrics = RuntimeMetrics.builder(openTelemetry)
+                .enableFeature(JfrFeature.BUFFER_METRICS)
+                .enableFeature(JfrFeature.CLASS_LOAD_METRICS)
+                .enableFeature(JfrFeature.CPU_UTILIZATION_METRICS)
+                .enableFeature(JfrFeature.GC_DURATION_METRICS)
+                .enableFeature(JfrFeature.MEMORY_POOL_METRICS)
+                .enableFeature(JfrFeature.THREAD_METRICS)
+                .build();
     }
 }
