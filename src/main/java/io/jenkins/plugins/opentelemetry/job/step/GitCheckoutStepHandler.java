@@ -101,7 +101,7 @@ public class GitCheckoutStepHandler extends AbstractGitStepHandler {
             }
 
             List<Map<String, ?>> extensions = (List<Map<String, ?>>) scm.get("extensions");
-            final Map<String, ?> cloneOption = Iterables.getFirst(extensions, null);
+            final Map<String, ?> cloneOption = extensions == null ? null : Iterables.getFirst(extensions, null);
 
             if (cloneOption != null) {
                 shallow = cloneOption.containsKey("shallow") ? (Boolean) cloneOption.get("shallow") : shallow;

@@ -9,6 +9,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
@@ -27,6 +28,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 
 public abstract class AbstractGitStepHandler implements StepHandler {
 
+    @CheckForNull
     public String searchGitUserName(@Nullable String credentialsId, @NonNull WorkflowRun run) {
         if (credentialsId == null) {
             return null;
