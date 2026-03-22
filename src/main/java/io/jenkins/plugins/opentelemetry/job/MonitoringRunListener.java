@@ -108,6 +108,9 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
     @VisibleForTesting
     Pattern runDurationHistogramDenyList;
 
+    /**
+     * Initializes metrics instruments after injection.
+     */
     @PostConstruct
     public void postConstruct() {
         LOGGER.log(Level.FINE, () -> "Start monitoring Jenkins build executions...");
@@ -167,6 +170,11 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                 .build();
     }
 
+    /**
+     * Reconfigures run duration histogram filters after SDK configuration changes.
+     *
+     * @param configProperties updated SDK configuration properties
+     */
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
         Pattern newRunDurationHistogramAllowList;
@@ -197,11 +205,23 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
         this.runDurationHistogramDenyList = newRunDurationHistogramDenyList;
     }
 
+    /**
+     * Returns all registered cause handlers.
+     *
+     * @return list of cause handlers
+     */
     @NonNull
     public List<CauseHandler> getCauseHandlers() {
         return Preconditions.checkNotNull(causeHandlers);
     }
 
+    /**
+     * Returns the cause handler supporting the given build cause.
+     *
+     * @param cause build cause
+     * @return matching cause handler
+     * @throws NoSuchElementException if no handler supports the cause
+     */
     @NonNull
     public CauseHandler getCauseHandler(@NonNull Cause cause) throws NoSuchElementException {
         return getCauseHandlers().stream()
@@ -210,6 +230,11 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                 .orElseThrow();
     }
 
+    /**
+     * Called when a run is initialized to create the root span and increment active run gauge.
+     *
+     * @param run initializing run
+     */
     @Override
     public void _onInitialize(@NonNull Run<?, ?> run) {
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - onInitialize");
@@ -365,6 +390,16 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
         }
     }
 
+    /**
+     * Handles the "started" lifecycle event for a run.
+     * <p>
+     * Ends the initialize phase span and begins the run phase span, recording
+     * the transition from the start phase to the main execution phase of the job.
+     * </p>
+     *
+     * @param run      the run that has started
+     * @param listener the task listener associated with this run
+     */
     @Override
     public void _onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
@@ -380,6 +415,16 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
         }
     }
 
+    /**
+     * Handles the "completed" lifecycle event for a run.
+     * <p>
+     * Ends the run phase span and begins the finalize phase span, signalling that
+     * the main execution has finished and post-build steps are beginning.
+     * </p>
+     *
+     * @param run      the run that has completed
+     * @param listener the task listener associated with this run
+     */
     @Override
     public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
         try (Scope ignoredParentScope = endPipelinePhaseSpan(run)) {
@@ -407,6 +452,15 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
         return newCurrentSpan.makeCurrent();
     }
 
+    /**
+     * Handles the "finalized" lifecycle event for a run.
+     * <p>
+     * Ends the finalize phase span, records run attributes such as duration, result, and
+     * pipeline type, and closes the root span for this run, flushing all telemetry data.
+     * </p>
+     *
+     * @param run the run that has been finalized
+     */
     @Override
     public void _onFinalized(@NonNull Run<?, ?> run) {
 

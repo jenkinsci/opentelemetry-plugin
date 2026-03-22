@@ -48,6 +48,13 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
     final AtomicBoolean remotingTracingEnabled = new AtomicBoolean(false);
     final AtomicBoolean buildAgentsInstrumentationEnabled = new AtomicBoolean(false);
 
+    /**
+     * Wraps a callable to propagate trace context to the Jenkins build agent.
+     *
+     * @param <T> callable return type
+     * @param callable callable to wrap
+     * @return wrapped callable with trace context propagation
+     */
     @Override
     public <T> DelegatingCallable<T, IOException> wrap(DelegatingCallable<T, IOException> callable) {
         if (buildAgentsInstrumentationEnabled.get()) {
@@ -57,6 +64,11 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
         }
     }
 
+    /**
+     * Configures remoting instrumentation from global plugin configuration.
+     *
+     * @param jenkinsOpenTelemetryPluginConfiguration global plugin configuration
+     */
     @Inject
     public void setJenkinsOpenTelemetryPluginConfiguration(
             JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration) {
@@ -67,6 +79,11 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
                 ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_REMOTING_ENABLED.asProperty(), false));
     }
 
+    /**
+     * Reconfigures remoting instrumentation after SDK configuration changes.
+     *
+     * @param configProperties updated SDK configuration properties
+     */
     @Override
     public void afterConfiguration(@NonNull ConfigProperties configProperties) {
         this.buildAgentsInstrumentationEnabled.set(configProperties.getBoolean(
@@ -83,6 +100,12 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
         final Map<String, String> w3cTraceContext;
         final boolean remotingTracingEnabled;
 
+        /**
+         * Creates a delegating callable that propagates W3C trace context.
+         *
+         * @param callable wrapped callable
+         * @param remotingTracingEnabled whether to create a span on the agent side
+         */
         public OTelDelegatingCallable(DelegatingCallable<V, T> callable, boolean remotingTracingEnabled) {
             this.callable = callable;
             this.w3cTraceContext = new HashMap<>();
@@ -95,11 +118,22 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
             LOGGER.log(Level.FINER, () -> "Wrap " + callable + " to propagate trace context " + w3cTraceContext);
         }
 
+        /**
+         * Returns class loader from the wrapped callable.
+         *
+         * @return wrapped callable class loader
+         */
         @Override
         public ClassLoader getClassLoader() {
             return callable.getClassLoader();
         }
 
+        /**
+         * Executes the wrapped callable with trace context restored from the caller side.
+         *
+         * @return callable result
+         * @throws T if the callable throws
+         */
         @Override
         public V call() throws T {
             if (!GlobalOpenTelemetrySdk.isInitialized()) {
@@ -158,6 +192,12 @@ public class OpenTelemetryTraceContextPropagatorFileCallableWrapperFactory exten
             }
         }
 
+        /**
+         * Delegates role checking to the wrapped callable.
+         *
+         * @param checker role checker
+         * @throws SecurityException if role check fails
+         */
         @Override
         public void checkRoles(RoleChecker checker) throws SecurityException {
             callable.checkRoles(checker);
