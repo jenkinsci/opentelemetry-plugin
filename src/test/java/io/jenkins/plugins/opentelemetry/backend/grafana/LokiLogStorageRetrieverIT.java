@@ -9,7 +9,6 @@ import groovy.text.GStringTemplateEngine;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.opentelemetry.TemplateBindingsProvider;
 import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
-import io.opentelemetry.sdk.internal.JavaVersionSpecific;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
@@ -20,8 +19,6 @@ public class LokiLogStorageRetrieverIT {
 
     @Test
     public void test_checkLokiSetup() throws Exception {
-        System.out.println("OTel Java Specific Version: " + JavaVersionSpecific.get());
-
         InputStream env = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
         Properties properties = new Properties();
         properties.load(env);

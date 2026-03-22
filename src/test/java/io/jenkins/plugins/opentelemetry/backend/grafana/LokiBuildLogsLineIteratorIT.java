@@ -8,7 +8,6 @@ package io.jenkins.plugins.opentelemetry.backend.grafana;
 import io.jenkins.plugins.opentelemetry.jenkins.HttpAuthHeaderFactory;
 import io.jenkins.plugins.opentelemetry.job.log.LogLine;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.sdk.internal.JavaVersionSpecific;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Optional;
@@ -22,8 +21,6 @@ import org.junit.jupiter.api.Test;
 public class LokiBuildLogsLineIteratorIT {
     @Test
     public void overallLog() throws Exception {
-        System.out.println("OTel Java Specific Version: " + JavaVersionSpecific.get());
-
         InputStream env = Thread.currentThread().getContextClassLoader().getResourceAsStream(".env");
         Properties properties = new Properties();
         properties.load(env);
