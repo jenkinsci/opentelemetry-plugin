@@ -34,6 +34,13 @@ public class LogLineIteratorInputStream<Id> extends InputStream {
     private long readBytes;
     private Id lastLogLineId;
 
+    /**
+     * Creates an input stream backed by a log-line iterator.
+     *
+     * @param logLines iterator producing log lines
+     * @param logLineBytesToLogLineIdConverter mapper used to persist cursor-to-id relationships
+     * @param tracer tracer used for stream instrumentation spans
+     */
     public LogLineIteratorInputStream(
             LogLineIterator<Id> logLines,
             LogLineIterator.LogLineBytesToLogLineIdMapper<Id> logLineBytesToLogLineIdConverter,
@@ -43,6 +50,12 @@ public class LogLineIteratorInputStream<Id> extends InputStream {
         this.tracer = tracer;
     }
 
+    /**
+     * Reads the next byte from the current or next log line.
+     *
+     * @return next byte value, or {@code -1} when end of stream is reached
+     * @throws IOException if reading fails
+     */
     @Override
     public int read() throws IOException {
         if (currentLine == null) {
@@ -83,6 +96,13 @@ public class LogLineIteratorInputStream<Id> extends InputStream {
         }
     }
 
+    /**
+     * Attempts to skip bytes by restoring the closest log-line identifier from the mapper.
+     *
+     * @param skipBytes number of bytes requested to skip
+     * @return number of bytes considered skipped
+     * @throws IOException if skip handling fails
+     */
     @Override
     public long skip(long skipBytes) throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINE)
@@ -109,6 +129,12 @@ public class LogLineIteratorInputStream<Id> extends InputStream {
         }
     }
 
+    /**
+     * Indicates whether at least one more byte can be read without blocking.
+     *
+     * @return {@code 1} when more data is available, otherwise {@code 0}
+     * @throws IOException if availability check fails
+     */
     @Override
     public int available() throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINER)
@@ -126,6 +152,11 @@ public class LogLineIteratorInputStream<Id> extends InputStream {
         }
     }
 
+    /**
+     * Persists stream cursor state and closes the underlying iterator when closeable.
+     *
+     * @throws IOException if close operations fail
+     */
     @Override
     public void close() throws IOException {
         Tracer tracer = logger.isLoggable(Level.FINER)

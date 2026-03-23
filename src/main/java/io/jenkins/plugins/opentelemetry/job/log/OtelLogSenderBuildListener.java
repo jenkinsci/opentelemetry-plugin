@@ -54,6 +54,11 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
     @CheckForNull
     transient PrintStream logger;
 
+    /**
+     * Creates a listener bound to the provided run trace context.
+     *
+     * @param runTraceContext trace context for emitted log records
+     */
     public OtelLogSenderBuildListener(@NonNull RunTraceContext runTraceContext) {
         this.runTraceContext = runTraceContext;
         this.clock = Clocks.monotonicClock();
@@ -62,6 +67,11 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
         JenkinsJVM.checkJenkinsJVM();
     }
 
+    /**
+     * Returns an output stream that emits build logs through OpenTelemetry.
+     *
+     * @return OpenTelemetry-backed output stream
+     */
     @NonNull
     @Override
     public final synchronized OutputStream getOutputStream() {
@@ -71,6 +81,11 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
         return outputStream;
     }
 
+    /**
+     * Returns a print stream that emits build logs through OpenTelemetry.
+     *
+     * @return OpenTelemetry-backed print stream
+     */
     @NonNull
     @Override
     public final synchronized PrintStream getLogger() {
@@ -93,12 +108,22 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
 
         private static final Logger logger = Logger.getLogger(OtelLogSenderBuildListenerOnController.class.getName());
 
+        /**
+         * Creates a controller-side sender listener.
+         *
+         * @param runTraceContext trace context for emitted log records
+         */
         public OtelLogSenderBuildListenerOnController(@NonNull RunTraceContext runTraceContext) {
             super(runTraceContext);
             logger.log(Level.FINEST, () -> "new OtelLogSenderBuildListenerOnController()");
             JenkinsJVM.checkJenkinsJVM();
         }
 
+        /**
+         * Returns the controller-side OpenTelemetry logger.
+         *
+         * @return OpenTelemetry logger
+         */
         @Override
         public io.opentelemetry.api.logs.Logger getOtelLogger() {
             JenkinsJVM.checkJenkinsJVM();

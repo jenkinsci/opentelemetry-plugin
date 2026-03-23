@@ -18,22 +18,46 @@ import org.jenkinsci.plugins.workflow.flow.FlowExecutionOwner;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest2;
 
+/**
+ * Renders the banner shown above build logs, including backend icon and deep-link URL.
+ */
 public class LogsViewHeader {
     private static final String messageFirstToken = " View logs in ";
     private final String backendName;
     private final String backendUrl;
     private final String backendIconUrl;
 
+    /**
+     * Creates a logs-view header descriptor.
+     *
+     * @param backendName backend display name
+     * @param backendUrl absolute URL to open backend logs view
+     * @param backendIconUrl backend icon path
+     */
     public LogsViewHeader(String backendName, String backendUrl, String backendIconUrl) {
         this.backendName = backendName;
         this.backendUrl = backendUrl;
         this.backendIconUrl = backendIconUrl;
     }
 
+    /**
+     * Returns the message displayed in the Jenkins log header.
+     *
+     * @return header message
+     */
     public String getMessage() {
         return messageFirstToken + backendName;
     }
 
+    /**
+     * Writes an annotated logs header to the given writer.
+     *
+     * @param w writer receiving the header
+     * @param context flow execution context used by the annotator
+     * @param charset output character set
+     * @return number of bytes written
+     * @throws IOException if writing fails
+     */
     public long writeHeader(Writer w, FlowExecutionOwner.Executable context, Charset charset) throws IOException {
         ConsoleAnnotator<Object> consoleAnnotator = new ConsoleAnnotator<>() {
             @Override
