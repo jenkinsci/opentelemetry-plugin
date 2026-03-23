@@ -26,12 +26,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 @Extension
+/** OTel authentication strategy that sends a custom static header name and credential-backed value. */
 public class HeaderAuthentication extends OtlpAuthentication {
     private static final Logger LOGGER = Logger.getLogger(HeaderAuthentication.class.getName());
 
     private String headerName;
     private String headerValueId;
 
+    /** Creates an empty header-authentication configuration to be populated through data binding. */
     @DataBoundConstructor
     public HeaderAuthentication() {}
 
@@ -62,6 +64,11 @@ public class HeaderAuthentication extends OtlpAuthentication {
                 this.getHeaderName() + "=" + this.getAuthenticationHeaderValue());
     }
 
+    /**
+     * Adds custom header authentication settings to OTel environment variables.
+     *
+     * @param environmentVariables mutable map of environment variables passed to OTel SDK initialization
+     */
     @Override
     public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
         // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
@@ -161,6 +168,7 @@ public class HeaderAuthentication extends OtlpAuthentication {
 
     @Extension
     @Symbol("otlpHeaderAuthentication")
+    /** Descriptor for header-authentication form binding and UI integration. */
     public static class DescriptorImpl extends AbstractDescriptor {
         /**
          * Returns the descriptor display name shown in Jenkins UI.

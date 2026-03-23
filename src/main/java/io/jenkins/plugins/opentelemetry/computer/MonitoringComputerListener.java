@@ -34,6 +34,9 @@ import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
+/**
+ * Computer listener that tracks Jenkins agent lifecycle metrics and host attributes.
+ */
 public class MonitoringComputerListener extends ComputerListener implements OpenTelemetryLifecycleListener {
     private static final Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
@@ -42,6 +45,7 @@ public class MonitoringComputerListener extends ComputerListener implements Open
     @Inject
     protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
 
+    /** Initializes agent metrics and captures controller host attributes. */
     @PostConstruct
     public void postConstruct() {
         Meter meter = jenkinsControllerOpenTelemetry.getDefaultMeter();
@@ -152,6 +156,12 @@ public class MonitoringComputerListener extends ComputerListener implements Open
         computer.addAction(openTelemetryAttributesAction);
     }
 
+    /**
+     * Records agent launch failures observed by Jenkins computer launchers.
+     *
+     * @param computer computer that failed to launch
+     * @param taskListener listener associated with the launch attempt
+     */
     @Override
     public void onLaunchFailure(Computer computer, TaskListener taskListener) {
         failureAgentCounter.add(1);
@@ -159,6 +169,12 @@ public class MonitoringComputerListener extends ComputerListener implements Open
     }
 
     private static class GetComputerAttributes extends MasterToSlaveCallable<Map<String, String>, IOException> {
+        /**
+         * Resolves host name and IP attributes on the current machine.
+         *
+         * @return host attributes map
+         * @throws IOException when host details cannot be resolved
+         */
         @Override
         public Map<String, String> call() throws IOException {
             Map<String, String> attributes = new HashMap<>();

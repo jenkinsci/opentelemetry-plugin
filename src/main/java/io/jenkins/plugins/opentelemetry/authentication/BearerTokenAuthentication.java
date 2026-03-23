@@ -29,14 +29,21 @@ import org.kohsuke.stapler.DataBoundSetter;
  * See https://tools.ietf.org/html/rfc6750
  */
 @Extension
+/** OTel authentication strategy that injects an `Authorization: Bearer` header. */
 public class BearerTokenAuthentication extends OtlpAuthentication {
     private static final Logger LOGGER = Logger.getLogger(BearerTokenAuthentication.class.getName());
 
     private String tokenId;
 
+    /** Creates an empty bearer-token configuration to be populated through data binding. */
     @DataBoundConstructor
     public BearerTokenAuthentication() {}
 
+    /**
+     * Creates a bearer-token configuration with an explicit credential id.
+     *
+     * @param tokenId Jenkins credentials id containing the bearer token value
+     */
     public BearerTokenAuthentication(String tokenId) {
         this.tokenId = tokenId;
     }
@@ -67,6 +74,11 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
                 OTEL_EXPORTER_OTLP_HEADERS.asProperty(), "Authorization=Bearer " + this.getAuthenticationHeaderValue());
     }
 
+    /**
+     * Adds the bearer token authentication header to OTel environment variables.
+     *
+     * @param environmentVariables mutable map of environment variables passed to OTel SDK initialization
+     */
     @Override
     public void enrichOtelEnvironmentVariables(Map<String, String> environmentVariables) {
         // TODO don't overwrite 'otel.exporter.otlp.headers' if already defined, just append to it
@@ -149,6 +161,7 @@ public class BearerTokenAuthentication extends OtlpAuthentication {
 
     @Extension
     @Symbol("bearerTokenAuthentication")
+    /** Descriptor for bearer-token authentication form binding and UI integration. */
     public static class DescriptorImpl extends AbstractDescriptor {
         /**
          * Returns the descriptor display name shown in Jenkins UI.
