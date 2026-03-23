@@ -8,14 +8,8 @@ package io.jenkins.plugins.opentelemetry.init;
 import hudson.Extension;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
-import io.opentelemetry.instrumentation.runtimemetrics.java8.Classes;
-import io.opentelemetry.instrumentation.runtimemetrics.java8.Cpu;
-import io.opentelemetry.instrumentation.runtimemetrics.java8.GarbageCollector;
-import io.opentelemetry.instrumentation.runtimemetrics.java8.MemoryPools;
-import io.opentelemetry.instrumentation.runtimemetrics.java8.Threads;
-import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.ExperimentalBufferPools;
-import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.ExperimentalCpu;
-import io.opentelemetry.instrumentation.runtimemetrics.java8.internal.ExperimentalMemoryPools;
+import io.opentelemetry.instrumentation.runtimemetrics.java17.JfrFeature;
+import io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,6 +29,8 @@ public class JvmMonitoringInitializer implements OpenTelemetryLifecycleListener 
     @Inject
     protected ReconfigurableOpenTelemetry openTelemetry;
 
+    private RuntimeMetrics runtimeMetrics;
+
     @PostConstruct
     public void postConstruct() {
         ConfigProperties config = openTelemetry.getConfig();
@@ -47,13 +43,15 @@ public class JvmMonitoringInitializer implements OpenTelemetryLifecycleListener 
         }
 
         LOGGER.log(Level.FINE, "Start monitoring Jenkins Controller JVM...");
-        ExperimentalBufferPools.registerObservers(openTelemetry);
-        ExperimentalCpu.registerObservers(openTelemetry);
-        ExperimentalMemoryPools.registerObservers(openTelemetry);
-        Classes.registerObservers(openTelemetry);
-        Cpu.registerObservers(openTelemetry);
-        GarbageCollector.registerObservers(openTelemetry);
-        MemoryPools.registerObservers(openTelemetry);
-        Threads.registerObservers(openTelemetry);
+        // Use RuntimeMetrics (Java 17+) with experimental features enabled
+        // Combines JMX metrics (Java 8+) and JFR metrics (Java 17+)
+        runtimeMetrics = RuntimeMetrics.builder(openTelemetry)
+                .enableFeature(JfrFeature.BUFFER_METRICS)
+                .enableFeature(JfrFeature.CLASS_LOAD_METRICS)
+                .enableFeature(JfrFeature.CPU_UTILIZATION_METRICS)
+                .enableFeature(JfrFeature.GC_DURATION_METRICS)
+                .enableFeature(JfrFeature.MEMORY_POOL_METRICS)
+                .enableFeature(JfrFeature.THREAD_METRICS)
+                .build();
     }
 }

@@ -5,12 +5,14 @@
 
 package io.jenkins.plugins.opentelemetry.job;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Job;
 import hudson.model.Run;
 import hudson.views.ListViewColumn;
 import hudson.views.ListViewColumnDescriptor;
 import io.jenkins.plugins.opentelemetry.Messages;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -34,12 +36,12 @@ public class ViewColumn extends ListViewColumn {
      * @param job the Jenkins job
      * @return list of backend links, or {@code null} if no completed build exists
      */
+    @NonNull
     public List<MonitoringAction.ObservabilityBackendLink> getLinks(final Job<?, ?> job) {
         Run<?, ?> lastCompletedBuild = job.getLastCompletedBuild();
         if (lastCompletedBuild == null) {
-            return null;
+            return Collections.emptyList();
         }
-        job.getLastCompletedBuild().getActions(MonitoringAction.class);
         return lastCompletedBuild.getActions(MonitoringAction.class).stream()
                 .map(MonitoringAction::getLinks)
                 .flatMap(List::stream)
