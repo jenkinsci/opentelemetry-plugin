@@ -19,15 +19,28 @@ import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 @Extension
+/**
+ * Administrative monitor warning when Elastic backend is configured without a Kibana base URL.
+ */
 public class ElasticBackendKibanaBaseUrlNotSetAdministrativeMonitor extends AdministrativeMonitor {
 
     private JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
 
+    /**
+     * Returns the monitor title shown in Jenkins administration.
+     *
+     * @return monitor display name
+     */
     @Override
     public String getDisplayName() {
         return "OpenTelemetry - Elastic - Kibana base URL not set";
     }
 
+    /**
+     * Indicates whether this monitor should be shown.
+     *
+     * @return {@code true} when at least one Elastic backend has no Kibana base URL configured
+     */
     @Override
     public boolean isActivated() {
         return pluginConfiguration.getObservabilityBackends().stream()

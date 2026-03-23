@@ -59,6 +59,14 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
 
     JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration;
 
+        /**
+         * Configures OpenTelemetry SDK on a build agent before it comes online.
+         *
+         * @param computer target computer
+         * @param channel remoting channel to the agent
+         * @param root remote root path
+         * @param listener task listener
+         */
     @Override
     public void preOnline(Computer computer, Channel channel, FilePath root, TaskListener listener) {
         if (!buildAgentsInstrumentationEnabled.get()) {
@@ -93,6 +101,11 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
         }
     }
 
+        /**
+         * Injects the plugin configuration used to compute OTel SDK settings for agents.
+         *
+         * @param jenkinsOpenTelemetryPluginConfiguration plugin configuration
+         */
     @Inject
     public void setJenkinsOpenTelemetryPluginConfiguration(
             JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration) {
@@ -213,6 +226,9 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
         }
     }
 
+        /**
+         * Remoting callable that applies OpenTelemetry SDK configuration on a build agent JVM.
+         */
     public static class OpenTelemetryConfigurerMasterToSlaveCallable
             extends MasterToSlaveCallable<Object, RuntimeException> {
         static final Logger logger = Logger.getLogger(OpenTelemetryConfigurerMasterToSlaveCallable.class.getName());
@@ -220,12 +236,24 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
         final Map<String, String> otelSdkConfigurationProperties;
         final Map<String, String> otelSdkResource;
 
+                /**
+                 * Creates a callable with OTel SDK configuration and resource attributes.
+                 *
+                 * @param otelSdkConfigurationProperties SDK configuration properties
+                 * @param otelSdkResource resource attributes
+                 */
         public OpenTelemetryConfigurerMasterToSlaveCallable(
                 Map<String, String> otelSdkConfigurationProperties, Map<String, String> otelSdkResource) {
             this.otelSdkConfigurationProperties = otelSdkConfigurationProperties;
             this.otelSdkResource = otelSdkResource;
         }
 
+                /**
+                 * Applies OpenTelemetry SDK configuration in the remote JVM.
+                 *
+                 * @return always {@code null}
+                 * @throws RuntimeException if remote configuration fails
+                 */
         @Override
         public Object call() throws RuntimeException {
             logger.log(

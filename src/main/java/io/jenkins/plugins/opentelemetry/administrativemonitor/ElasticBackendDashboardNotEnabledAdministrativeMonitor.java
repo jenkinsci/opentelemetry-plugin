@@ -19,15 +19,28 @@ import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 @Extension
+/**
+ * Administrative monitor warning when Elastic backend is configured but dashboard link display is disabled.
+ */
 public class ElasticBackendDashboardNotEnabledAdministrativeMonitor extends AdministrativeMonitor {
 
     private JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
 
+    /**
+     * Returns the monitor title shown in Jenkins administration.
+     *
+     * @return monitor display name
+     */
     @Override
     public String getDisplayName() {
         return "OpenTelemetry - Elastic - Kibana dashboard link not enabled";
     }
 
+    /**
+     * Indicates whether this monitor should be shown.
+     *
+     * @return {@code true} when at least one Elastic backend has Kibana URL configured but dashboard link disabled
+     */
     @Override
     public boolean isActivated() {
         return pluginConfiguration.getObservabilityBackends().stream()

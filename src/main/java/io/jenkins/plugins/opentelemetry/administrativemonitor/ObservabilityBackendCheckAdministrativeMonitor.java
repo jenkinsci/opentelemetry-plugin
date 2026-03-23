@@ -18,10 +18,18 @@ import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 @Extension
+/**
+ * Administrative monitor warning when telemetry export is configured but no observability backend is selected.
+ */
 public class ObservabilityBackendCheckAdministrativeMonitor extends AdministrativeMonitor {
 
     JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;
 
+    /**
+     * Indicates whether this monitor should be shown.
+     *
+     * @return {@code true} when endpoint is configured but no observability backend is defined
+     */
     @Override
     public boolean isActivated() {
         boolean pluginConfiguredToPublishData = StringUtils.isNotBlank(pluginConfiguration.getEndpoint());
@@ -29,11 +37,21 @@ public class ObservabilityBackendCheckAdministrativeMonitor extends Administrati
                 && pluginConfiguration.getObservabilityBackends().isEmpty();
     }
 
+    /**
+     * Returns the monitor title shown in Jenkins administration.
+     *
+     * @return monitor display name
+     */
     @Override
     public String getDisplayName() {
         return "OpenTelemetry - No Observability Backend Defined";
     }
 
+    /**
+     * Injects plugin configuration used by this monitor.
+     *
+     * @param jenkinsOpenTelemetryPluginConfiguration plugin configuration
+     */
     @Inject
     public void setJenkinsOpenTelemetryPluginConfiguration(
             JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration) {
