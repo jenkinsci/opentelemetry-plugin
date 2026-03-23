@@ -21,10 +21,10 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import jenkins.YesNoMaybe;
 
-@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 /**
  * Cloud provisioning listener that reports successful and failed cloud-agent provisioning metrics.
  */
+@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringCloudListener extends CloudProvisioningListener implements OpenTelemetryLifecycleListener {
     private static final Logger LOGGER = Logger.getLogger(MonitoringCloudListener.class.getName());
 

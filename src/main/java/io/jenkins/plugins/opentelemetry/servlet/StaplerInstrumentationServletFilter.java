@@ -922,7 +922,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
          * @return {@code true} when URLs are equivalent
          */
         @Override
-        @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
@@ -937,7 +936,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
          * @return hash code
          */
         @Override
-        @Override
         public int hashCode() {
             return Objects.hash(super.hashCode(), flowNodeId, stepId);
         }
@@ -947,7 +945,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
          *
          * @return printable Blue Ocean parsed job URL
          */
-        @Override
         @Override
         public String toString() {
             return "ParsedBlueOceanPipelineJobUrl{" + "jobName='"
@@ -966,7 +963,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
      * @return {@code true} when both are the same filter type
      */
     @Override
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         return o != null && getClass() == o.getClass();
@@ -977,7 +973,6 @@ public class StaplerInstrumentationServletFilter implements Filter, OpenTelemetr
      *
      * @return hash code
      */
-    @Override
     @Override
     public int hashCode() {
         return Objects.hashCode(getClass());

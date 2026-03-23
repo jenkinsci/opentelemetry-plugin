@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import jenkins.YesNoMaybe;
 
-@Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 /** Run handler for Jenkins matrix jobs and matrix configuration runs. */
+@Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
 public class MatrixRunHandler implements RunHandler {
 
     private boolean expandJobName;

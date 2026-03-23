@@ -17,10 +17,10 @@ import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
-@Extension
 /**
  * Administrative monitor warning when telemetry export is configured but no observability backend is selected.
  */
+@Extension
 public class ObservabilityBackendCheckAdministrativeMonitor extends AdministrativeMonitor {
 
     JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;

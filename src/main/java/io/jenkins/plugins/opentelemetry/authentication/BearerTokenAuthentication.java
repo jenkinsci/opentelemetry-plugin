@@ -26,10 +26,11 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 /**
- * See https://tools.ietf.org/html/rfc6750
+ * OTel authentication strategy that injects an `Authorization: Bearer` header.
+ *
+ * See https://tools.ietf.org/html/rfc6750.
  */
 @Extension
-/** OTel authentication strategy that injects an `Authorization: Bearer` header. */
 public class BearerTokenAuthentication extends OtlpAuthentication {
     private static final Logger LOGGER = Logger.getLogger(BearerTokenAuthentication.class.getName());
 

@@ -120,12 +120,12 @@ public class MonitoringBuildStepListener extends BuildStepListener {
         return span.makeCurrent();
     }
 
-    @Inject
     /**
      * Injects the trace service used to store and retrieve step spans.
      *
      * @param otelTraceService trace service instance
      */
+    @Inject
     public final void setOpenTelemetryTracerService(@NonNull OtelTraceService otelTraceService) {
         this.otelTraceService = otelTraceService;
     }

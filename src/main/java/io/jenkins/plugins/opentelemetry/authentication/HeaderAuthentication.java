@@ -25,8 +25,8 @@ import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-@Extension
 /** OTel authentication strategy that sends a custom static header name and credential-backed value. */
+@Extension
 public class HeaderAuthentication extends OtlpAuthentication {
     private static final Logger LOGGER = Logger.getLogger(HeaderAuthentication.class.getName());
 

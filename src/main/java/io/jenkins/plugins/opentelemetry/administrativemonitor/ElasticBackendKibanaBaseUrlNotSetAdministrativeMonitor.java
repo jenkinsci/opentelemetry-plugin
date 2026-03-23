@@ -18,10 +18,10 @@ import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.StaplerResponse2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
-@Extension
 /**
  * Administrative monitor warning when Elastic backend is configured without a Kibana base URL.
  */
+@Extension
 public class ElasticBackendKibanaBaseUrlNotSetAdministrativeMonitor extends AdministrativeMonitor {
 
     private JenkinsOpenTelemetryPluginConfiguration pluginConfiguration;

@@ -33,10 +33,10 @@ import jenkins.YesNoMaybe;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
-@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 /**
  * Computer listener that tracks Jenkins agent lifecycle metrics and host attributes.
  */
+@Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringComputerListener extends ComputerListener implements OpenTelemetryLifecycleListener {
     private static final Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
