@@ -122,24 +122,47 @@ public final class GlobalOpenTelemetrySdk {
         configurationCounter.incrementAndGet();
     }
 
+    /** Immutable snapshot of SDK and resource configuration used for change detection. */
     static class OtelSdkConfiguration {
         private final Map<String, String> configurationProperties;
         private final Map<String, String> resourceAttributes;
 
+        /**
+         * Creates a snapshot of current OpenTelemetry SDK settings.
+         *
+         * @param configurationProperties SDK configuration properties
+         * @param resourceAttributes resolved OTel resource attributes
+         */
         public OtelSdkConfiguration(
                 Map<String, String> configurationProperties, Map<String, String> resourceAttributes) {
             this.configurationProperties = configurationProperties;
             this.resourceAttributes = resourceAttributes;
         }
 
+        /**
+         * Returns SDK configuration properties used to initialize the OTel SDK.
+         *
+         * @return SDK configuration properties
+         */
         public Map<String, String> getConfigurationProperties() {
             return configurationProperties;
         }
 
+        /**
+         * Returns resource attributes applied to all telemetry emitted by this SDK instance.
+         *
+         * @return OTel resource attributes
+         */
         public Map<String, String> getResourceAttributes() {
             return resourceAttributes;
         }
 
+        /**
+         * Compares snapshots by configuration properties and resource attributes.
+         *
+         * @param o object to compare
+         * @return {@code true} when both snapshots contain the same configuration values
+         */
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -149,6 +172,11 @@ public final class GlobalOpenTelemetrySdk {
                     && Objects.equals(resourceAttributes, that.resourceAttributes);
         }
 
+        /**
+         * Returns a hash code consistent with {@link #equals(Object)}.
+         *
+         * @return hash code for this configuration snapshot
+         */
         @Override
         public int hashCode() {
             return Objects.hash(configurationProperties, resourceAttributes);

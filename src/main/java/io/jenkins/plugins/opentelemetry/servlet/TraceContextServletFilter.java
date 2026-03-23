@@ -41,6 +41,15 @@ public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycle
     @Inject
     ReconfigurableOpenTelemetry openTelemetry;
 
+    /**
+     * Delegates to HTTP-specific filtering when request and response are HTTP types.
+     *
+     * @param servletRequest incoming servlet request
+     * @param servletResponse outgoing servlet response
+     * @param chain filter chain
+     * @throws IOException on I/O failures
+     * @throws ServletException on servlet processing failures
+     */
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain)
             throws IOException, ServletException {
@@ -51,6 +60,15 @@ public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycle
         }
     }
 
+    /**
+     * Extracts inbound W3C trace context for remote build-trigger requests when enabled.
+     *
+     * @param request incoming HTTP request
+     * @param response outgoing HTTP response
+     * @param chain filter chain
+     * @throws IOException on I/O failures
+     * @throws ServletException on servlet processing failures
+     */
     public void _doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         if (w3cTraceContextPropagationEnabled.get() && isJenkinsRemoteBuildTriggerRequest(request)) {
@@ -91,12 +109,23 @@ public class TraceContextServletFilter implements Filter, OpenTelemetryLifecycle
         }
     }
 
+    /**
+     * Compares by concrete type because this filter has no mutable identity fields.
+     *
+     * @param o object to compare
+     * @return {@code true} when both instances are the same filter type
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         return o != null && getClass() == o.getClass();
     }
 
+    /**
+     * Returns a stable hash code for this stateless filter type.
+     *
+     * @return hash code for this class
+     */
     @Override
     public int hashCode() {
         return TraceContextServletFilter.class.hashCode();

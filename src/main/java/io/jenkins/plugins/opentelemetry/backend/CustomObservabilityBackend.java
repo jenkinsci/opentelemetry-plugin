@@ -14,9 +14,13 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
+/** Observability backend whose links are provided through user-defined URL templates. */
 public class CustomObservabilityBackend extends ObservabilityBackend {
 
+    /** Environment variable name that can provide the custom backend base URL. */
     public static final String OTEL_CUSTOM_URL = "OTEL_CUSTOM_URL";
+
+    /** Default display name shown in Jenkins configuration UI. */
     public static final String DEFAULT_NAME = "Custom Observability Backend";
     /**
      * TODO fix typo "visualisation" -> "visualization" but WARNING handle backward compatibility
@@ -25,6 +29,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
 
     private String metricsVisualizationUrlTemplate;
 
+    /** Creates an empty custom backend configuration. */
     @DataBoundConstructor
     public CustomObservabilityBackend() {}
 
@@ -167,6 +172,7 @@ public class CustomObservabilityBackend extends ObservabilityBackend {
 
     @Extension
     @Symbol("customObservabilityBackend")
+    /** Descriptor for registering the custom backend in Jenkins global configuration. */
     public static class DescriptorImpl extends ObservabilityBackendDescriptor {
         /**
          * Returns descriptor display name for Jenkins configuration UI.
