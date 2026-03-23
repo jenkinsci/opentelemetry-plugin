@@ -12,6 +12,7 @@ import java.io.PrintStream;
 import java.io.Serial;
 import org.jenkinsci.plugins.workflow.log.OutputStreamTaskListener;
 
+/** Build listener that duplicates both byte-stream and print-stream output to two listeners. */
 public class TeeOutputStreamBuildListener implements BuildListener, OutputStreamTaskListener, AutoCloseable {
 
     @Serial
@@ -25,6 +26,12 @@ public class TeeOutputStreamBuildListener implements BuildListener, OutputStream
 
     private transient PrintStream printStream;
 
+    /**
+     * Creates a tee output-stream listener with two output-stream-capable delegates.
+     *
+     * @param primary primary listener
+     * @param secondary secondary listener
+     */
     public TeeOutputStreamBuildListener(BuildListener primary, BuildListener secondary) {
         if (!(primary instanceof OutputStreamTaskListener)) {
             throw new ClassCastException("Primary is not an instance of OutputStreamTaskListener: " + primary);
@@ -36,6 +43,11 @@ public class TeeOutputStreamBuildListener implements BuildListener, OutputStream
         this.secondary = secondary;
     }
 
+    /**
+     * Returns an output stream that writes to both delegated listeners.
+     *
+     * @return tee output stream
+     */
     @NonNull
     @Override
     public synchronized OutputStream getOutputStream() {
@@ -47,6 +59,11 @@ public class TeeOutputStreamBuildListener implements BuildListener, OutputStream
         return outputStream;
     }
 
+    /**
+     * Returns a print stream that writes to both delegated listeners.
+     *
+     * @return tee print stream
+     */
     @NonNull
     @Override
     public synchronized PrintStream getLogger() {
@@ -56,6 +73,11 @@ public class TeeOutputStreamBuildListener implements BuildListener, OutputStream
         return printStream;
     }
 
+    /**
+     * Closes both delegated listeners when they implement {@link AutoCloseable}.
+     *
+     * @throws Exception if any delegate close fails
+     */
     @Override
     public void close() throws Exception {
         if (primary instanceof AutoCloseable) {
