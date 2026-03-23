@@ -22,20 +22,39 @@ import java.util.List;
 import jenkins.YesNoMaybe;
 
 @Extension(optional = true, dynamicLoadable = YesNoMaybe.YES)
+/** Run handler for Jenkins matrix jobs and matrix configuration runs. */
 public class MatrixRunHandler implements RunHandler {
 
     private boolean expandJobName;
 
+    /**
+     * Creates the handler and verifies matrix classes are present for optional plugin loading.
+     *
+     * @throws ClassNotFoundException if matrix plugin classes are unavailable
+     */
     public MatrixRunHandler() throws ClassNotFoundException {
         // verify the class is available to force the contract `@Extension(optional = true)`
         Class.forName(MatrixRun.class.getName());
     }
 
+    /**
+     * Indicates whether this handler supports the given run type.
+     *
+     * @param run Jenkins run instance
+     * @return {@code true} for matrix build and matrix run types
+     */
     @Override
     public boolean canCreateSpanBuilder(@NonNull Run<?, ?> run) {
         return run instanceof MatrixRun || run instanceof MatrixBuild;
     }
 
+    /**
+     * Creates a span builder populated with matrix-specific attributes.
+     *
+     * @param run Jenkins run instance
+     * @param tracer tracer used to create the span builder
+     * @return configured span builder
+     */
     @NonNull
     @Override
     public SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer) {
@@ -67,6 +86,11 @@ public class MatrixRunHandler implements RunHandler {
         }
     }
 
+    /**
+     * Applies runtime configuration controlling matrix job span naming.
+     *
+     * @param config OpenTelemetry configuration properties
+     */
     @Override
     public void configure(ConfigProperties config) {
         expandJobName =

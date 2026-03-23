@@ -22,6 +22,9 @@ import org.jenkinsci.plugins.workflow.steps.BodyExecutionCallback;
 import org.jenkinsci.plugins.workflow.steps.GeneralNonBlockingStepExecution;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 
+/**
+ * Step execution that applies configured span attributes to current and selected related spans.
+ */
 public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution {
 
     private static final Logger logger = Logger.getLogger(SpanAttributeStepExecution.class.getName());
@@ -32,6 +35,13 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
 
     private final boolean setAttributesOnlyOnParent;
 
+    /**
+     * Creates a step execution that can optionally apply attributes to child spans.
+     *
+     * @param spanAttributes attributes to apply
+     * @param setOnChildren whether child spans should inherit configured attributes
+     * @param context workflow step context
+     */
     public SpanAttributeStepExecution(List<SpanAttribute> spanAttributes, boolean setOnChildren, StepContext context) {
         super(context);
         this.spanAttributes = spanAttributes;
@@ -39,6 +49,14 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
         this.setAttributesOnlyOnParent = false;
     }
 
+    /**
+     * Creates a step execution with explicit parent-only inheritance control.
+     *
+     * @param spanAttributes attributes to apply
+     * @param setOnChildren whether child spans should inherit configured attributes
+     * @param context workflow step context
+     * @param setAttributesOnlyOnParent whether inheritance should be restricted to the current parent span
+     */
     public SpanAttributeStepExecution(
             List<SpanAttribute> spanAttributes,
             boolean setOnChildren,
@@ -50,6 +68,12 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
         this.setAttributesOnlyOnParent = setAttributesOnlyOnParent;
     }
 
+    /**
+     * Starts execution and either runs inline or wraps the nested body with propagated attributes.
+     *
+     * @return {@code false} when body execution has been scheduled asynchronously, otherwise {@code true}
+     * @throws Exception if step setup fails
+     */
     @Override
     public boolean start() throws Exception {
         if (setOnChildren) {
@@ -173,6 +197,7 @@ public class SpanAttributeStepExecution extends GeneralNonBlockingStepExecution 
         @Serial
         private static final long serialVersionUID = 957579239256583870L;
 
+        /** Singleton callback instance used for asynchronous body execution completion. */
         public static final NopCallback INSTANCE = new NopCallback();
 
         @Override

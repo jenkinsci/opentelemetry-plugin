@@ -24,6 +24,7 @@ import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+/** Pipeline step that sets custom attributes on selected spans without wrapping a block body. */
 public class SetSpanAttributesStep extends Step {
     List<SpanAttribute> spanAttributes;
 
@@ -48,6 +49,11 @@ public class SetSpanAttributesStep extends Step {
     public StepExecution start(StepContext context) throws Exception {
         if (spanAttributes == null) {
             return new StepExecution(context) {
+                /**
+                 * Fails execution because mandatory step parameters are missing.
+                 *
+                 * @return {@code true} because execution completes synchronously on error
+                 */
                 @Override
                 public boolean start() {
                     getContext()
@@ -69,6 +75,11 @@ public class SetSpanAttributesStep extends Step {
             });
             // null attributes are NOT supported, log an error
             return new StepExecution(context) {
+                /**
+                 * Fails execution because one or more configured attributes have null values.
+                 *
+                 * @return {@code true} because execution completes synchronously on error
+                 */
                 @Override
                 public boolean start() {
                     getContext()
@@ -83,8 +94,10 @@ public class SetSpanAttributesStep extends Step {
         return new SpanAttributeStepExecution(spanAttributes, context.hasBody(), context);
     }
 
+    /** Descriptor for registering the `setSpanAttributes` Pipeline step in Jenkins. */
     @Extension
     public static final class DescriptorImpl extends StepDescriptor {
+        /** Pipeline DSL function name exposed by this step. */
         public static final String FUNCTION_NAME = "setSpanAttributes";
 
         /**
