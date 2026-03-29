@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry.queue;
 
 import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes.STATUS;
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.*;
-import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_QUEUE_COUNT;
 
 import hudson.Extension;
 import hudson.model.Queue;
@@ -124,6 +123,7 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
                         queueItems.record(buildable.get(), Attributes.of(STATUS, "buildable"));
                         queueBuildableItems.record(buildable.get());
                         queueItems.record(stuck.get(), Attributes.of(STATUS, "stuck"));
+                        queueItems.record(left.get(), Attributes.of(STATUS, "left"));
                         if (unknown.get() > 0) {
                             queueItems.record(unknown.get(), Attributes.of(STATUS, "unknown"));
                         }
