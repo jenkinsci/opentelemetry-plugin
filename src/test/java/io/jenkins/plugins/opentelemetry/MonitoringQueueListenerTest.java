@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+
 import hudson.model.FreeStyleProject;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.sdk.metrics.data.MetricData;
