@@ -48,22 +48,22 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
         Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
 
         final ObservableLongMeasurement queueLength = meter.gaugeBuilder(JENKINS_EXECUTOR_QUEUE)
-                .setUnit("${items}")
+                .setUnit("{items}")
                 .setDescription("Executors queue items")
                 .ofLongs()
                 .buildObserver();
         final ObservableLongMeasurement totalExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_TOTAL)
-                .setUnit("${executors}")
+                .setUnit("{executors}")
                 .setDescription("Total executors")
                 .ofLongs()
                 .buildObserver();
         final ObservableLongMeasurement nodes = meter.gaugeBuilder(JENKINS_NODE)
-                .setUnit("${nodes}")
+                .setUnit("{nodes}")
                 .setDescription("Nodes")
                 .ofLongs()
                 .buildObserver();
         final ObservableLongMeasurement executors = meter.gaugeBuilder(JENKINS_EXECUTOR_COUNT)
-                .setUnit("${executors}")
+                .setUnit("{executors}")
                 .setDescription("Count of executors per label")
                 .ofLongs()
                 .buildObserver();
@@ -73,32 +73,32 @@ public class JenkinsExecutorMonitoringInitializer implements OpenTelemetryLifecy
         //  * `jenkins.node` metric with the `status` attribute
         //  * `jenkins.executor.total` metric with the `status` attribute
         final ObservableLongMeasurement availableExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_AVAILABLE)
-                .setUnit("${executors}")
+                .setUnit("{executors}")
                 .setDescription("Available executors")
                 .ofLongs()
                 .buildObserver();
         final ObservableLongMeasurement busyExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_BUSY)
-                .setUnit("${executors}")
+                .setUnit("{executors}")
                 .setDescription("Busy executors")
                 .ofLongs()
                 .buildObserver();
         final ObservableLongMeasurement idleExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_IDLE)
-                .setUnit("${executors}")
+                .setUnit("{executors}")
                 .setDescription("Idle executors")
                 .ofLongs()
                 .buildObserver();
         final ObservableLongMeasurement onlineExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_ONLINE)
-                .setUnit("${executors}")
+                .setUnit("{executors}")
                 .setDescription("Online executors")
                 .ofLongs()
                 .buildObserver();
         final ObservableLongMeasurement connectingExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_CONNECTING)
-                .setUnit("${executors}")
+                .setUnit("{executors}")
                 .setDescription("Connecting executors")
                 .ofLongs()
                 .buildObserver();
         final ObservableLongMeasurement definedExecutors = meter.gaugeBuilder(JENKINS_EXECUTOR_DEFINED)
-                .setUnit("${executors}")
+                .setUnit("{executors}")
                 .setDescription("Defined executors")
                 .ofLongs()
                 .buildObserver();
