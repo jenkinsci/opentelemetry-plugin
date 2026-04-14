@@ -2,20 +2,20 @@
  * Copyright The Original Author or Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-
 package io.jenkins.plugins.opentelemetry;
 
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
-import hudson.model.FreeStyleProject;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterProvider;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporterUtils;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
@@ -24,8 +24,9 @@ public class MonitoringQueueListenerTest extends BaseIntegrationTest {
 
     @Test
     public void testQueueMetricsAreRegisteredAndExported() throws Exception {
-        // Schedule and complete a job so the queue is exercised
-        FreeStyleProject project = jenkinsRule.createFreeStyleProject("queue-metrics-test");
+        // Use a Pipeline job — the primary supported job type for this plugin
+        WorkflowJob project = jenkinsRule.createProject(WorkflowJob.class, "queue-metrics-test");
+        project.setDefinition(new CpsFlowDefinition("node() { echo 'queue-metrics-test' }", true));
         jenkinsRule.buildAndAssertSuccess(project);
         jenkinsRule.waitUntilNoActivity();
 
