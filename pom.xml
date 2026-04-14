@@ -63,11 +63,11 @@
     <jenkins.baseline>2.516</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-    <opentelemetry.version>1.54.1</opentelemetry.version>
+    <opentelemetry.version>1.61.0-alpha</opentelemetry.version>
     <jenkins-opentelemetry.version>1.54.1.102.v276c93ee966d</jenkins-opentelemetry.version>
-    <opentelemetry-instrumentation.version>2.20.1</opentelemetry-instrumentation.version>
-    <opentelemetry-semconv.version>1.37.0</opentelemetry-semconv.version>
-    <opentelemetry-contrib.version>1.46.0-alpha</opentelemetry-contrib.version>
+    <opentelemetry-instrumentation.version>2.26.1-alpha</opentelemetry-instrumentation.version>
+    <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
+    <opentelemetry-contrib.version>1.55.0-alpha</opentelemetry-contrib.version>
     <useBeta>true</useBeta>
     <elasticstack.version>9.1.4</elasticstack.version>
     <error-prone.version>2.49.0</error-prone.version>
@@ -95,7 +95,7 @@
       <dependency>
         <groupId>io.opentelemetry</groupId>
         <artifactId>opentelemetry-bom-alpha</artifactId>
-        <version>${opentelemetry.version}-alpha</version>
+        <version>${opentelemetry.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -109,7 +109,7 @@
       <dependency>
         <groupId>io.opentelemetry.instrumentation</groupId>
         <artifactId>opentelemetry-instrumentation-bom-alpha</artifactId>
-        <version>${opentelemetry-instrumentation.version}-alpha</version>
+        <version>${opentelemetry-instrumentation.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -140,7 +140,7 @@
       <dependency>
         <groupId>io.opentelemetry.semconv</groupId>
         <artifactId>opentelemetry-semconv-incubating</artifactId>
-        <version>${opentelemetry-semconv.version}-alpha</version>
+        <version>${opentelemetry-semconv.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.json</groupId>
@@ -283,7 +283,7 @@
       <groupId>io.opentelemetry.instrumentation</groupId>
       <!-- TODO it is deprecated at 1.60.1 we will have to migrate it again when we update https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/main/instrumentation/runtime-telemetry/library/README.md -->
       <artifactId>opentelemetry-runtime-telemetry-java17</artifactId>
-      <version>${opentelemetry-instrumentation.version}-alpha</version>
+      <version>${opentelemetry-instrumentation.version}</version>
     </dependency>
 
     <dependency>
