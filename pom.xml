@@ -297,7 +297,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>bitbucket</artifactId>
-      <version>273.v7b_535e8f11c2</version>
+      <version>307.va_9f30d0b_8f0d</version>
       <optional>true</optional>
     </dependency>
     <dependency>
