@@ -65,7 +65,7 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
         final ObservableLongMeasurement queueItems = meter.gaugeBuilder(JENKINS_QUEUE_COUNT)
                 .ofLongs()
                 .setDescription("Number of tasks in the queue")
-                .setUnit("${tasks}")
+                .setUnit("{tasks}")
                 .buildObserver();
         // should be deprecated in favor of "jenkins.queue" metric with status attribute
         final ObservableLongMeasurement queueWaitingItems = meter.gaugeBuilder(JENKINS_QUEUE_WAITING)

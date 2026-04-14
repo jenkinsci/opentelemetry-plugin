@@ -49,12 +49,12 @@ public class PluginMonitoringInitializer implements OpenTelemetryLifecycleListen
         Meter meter = Objects.requireNonNull(jenkinsControllerOpenTelemetry).getDefaultMeter();
 
         final ObservableLongMeasurement plugins = meter.gaugeBuilder(JENKINS_PLUGINS_COUNT)
-                .setUnit("${plugins}")
+                .setUnit("{plugins}")
                 .setDescription("Jenkins plugins")
                 .ofLongs()
                 .buildObserver();
         final ObservableLongMeasurement pluginUpdates = meter.gaugeBuilder(JENKINS_PLUGINS_UPDATES)
-                .setUnit("${plugins}")
+                .setUnit("{plugins}")
                 .setDescription("Jenkins plugin updates")
                 .ofLongs()
                 .buildObserver();
