@@ -15,7 +15,6 @@ import hudson.matrix.MatrixRun;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.SpanBuilder;
-import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,22 +31,29 @@ public class MatrixRunHandler implements RunHandler {
     }
 
     @Override
-    public boolean canCreateSpanBuilder(@NonNull Run<?, ?> run) {
+    public boolean matches(@NonNull Run<?, ?> run) {
         return run instanceof MatrixRun || run instanceof MatrixBuild;
     }
 
     @NonNull
     @Override
-    public SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer) {
+    public String getPipelineShortName(@NonNull Run<?, ?> run) {
         if (run instanceof MatrixRun matrixRun) {
             MatrixConfiguration matrixConfiguration = matrixRun.getParent();
-
             MatrixProject matrixProject = matrixConfiguration.getParent();
-            String spanName =
-                    expandJobName ? run.getParent().getFullName() : matrixProject.getFullName() + "/execution";
-            SpanBuilder spanBuilder =
-                    tracer.spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
-            Combination combination = matrixConfiguration.getCombination();
+            return expandJobName ? run.getParent().getFullName() : matrixProject.getFullName() + "/execution";
+        } else if (run instanceof MatrixBuild matrixBuild) {
+            return matrixBuild.getParent().getFullName();
+        } else {
+            throw new IllegalStateException("Unsupported run type " + run);
+        }
+    }
+
+    @Override
+    public void enrichPipelineRunSpan(@NonNull Run<?, ?> run, @NonNull SpanBuilder spanBuilder) {
+        if (run instanceof MatrixRun matrixRun) {
+
+            Combination combination = matrixRun.getParent().getCombination();
             List<String> axisNames = new ArrayList<>();
             List<String> axisValues = new ArrayList<>();
 
@@ -57,13 +63,6 @@ public class MatrixRunHandler implements RunHandler {
             });
             spanBuilder.setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_AXIS_NAMES, axisNames);
             spanBuilder.setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_AXIS_VALUES, axisValues);
-
-            return spanBuilder;
-        } else if (run instanceof MatrixBuild matrixBuild) {
-            return tracer.spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX
-                    + matrixBuild.getParent().getFullName());
-        } else {
-            throw new IllegalStateException("Unsupported run type " + run);
         }
     }
 
