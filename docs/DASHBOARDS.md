@@ -18,3 +18,18 @@ Import [jenkins-kibana-dashboards.ndjson](../src/main/kibana/jenkins-kibana-dash
 ![Jenkins overview](./images/kibana_jenkins_overview_dashboard.png)
 
 ![Jenkins Provisioning](./images/kibana_jenkins_provisioning_dashboard.png)
+
+## Grafana
+
+Specific dashboard to be imported in your Grafana instance once the plugin and OpenTelemetry Collector have been configured with Prometheus.
+
+There are different ways to import a Grafana dashboard:
+
+* Through the UI
+* Through dashboard provisioning
+
+### Jenkins Overview Grafana Dashboard
+
+Import [jenkins-overview.json](../src/main/grafana/jenkins-overview.json).
+
+For full setup instructions including OTel Collector and Prometheus configuration, see the [Grafana Dashboard Setup Guide](grafana-dashboard-setup.md).

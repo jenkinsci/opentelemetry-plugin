@@ -94,12 +94,12 @@ You should see metrics like `ci_pipeline_run_duration_milliseconds_count`.
 ## Step 3 - Import the Grafana dashboard
 
 A ready-to-import Grafana dashboard JSON is provided at
-[`docs/grafana/jenkins-overview.json`](grafana/jenkins-overview.json).
+[`src/main/grafana/jenkins-overview.json`](../src/main/grafana/jenkins-overview.json).
 
 ### Import via the Grafana UI
 
 1. Open Grafana and go to **Dashboards &rArr; Import**.
-2. Click **Upload JSON file** and select `docs/grafana/jenkins-overview.json`.
+2. Click **Upload JSON file** and select `src/main/grafana/jenkins-overview.json`.
 3. Select your Prometheus datasource from the dropdown.
 4. Click **Import**.
 
@@ -108,7 +108,7 @@ A ready-to-import Grafana dashboard JSON is provided at
 Copy the JSON file to your Grafana provisioning directory:
 
 ```bash
-cp docs/grafana/jenkins-overview.json \
+cp src/main/grafana/jenkins-overview.json \
    /etc/grafana/provisioning/dashboards/jenkins-overview.json
 ```
 
