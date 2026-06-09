@@ -45,12 +45,4 @@ You can use the example pipelines to test the OpenTelemetry Jenkins plugin.
 
 ## Troubleshooting
 
-### I can't see logs in the console
-
-If you are using EDOT collector you must check that you enabled the EDOT mode in the OpenTelemetry Jenkins plugin configuration. if not the build logs does not appear in the Jenkins Console nor in the pipeline steps.
-
-![edot checkbox](images/edot_checkbox.png)
-
-### I have enabled EDOT mode but I don't see logs in the console
-
-EDOT is available only in the latest version of the Elastic Agent. Check you Elastic Stack is 8.18.0 or later and the Elastic Agent is 8.18.0 or later.
+For troubleshooting missing EDOT logs, please refer to the central [Troubleshooting Guide](troubleshooting.md#edot-i-cant-see-logs-in-the-console).
