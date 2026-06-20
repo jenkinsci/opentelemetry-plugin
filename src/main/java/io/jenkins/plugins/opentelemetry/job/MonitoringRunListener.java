@@ -190,7 +190,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
 
     /**
      * Locate the initialization of old semantic conventions measurements in a dedicated method to isolate the code,
-     * prevent misuse of the no-op meter, and ase removal of the code
+     * prevent misuse of the no-op meter, and ease removal of the code
      */
     private void createOldSemanticConventionsMeasurements(SemConvStability semConvStability, Meter meter) {
         Meter oldSemConventionsMeter = semConvStability.emitLegacyCicdSemConv()
