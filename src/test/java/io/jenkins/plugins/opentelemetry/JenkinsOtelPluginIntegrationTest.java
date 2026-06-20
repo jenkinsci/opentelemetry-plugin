@@ -51,9 +51,6 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testSimplePipeline() throws Exception {
-        // assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        // BEFORE
-
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node() {\n"
                 + "    stage('ze-stage1') {\n"
                 + "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n"
