@@ -60,7 +60,7 @@ public class JobDslRunHandler implements RunHandler {
 
         String templateFullName;
         String templateUrl;
-        String spanName = getSpanName(run);
+        String spanName = getSpanNameFromJob(job, seedJob);
         if (seedJob == null) {
             templateFullName = null;
             templateUrl = null;
@@ -93,6 +93,10 @@ public class JobDslRunHandler implements RunHandler {
 
         // TODO understand the difference between seedJobAction.getTemplateJob() and seedJobAction.getSeedJob()
         Item seedJob = seedJobAction.getSeedJob();
+        return getSpanNameFromJob(job, seedJob);
+    }
+
+    private String getSpanNameFromJob(Job<?, ?> job, Item seedJob) {
         if (seedJob == null) {
             return job.getFullName();
         } else {
