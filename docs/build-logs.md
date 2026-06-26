@@ -189,4 +189,4 @@ Please remove them from your Jenkins controller in, http://jenkins:8080/manage/l
 
 ## Troubleshooting
 
-For issues such as truncated logs or "event too large" errors in Elastic APM, please refer to the central [Troubleshooting Guide](troubleshooting.md#build-logs-are-truncated-when-a-pipeline-step-outputs-a-large-number-of-lines).
+For issues such as truncated logs or "event too large" errors in Elastic APM, please refer to the central [Troubleshooting Guide](troubleshooting.md#elastic-apm).

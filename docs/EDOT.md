@@ -45,4 +45,4 @@ You can use the example pipelines to test the OpenTelemetry Jenkins plugin.
 
 ## Troubleshooting
 
-For troubleshooting missing EDOT logs, please refer to the central [Troubleshooting Guide](troubleshooting.md#edot-i-cant-see-logs-in-the-console).
+For troubleshooting missing EDOT logs, please refer to the central [Troubleshooting Guide](troubleshooting.md#edot).

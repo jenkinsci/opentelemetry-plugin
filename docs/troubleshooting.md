@@ -14,10 +14,12 @@ This guide covers the most common issues encountered when setting up and using t
 - [Traces appear but spans are missing stages](#traces-appear-but-spans-are-missing-stages)
 - [Build agents cannot reach the OTLP endpoint](#build-agents-cannot-reach-the-otlp-endpoint)
 - [Enabling debug logging](#enabling-debug-logging)
-- [Build logs are truncated when a pipeline step outputs a large number of lines](#build-logs-are-truncated-when-a-pipeline-step-outputs-a-large-number-of-lines)
-- [Log records are rejected by the Elastic APM Server with an "event too large" error](#log-records-are-rejected-by-the-elastic-apm-server-with-an-event-too-large-error)
-- [EDOT: I can't see logs in the console](#edot-i-cant-see-logs-in-the-console)
-- [EDOT: I have enabled EDOT mode but I don't see logs in the console](#edot-i-have-enabled-edot-mode-but-i-dont-see-logs-in-the-console)
+- [Elastic APM](#elastic-apm)
+  - [Build logs are truncated when a pipeline step outputs a large number of lines](#build-logs-are-truncated-when-a-pipeline-step-outputs-a-large-number-of-lines)
+  - [Log records are rejected by the Elastic APM Server with an "event too large" error](#log-records-are-rejected-by-the-elastic-apm-server-with-an-event-too-large-error)
+- [EDOT](#edot)
+  - [I can't see logs in the console](#i-cant-see-logs-in-the-console)
+  - [I have enabled EDOT mode but I don't see logs in the console](#i-have-enabled-edot-mode-but-i-dont-see-logs-in-the-console)
 
 ---
 
@@ -239,7 +241,9 @@ otel.javaagent.logging=simple
 
 ---
 
-## Build logs are truncated when a pipeline step outputs a large number of lines
+## Elastic APM
+
+### Build logs are truncated when a pipeline step outputs a large number of lines
 
 **Symptom:** A pipeline step that produces a high volume of log output (e.g. `sh "cat bigfile.txt"` or any step
 echoing thousands of lines) results in only a portion of the lines being stored in the observability backend.
@@ -283,7 +287,7 @@ point (e.g. `otel.blrp.max.queue.size=6000` for a step that can emit ~8000 lines
 
 ---
 
-## Log records are rejected by the Elastic APM Server with an "event too large" error
+### Log records are rejected by the Elastic APM Server with an "event too large" error
 
 **Symptom:** Log lines are emitted by Jenkins but are not stored in Elasticsearch. The APM Server logs contain
 an error similar to:
@@ -311,7 +315,9 @@ Refer to the Elastic documentation for details:
 
 ---
 
-## EDOT: I can't see logs in the console
+## EDOT
+
+### I can't see logs in the console
 
 If you are using EDOT collector you must check that you enabled the EDOT mode in the OpenTelemetry Jenkins plugin configuration. if not the build logs does not appear in the Jenkins Console nor in the pipeline steps.
 
@@ -319,7 +325,7 @@ If you are using EDOT collector you must check that you enabled the EDOT mode in
 
 ---
 
-## EDOT: I have enabled EDOT mode but I don't see logs in the console
+### I have enabled EDOT mode but I don't see logs in the console
 
 EDOT is available only in the latest version of the Elastic Agent. Check you Elastic Stack is 8.18.0 or later and the Elastic Agent is 8.18.0 or later.
 
