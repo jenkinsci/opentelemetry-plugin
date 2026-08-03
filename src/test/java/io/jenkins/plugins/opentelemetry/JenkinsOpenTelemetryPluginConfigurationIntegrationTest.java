@@ -1,10 +1,12 @@
 package io.jenkins.plugins.opentelemetry;
 
+import static com.google.common.base.Verify.verify;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import hudson.ExtensionList;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.sdk.metrics.data.MetricData;
@@ -39,6 +41,19 @@ public class JenkinsOpenTelemetryPluginConfigurationIntegrationTest {
         InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.reset();
     }
 
+    // We explicitly trigger a metric scrape.
+    // This only works if no scrape is currently in progress (use high scrape period for tests).
+    protected void forceMetricsExport(JenkinsRule jenkinsRule) {
+        ExtensionList<JenkinsControllerOpenTelemetry> jenkinsOpenTelemetries =
+                jenkinsRule.getInstance().getExtensionList(JenkinsControllerOpenTelemetry.class);
+        verify(
+                jenkinsOpenTelemetries.size() == 1,
+                "Number of jenkinsControllerOpenTelemetrys: %s",
+                jenkinsOpenTelemetries.size());
+        JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry = jenkinsOpenTelemetries.get(0);
+        jenkinsControllerOpenTelemetry.getMetricReader().forceFlush();
+    }
+
     @Test
     @Issue("https://github.com/jenkinsci/opentelemetry-plugin/issues/1156")
     public void configLoadReconfiguresOtelSdk(JenkinsRule r) throws Exception {
@@ -52,11 +67,13 @@ public class JenkinsOpenTelemetryPluginConfigurationIntegrationTest {
 
         extension.setServiceName("name-2");
         r.configRoundtrip();
+        forceMetricsExport(r);
         await().until(() -> getServiceNameFromLastExportedMetric(JenkinsMetrics.JENKINS_QUEUE_COUNT), is("name-2"));
 
         // Check that overwriting the config and calling Descriptor.load is enough to reconfigure the OTel SDK.
         Files.writeString(configXmlPath, savedConfigXml);
         extension.load();
+        forceMetricsExport(r);
         await().until(() -> getServiceNameFromLastExportedMetric(JenkinsMetrics.JENKINS_QUEUE_COUNT), is("name-1"));
     }
 

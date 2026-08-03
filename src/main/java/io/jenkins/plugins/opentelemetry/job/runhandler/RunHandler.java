@@ -21,6 +21,15 @@ public interface RunHandler extends Comparable<RunHandler> {
     SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer);
 
     /**
+     * Low cardinality pipeline name that fits with
+     * {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_NAME}.
+     * High cardinality elements like the SCM pull request names of a Jenkins multibranch pipeline
+     * should be excluded from the pipeline short name.
+     */
+    @NonNull
+    String getSpanName(@NonNull Run<?, ?> run);
+
+    /**
      * @return the ordinal of this handler to execute run handlers in predictable order. The smallest ordinal is executed first.
      */
     default int ordinal() {

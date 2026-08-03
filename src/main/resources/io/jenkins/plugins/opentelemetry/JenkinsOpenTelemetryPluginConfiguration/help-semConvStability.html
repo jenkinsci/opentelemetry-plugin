@@ -1,0 +1,23 @@
+<div>
+    <p>Whether to follow the existing Jenkins semantic conventions, the OpenTelemetry semantic conventions or both. Default: <code>Jenkins</code></p>
+
+    <div class="alert alert-warning" style="margin: 15px 0; padding: 12px; border-left: 4px solid #f0ad4e;">
+        <h4 style="margin-top: 0;">⚠️ Stability Warning</h4>
+        <p>
+            The OpenTelemetry semantic conventions for CI/CD are currently at <b>Development</b> stability level.
+            This means these conventions may change in future OpenTelemetry releases, potentially introducing
+            breaking changes to attribute names and values. Monitor OpenTelemetry releases carefully
+            and be prepared to update your observability backend configurations accordingly.
+        </p>
+    </div>
+
+    <h3>Options</h3>
+    <ul>
+        <li><strong>Jenkins</strong>: Use only custom Jenkins-specific semantic conventions.</li>
+        <li><strong>Jenkins + OpenTelemetry</strong>: Use both Jenkins and OpenTelemetry conventions (results in duplicate attributes).
+            Use this option in a transition phase before switching to OpenTelemetry.</li>
+        <li><strong>OpenTelemetry</strong>: Use only standard OpenTelemetry semantic conventions.</li>
+    </ul>
+
+    <p>Jenkins metrics, spans and attributes for which no corresponding OpenTelemetry convention exists remain unchanged by these options.</p>
+</div>

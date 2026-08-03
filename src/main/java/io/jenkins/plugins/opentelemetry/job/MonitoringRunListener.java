@@ -6,8 +6,6 @@
 package io.jenkins.plugins.opentelemetry.job;
 
 import static com.google.common.base.Verify.verifyNotNull;
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -31,12 +29,14 @@ import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
 import io.jenkins.plugins.opentelemetry.job.opentelemetry.OtelContextAwareAbstractRunListener;
 import io.jenkins.plugins.opentelemetry.job.runhandler.RunHandler;
 import io.jenkins.plugins.opentelemetry.queue.RemoteSpanAction;
-import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
-import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
-import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
+import io.jenkins.plugins.opentelemetry.semconv.*;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.incubator.metrics.ExtendedDoubleHistogramBuilder;
 import io.opentelemetry.api.metrics.DoubleHistogram;
+import io.opentelemetry.api.metrics.DoubleHistogramBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -51,7 +51,9 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
+import io.opentelemetry.semconv.ErrorAttributes;
 import io.opentelemetry.semconv.ExceptionAttributes;
+import io.opentelemetry.semconv.incubating.CicdIncubatingAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -75,11 +77,12 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.jenkinsci.plugins.workflow.support.steps.build.BuildUpstreamCause;
 
 /**
- * TODO support reconfiguration
+ * TODO support reconfiguration. allow and deny lists are NOT reconfigurable at runtime for the moment.
  */
 @Extension(dynamicLoadable = YesNoMaybe.YES, optional = true)
 public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
         implements OpenTelemetryLifecycleListener {
+    static final String PIPELINE_NAME_OTHER = "#other#";
 
     static final Pattern MATCH_ANYTHING = Pattern.compile(".*");
     static final Pattern MATCH_NOTHING = Pattern.compile("$^");
@@ -87,19 +90,52 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
     // TODO support configurability of these histogram buckets. Note that the conversion from a string to a list of
     //  doubles will require boilerplate so we are interested in getting user feedback before implementing this.
     static final List<Double> DURATION_SECONDS_BUCKETS =
-            unmodifiableList(asList(1D, 2D, 4D, 8D, 16D, 32D, 64D, 128D, 256D, 512D, 1024D, 2048D, 4096D, 8192D));
+            List.of(1D, 2D, 4D, 8D, 16D, 32D, 64D, 128D, 256D, 512D, 1024D, 2048D, 4096D, 8192D);
 
     protected static final Logger LOGGER = Logger.getLogger(MonitoringRunListener.class.getName());
 
+    /**
+     * @deprecated use {@link #cicdPipelineRunActiveCounter}
+     */
+    @Deprecated
     private AtomicInteger activeRunGauge;
-    private List<CauseHandler> causeHandlers;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private DoubleHistogram runDurationHistogram;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runLaunchedCounter;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runStartedCounter;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runCompletedCounter;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runAbortedCounter;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runSuccessCounter;
+    /**
+     * @deprecated use {@link #cicdPipelineRunDurationHistogram}
+     */
+    @Deprecated
     private LongCounter runFailedCounter;
+
+    private List<CauseHandler> causeHandlers;
     private List<RunHandler> runHandlers;
 
     @VisibleForTesting
@@ -107,6 +143,11 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
 
     @VisibleForTesting
     Pattern runDurationHistogramDenyList;
+
+    private DoubleHistogram cicdPipelineRunDurationHistogram;
+    private LongUpDownCounter cicdPipelineRunActiveCounter;
+    private LongCounter cicdPipelineRunErrorsCounter;
+    private LongCounter cicdSystemErrorsCounter; // TODO implement
 
     @PostConstruct
     public void postConstruct() {
@@ -127,41 +168,79 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
         this.runHandlers = runHandlers;
 
         // METRICS
-        activeRunGauge = new AtomicInteger();
-
-        runDurationHistogram = meter.histogramBuilder(JenkinsMetrics.CI_PIPELINE_RUN_DURATION)
-                .setUnit("s")
-                .setExplicitBucketBoundariesAdvice(DURATION_SECONDS_BUCKETS)
-                .build();
         runDurationHistogramAllowList = MATCH_ANYTHING; // allow all
         runDurationHistogramDenyList = MATCH_NOTHING; // deny nothing
 
-        meter.gaugeBuilder(JenkinsMetrics.CI_PIPELINE_RUN_ACTIVE)
+        // keep the init of the new semantic conventions metrics in the `postConstruct()` to be consistent with
+        // the initialization of other metrics
+        // TODO only create new CICD semconv metrics if semconvStability.emitStableCicdSemconv() is true
+        // else shall we use use no-op metrics
+        SemConvStability semConvStability = getSemConvStability();
+        Meter newSemConventionsMeter = semConvStability.emitOtelCicdSemConv()
+                ? meter
+                : OpenTelemetry.noop().getMeter("jenkins.opentelemetry");
+        cicdPipelineRunDurationHistogram = CicdMetrics.newCiCdPipelineRunDurationHistogram(newSemConventionsMeter);
+        cicdPipelineRunActiveCounter = CicdMetrics.newCiCdPipelineRunActiveCounter(newSemConventionsMeter);
+        cicdPipelineRunErrorsCounter = CicdMetrics.newCiCdPipelineRunErrorsCounter(newSemConventionsMeter);
+        // TODO when to qualify a build failure as a cicd system error?
+        cicdSystemErrorsCounter = CicdMetrics.newCiCdSystemErrorsCounter(newSemConventionsMeter);
+
+        createOldSemanticConventionsMeasurements(semConvStability, meter);
+    }
+
+    /**
+     * Locate the initialization of old semantic conventions measurements in a dedicated method to isolate the code,
+     * prevent misuse of the no-op meter, and ease removal of the code
+     */
+    private void createOldSemanticConventionsMeasurements(SemConvStability semConvStability, Meter meter) {
+        Meter oldSemConventionsMeter = semConvStability.emitLegacyCicdSemConv()
+                ? meter
+                : OpenTelemetry.noop().getMeter("jenkins.opentelemetry");
+
+        activeRunGauge = new AtomicInteger();
+
+        DoubleHistogramBuilder runDurationHistogramBuilder = oldSemConventionsMeter
+                .histogramBuilder(JenkinsMetrics.CI_PIPELINE_RUN_DURATION)
+                .setUnit("s")
+                .setExplicitBucketBoundariesAdvice(DURATION_SECONDS_BUCKETS);
+        if (runDurationHistogramBuilder instanceof ExtendedDoubleHistogramBuilder extendedBuilder) {
+            extendedBuilder.setAttributesAdvice(List.of(
+                    ExtendedJenkinsAttributes.CI_PIPELINE_ID, ExtendedJenkinsAttributes.CI_PIPELINE_RUN_RESULT));
+        }
+        runDurationHistogram = runDurationHistogramBuilder.build();
+        oldSemConventionsMeter
+                .gaugeBuilder(JenkinsMetrics.CI_PIPELINE_RUN_ACTIVE)
                 .ofLongs()
                 .setDescription("Gauge of active jobs")
                 .setUnit("{jobs}")
                 .buildWithCallback(valueObserver -> valueObserver.record(this.activeRunGauge.get()));
-        runLaunchedCounter = meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_LAUNCHED)
+        runLaunchedCounter = oldSemConventionsMeter
+                .counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_LAUNCHED)
                 .setDescription("Job launched")
                 .setUnit("{jobs}")
                 .build();
-        runStartedCounter = meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_STARTED)
+        runStartedCounter = oldSemConventionsMeter
+                .counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_STARTED)
                 .setDescription("Job started")
                 .setUnit("{jobs}")
                 .build();
-        runSuccessCounter = meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_SUCCESS)
+        runSuccessCounter = oldSemConventionsMeter
+                .counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_SUCCESS)
                 .setDescription("Job succeed")
                 .setUnit("{jobs}")
                 .build();
-        runFailedCounter = meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_FAILED)
+        runFailedCounter = oldSemConventionsMeter
+                .counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_FAILED)
                 .setDescription("Job failed")
                 .setUnit("{jobs}")
                 .build();
-        runAbortedCounter = meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_ABORTED)
+        runAbortedCounter = oldSemConventionsMeter
+                .counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_ABORTED)
                 .setDescription("Job aborted")
                 .setUnit("{jobs}")
                 .build();
-        runCompletedCounter = meter.counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_COMPLETED)
+        runCompletedCounter = oldSemConventionsMeter
+                .counterBuilder(JenkinsMetrics.CI_PIPELINE_RUN_COMPLETED)
                 .setDescription("Job completed")
                 .setUnit("{jobs}")
                 .build();
@@ -213,8 +292,16 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
     @Override
     public void _onInitialize(@NonNull Run<?, ?> run) {
         LOGGER.log(Level.FINE, () -> run.getFullDisplayName() + " - onInitialize");
+        String metricPipelineName = getPipelineNameForMetrics(run);
 
         activeRunGauge.incrementAndGet();
+        cicdPipelineRunActiveCounter.add(
+                1,
+                Attributes.of(
+                        CicdIncubatingAttributes.CICD_PIPELINE_NAME,
+                        metricPipelineName,
+                        CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE,
+                        CicdIncubatingAttributes.CicdPipelineRunStateIncubatingValues.PENDING));
 
         RunHandler runHandler = getRunHandlers().stream()
                 .filter(rh -> rh.canCreateSpanBuilder(run))
@@ -222,21 +309,35 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                 .orElseThrow((Supplier<RuntimeException>)
                         () -> new IllegalStateException("No RunHandler found for run " + run.getClass() + " - " + run));
         SpanBuilder rootSpanBuilder = runHandler.createSpanBuilder(run, getTracer());
-
+        String pipelineName = runHandler.getSpanName(run);
         rootSpanBuilder.setSpanKind(SpanKind.SERVER);
-        String runUrl = Objects.toString(Jenkins.get().getRootUrl(), "") + run.getUrl();
+        String runUrl = Optional.ofNullable(Jenkins.get().getRootUrl()).orElse("") + run.getUrl();
 
         // TODO move this to a pluggable span enrichment API with implementations for different observability backends
         rootSpanBuilder.setAttribute(ExtendedJenkinsAttributes.ELASTIC_TRANSACTION_TYPE, "job");
 
+        if (getSemConvStability().emitLegacyCicdSemConv()) {
+            rootSpanBuilder
+                    .setAttribute(
+                            ExtendedJenkinsAttributes.CI_PIPELINE_NAME,
+                            run.getParent().getFullDisplayName())
+                    .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_URL, runUrl);
+        }
+        if (getSemConvStability().emitOtelCicdSemConv()) {
+            rootSpanBuilder
+                    .setAttribute(
+                            CicdIncubatingAttributes.CICD_PIPELINE_ACTION_NAME,
+                            CicdIncubatingAttributes.CicdPipelineActionNameIncubatingValues.BUILD)
+                    .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_NAME, pipelineName)
+                    .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_RUN_URL_FULL, runUrl)
+                    .setAttribute(
+                            CicdIncubatingAttributes.CICD_PIPELINE_RUN_ID,
+                            run.getParent().getFullName() + "/" + run.getNumber());
+        }
         rootSpanBuilder
                 .setAttribute(
                         ExtendedJenkinsAttributes.CI_PIPELINE_ID,
                         run.getParent().getFullName())
-                .setAttribute(
-                        ExtendedJenkinsAttributes.CI_PIPELINE_NAME,
-                        run.getParent().getFullDisplayName())
-                .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_URL, runUrl)
                 .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
                 .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
 
@@ -316,8 +417,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                         // unclear why this could happen. Maybe during the installation of the plugin if the plugin is
                         // installed while a parent job triggers a downstream job
                         w3cTraceContext = Collections.emptyMap();
-                    } else if (upstreamCause instanceof BuildUpstreamCause) {
-                        BuildUpstreamCause buildUpstreamCause = (BuildUpstreamCause) cause;
+                    } else if (upstreamCause instanceof BuildUpstreamCause buildUpstreamCause) {
                         String upstreamNodeId = buildUpstreamCause.getNodeId();
                         w3cTraceContext = monitoringAction.getW3cTraceContext(upstreamNodeId);
                     } else {
@@ -367,6 +467,21 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
 
     @Override
     public void _onStarted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
+        String metricPipelineName = getPipelineNameForMetrics(run);
+        cicdPipelineRunActiveCounter.add(
+                -1,
+                Attributes.of(
+                        CicdIncubatingAttributes.CICD_PIPELINE_NAME,
+                        metricPipelineName,
+                        CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE,
+                        CicdIncubatingAttributes.CicdPipelineRunStateIncubatingValues.PENDING));
+        cicdPipelineRunActiveCounter.add(
+                1,
+                Attributes.of(
+                        CicdIncubatingAttributes.CICD_PIPELINE_NAME,
+                        metricPipelineName,
+                        CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE,
+                        CicdIncubatingAttributes.CicdPipelineRunStateIncubatingValues.EXECUTING));
         try (Scope parentScope = endPipelinePhaseSpan(run)) {
             Span runSpan = getTracer()
                     .spanBuilder(ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME)
@@ -382,6 +497,22 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
 
     @Override
     public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
+        String metricPipelineName = getPipelineNameForMetrics(run);
+        cicdPipelineRunActiveCounter.add(
+                -1,
+                Attributes.of(
+                        CicdIncubatingAttributes.CICD_PIPELINE_NAME,
+                        metricPipelineName,
+                        CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE,
+                        CicdIncubatingAttributes.CicdPipelineRunStateIncubatingValues.EXECUTING));
+        cicdPipelineRunActiveCounter.add(
+                1,
+                Attributes.of(
+                        CicdIncubatingAttributes.CICD_PIPELINE_NAME,
+                        metricPipelineName,
+                        CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE,
+                        CicdIncubatingAttributes.CicdPipelineRunStateIncubatingValues.FINALIZING));
+
         try (Scope ignoredParentScope = endPipelinePhaseSpan(run)) {
             Span finalizeSpan = getTracer()
                     .spanBuilder(ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME)
@@ -407,6 +538,22 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
         return newCurrentSpan.makeCurrent();
     }
 
+    private String getPipelineNameForMetrics(@NonNull Run<?, ?> run) {
+        // TODO perf optimization, reuse resolution done in `#_onInitialize(run)`
+        String pipelineName = getRunHandlers().stream()
+                .filter(rh -> rh.canCreateSpanBuilder(run))
+                .findFirst()
+                .orElseThrow((Supplier<RuntimeException>)
+                        () -> new IllegalStateException("No RunHandler found for run " + run.getClass() + " - " + run))
+                .getSpanName(run);
+        // Use allow and deny lists to determine whether the pipeline name or a generic other category should be used
+        // for cardinality protection when used as a metric attribute.
+        return runDurationHistogramAllowList.matcher(pipelineName).matches()
+                        && !runDurationHistogramDenyList.matcher(pipelineName).matches()
+                ? pipelineName
+                : PIPELINE_NAME_OTHER;
+    }
+
     @Override
     public void _onFinalized(@NonNull Run<?, ?> run) {
 
@@ -422,14 +569,22 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                         ExtendedJenkinsAttributes.CI_PIPELINE_MULTIBRANCH_TYPE, OtelUtils.getMultibranchType(run));
             }
 
+            String metricPipelineName = getPipelineNameForMetrics(run);
             Result runResult = run.getResult();
             if (runResult == null) {
                 // illegal state, job should no longer be running
                 parentSpan.setStatus(StatusCode.UNSET);
             } else {
                 parentSpan.setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_COMPLETED, runResult.completeBuild);
-                parentSpan.setAttribute(
-                        ExtendedJenkinsAttributes.CI_PIPELINE_RUN_RESULT, Objects.toString(runResult, null));
+                if (getSemConvStability().emitLegacyCicdSemConv()) {
+                    parentSpan.setAttribute(
+                            ExtendedJenkinsAttributes.CI_PIPELINE_RUN_RESULT, Objects.toString(runResult, null));
+                }
+                if (getSemConvStability().emitOtelCicdSemConv()) {
+                    parentSpan.setAttribute(
+                            CicdIncubatingAttributes.CICD_PIPELINE_RESULT,
+                            CicdMetrics.fromJenkinsResultToOtelCicdPipelineResult(runResult));
+                }
 
                 if (Result.SUCCESS.equals(runResult)) {
                     parentSpan.setStatus(StatusCode.OK, runResult.toString());
@@ -437,8 +592,22 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                     parentSpan.setAttribute(ExceptionAttributes.EXCEPTION_TYPE, "PIPELINE_" + runResult);
                     parentSpan.setAttribute(ExceptionAttributes.EXCEPTION_MESSAGE, "PIPELINE_" + runResult);
                     parentSpan.setStatus(StatusCode.ERROR, runResult.toString());
+                    cicdPipelineRunErrorsCounter.add(
+                            1,
+                            Attributes.of(
+                                    CicdIncubatingAttributes.CICD_PIPELINE_NAME,
+                                    metricPipelineName,
+                                    ErrorAttributes.ERROR_TYPE,
+                                    runResult.toString()));
                 } else if (Result.ABORTED.equals(runResult) || Result.NOT_BUILT.equals(runResult)) {
                     parentSpan.setStatus(StatusCode.UNSET, runResult.toString());
+                    cicdPipelineRunErrorsCounter.add(
+                            1,
+                            Attributes.of(
+                                    CicdIncubatingAttributes.CICD_PIPELINE_NAME,
+                                    metricPipelineName,
+                                    ErrorAttributes.ERROR_TYPE,
+                                    runResult.toString()));
                 }
             }
             // NODE
@@ -446,8 +615,15 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                 Node node = ((AbstractBuild<?, ?>) run).getBuiltOn();
                 if (node != null) {
                     parentSpan.setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_AGENT_LABEL, node.getLabelString());
-                    parentSpan.setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_ID, node.getNodeName());
-                    parentSpan.setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_NAME, node.getDisplayName());
+                    if (getSemConvStability().emitLegacyCicdSemConv()) {
+                        parentSpan.setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_ID, node.getNodeName());
+                        parentSpan.setAttribute(
+                                ExtendedJenkinsAttributes.CI_PIPELINE_AGENT_NAME, node.getDisplayName());
+                    }
+                    if (getSemConvStability().emitOtelCicdSemConv()) {
+                        parentSpan.setAttribute(CicdIncubatingAttributes.CICD_WORKER_ID, node.getNodeName());
+                        parentSpan.setAttribute(CicdIncubatingAttributes.CICD_WORKER_NAME, node.getDisplayName());
+                    }
                 }
             }
             parentSpan.end();
@@ -471,21 +647,32 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                 this.runAbortedCounter.add(1);
             }
 
-            String jobFullName = run.getParent().getFullName();
-            String pipelineId =
-                    runDurationHistogramAllowList.matcher(jobFullName).matches()
-                                    && !runDurationHistogramDenyList
-                                            .matcher(jobFullName)
-                                            .matches()
-                            ? jobFullName
-                            : "#other#";
             runDurationHistogram.record(
                     TimeUnit.SECONDS.convert(run.getDuration(), TimeUnit.MILLISECONDS),
                     Attributes.of(
                             ExtendedJenkinsAttributes.CI_PIPELINE_ID,
-                            pipelineId,
+                            metricPipelineName,
                             ExtendedJenkinsAttributes.CI_PIPELINE_RUN_RESULT,
                             result.toString()));
+
+            // FIXME CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE & ErrorAttributes.ERROR_TYPE
+            cicdPipelineRunDurationHistogram.record(
+                    TimeUnit.SECONDS.convert(run.getDuration(), TimeUnit.MILLISECONDS),
+                    Attributes.of(
+                            CicdIncubatingAttributes.CICD_PIPELINE_NAME,
+                            metricPipelineName,
+                            CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE,
+                            CicdIncubatingAttributes.CicdPipelineRunStateIncubatingValues.FINALIZING,
+                            CicdIncubatingAttributes.CICD_PIPELINE_RESULT,
+                            CicdMetrics.fromJenkinsResultToOtelCicdPipelineResult(result)));
+
+            cicdPipelineRunActiveCounter.add(
+                    -1,
+                    Attributes.of(
+                            CicdIncubatingAttributes.CICD_PIPELINE_NAME,
+                            metricPipelineName,
+                            CicdIncubatingAttributes.CICD_PIPELINE_RUN_STATE,
+                            CicdIncubatingAttributes.CicdPipelineRunStateIncubatingValues.FINALIZING));
         } finally {
             activeRunGauge.decrementAndGet();
         }

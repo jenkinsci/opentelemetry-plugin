@@ -8,6 +8,7 @@ package io.jenkins.plugins.opentelemetry.job.step;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.SemConvStability;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.testing.trace.SpanBuilderMock;
 import io.opentelemetry.sdk.testing.trace.TracerMock;
@@ -181,6 +182,7 @@ public class GitStepHandlerTest {
             @NonNull String githubUrl, @Nullable String gitBranch, @Nullable String gitUsername) throws Exception {
 
         GitStepHandler handler = new GitStepHandler();
+        handler.setSemConvStability(SemConvStability.JENKINS);
 
         return (SpanBuilderMock)
                 handler.createSpanBuilderFromGitDetails(githubUrl, gitBranch, gitUsername, "git", new TracerMock());
@@ -202,6 +204,7 @@ public class GitStepHandlerTest {
 
     private void testSanitizeUrl(String input, String expected) throws Exception {
         GitStepHandler handler = new GitStepHandler();
+        handler.setSemConvStability(SemConvStability.JENKINS);
         String actual = handler.sanitizeUrl(new URIish(input));
         MatcherAssert.assertThat(actual, Matchers.is(expected));
     }

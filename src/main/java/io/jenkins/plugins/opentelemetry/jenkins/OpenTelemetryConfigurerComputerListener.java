@@ -20,8 +20,10 @@ import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.SemConvStability;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.ServiceAttributes;
+import io.opentelemetry.semconv.incubating.CicdIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,6 +60,7 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
     final AtomicBoolean buildAgentsInstrumentationEnabled = new AtomicBoolean(false);
 
     JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration;
+    private SemConvStability semConvStability;
 
     @Override
     public void preOnline(Computer computer, Channel channel, FilePath root, TaskListener listener) {
@@ -97,6 +100,7 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
     public void setJenkinsOpenTelemetryPluginConfiguration(
             JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration) {
         this.jenkinsOpenTelemetryPluginConfiguration = jenkinsOpenTelemetryPluginConfiguration;
+        this.semConvStability = jenkinsOpenTelemetryPluginConfiguration.getSemConvStability();
     }
 
     /**
@@ -188,10 +192,16 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
         String serviceName = Optional.ofNullable(otelSdkResourceProperties.get(ServiceAttributes.SERVICE_NAME.getKey()))
                 .orElse(io.jenkins.plugins.opentelemetry.api.semconv.JenkinsAttributes.JENKINS); // + "-agent";
         buildAgentOtelSdkResourceProperties.put(ServiceAttributes.SERVICE_NAME.getKey(), serviceName);
-        buildAgentOtelSdkResourceProperties.put(
-                ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
-        buildAgentOtelSdkResourceProperties.put(
-                ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
+        if (semConvStability.emitLegacyCicdSemConv()) {
+            buildAgentOtelSdkResourceProperties.put(
+                    ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey(), computer.getName());
+        }
+        if (semConvStability.emitOtelCicdSemConv()) {
+            buildAgentOtelSdkResourceProperties.put(
+                    CicdIncubatingAttributes.CICD_WORKER_ID.getKey(), computer.getName());
+            buildAgentOtelSdkResourceProperties.put(
+                    CicdIncubatingAttributes.CICD_WORKER_NAME.getKey(), computer.getName());
+        }
 
         OpenTelemetryConfigurerMasterToSlaveCallable callable;
         callable = new OpenTelemetryConfigurerMasterToSlaveCallable(
