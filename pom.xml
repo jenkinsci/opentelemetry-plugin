@@ -21,7 +21,7 @@
         Troubleshoot Jenkins problems using traces of job executions and HTTP requests.
         Store pipeline build logs in an Observability backend like Elastic or Grafana/Loki
         to improve Jenkins reliability and scalability while improving the traceability of builds.</description>
-  <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+  <url>https://github.com/mzakrze/opentelemetry-plugin</url>
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
@@ -62,7 +62,7 @@
     <changelist>999999-SNAPSHOT</changelist>
     <jenkins.baseline>2.516</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
-    <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
+    <gitHubRepo>mzakrze/opentelemetry-plugin</gitHubRepo>
     <opentelemetry.version>1.54.1</opentelemetry.version>
     <jenkins-opentelemetry.version>1.54.1.102.v276c93ee966d</jenkins-opentelemetry.version>
     <opentelemetry-instrumentation.version>2.20.1</opentelemetry-instrumentation.version>

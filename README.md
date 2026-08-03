@@ -7,6 +7,21 @@
 [![Jenkins Plugin Installs](https://img.shields.io/jenkins/plugin/i/opentelemetry.svg?color=blue)](https://plugins.jenkins.io/opentelemetry)
 [![Otel SDK](https://img.shields.io/badge/otel--sdk-1.44.1-blue?style=flat&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-java/releases/tag/v1.44.1)
 
+## Pushing changes to this fork
+
+This is a fork ([mzakrze/opentelemetry-plugin](https://github.com/mzakrze/opentelemetry-plugin)) used to build and
+install a custom version of the plugin from source instead of from the Jenkins update center. To push local changes:
+
+```bash
+git checkout mzakrze-changes   # or create it: git checkout -b mzakrze-changes
+git add -A
+git commit -m "your change"
+git push origin mzakrze-changes
+```
+
+If this repo is used as a git submodule elsewhere, remember to also commit the updated submodule
+pointer in the parent repository after pushing.
+
 ## Introduction
 
 Monitor and observe Jenkins with OpenTelemetry.
