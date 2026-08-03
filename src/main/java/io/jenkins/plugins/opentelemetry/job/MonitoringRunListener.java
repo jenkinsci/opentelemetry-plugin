@@ -23,6 +23,7 @@ import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.User;
+import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.cause.CauseHandler;
@@ -341,6 +342,13 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                 .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
                 .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run))
                 .setAttribute(ExtendedJenkinsAttributes.MZAKRZE_TENANT_ID, TenantIdResolver.resolve(run));
+
+        // Cache ci.pipeline.id on the run too, so it gets applied automatically to every
+        // "Phase: ..."/"Agent"/"Agent Allocation" span (see OtelTraceService#putRunPhaseSpan
+        // and #putAgentSpan), the same way MZAKRZE_TENANT_ID already does via TenantIdResolver#resolve.
+        run.getAction(OpenTelemetryAttributesAction.class)
+                .getAttributes()
+                .put(ExtendedJenkinsAttributes.CI_PIPELINE_ID, run.getParent().getFullName());
 
         // CULPRITS
         Set<User> culpritIds;
