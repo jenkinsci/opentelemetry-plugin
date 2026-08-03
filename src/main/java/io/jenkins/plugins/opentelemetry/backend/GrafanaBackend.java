@@ -65,6 +65,22 @@ public class GrafanaBackend extends ObservabilityBackend {
 
     private GrafanaLogsBackend grafanaLogsBackend;
 
+    /**
+     * URL of a JSON endpoint returning per-Jenkins-folder Grafana org id / Tempo datasource
+     * overrides (see {@link io.jenkins.plugins.opentelemetry.backend.TenantGrafanaMappingFetcher}).
+     * Empty/unset disables per-folder resolution: {@link #grafanaOrgId}/{@link #tempoDataSourceIdentifier}
+     * are then used for every job, as before.
+     */
+    private String tenantMappingUrl;
+
+    /**
+     * Per-Jenkins-folder override of {@link #grafanaOrgId}/{@link #tempoDataSourceIdentifier}, keyed by
+     * root folder name (e.g. "org-aaa"). Populated by {@link TenantGrafanaMappingFetcher}; never persisted.
+     */
+    private transient volatile Map<String, TenantGrafanaMapping> tenantMapping = Map.of();
+
+    public record TenantGrafanaMapping(String grafanaOrgId, String tempoDatasourceUid) {}
+
     @DataBoundConstructor
     public GrafanaBackend() {}
 
@@ -138,7 +154,25 @@ public class GrafanaBackend extends ObservabilityBackend {
     public Map<String, Object> mergeBindings(Map<String, Object> bindings) {
         Map<String, Object> mergedBindings = new HashMap<>(bindings);
         mergedBindings.putAll(getBindings());
+
+        Object jenkinsOrgName = bindings.get(TemplateBindings.JENKINS_ORG_NAME);
+        if (jenkinsOrgName instanceof String jenkinsOrg) {
+            TenantGrafanaMapping override = tenantMapping.get(jenkinsOrg);
+            if (override != null) {
+                mergedBindings.put(TemplateBindings.GRAFANA_ORG_ID, override.grafanaOrgId());
+                mergedBindings.put(
+                        TemplateBindings.GRAFANA_TEMPO_DATASOURCE_IDENTIFIER, override.tempoDatasourceUid());
+            }
+        }
         return mergedBindings;
+    }
+
+    /**
+     * Called by {@link TenantGrafanaMappingFetcher} every time it successfully refreshes the mapping
+     * from {@link #tenantMappingUrl}.
+     */
+    void refreshTenantMapping(Map<String, TenantGrafanaMapping> tenantMapping) {
+        this.tenantMapping = tenantMapping;
     }
 
     @Override
@@ -210,6 +244,16 @@ public class GrafanaBackend extends ObservabilityBackend {
     @DataBoundSetter
     public void setTempoQueryType(String tempoQueryType) {
         this.tempoQueryType = tempoQueryType;
+    }
+
+    @CheckForNull
+    public String getTenantMappingUrl() {
+        return tenantMappingUrl;
+    }
+
+    @DataBoundSetter
+    public void setTenantMappingUrl(String tenantMappingUrl) {
+        this.tenantMappingUrl = tenantMappingUrl;
     }
 
     @CheckForNull

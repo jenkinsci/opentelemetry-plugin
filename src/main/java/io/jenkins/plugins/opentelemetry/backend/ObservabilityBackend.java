@@ -191,6 +191,12 @@ public abstract class ObservabilityBackend
         String SERVICE_NAMESPACE = "serviceNamespace";
         String SERVICE_NAMESPACE_AND_NAME = "serviceNamespaceAndName";
 
+        /**
+         * Name of the run's root Jenkins folder, e.g. "org-aaa". Lets a backend resolve
+         * per-folder configuration (see {@link io.jenkins.plugins.opentelemetry.job.TenantIdResolver#rootFolder(String)}).
+         */
+        String JENKINS_ORG_NAME = "jenkinsOrgName";
+
         String ROOT_SPAN_NAME = "rootSpanName";
         String TRACE_ID = "traceId";
         String SPAN_ID = "spanId";

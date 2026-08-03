@@ -30,12 +30,19 @@ public final class TenantIdResolver {
 
     /**
      * @param jobFullName see {@link hudson.model.Job#getFullName()}
+     * @return the name of the job's root folder, e.g. "org-aaa" for "org-aaa/repo-one"
+     */
+    public static String rootFolder(String jobFullName) {
+        int slashIndex = jobFullName.indexOf('/');
+        return slashIndex == -1 ? jobFullName : jobFullName.substring(0, slashIndex);
+    }
+
+    /**
+     * @param jobFullName see {@link hudson.model.Job#getFullName()}
      * @return the tenant id for the job's root folder, {@value #UNKNOWN_TENANT_ID} if unmapped
      */
     public static String resolveFromJobFullName(String jobFullName) {
-        int slashIndex = jobFullName.indexOf('/');
-        String rootFolder = slashIndex == -1 ? jobFullName : jobFullName.substring(0, slashIndex);
-        return ROOT_FOLDER_TO_TENANT_ID.getOrDefault(rootFolder, UNKNOWN_TENANT_ID);
+        return ROOT_FOLDER_TO_TENANT_ID.getOrDefault(rootFolder(jobFullName), UNKNOWN_TENANT_ID);
     }
 
     /**

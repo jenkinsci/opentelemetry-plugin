@@ -158,6 +158,9 @@ public class MonitoringAction extends AbstractMonitoringAction
         binding.put(ObservabilityBackend.TemplateBindings.TRACE_ID, this.getTraceId());
         binding.put(ObservabilityBackend.TemplateBindings.SPAN_ID, this.getSpanId());
         binding.put(ObservabilityBackend.TemplateBindings.START_TIME, Instant.ofEpochMilli(run.getStartTimeInMillis()));
+        binding.put(
+                ObservabilityBackend.TemplateBindings.JENKINS_ORG_NAME,
+                TenantIdResolver.rootFolder(run.getParent().getFullName()));
 
         return tracingCapableBackends.stream()
                 .map(backend -> new ObservabilityBackendLink(

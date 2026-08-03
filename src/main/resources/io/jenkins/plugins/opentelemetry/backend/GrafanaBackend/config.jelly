@@ -34,6 +34,10 @@
                 description="Grafana Organization Id to use in URLs (param 'orgId')">
             <f:textbox default="${descriptor.defaultGrafanaOrgId}"/>
         </f:entry>
+        <f:entry title="Tenant mapping URL" field="tenantMappingUrl"
+                description="URL of a JSON endpoint returning per-Jenkins-folder Grafana org id / Tempo datasource overrides, polled every minute. Leave empty to always use the Grafana Org Id/Tempo data source identifier above for every job.">
+            <f:textbox/>
+        </f:entry>
         <f:entry title="Display Name" field="name" description="Name used in Jenkins GUI">
             <f:textbox default="${descriptor.displayName}"/>
         </f:entry>
