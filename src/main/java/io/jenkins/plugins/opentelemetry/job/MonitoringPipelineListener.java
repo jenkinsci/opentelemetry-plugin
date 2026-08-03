@@ -225,6 +225,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
                     .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                     .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+                    .setAttribute(ExtendedJenkinsAttributes.MZAKRZE_TENANT_ID, TenantIdResolver.resolve(run))
                     .startSpan();
             if (semConvStability.emitLegacyCicdSemConv()) {
                 stageSpan
@@ -302,7 +303,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
                 .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, node.getId())
                 .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_USER, principal)
                 .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+                .setAttribute(ExtendedJenkinsAttributes.MZAKRZE_TENANT_ID, TenantIdResolver.resolve(run));
         if (semConvStability.emitLegacyCicdSemConv()) {
             spanBuilder
                     .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, stepType)
@@ -425,6 +427,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
                     .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
                     .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+                    .setAttribute(ExtendedJenkinsAttributes.MZAKRZE_TENANT_ID, TenantIdResolver.resolve(run))
                     .startSpan();
             if (semConvStability.emitLegacyCicdSemConv()) {
                 atomicStepSpan
@@ -544,7 +547,8 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
                     .setParent(Context.current())
                     .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
                     .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion())
+                    .setAttribute(ExtendedJenkinsAttributes.MZAKRZE_TENANT_ID, TenantIdResolver.resolve(run));
             if (semConvStability.emitLegacyCicdSemConv()) {
                 spanBuilder
                         .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, stepType)

@@ -339,7 +339,8 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
                         ExtendedJenkinsAttributes.CI_PIPELINE_ID,
                         run.getParent().getFullName())
                 .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_NUMBER, (long) run.getNumber())
-                .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run));
+                .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_TYPE, OtelUtils.getProjectType(run))
+                .setAttribute(ExtendedJenkinsAttributes.MZAKRZE_TENANT_ID, TenantIdResolver.resolve(run));
 
         // CULPRITS
         Set<User> culpritIds;

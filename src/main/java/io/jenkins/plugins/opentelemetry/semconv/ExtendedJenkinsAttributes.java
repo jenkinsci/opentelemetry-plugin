@@ -32,6 +32,12 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
     public static final AttributeKey<String> CI_PIPELINE_ID = AttributeKey.stringKey("ci.pipeline.id");
 
     /**
+     * Tenant id derived from the build's root Jenkins folder, set on every span and log line.
+     * @see io.jenkins.plugins.opentelemetry.job.TenantIdResolver
+     */
+    public static final AttributeKey<String> MZAKRZE_TENANT_ID = AttributeKey.stringKey("mzakrze_tenant_id");
+
+    /**
      * @deprecated use {@link io.opentelemetry.semconv.incubating.CicdIncubatingAttributes#CICD_PIPELINE_NAME}
      */
     @Deprecated
