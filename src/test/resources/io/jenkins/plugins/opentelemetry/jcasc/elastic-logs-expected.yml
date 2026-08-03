@@ -11,5 +11,6 @@ observabilityBackends:
         elasticsearchUrl: "https://es.es.example.com"
     kibanaBaseUrl: "https://kibana.es.example.com"
     name: "My Elastic"
+semConvStability: JENKINS
 serviceName: "jenkins"
 serviceNamespace: "jenkins"

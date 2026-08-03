@@ -39,14 +39,19 @@ public class DefaultRunHandler implements RunHandler {
     @NonNull
     @Override
     public SpanBuilder createSpanBuilder(@NonNull Run<?, ?> run, @NonNull Tracer tracer) {
-        SCMHead head = SCMHead.HeadByItem.findHead(run.getParent());
-        String spanName;
-        if (head instanceof ChangeRequestSCMHead) {
-            spanName = getChangeRequestRootSpanName(run.getParent().getFullName());
-        } else {
-            spanName = run.getParent().getFullName();
-        }
+        String spanName = getSpanName(run);
         return tracer.spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
+    }
+
+    @NonNull
+    @Override
+    public String getSpanName(@NonNull Run<?, ?> run) {
+        SCMHead head = SCMHead.HeadByItem.findHead(run.getParent());
+        if (head instanceof ChangeRequestSCMHead) {
+            return getChangeRequestRootSpanName(run.getParent().getFullName());
+        } else {
+            return run.getParent().getFullName();
+        }
     }
 
     @VisibleForTesting

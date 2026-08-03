@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.computer;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.Computer;
@@ -12,13 +13,16 @@ import hudson.model.TaskListener;
 import hudson.remoting.Channel;
 import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics;
+import io.jenkins.plugins.opentelemetry.semconv.SemConvStability;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.semconv.incubating.CicdIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -38,9 +42,15 @@ public class MonitoringComputerListener extends ComputerListener implements Open
     private static final Logger LOGGER = Logger.getLogger(MonitoringComputerListener.class.getName());
 
     private LongCounter failureAgentCounter;
+    private SemConvStability semConvStability;
 
     @Inject
     protected JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry;
+
+    @Inject
+    public final void setSemConvStability(@NonNull JenkinsOpenTelemetryPluginConfiguration openTelemetry) {
+        this.semConvStability = openTelemetry.getSemConvStability();
+    }
 
     @PostConstruct
     public void postConstruct() {
@@ -67,11 +77,20 @@ public class MonitoringComputerListener extends ComputerListener implements Open
                             .getAttributes()
                             .put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
                 }
-                openTelemetryAttributesAction
-                        .getAttributes()
-                        .put(
-                                AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()),
-                                ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
+                var actionAttributes = openTelemetryAttributesAction.getAttributes();
+                if (semConvStability.emitLegacyCicdSemConv()) {
+                    actionAttributes.put(
+                            ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME,
+                            ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
+                }
+                if (semConvStability.emitOtelCicdSemConv()) {
+                    actionAttributes.put(
+                            CicdIncubatingAttributes.CICD_WORKER_ID,
+                            ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
+                    actionAttributes.put(
+                            CicdIncubatingAttributes.CICD_WORKER_NAME,
+                            ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME_CONTROLLER);
+                }
                 LOGGER.log(
                         Level.FINER,
                         () -> "Resources for Jenkins Controller computer " + controllerComputer + ": "
@@ -142,11 +161,14 @@ public class MonitoringComputerListener extends ComputerListener implements Open
                     .getAttributes()
                     .put(AttributeKey.stringKey(attribute.getKey()), attribute.getValue());
         }
-        openTelemetryAttributesAction
-                .getAttributes()
-                .put(
-                        AttributeKey.stringKey(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME.getKey()),
-                        computer.getName());
+        var actionAttributes = openTelemetryAttributesAction.getAttributes();
+        if (semConvStability.emitLegacyCicdSemConv()) {
+            actionAttributes.put(ExtendedJenkinsAttributes.JENKINS_COMPUTER_NAME, computer.getName());
+        }
+        if (semConvStability.emitOtelCicdSemConv()) {
+            actionAttributes.put(CicdIncubatingAttributes.CICD_WORKER_ID, computer.getName());
+            actionAttributes.put(CicdIncubatingAttributes.CICD_WORKER_NAME, computer.getName());
+        }
 
         LOGGER.log(Level.FINE, () -> "preOnline(" + computer + "): " + openTelemetryAttributesAction);
         computer.addAction(openTelemetryAttributesAction);

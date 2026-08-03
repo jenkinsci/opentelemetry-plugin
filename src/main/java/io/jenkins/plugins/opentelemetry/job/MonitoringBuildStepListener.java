@@ -20,12 +20,14 @@ import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.SemConvStability;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.semconv.incubating.CicdIncubatingAttributes;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,6 +41,7 @@ public class MonitoringBuildStepListener extends BuildStepListener {
 
     private OtelTraceService otelTraceService;
     private Tracer tracer;
+    private SemConvStability semConvStability;
 
     /** {@inheritDoc} */
     @Override
@@ -56,13 +59,18 @@ public class MonitoringBuildStepListener extends BuildStepListener {
             final String jenkinsVersion = OtelUtils.getJenkinsVersion();
             spanBuilder
                     .setParent(Context.current())
-                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_NAME, stepName)
                     .setAttribute(
                             ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME,
                             stepPlugin.isUnknown() ? JENKINS_CORE : stepPlugin.getName())
                     .setAttribute(
                             ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION,
                             stepPlugin.isUnknown() ? jenkinsVersion : stepPlugin.getVersion());
+            if (semConvStability.emitLegacyCicdSemConv()) {
+                spanBuilder.setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_NAME, stepName);
+            }
+            if (semConvStability.emitOtelCicdSemConv()) {
+                spanBuilder.setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_TASK_NAME, stepName);
+            }
 
             Span atomicStepSpan = spanBuilder.startSpan();
             LOGGER.log(
@@ -140,5 +148,10 @@ public class MonitoringBuildStepListener extends BuildStepListener {
     @Inject
     public void setTracer(JenkinsControllerOpenTelemetry jenkinsControllerOpenTelemetry) {
         this.tracer = jenkinsControllerOpenTelemetry.getDefaultTracer();
+    }
+
+    @Inject
+    public void setSemConvStability(JenkinsOpenTelemetryPluginConfiguration openTelemetry) {
+        this.semConvStability = openTelemetry.getSemConvStability();
     }
 }

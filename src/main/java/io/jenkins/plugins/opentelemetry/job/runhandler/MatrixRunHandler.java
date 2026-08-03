@@ -42,9 +42,7 @@ public class MatrixRunHandler implements RunHandler {
         if (run instanceof MatrixRun matrixRun) {
             MatrixConfiguration matrixConfiguration = matrixRun.getParent();
 
-            MatrixProject matrixProject = matrixConfiguration.getParent();
-            String spanName =
-                    expandJobName ? run.getParent().getFullName() : matrixProject.getFullName() + "/execution";
+            String spanName = getSpanName(run);
             SpanBuilder spanBuilder =
                     tracer.spanBuilder(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + spanName);
             Combination combination = matrixConfiguration.getCombination();
@@ -65,6 +63,19 @@ public class MatrixRunHandler implements RunHandler {
         } else {
             throw new IllegalStateException("Unsupported run type " + run);
         }
+    }
+
+    @NonNull
+    @Override
+    public String getSpanName(@NonNull Run<?, ?> run) {
+        if (run instanceof MatrixRun matrixRun) {
+            MatrixConfiguration matrixConfiguration = matrixRun.getParent();
+            MatrixProject matrixProject = matrixConfiguration.getParent();
+            return expandJobName ? run.getParent().getFullName() : matrixProject.getFullName() + "/execution";
+        } else if (run instanceof MatrixBuild matrixBuild) {
+            return matrixBuild.getParent().getFullName();
+        }
+        throw new IllegalStateException("Unsupported run type " + run);
     }
 
     @Override

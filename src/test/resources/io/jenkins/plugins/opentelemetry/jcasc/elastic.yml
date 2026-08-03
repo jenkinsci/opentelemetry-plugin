@@ -20,5 +20,6 @@ unclassified:
       - elastic:
           name: "My Elastic"
           kibanaBaseUrl: "https://my-deployment.es.example.com"
+    semConvStability: JENKINS
     serviceName: "my-jenkins"
     serviceNamespace: "ci"
