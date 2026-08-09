@@ -15,6 +15,7 @@ import io.opentelemetry.api.logs.LogRecordBuilder;
 import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes;
 import java.io.PrintWriter;
@@ -55,9 +56,11 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
     }
 
     /**
-     * Circuit breaker
+     * Circuit breaker. Latches to {@code true} on the first emit failure and is cleared by
+     * {@link #afterConfiguration(ConfigProperties)} so a reconfigure (or a transient endpoint outage that
+     * resolves before the next reconfigure) does not disable log export for the remaining life of the JVM.
      */
-    private boolean disabled = false;
+    private volatile boolean disabled = false;
 
     /**
      * Map the {@link LogRecord} data model onto the {@link io.opentelemetry.api.logs.LogRecordBuilder}. Unmapped fields include:
@@ -161,6 +164,18 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
 
     @Override
     public void close() throws SecurityException {}
+
+    /**
+     * Re-fetch the logger provider and clear the circuit breaker so a reconfigure (JCasC reload, endpoint
+     * recovery, etc.) resumes log export even if a prior emit failure had disabled it.
+     */
+    @Override
+    public void afterConfiguration(ConfigProperties configProperties) {
+        this.loggerProvider = openTelemetry.getLogsBridge();
+        this.captureExperimentalAttributes = configProperties.getBoolean(
+                "otel.instrumentation.java-util-logging.experimental-log-attributes", false);
+        this.disabled = false;
+    }
 
     @PostConstruct
     public void postConstruct() {
