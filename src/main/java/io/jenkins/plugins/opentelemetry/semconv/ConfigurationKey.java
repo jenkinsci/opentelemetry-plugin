@@ -62,6 +62,12 @@ public final class ConfigurationKey {
      */
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED =
             new ConfigurationKey("otel.instrumentation.jenkins.agent.enabled");
+    /**
+     * Timeout applied while waiting for a build agent to acknowledge its OpenTelemetry SDK configuration
+     * before it is allowed to come online.
+     */
+    public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_AGENT_PRE_ONLINE_TIMEOUT =
+            new ConfigurationKey("otel.instrumentation.jenkins.agent.pre_online.timeout");
 
     public static final ConfigurationKey OTEL_INSTRUMENTATION_JENKINS_EXPORT_OTEL_CONFIG_AS_ENV_VARS =
             new ConfigurationKey("otel.instrumentation.jenkins.export_otel_config_as_env_vars");
