@@ -61,9 +61,10 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
     final AtomicBoolean buildAgentsInstrumentationEnabled = new AtomicBoolean(false);
 
     /**
-     * Default timeout applied while waiting, in {@link #preOnline(Computer, Channel, FilePath, TaskListener)},
-     * for a build agent to acknowledge its OpenTelemetry SDK configuration. Matches the timeout historically
-     * used in {@link #afterConfiguration(ConfigProperties)}.
+     * Default timeout applied while waiting, in {@link #preOnline(Computer, Channel, FilePath, TaskListener)}, for a
+     * build agent to acknowledge its OpenTelemetry SDK configuration. If the timeout elapses, the agent is still
+     * allowed to come online and a warning is logged. Matches the timeout historically used in
+     * {@link #afterConfiguration(ConfigProperties)}.
      */
     static final Duration DEFAULT_PRE_ONLINE_TIMEOUT = Duration.ofSeconds(10);
 
