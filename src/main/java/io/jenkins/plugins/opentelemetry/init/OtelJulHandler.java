@@ -21,6 +21,7 @@ import io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -56,11 +57,21 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
     }
 
     /**
-     * Circuit breaker. Latches to {@code true} on the first emit failure and is cleared by
-     * {@link #afterConfiguration(ConfigProperties)} so a reconfigure (or a transient endpoint outage that
-     * resolves before the next reconfigure) does not disable log export for the remaining life of the JVM.
+     * Circuit breaker. Latches to {@code true} on an emit failure and is cleared by
+     * {@link #afterConfiguration(ConfigProperties)}, so a reconfigure (JCasC reload, endpoint URL change, etc.)
+     * resumes log export instead of leaving it disabled for the remaining life of the JVM. Recovery is not
+     * automatic: an endpoint becoming reachable again on its own does not clear this, a reconfiguration is
+     * required.
      */
     private volatile boolean disabled = false;
+
+    /**
+     * Bumped by {@link #afterConfiguration(ConfigProperties)} every time the logger provider is refreshed.
+     * {@link #publish(LogRecord)} captures this before emitting, so that a failure from a publish that was
+     * already in flight against a since-superseded provider does not re-latch {@link #disabled} on behalf of
+     * a configuration that is no longer current.
+     */
+    private final AtomicInteger generation = new AtomicInteger();
 
     /**
      * Map the {@link LogRecord} data model onto the {@link io.opentelemetry.api.logs.LogRecordBuilder}. Unmapped fields include:
@@ -75,6 +86,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
         if (disabled) {
             return;
         }
+        int publishGeneration = generation.get();
         try {
             String instrumentationName = logRecord.getLoggerName();
             if (instrumentationName == null || instrumentationName.isEmpty()) {
@@ -129,7 +141,11 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
             // because the OTelJulHandler is a handler of this logger, risking an infinite loop
             System.err.println("Exception sending logs to OTLP endpoint, disable OTelJulHandler");
             e.printStackTrace();
-            disabled = true;
+            // only latch the breaker if no reconfiguration happened while this publish() was in flight;
+            // otherwise this failure belongs to a provider that afterConfiguration() has already superseded
+            if (generation.get() == publishGeneration) {
+                disabled = true;
+            }
         }
     }
 
@@ -174,6 +190,7 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
         this.loggerProvider = openTelemetry.getLogsBridge();
         this.captureExperimentalAttributes = configProperties.getBoolean(
                 "otel.instrumentation.java-util-logging.experimental-log-attributes", false);
+        this.generation.incrementAndGet();
         this.disabled = false;
     }
 
