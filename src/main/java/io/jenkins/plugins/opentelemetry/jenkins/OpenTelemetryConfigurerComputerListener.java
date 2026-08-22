@@ -26,6 +26,7 @@ import io.opentelemetry.semconv.ServiceAttributes;
 import io.opentelemetry.semconv.incubating.CicdIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -59,6 +60,16 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
 
     final AtomicBoolean buildAgentsInstrumentationEnabled = new AtomicBoolean(false);
 
+    /**
+     * Default timeout applied while waiting, in {@link #preOnline(Computer, Channel, FilePath, TaskListener)}, for a
+     * build agent to acknowledge its OpenTelemetry SDK configuration. If the timeout elapses, the agent is still
+     * allowed to come online and a warning is logged. Matches the timeout historically used in
+     * {@link #afterConfiguration(ConfigProperties)}.
+     */
+    static final Duration DEFAULT_PRE_ONLINE_TIMEOUT = Duration.ofSeconds(10);
+
+    private volatile Duration preOnlineTimeout = DEFAULT_PRE_ONLINE_TIMEOUT;
+
     JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration;
     private SemConvStability semConvStability;
 
@@ -72,10 +83,10 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
         Map<String, String> otelSdkProperties = openTelemetryConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelSdkResourceProperties = openTelemetryConfiguration.toOpenTelemetryResourceAsMap();
 
+        Future<Object> future =
+                configureOpenTelemetrySdkOnComputer(computer, channel, otelSdkProperties, otelSdkResourceProperties);
         try {
-            Object result = configureOpenTelemetrySdkOnComputer(
-                            computer, channel, otelSdkProperties, otelSdkResourceProperties)
-                    .get();
+            Object result = future.get(preOnlineTimeout.toMillis(), TimeUnit.MILLISECONDS);
             logger.log(
                     Level.FINE,
                     () -> "Updated OpenTelemetry configuration for computer/build-agent '" + computer.getName()
@@ -93,6 +104,16 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
                     e,
                     () -> "Failure to update OpenTelemetry configuration for computer/build-agent '"
                             + computer.getName() + "'");
+        } catch (TimeoutException e) {
+            // Don't let a slow or unresponsive agent connection block the agent from coming online.
+            // Blocking here indefinitely gave RTT-sensitive channels time to be closed by unrelated
+            // idle-timeout or network disturbances, which then kicked the agent off entirely.
+            future.cancel(true);
+            logger.log(
+                    Level.WARNING,
+                    () -> "Timed out after " + preOnlineTimeout
+                            + " waiting for OpenTelemetry configuration of computer/build-agent '"
+                            + computer.getName() + "', the agent will still be allowed online");
         }
     }
 
@@ -125,6 +146,9 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
                 .equalsIgnoreCase(configProperties.getString(
                         ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_AGENTS_ENABLED.asProperty()));
         this.buildAgentsInstrumentationEnabled.set(otlpLogsEnabled || !jenkinsAgentInstrumentationDisabled);
+        this.preOnlineTimeout = configProperties.getDuration(
+                ConfigurationKey.OTEL_INSTRUMENTATION_JENKINS_AGENT_PRE_ONLINE_TIMEOUT.asProperty(),
+                DEFAULT_PRE_ONLINE_TIMEOUT);
         if (!buildAgentsInstrumentationEnabled.get()) {
             return;
         }
