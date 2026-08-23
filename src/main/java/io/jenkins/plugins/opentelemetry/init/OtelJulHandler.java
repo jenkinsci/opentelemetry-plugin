@@ -182,8 +182,8 @@ public class OtelJulHandler extends Handler implements OpenTelemetryLifecycleLis
     public void close() throws SecurityException {}
 
     /**
-     * Re-fetch the logger provider and clear the circuit breaker so a reconfigure (JCasC reload, endpoint
-     * recovery, etc.) resumes log export even if a prior emit failure had disabled it.
+     * Re-fetch the logger provider and clear the circuit breaker after a reconfigure (for example, a JCasC reload
+     * or endpoint change), so log export resumes after a prior emit failure disabled it.
      */
     @Override
     public void afterConfiguration(ConfigProperties configProperties) {
