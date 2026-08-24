@@ -790,7 +790,9 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * @return ok if the form input was valid
      */
     public FormValidation doCheckIgnoredSteps(@QueryParameter String ignoredSteps) {
-        if (ignoredSteps.matches("[A-Za-z0-9,]*")) {
+        // matched against StepDescriptor#getFunctionName(), a Java/Groovy identifier, so '_' must be allowed
+        // (e.g. the OpenShift Client Plugin's step function name is "_OcAction")
+        if (ignoredSteps.matches("[A-Za-z0-9_,]*")) {
             return FormValidation.ok();
         }
         return FormValidation.error("Invalid format: \"%s\".", ignoredSteps);
