@@ -35,11 +35,27 @@ public final class TeeBuildListener implements BuildListener, AutoCloseable {
     @Override
     public void close() throws IOException {
         logger.log(Level.FINEST, "close()");
+        IOException exception = null;
         if (main instanceof Closeable) {
-            ((Closeable) main).close();
+            try {
+                ((Closeable) main).close();
+            } catch (IOException e) {
+                exception = e;
+            }
         }
         if (secondary instanceof Closeable) {
-            ((Closeable) secondary).close();
+            try {
+                ((Closeable) secondary).close();
+            } catch (IOException e) {
+                if (exception == null) {
+                    exception = e;
+                } else {
+                    exception.addSuppressed(e);
+                }
+            }
+        }
+        if (exception != null) {
+            throw exception;
         }
     }
 
