@@ -47,6 +47,11 @@ class JenkinsOpenTelemetryPluginConfigurationTest {
     }
 
     @Test
+    void acceptsNullValue() {
+        assertEquals(FormValidation.Kind.OK, configuration.doCheckIgnoredSteps(null).kind);
+    }
+
+    @Test
     void rejectsInvalidCharacters() {
         assertEquals(FormValidation.Kind.ERROR, configuration.doCheckIgnoredSteps("sh,with space").kind);
         assertEquals(FormValidation.Kind.ERROR, configuration.doCheckIgnoredSteps("sh;echo").kind);
