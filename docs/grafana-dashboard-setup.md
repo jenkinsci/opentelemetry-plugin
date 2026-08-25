@@ -58,6 +58,10 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [prometheus]
+#    traces:             # optional: add if you also export traces to a backend
+#      receivers: [otlp]
+#      processors: [batch]
+#      exporters: [jaeger]     # replace with your trace backend exporter
 ```
 
 > ℹ️ Prometheus only supports the metrics signal. Traces and logs require
