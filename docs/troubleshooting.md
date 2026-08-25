@@ -35,7 +35,8 @@ This guide covers the most common issues encountered when setting up and using t
 2. **Confirm the endpoint is reachable from the Jenkins controller.**
    Run a quick connectivity check from the Jenkins host:
    ```bash
-   curl -v http://<your-otlp-host>:4317
+   # For OTLP/gRPC (TCP check):
+   nc -vz <your-otlp-host> 4317
    # For OTLP/HTTP:
    curl -v http://<your-otlp-host>:4318/v1/traces
    ```
@@ -76,9 +77,9 @@ This guide covers the most common issues encountered when setting up and using t
 
 | Cause | Fix |
 |---|---|
-| Wrong hostname or port in the OTLP endpoint field | Double-check the value - use `http://host:4317` for gRPC, `http://host:4318` for HTTP |
+| Wrong hostname or port in the OTLP endpoint field | Double-check the value - use `http://host:4317` for gRPC, `http://host:4318` for HTTP. Remember to also set `otel.exporter.otlp.protocol=http/protobuf` in *Configuration Properties* when using HTTP |
 | Firewall blocking port 4317 or 4318 | Open the port between the Jenkins controller and collector |
-| TLS mismatch - plugin using plain HTTP, collector expecting TLS | Either add `otel.exporter.otlp.insecure=true` in *Configuration Properties* or configure TLS on both sides |
+| TLS mismatch - plugin using plain HTTP, collector expecting TLS | If the collector is configured for plaintext, ensure `otel.exporter.otlp.insecure=true` is set in *Configuration Properties*. If the collector expects TLS, ensure you use an `https://` endpoint and provide the necessary certificates |
 | Using `localhost` as the endpoint | `localhost` resolves to the Jenkins controller itself. Use the actual hostname or IP of the collector |
 
 **To allow insecure (non-TLS) connections**, add the following in **Manage Jenkins &rArr; Configure System &rArr; OpenTelemetry &rArr; Advanced &rArr; Configuration Properties**:
@@ -117,16 +118,16 @@ service:
       exporters: [prometheus]
     traces:             # keep traces pipeline if you also need traces
       receivers: [otlp]
-      exporters: [...]
+      exporters: [jaeger] # replace with your trace exporter
 ```
 
 **Also check:**
 
-- The `ci.pipeline.run.duration` metric is controlled by an allow-list. By default it matches nothing (`$^`). Set it via:
+- The `ci.pipeline.run.duration` metric is emitted by default, but unmatched jobs are aggregated under `ci.pipeline.id=#other#`. The default `$^` allow-list prevents per-job IDs from matching. Set it via:
   ```
   otel.instrumentation.jenkins.run.metric.duration.allow_list=.*
   ```
-  in *Configuration Properties* to enable duration metrics for all jobs. Use a specific regex (e.g. `my-team/.*`) to limit cardinality.
+  in *Configuration Properties* to expose per-job durations for all jobs (which increases cardinality). Use a specific regex (e.g. `my-team/.*`) to limit cardinality.
 
 - Prometheus scrapes metrics from the collector's `/metrics` endpoint (default port `8889`). Confirm it is reachable: `curl http://<collector-host>:8889/metrics`.
 
@@ -176,13 +177,12 @@ java.lang.ClassCircularityError: io/opentelemetry/sdk/metrics/internal/exemplar/
 
 Jenkins may become unstable or certain threads may die unexpectedly.
 
-**Cause:** A classloader conflict between the `opentelemetry-api` plugin and another plugin (commonly the Kubernetes plugin) that also loads OpenTelemetry classes. This is a known issue ([#1201](https://github.com/jenkinsci/opentelemetry-plugin/issues/1201)).
+**Cause:** A known issue ([#1201](https://github.com/jenkinsci/opentelemetry-plugin/issues/1201)) where `OtelJulHandler` called `Context.current()` during early initialization, recursively triggering JUL/SDK class loading.
 
-**Workarounds:**
+**Fix:**
 
-1. **Restart Jenkins** - the error often does not recur after a clean restart.
-2. **Update all plugins** - ensure `opentelemetry-api` and `opentelemetry` plugins are both on the latest version. Mismatched versions are the most common trigger.
-3. **Check for duplicate OpenTelemetry JARs** - if another plugin bundles its own OpenTelemetry SDK, there may be a version conflict. Check the plugin's dependencies or raise an issue with the conflicting plugin.
+1. **Update to a newer release** - this issue was fixed in PR #1233. Ensure you are using a version of the OpenTelemetry plugin that includes this fix.
+2. **Update all plugins** - ensure `opentelemetry-api` and `opentelemetry` plugins are both on the latest version.
 
 ---
 
@@ -210,15 +210,15 @@ Jenkins may become unstable or certain threads may die unexpectedly.
 
 ## Build agents cannot reach the OTLP endpoint
 
-**Symptom:** Traces are created but span data from agent-side steps is missing, or build logs are not forwarded when using Loki/Elastic.
+**Symptom:** Build logs are not forwarded when using Loki/Elastic, or spans from OpenTelemetry-aware tools launched by the build (external tools) are missing.
 
-**Cause:** Pipeline logs and agent-side steps are exported **directly from the agent** to the OTLP endpoint - not proxied through the Jenkins controller.
+**Cause:** Pipeline logs and telemetry from OpenTelemetry-aware tools launched by the build are exported **directly from the agent** to the OTLP endpoint - not proxied through the Jenkins controller.
 
 **Fix:**
 
 - Set the OTLP endpoint to a hostname or IP reachable from all agents, not `localhost`.
 - If agents are on a different network segment, deploy an OpenTelemetry Collector on each agent or ensure network routing allows direct access.
-- Enable the configuration option **Export OpenTelemetry configuration as environment variables** so agents automatically inherit the correct endpoint URL.
+- (Optional) If you want downstream OpenTelemetry-aware tools launched by the build to automatically inherit the configuration, enable the configuration option **Export OpenTelemetry configuration as environment variables**.
 
 ---
 
@@ -233,11 +233,6 @@ To see detailed plugin activity, add a Jenkins logger for the package `io.jenkin
 
 > ⚠️ **Important:** Adding a logger for `io.jenkins.plugins.opentelemetry` while using the build logs feature will prevent logs from being forwarded to your observability backend (Elastic, Loki). Disable the logger once debugging is complete.
 
-You can also set the SDK-level log level using the `Configuration Properties` field:
-
-```
-otel.javaagent.logging=simple
-```
 
 ---
 
@@ -282,7 +277,7 @@ point (e.g. `otel.blrp.max.queue.size=6000` for a step that can emit ~8000 lines
 
 > **Note:** Tuning the plugin alone may not be sufficient. The OpenTelemetry Collector and the observability
 > backend (e.g. Elastic APM Server) must also be able to handle the increased throughput. See
-> [Enabling logs forwarding on the OpenTelemetry Collector](#enabling-logs-forwarding-on-the-opentelemetry-collector)
+> [Enabling logs forwarding on the OpenTelemetry Collector](build-logs.md#enabling-logs-forwarding-on-the-opentelemetry-collector)
 > and the section below.
 
 ---
@@ -319,7 +314,7 @@ Refer to the Elastic documentation for details:
 
 ### I can't see logs in the console
 
-If you are using EDOT collector you must check that you enabled the EDOT mode in the OpenTelemetry Jenkins plugin configuration. if not the build logs does not appear in the Jenkins Console nor in the pipeline steps.
+If you are using the EDOT collector, you must ensure that EDOT mode is enabled in the OpenTelemetry Jenkins plugin configuration. If it is not enabled, the build logs will not appear in the Jenkins console or in the pipeline steps.
 
 ![edot checkbox](images/edot_checkbox.png)
 
@@ -327,7 +322,7 @@ If you are using EDOT collector you must check that you enabled the EDOT mode in
 
 ### I have enabled EDOT mode but I don't see logs in the console
 
-EDOT is available only in the latest version of the Elastic Agent. Check you Elastic Stack is 8.18.0 or later and the Elastic Agent is 8.18.0 or later.
+EDOT is available only in the latest versions of the Elastic Agent. Check that your Elastic Stack is 8.18.0 or later and the Elastic Agent is 8.18.0 or later.
 
 ---
 
