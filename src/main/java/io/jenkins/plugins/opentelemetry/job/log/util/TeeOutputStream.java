@@ -44,23 +44,25 @@ public class TeeOutputStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
-        IOException exception = null;
+        Throwable exception = null;
         try {
             primary.close();
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             exception = e;
         }
         try {
             secondary.close();
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             if (exception == null) {
                 exception = e;
             } else {
                 exception.addSuppressed(e);
             }
         }
-        if (exception != null) {
-            throw exception;
+        if (exception instanceof IOException) {
+            throw (IOException) exception;
+        } else if (exception instanceof RuntimeException) {
+            throw (RuntimeException) exception;
         }
     }
 }

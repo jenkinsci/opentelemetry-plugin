@@ -17,9 +17,9 @@ import org.junit.jupiter.api.Test;
 public class TeeBuildListenerTest {
 
     @Test
-    public void secondaryIsClosedWhenMainCloseThrows() {
-        CloseableTaskListener main = new CloseableTaskListener(true);
-        CloseableTaskListener secondary = new CloseableTaskListener(false);
+    public void secondaryIsClosedWhenMainCloseThrowsIOException() {
+        CloseTrackingTaskListener main = CloseTrackingTaskListener.throwingIOException();
+        CloseTrackingTaskListener secondary = CloseTrackingTaskListener.nonThrowing();
         TeeBuildListener tee = new TeeBuildListener(main, secondary);
 
         assertThrows(IOException.class, tee::close);
@@ -27,12 +27,38 @@ public class TeeBuildListenerTest {
         assertTrue(secondary.closed, "secondary listener must be closed even if main.close() throws");
     }
 
-    private static class CloseableTaskListener implements TaskListener, Closeable {
-        private final boolean throwOnClose;
+    @Test
+    public void secondaryIsClosedWhenMainCloseThrowsRuntimeException() {
+        CloseTrackingTaskListener main = CloseTrackingTaskListener.throwingRuntimeException();
+        CloseTrackingTaskListener secondary = CloseTrackingTaskListener.nonThrowing();
+        TeeBuildListener tee = new TeeBuildListener(main, secondary);
+
+        assertThrows(RuntimeException.class, tee::close);
+
+        assertTrue(
+                secondary.closed, "secondary listener must be closed even if main.close() throws a RuntimeException");
+    }
+
+    private static class CloseTrackingTaskListener implements TaskListener, Closeable {
+        private final IOException ioExceptionOnClose;
+        private final RuntimeException runtimeExceptionOnClose;
         private boolean closed;
 
-        CloseableTaskListener(boolean throwOnClose) {
-            this.throwOnClose = throwOnClose;
+        private CloseTrackingTaskListener(IOException ioExceptionOnClose, RuntimeException runtimeExceptionOnClose) {
+            this.ioExceptionOnClose = ioExceptionOnClose;
+            this.runtimeExceptionOnClose = runtimeExceptionOnClose;
+        }
+
+        static CloseTrackingTaskListener nonThrowing() {
+            return new CloseTrackingTaskListener(null, null);
+        }
+
+        static CloseTrackingTaskListener throwingIOException() {
+            return new CloseTrackingTaskListener(new IOException("boom"), null);
+        }
+
+        static CloseTrackingTaskListener throwingRuntimeException() {
+            return new CloseTrackingTaskListener(null, new RuntimeException("boom"));
         }
 
         @Override
@@ -43,8 +69,11 @@ public class TeeBuildListenerTest {
         @Override
         public void close() throws IOException {
             closed = true;
-            if (throwOnClose) {
-                throw new IOException("boom");
+            if (ioExceptionOnClose != null) {
+                throw ioExceptionOnClose;
+            }
+            if (runtimeExceptionOnClose != null) {
+                throw runtimeExceptionOnClose;
             }
         }
     }

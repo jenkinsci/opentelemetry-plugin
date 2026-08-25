@@ -15,9 +15,9 @@ import org.junit.jupiter.api.Test;
 public class TeeOutputStreamTest {
 
     @Test
-    public void secondaryIsClosedWhenPrimaryCloseThrows() throws Exception {
-        AtomicCloseableOutputStream primary = new AtomicCloseableOutputStream(true);
-        AtomicCloseableOutputStream secondary = new AtomicCloseableOutputStream(false);
+    public void secondaryIsClosedWhenPrimaryCloseThrowsIOException() throws Exception {
+        CloseTrackingOutputStream primary = CloseTrackingOutputStream.throwingIOException();
+        CloseTrackingOutputStream secondary = CloseTrackingOutputStream.nonThrowing();
         TeeOutputStream tee = new TeeOutputStream(primary, secondary);
 
         assertThrows(IOException.class, tee::close);
@@ -25,12 +25,38 @@ public class TeeOutputStreamTest {
         assertTrue(secondary.closed, "secondary stream must be closed even if primary.close() throws");
     }
 
-    private static class AtomicCloseableOutputStream extends OutputStream {
-        private final boolean throwOnClose;
+    @Test
+    public void secondaryIsClosedWhenPrimaryCloseThrowsRuntimeException() {
+        CloseTrackingOutputStream primary = CloseTrackingOutputStream.throwingRuntimeException();
+        CloseTrackingOutputStream secondary = CloseTrackingOutputStream.nonThrowing();
+        TeeOutputStream tee = new TeeOutputStream(primary, secondary);
+
+        assertThrows(RuntimeException.class, tee::close);
+
+        assertTrue(
+                secondary.closed, "secondary stream must be closed even if primary.close() throws a RuntimeException");
+    }
+
+    private static class CloseTrackingOutputStream extends OutputStream {
+        private final IOException ioExceptionOnClose;
+        private final RuntimeException runtimeExceptionOnClose;
         private boolean closed;
 
-        AtomicCloseableOutputStream(boolean throwOnClose) {
-            this.throwOnClose = throwOnClose;
+        private CloseTrackingOutputStream(IOException ioExceptionOnClose, RuntimeException runtimeExceptionOnClose) {
+            this.ioExceptionOnClose = ioExceptionOnClose;
+            this.runtimeExceptionOnClose = runtimeExceptionOnClose;
+        }
+
+        static CloseTrackingOutputStream nonThrowing() {
+            return new CloseTrackingOutputStream(null, null);
+        }
+
+        static CloseTrackingOutputStream throwingIOException() {
+            return new CloseTrackingOutputStream(new IOException("boom"), null);
+        }
+
+        static CloseTrackingOutputStream throwingRuntimeException() {
+            return new CloseTrackingOutputStream(null, new RuntimeException("boom"));
         }
 
         @Override
@@ -39,8 +65,11 @@ public class TeeOutputStreamTest {
         @Override
         public void close() throws IOException {
             closed = true;
-            if (throwOnClose) {
-                throw new IOException("boom");
+            if (ioExceptionOnClose != null) {
+                throw ioExceptionOnClose;
+            }
+            if (runtimeExceptionOnClose != null) {
+                throw runtimeExceptionOnClose;
             }
         }
     }
