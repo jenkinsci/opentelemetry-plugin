@@ -4,7 +4,7 @@ CI/CD dashboards to be imported.
 
 ## Elastic
 
-Specific dashboards to be imported in you Kibana instance once the plugin has been configured. Supported version >= `7.12`
+These specific dashboards should be imported into your Kibana instance once the plugin has been configured. The supported version is >= `7.12`.
 
 There are different ways to import a Kibana dashboard:
 
@@ -21,7 +21,7 @@ Import [jenkins-kibana-dashboards.ndjson](../src/main/kibana/jenkins-kibana-dash
 
 ## Grafana
 
-Specific dashboard to be imported in your Grafana instance once the plugin and OpenTelemetry Collector have been configured with Prometheus.
+This specific dashboard should be imported into your Grafana instance once the plugin and OpenTelemetry Collector have been configured with Prometheus.
 
 There are different ways to import a Grafana dashboard:
 

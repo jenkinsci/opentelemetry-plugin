@@ -58,10 +58,6 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [prometheus]
-    traces:             # keep if you also export traces to a backend
-      receivers: [otlp]
-      processors: [batch]
-      exporters: []     # add your trace backend exporter here
 ```
 
 > ℹ️ Prometheus only supports the metrics signal. Traces and logs require
@@ -128,9 +124,9 @@ Restart Grafana. The dashboard appears automatically under **Dashboards**.
 
 ---
 
-## Step 4 - Link Grafana back to Jenkins build pages (optional)
+## Step 4 - Link Grafana back to Jenkins (optional)
 
-You can configure the plugin so that each Jenkins build page shows a
+You can configure the plugin so that the Jenkins global navigation shows a
 **"View in Grafana"** link. Use the `customObservabilityBackend` setting.
 
 ### Via the Jenkins UI
@@ -140,7 +136,7 @@ You can configure the plugin so that each Jenkins build page shows a
    **Custom Observability Backend**.
 3. Set **Metrics visualization URL template** to:
    ```
-   http://your-grafana-host:3000/d/jenkins-overview/jenkins-overview?orgId=1&from=${startTime}&to=${endTime}
+   http://your-grafana-host:3000/d/jenkins-otel-overview/jenkins-overview?orgId=1
    ```
 4. Click **Save**.
 
@@ -156,8 +152,7 @@ unclassified:
       - customObservabilityBackend:
           name: "Grafana"
           metricsVisualizationUrlTemplate: >
-            http://your-grafana-host:3000/d/jenkins-overview/jenkins-overview
-            ?orgId=1&from=${startTime}&to=${endTime}
+            http://your-grafana-host:3000/d/jenkins-otel-overview/jenkins-overview?orgId=1
 ```
 
 ---
@@ -211,7 +206,4 @@ configuration parameters that control metric cardinality.
 
 **Dashboard shows data for wrong Jenkins instance**
 
-If you run multiple Jenkins controllers, add `service.name` as a Grafana
-variable to filter by instance. Each controller's metrics are labelled with
-the `service_name` Prometheus label (derived from the OTel `service.name`
-resource attribute).
+If you run multiple Jenkins controllers, use the `service_name` dropdown at the top of the dashboard to filter by instance. Each controller's metrics are labelled with the `service_name` Prometheus label. If this dropdown is empty, ensure `resource_to_telemetry_conversion.enabled: true` is configured in the Collector.
