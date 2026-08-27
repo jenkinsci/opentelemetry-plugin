@@ -9,9 +9,12 @@ import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.*;
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_QUEUE_COUNT;
 
+import com.google.common.annotations.VisibleForTesting;
 import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.queue.QueueListener;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
@@ -24,7 +27,6 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -91,45 +93,41 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
                 () -> {
                     LOGGER.log(Level.FINE, () -> "Recording Jenkins queue metrics...");
 
-                    Optional<Queue> queue =
-                            Optional.ofNullable(Jenkins.getInstanceOrNull()).map(Jenkins::getQueue);
-                    queue.map(Queue::getItems).ifPresent(items -> {
-                        AtomicInteger blocked = new AtomicInteger();
-                        AtomicInteger buildable = new AtomicInteger();
-                        AtomicInteger left = new AtomicInteger();
-                        AtomicInteger stuck = new AtomicInteger();
-                        AtomicInteger unknown = new AtomicInteger();
-                        AtomicInteger waiting = new AtomicInteger();
-                        Arrays.stream(items).forEach(item -> {
-                            if (item instanceof Queue.BlockedItem) {
-                                blocked.incrementAndGet();
-                            } else if (item instanceof Queue.BuildableItem) {
-                                if (item.isStuck()) {
-                                    // buildable but here for too long
-                                    stuck.incrementAndGet();
-                                } else {
-                                    buildable.incrementAndGet();
-                                }
-                            } else if (item instanceof Queue.WaitingItem) {
-                                waiting.incrementAndGet();
-                            } else if (item instanceof Queue.LeftItem) {
-                                left.incrementAndGet();
+                    Queue.Item[] items = getQueueItemsForMetrics();
+                    AtomicInteger blocked = new AtomicInteger();
+                    AtomicInteger buildable = new AtomicInteger();
+                    AtomicInteger stuck = new AtomicInteger();
+                    AtomicInteger unknown = new AtomicInteger();
+                    AtomicInteger waiting = new AtomicInteger();
+                    Arrays.stream(items).forEach(item -> {
+                        if (item instanceof Queue.BlockedItem) {
+                            blocked.incrementAndGet();
+                        } else if (item instanceof Queue.BuildableItem) {
+                            if (item.isStuck()) {
+                                // buildable but here for too long
+                                stuck.incrementAndGet();
                             } else {
-                                LOGGER.log(Level.INFO, () -> "Unknown item: " + item + " - class=" + item.getClass());
-                                unknown.incrementAndGet();
+                                buildable.incrementAndGet();
                             }
-                        });
-                        queueItems.record(blocked.get(), Attributes.of(STATUS, "blocked"));
-                        queueBlockedItems.record(blocked.get());
-                        queueItems.record(buildable.get(), Attributes.of(STATUS, "buildable"));
-                        queueBuildableItems.record(buildable.get());
-                        queueItems.record(stuck.get(), Attributes.of(STATUS, "stuck"));
-                        if (unknown.get() > 0) {
-                            queueItems.record(unknown.get(), Attributes.of(STATUS, "unknown"));
+                        } else if (item instanceof Queue.WaitingItem) {
+                            waiting.incrementAndGet();
+                        } else if (item instanceof Queue.LeftItem) {
+                            // ignore, left items are observed via onLeft()
+                        } else {
+                            LOGGER.log(Level.INFO, () -> "Unknown item: " + item + " - class=" + item.getClass());
+                            unknown.incrementAndGet();
                         }
-                        queueItems.record(waiting.get(), Attributes.of(STATUS, "waiting"));
-                        queueWaitingItems.record(waiting.get());
                     });
+                    queueItems.record(blocked.get(), Attributes.of(STATUS, "blocked"));
+                    queueBlockedItems.record(blocked.get());
+                    queueItems.record(buildable.get(), Attributes.of(STATUS, "buildable"));
+                    queueBuildableItems.record(buildable.get());
+                    queueItems.record(stuck.get(), Attributes.of(STATUS, "stuck"));
+                    if (unknown.get() > 0) {
+                        queueItems.record(unknown.get(), Attributes.of(STATUS, "unknown"));
+                    }
+                    queueItems.record(waiting.get(), Attributes.of(STATUS, "waiting"));
+                    queueWaitingItems.record(waiting.get());
                 },
                 queueItems,
                 queueWaitingItems,
@@ -166,6 +164,19 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
                         spanContext.getTraceState().asMap()));
                 LOGGER.log(Level.FINE, () -> "attach RemoteSpanAction to " + wi);
             }
+        }
+    }
+
+    @VisibleForTesting
+    Queue.Item[] getQueueItemsForMetrics() {
+        Jenkins jenkins = Jenkins.getInstanceOrNull();
+        if (jenkins == null) {
+            return new Queue.Item[0];
+        }
+        // Queue#getItems is permission-filtered in recent Jenkins cores.
+        // Metrics are node-level health signals and must observe the full queue.
+        try (ACLContext ignored = ACL.as2(ACL.SYSTEM2)) {
+            return jenkins.getQueue().getItems();
         }
     }
 }
