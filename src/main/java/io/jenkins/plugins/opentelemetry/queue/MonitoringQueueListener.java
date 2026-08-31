@@ -5,12 +5,17 @@
 
 package io.jenkins.plugins.opentelemetry.queue;
 
+import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_QUEUE_BLOCKED_NAME;
+import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_QUEUE_BUILDABLE_NAME;
+import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_QUEUE_WAITING_NAME;
 import static io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes.STATUS;
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.*;
 import static io.jenkins.plugins.opentelemetry.semconv.JenkinsMetrics.JENKINS_QUEUE_COUNT;
 
 import hudson.Extension;
+import hudson.model.Label;
 import hudson.model.Queue;
+import hudson.model.queue.CauseOfBlockage;
 import hudson.model.queue.QueueListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
@@ -166,6 +171,83 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
                         spanContext.getTraceState().asMap()));
                 LOGGER.log(Level.FINE, () -> "attach RemoteSpanAction to " + wi);
             }
+        }
+        // Items can re-enter waiting state (BlockedItem → WaitingItem), so reuse existing action if present
+        var action = wi.getAction(QueueItemMonitoringAction.class);
+        if (action == null) {
+            action = new QueueItemMonitoringAction();
+            wi.addAction(action);
+        }
+        action.startPhase(JENKINS_JOB_SPAN_PHASE_QUEUE_WAITING_NAME, wi.getWhy());
+        LOGGER.log(Level.FINE, () -> "start queue waiting phase for " + wi);
+    }
+
+    @Override
+    public void onLeaveWaiting(Queue.WaitingItem wi) {
+        var action = wi.getAction(QueueItemMonitoringAction.class);
+        if (action != null) {
+            action.endCurrentPhase();
+            LOGGER.log(Level.FINE, () -> "end queue waiting phase for " + wi);
+        }
+    }
+
+    @Override
+    public void onEnterBlocked(Queue.BlockedItem bi) {
+        var action = bi.getAction(QueueItemMonitoringAction.class);
+        if (action != null) {
+            var causeOfBlockage = bi.getCauseOfBlockage();
+            var reason = causeOfBlockage != null ? causeOfBlockage.getShortDescription() : bi.getWhy();
+            var label = labelFromCause(causeOfBlockage);
+            action.startPhase(JENKINS_JOB_SPAN_PHASE_QUEUE_BLOCKED_NAME, reason, label);
+            LOGGER.log(Level.FINE, () -> "start queue blocked phase for " + bi);
+        }
+    }
+
+    @Override
+    public void onLeaveBlocked(Queue.BlockedItem bi) {
+        var action = bi.getAction(QueueItemMonitoringAction.class);
+        if (action != null) {
+            action.endCurrentPhase();
+            LOGGER.log(Level.FINE, () -> "end queue blocked phase for " + bi);
+        }
+    }
+
+    @Override
+    public void onEnterBuildable(Queue.BuildableItem bi) {
+        var action = bi.getAction(QueueItemMonitoringAction.class);
+        if (action != null) {
+            Label assignedLabel = bi.getAssignedLabel();
+            var label = assignedLabel != null ? assignedLabel.getName() : null;
+            action.startPhase(JENKINS_JOB_SPAN_PHASE_QUEUE_BUILDABLE_NAME, bi.getWhy(), label);
+            LOGGER.log(Level.FINE, () -> "start queue buildable phase for " + bi);
+        }
+    }
+
+    /**
+     * Extracts a human-readable label/node name from a {@link CauseOfBlockage} for cases where the
+     * blockage is tied to a specific label or node (busy, offline, not accepting tasks).
+     */
+    private static String labelFromCause(CauseOfBlockage cause) {
+        if (cause instanceof CauseOfBlockage.BecauseLabelIsBusy c) {
+            return c.label.getName();
+        } else if (cause instanceof CauseOfBlockage.BecauseLabelIsOffline c) {
+            return c.label.getName();
+        } else if (cause instanceof CauseOfBlockage.BecauseNodeIsBusy c) {
+            return c.node.getDisplayName();
+        } else if (cause instanceof CauseOfBlockage.BecauseNodeIsOffline c) {
+            return c.node.getDisplayName();
+        } else if (cause instanceof CauseOfBlockage.BecauseNodeIsNotAcceptingTasks c) {
+            return c.node.getDisplayName();
+        }
+        return null;
+    }
+
+    @Override
+    public void onLeaveBuildable(Queue.BuildableItem bi) {
+        var action = bi.getAction(QueueItemMonitoringAction.class);
+        if (action != null) {
+            action.endCurrentPhase();
+            LOGGER.log(Level.FINE, () -> "end queue buildable phase for " + bi);
         }
     }
 }
