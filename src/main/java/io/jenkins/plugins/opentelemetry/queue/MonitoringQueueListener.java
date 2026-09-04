@@ -113,9 +113,7 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
                             waiting.incrementAndGet();
                         } else if (item instanceof Queue.LeftItem) {
                             // ignore, left items are observed via onLeft()
-                        } else {
-                            LOGGER.log(Level.INFO, () -> "Unknown item: " + item + " - class=" + item.getClass());
-                            unknown.incrementAndGet();
+                            LOGGER.log(Level.FINE, () -> "Unknown queue item class: " + item.getClass().getName());
                         }
                     });
                     queueItems.record(blocked.get(), Attributes.of(STATUS, "blocked"));
