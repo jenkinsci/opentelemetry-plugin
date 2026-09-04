@@ -113,7 +113,11 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
                             waiting.incrementAndGet();
                         } else if (item instanceof Queue.LeftItem) {
                             // ignore, left items are observed via onLeft()
-                            LOGGER.log(Level.FINE, () -> "Unknown queue item class: " + item.getClass().getName());
+                        } else {
+                            LOGGER.log(
+                                    Level.FINE,
+                                    () -> "Unknown queue item class: " + item.getClass().getName());
+                            unknown.incrementAndGet();
                         }
                     });
                     queueItems.record(blocked.get(), Attributes.of(STATUS, "blocked"));
@@ -146,7 +150,7 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
     public void onLeft(Queue.LeftItem li) {
         this.leftItemCounter.add(1);
         this.timeInQueueInMillisCounter.add(System.currentTimeMillis() - li.getInQueueSince());
-        LOGGER.log(Level.FINE, () -> "onLeft(): " + li);
+        LOGGER.log(Level.FINE, () -> "onLeft(): " + li.getClass().getName());
     }
 
     @Override
@@ -160,7 +164,7 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
                         spanContext.getSpanId(),
                         spanContext.getTraceFlags().asByte(),
                         spanContext.getTraceState().asMap()));
-                LOGGER.log(Level.FINE, () -> "attach RemoteSpanAction to " + wi);
+                LOGGER.log(Level.FINE, () -> "attach RemoteSpanAction to " + wi.getClass().getName());
             }
         }
     }

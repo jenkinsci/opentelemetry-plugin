@@ -56,13 +56,13 @@ class MonitoringQueueListenerTest {
             });
 
             Queue.Item[] anonymousVisibleItems;
+            Queue.Item[] metricsVisibleItems;
             try (ACLContext ignored = ACL.as2(Jenkins.ANONYMOUS2)) {
                 anonymousVisibleItems = jenkinsRule.jenkins.getQueue().getItems();
+                MonitoringQueueListener listener = ExtensionList.lookupSingleton(MonitoringQueueListener.class);
+                metricsVisibleItems = listener.getQueueItemsForMetrics();
             }
             assertThat(anonymousVisibleItems.length, is(0));
-
-            MonitoringQueueListener listener = ExtensionList.lookupSingleton(MonitoringQueueListener.class);
-            Queue.Item[] metricsVisibleItems = listener.getQueueItemsForMetrics();
             assertThat(metricsVisibleItems.length, greaterThanOrEqualTo(1));
         } finally {
             jenkinsRule.jenkins.getQueue().cancel(project);
