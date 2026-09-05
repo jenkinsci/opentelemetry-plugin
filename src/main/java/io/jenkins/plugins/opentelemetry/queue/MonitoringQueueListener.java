@@ -116,7 +116,8 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
                         } else {
                             LOGGER.log(
                                     Level.FINE,
-                                    () -> "Unknown queue item class: " + item.getClass().getName());
+                                    () -> "Unknown queue item class: "
+                                            + item.getClass().getName());
                             unknown.incrementAndGet();
                         }
                     });
@@ -164,7 +165,9 @@ public class MonitoringQueueListener extends QueueListener implements OpenTeleme
                         spanContext.getSpanId(),
                         spanContext.getTraceFlags().asByte(),
                         spanContext.getTraceState().asMap()));
-                LOGGER.log(Level.FINE, () -> "attach RemoteSpanAction to " + wi.getClass().getName());
+                LOGGER.log(
+                        Level.FINE,
+                        () -> "attach RemoteSpanAction to " + wi.getClass().getName());
             }
         }
     }
