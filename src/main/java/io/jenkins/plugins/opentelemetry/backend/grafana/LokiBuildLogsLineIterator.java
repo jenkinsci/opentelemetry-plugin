@@ -16,6 +16,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -38,7 +39,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
  * HttpClient can't do preemptive auth and Loki doesn't return `WWW-Authenticate` header when authentication is
  * needed so use Apache HTTP Client instead.
  */
-public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoCloseable {
+public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, Closeable {
 
     protected static final Logger logger = Logger.getLogger(LokiBuildLogsLineIterator.class.getName());
     public static final int MAX_QUERIES = 100;
@@ -239,12 +240,8 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         closeDelegateQuietly();
-        try {
-            this.httpClient.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        this.httpClient.close();
     }
 }

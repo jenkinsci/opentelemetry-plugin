@@ -10,9 +10,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.jenkins.plugins.opentelemetry.job.log.LogLine;
 import io.jenkins.plugins.opentelemetry.job.log.util.CloseableIterator;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIterator;
+import io.jenkins.plugins.opentelemetry.job.log.util.LogLineIteratorInputStream;
 import io.opentelemetry.api.OpenTelemetry;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -77,6 +80,30 @@ public class LokiBuildLogsLineIteratorPageClosingTest {
 
             assertTrue(page1Closeable.closed, "the discarded page must be closed by skipLines()");
         }
+    }
+
+    @Test
+    public void closingTheReturnedLogStreamClosesTheLastPage() throws Exception {
+        TrackingCloseable page1Closeable = new TrackingCloseable();
+        Deque<Supplier<Iterator<LogLine<Long>>>> pages = new ArrayDeque<>(List.of(() ->
+                new CloseableIterator<>(List.of(new LogLine<>(1L, "line1")).iterator(), page1Closeable)));
+
+        TestableLokiBuildLogsLineIterator iterator = new TestableLokiBuildLogsLineIterator(pages);
+        // LogLineIteratorInputStream is what LokiLogStorageRetriever actually hands back to callers as the log
+        // stream; only LogLineIteratorInputStream.close() is invoked by consumers, never the iterator directly.
+        InputStream logStream = new LogLineIteratorInputStream<>(
+                iterator,
+                new LogLineIterator.JenkinsHttpSessionLineBytesToLogLineIdMapper<>(null, 0, null),
+                OpenTelemetry.noop().getTracer("io.jenkins"));
+
+        assertTrue(logStream.read() >= 0, "the single log line must be readable before the stream is closed");
+        assertFalse(page1Closeable.closed, "page 1 must not be closed while the stream is still open");
+
+        logStream.close();
+
+        assertTrue(
+                page1Closeable.closed,
+                "closing the returned log stream must close the last page, otherwise its pooled connection leaks");
     }
 
     private static class TrackingCloseable implements Closeable {
