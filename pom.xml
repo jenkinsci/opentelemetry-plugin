@@ -211,6 +211,10 @@
       <version>${jenkins-opentelemetry.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>oss-symbols-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-extension-trace-propagators</artifactId>
     </dependency>

@@ -23,8 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
-import org.jenkins.ui.icon.Icon;
-import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -42,17 +40,6 @@ public class GrafanaBackend extends ObservabilityBackend {
     private static final String DEFAULT_GRAFANA_ORG_ID = "1";
 
     private static final String DEFAULT_TEMPO_QUERY_TYPE = "traceql";
-
-    static {
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-grafana icon-sm", ICONS_PREFIX + "grafana.svg", Icon.ICON_SMALL_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-grafana icon-md", ICONS_PREFIX + "grafana.svg", Icon.ICON_MEDIUM_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-grafana icon-lg", ICONS_PREFIX + "grafana.svg", Icon.ICON_LARGE_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-grafana icon-xlg", ICONS_PREFIX + "grafana.svg", Icon.ICON_XLARGE_STYLE));
-    }
 
     private String grafanaBaseUrl;
 
@@ -103,7 +90,7 @@ public class GrafanaBackend extends ObservabilityBackend {
     @Nullable
     @Override
     public String getIconPath() {
-        return "icon-otel-grafana";
+        return "symbol-grafana-icon-solid plugin-oss-symbols-api";
     }
 
     @Nullable

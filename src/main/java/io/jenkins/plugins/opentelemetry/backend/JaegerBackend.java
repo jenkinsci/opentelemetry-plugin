@@ -13,8 +13,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import org.jenkins.ui.icon.Icon;
-import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -26,15 +24,6 @@ public class JaegerBackend extends ObservabilityBackend {
     public static final String DEFAULT_NAME = "Jaeger";
 
     private String jaegerBaseUrl;
-
-    static {
-        IconSet.icons.addIcon(new Icon("icon-otel-jaeger icon-sm", ICONS_PREFIX + "jaeger.svg", Icon.ICON_SMALL_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-jaeger icon-md", ICONS_PREFIX + "jaeger.svg", Icon.ICON_MEDIUM_STYLE));
-        IconSet.icons.addIcon(new Icon("icon-otel-jaeger icon-lg", ICONS_PREFIX + "jaeger.svg", Icon.ICON_LARGE_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-jaeger icon-xlg", ICONS_PREFIX + "jaeger.svg", Icon.ICON_XLARGE_STYLE));
-    }
 
     @DataBoundConstructor
     public JaegerBackend() {}
@@ -64,7 +53,7 @@ public class JaegerBackend extends ObservabilityBackend {
     @CheckForNull
     @Override
     public String getIconPath() {
-        return "icon-otel-jaeger";
+        return "symbol-jaeger-icon-solid plugin-oss-symbols-api";
     }
 
     @CheckForNull
