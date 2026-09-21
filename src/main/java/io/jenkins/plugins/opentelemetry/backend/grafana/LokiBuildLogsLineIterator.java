@@ -239,9 +239,14 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, Closeab
         }
     }
 
+    /**
+     * Only closes the current {@link #delegate}. {@link #httpClient} is created and owned by
+     * {@link LokiLogStorageRetriever}, which shares it across every iterator it hands out; closing it here would
+     * shut down the connection pool for all other, possibly still in-flight, log views as soon as one log stream is
+     * closed.
+     */
     @Override
-    public void close() throws IOException {
+    public void close() {
         closeDelegateQuietly();
-        this.httpClient.close();
     }
 }

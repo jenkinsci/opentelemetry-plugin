@@ -148,8 +148,8 @@ public class LokiBuildLogsLineIteratorPageClosingTest {
                     : pages.removeFirst().get();
         }
 
-        // The real client is never used since loadNextLogLines() is overridden, but close() still calls
-        // httpClient.close(), so a real, harmless instance is needed.
+        // The real client is never used since loadNextLogLines() is overridden, but the constructor requires
+        // a non-null instance.
         private static final CloseableHttpClient NOOP_HTTP_CLIENT =
                 HttpClients.custom().build();
     }
