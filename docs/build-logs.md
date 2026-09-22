@@ -158,6 +158,45 @@ This means that the timestamp of log messages emitted on the Jenkins Agents does
 This clock adjustment is required to display in the right ascending order the log messages.
 Note that distributed traces don't require such a clock adjustment because all spans are emitted from the Jenkins Controller.
 
+### Why are logs appearing out of order in Elasticsearch/Kibana?
+
+The Jenkins OpenTelemetry plugin records log timestamps in nanoseconds, but
+Elasticsearch stores timestamps in milliseconds by default. When many log
+lines are written within the same millisecond, Elasticsearch cannot tell
+which came first, so logs appear out of order in Kibana.
+
+**Fix 1 — Update the Elasticsearch mapping:** Tell Elasticsearch to store
+timestamps in nanosecond precision by adding a custom component template:
+```json
+PUT _component_template/logs-apm.app@custom
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date_nanos"
+        }
+      }
+    }
+  }
+}
+```
+
+*Warning:* Always use this `@custom` component template approach. Do not
+create a new index template targeting `logs-apm*` directly — this will
+break the Kibana APM UI by overwriting required Elastic APM field mappings.
+
+**Fix 2 — Fix the sort order in Kibana:** Even with nanosecond storage,
+Kibana may still show logs out of order because it sorts by milliseconds
+internally. To fix this, set `event.sequence` as the tie-breaker field in
+your Kibana Data View. The Jenkins OpenTelemetry plugin already includes
+`event.sequence` in every log entry, so Kibana can use it to determine
+the exact order logs were written.
+
+*Limitation:* Even after applying these fixes, aggregations (such as counts
+and histograms) will still use millisecond resolution. This only affects
+aggregations — log viewing and search results will show the correct order.
+
 ### Can pipeline logs be stored in other backends than Elastic or Grafana?
 
 Yes any observability backend that support OpenTelemetry logs can be used.
