@@ -16,6 +16,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Scope;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -38,7 +39,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
  * HttpClient can't do preemptive auth and Loki doesn't return `WWW-Authenticate` header when authentication is
  * needed so use Apache HTTP Client instead.
  */
-public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoCloseable {
+public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, Closeable {
 
     protected static final Logger logger = Logger.getLogger(LokiBuildLogsLineIterator.class.getName());
     public static final int MAX_QUERIES = 100;
@@ -94,6 +95,7 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
             if (delegate.hasNext()) {
                 return delegate;
             }
+            closeDelegateQuietly();
             delegate = loadNextLogLines();
             if (!delegate.hasNext()) {
                 endOfStream = true;
@@ -203,6 +205,7 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
                  */
                 span.setAttribute("skippedLines", -1);
                 lokiQueryParameters.setStartTimeInNanos(newStartTimeInNanos);
+                closeDelegateQuietly();
                 this.delegate = null; // TODO optimize to skip lines in the current delegate
             }
         } finally {
@@ -220,8 +223,13 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
         return getCurrentIterator().next();
     }
 
-    @Override
-    public void close() throws Exception {
+    /**
+     * Close the current {@link #delegate}, if any and if it holds a closeable resource (eg the underlying HTTP
+     * response stream/connection of a Loki query page), before it is replaced or discarded. Each page loaded by
+     * {@link #loadNextLogLines()} holds its own HTTP response stream backed by the shared, connection pooled
+     * {@link #httpClient}; failing to close a page before moving to the next one leaks that connection.
+     */
+    private void closeDelegateQuietly() {
         if (delegate instanceof AutoCloseable) {
             try {
                 ((AutoCloseable) delegate).close();
@@ -229,10 +237,16 @@ public class LokiBuildLogsLineIterator implements LogLineIterator<Long>, AutoClo
                 logger.log(Level.WARNING, "Failed to close delegate for " + lokiQueryParameters, e);
             }
         }
-        try {
-            this.httpClient.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    }
+
+    /**
+     * Only closes the current {@link #delegate}. {@link #httpClient} is created and owned by
+     * {@link LokiLogStorageRetriever}, which shares it across every iterator it hands out; closing it here would
+     * shut down the connection pool for all other, possibly still in-flight, log views as soon as one log stream is
+     * closed.
+     */
+    @Override
+    public void close() {
+        closeDelegateQuietly();
     }
 }
