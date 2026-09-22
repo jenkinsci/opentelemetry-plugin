@@ -230,3 +230,73 @@ Navigate to the Jenkins OpenTelemetry Plugin configuration, in the "Advanced" se
 otel.exporter.otlp.protocol=http/protobuf
 ```
 
+## OTLP exporter configuration options
+
+The OTLP exporter sends traces, metrics, and logs to any backend that supports the OpenTelemetry Protocol (OTLP), such as the OpenTelemetry Collector, Elastic, Grafana, Dynatrace, and others.
+
+### Using gRPC (default)
+
+The default OTLP transport is gRPC on port `4317`:
+```properties
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+OTEL_TRACES_EXPORTER=otlp
+OTEL_METRICS_EXPORTER=otlp
+OTEL_LOGS_EXPORTER=otlp
+```
+
+### Sending only specific signals via OTLP
+
+You can send only traces, only metrics, or only logs by configuring per-signal exporters:
+```properties
+# Send only traces and metrics via OTLP, disable logs
+OTEL_TRACES_EXPORTER=otlp
+OTEL_METRICS_EXPORTER=otlp
+OTEL_LOGS_EXPORTER=none
+```
+
+### OTLP with authentication
+
+To add a Bearer token for authenticated OTLP endpoints:
+```properties
+OTEL_EXPORTER_OTLP_ENDPOINT=https://otel-collector:4317
+OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer YOUR_TOKEN
+```
+
+ℹ️ The same token can be configured through the Jenkins UI under
+**Manage Jenkins → Configure System → OpenTelemetry → Authentication →
+Bearer Token Authentication**, which is the recommended approach as it
+uses Jenkins credential management.
+
+### OTLP with custom TLS certificate
+
+If your OTLP endpoint uses a certificate signed by a private CA:
+```properties
+OTEL_EXPORTER_OTLP_CERTIFICATE=/path/to/ca-cert.pem
+```
+
+### Logging exporter (troubleshooting)
+
+The logging exporter writes telemetry data to stdout and is useful for
+verifying that the plugin is generating traces and metrics before
+configuring a production backend.
+```properties
+OTEL_TRACES_EXPORTER=logging
+OTEL_METRICS_EXPORTER=logging
+OTEL_LOGS_EXPORTER=logging
+```
+
+⚠️ Do not use the logging exporter in production — it generates
+significant log volume and has no retention or querying capability.
+
+### Configuring service name and resource attributes
+
+The `service.name` and other resource attributes can be set using the
+`OTEL_RESOURCE_ATTRIBUTES` environment variable:
+```properties
+OTEL_RESOURCE_ATTRIBUTES=service.name=my-jenkins,service.namespace=ci,deployment.environment=production
+```
+
+ℹ️ Resource attributes set via `OTEL_RESOURCE_ATTRIBUTES` are merged
+with the values configured in the Jenkins plugin UI. The plugin UI values
+take precedence for `service.name` and `service.namespace` if both are set.
+
