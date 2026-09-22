@@ -11,8 +11,6 @@ import hudson.Extension;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.jenkins.ui.icon.Icon;
-import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -21,17 +19,6 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
     public static final String OTEL_DYNATRACE_URL = "OTEL_DYNATRACE_URL";
     public static final String DEFAULT_NAME = "Dynatrace (Grail)";
     private final String url;
-
-    static {
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-dynatrace icon-sm", ICONS_PREFIX + "dynatrace.svg", Icon.ICON_SMALL_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-dynatrace icon-md", ICONS_PREFIX + "dynatrace.svg", Icon.ICON_MEDIUM_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-dynatrace icon-lg", ICONS_PREFIX + "dynatrace.svg", Icon.ICON_LARGE_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-dynatrace icon-xlg", ICONS_PREFIX + "dynatrace.svg", Icon.ICON_XLARGE_STYLE));
-    }
 
     @DataBoundConstructor
     public DynatraceGrailBackend(String url) {
@@ -73,7 +60,7 @@ public class DynatraceGrailBackend extends ObservabilityBackend {
     @NonNull
     @Override
     public String getIconPath() {
-        return "icon-otel-dynatrace";
+        return "symbol-dynatrace-icon-solid plugin-oss-symbols-api";
     }
 
     @NonNull

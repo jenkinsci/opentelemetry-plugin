@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
-import static io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend.ICONS_PREFIX;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_CERTIFICATE;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_ENDPOINT;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_INSECURE;
@@ -72,8 +71,6 @@ import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
 import net.jcip.annotations.Immutable;
 import net.sf.json.JSONObject;
-import org.jenkins.ui.icon.Icon;
-import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
@@ -96,15 +93,6 @@ import org.kohsuke.stapler.interceptor.RequirePOST;
 @Symbol("openTelemetry")
 public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration {
     private static final Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());
-
-    static {
-        IconSet.icons.addIcon(new Icon("icon-otel icon-sm", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_SMALL_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel icon-md", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_MEDIUM_STYLE));
-        IconSet.icons.addIcon(new Icon("icon-otel icon-lg", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_LARGE_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel icon-xlg", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_XLARGE_STYLE));
-    }
 
     /**
      * OTLP endpoint prefixed by "http://" or "https://"
