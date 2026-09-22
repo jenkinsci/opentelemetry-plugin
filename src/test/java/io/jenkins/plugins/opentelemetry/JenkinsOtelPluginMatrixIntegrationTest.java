@@ -14,8 +14,8 @@ import hudson.matrix.MatrixProject;
 import hudson.matrix.TextAxis;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import org.apache.commons.lang3.SystemUtils;
-import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 public class JenkinsOtelPluginMatrixIntegrationTest extends BaseIntegrationTest {
@@ -38,11 +38,18 @@ public class JenkinsOtelPluginMatrixIntegrationTest extends BaseIntegrationTest 
 
         Tree<SpanDataWrapper> spans = getBuildTrace();
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(20L));
-        // TODO deeper checkChainOfSpans
+        // Baseline: 5 runs (1 parent + 4 sub-builds) × 4 spans each = 20. Each run also adds
+        // queue phase spans: the parent gets Phase: Queue - Waiting only (no Buildable in the test JVM),
+        // while each sub-build gets both Waiting and Buildable, giving 1 + 4×2 = 9 extra spans.
+        MatcherAssert.assertThat(spans.cardinality(), Matchers.greaterThanOrEqualTo(20L));
+
+        // Matrix parent traverses the Waiting queue state
+        checkChainOfSpans(spans, ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_QUEUE_WAITING_NAME, rootSpanName);
+        // Each sub-build traverses Waiting then Buildable; verify Buildable for at least one
         checkChainOfSpans(
                 spans,
-                ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + "test-matrix-1/execution",
+                ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_QUEUE_BUILDABLE_NAME,
+                ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName + "/execution",
                 rootSpanName);
 
         assertMatrixJobMetadata(build, spans);

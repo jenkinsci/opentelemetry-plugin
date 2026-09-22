@@ -11,6 +11,7 @@ import static java.util.Optional.of;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.cloudbees.hudson.plugins.folder.computed.FolderComputation;
+import com.cloudbees.simplediskusage.QuickDiskUsagePlugin;
 import com.github.rutledgepaulv.prune.Tree;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
@@ -130,6 +131,9 @@ public class BaseIntegrationTest {
     public void afterEach() throws Exception {
         jenkinsRule.waitUntilNoActivity();
 
+        // Let any in-flight disk-usage refresh finish before JenkinsRule deletes JENKINS_HOME (see method doc).
+        quiesceDiskUsagePlugin();
+
         // Reset the executor service BEFORE other cleanup
         // to avoid stale Context wrapping in subsequent tests
         try {
@@ -164,6 +168,43 @@ public class BaseIntegrationTest {
     // This only works if no scrape is currently in progress (use high scrape period for tests).
     protected void forceMetricsExport() {
         jenkinsControllerOpenTelemetry.getMetricReader().forceFlush();
+    }
+
+    /**
+     * Forces the {@link QuickDiskUsagePlugin} background refresh to completion at teardown.
+     *
+     * <p>The plugin computes disk usage on a single-threaded executor and, when finished, persists
+     * {@code cloudbees-disk-usage-simple.xml} into JENKINS_HOME (via {@link hudson.Plugin#save()}).
+     * Our OTel disk-usage gauge polls {@code getDirectoriesUsages()}, which can trigger that refresh.
+     * If the resulting write lands while {@code JenkinsRule.after()} is deleting the temporary
+     * JENKINS_HOME, deletion fails with {@code DirectoryNotEmptyException} ("These files still exist:
+     * cloudbees-disk-usage-simple.xml") and the otherwise-passing test is reported as failed.
+     *
+     * <p>By forcing a refresh and waiting for it to complete here — before {@code JenkinsRule.after()}
+     * runs — we both flush any in-flight write and bump {@code lastRunEnd} to "now", so the plugin's
+     * 15-minute quiet period suppresses any further refresh during teardown.
+     */
+    private void quiesceDiskUsagePlugin() {
+        QuickDiskUsagePlugin diskUsage = jenkinsRule.getInstance().getPlugin(QuickDiskUsagePlugin.class);
+        if (diskUsage == null) {
+            return;
+        }
+        try {
+            long previousRunEnd = diskUsage.getLastRunEnd();
+            diskUsage.refreshData();
+            long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
+            // Wait until a refresh that started after our trigger has fully completed: isRunning() clears
+            // and lastRunEnd advances. Checking lastRunEnd covers the window where the task is queued on
+            // the single-thread executor but isRunning() has not yet flipped to true.
+            while (System.currentTimeMillis() < deadline
+                    && (diskUsage.isRunning() || diskUsage.getLastRunEnd() == previousRunEnd)) {
+                Thread.sleep(50);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to quiesce disk usage plugin before teardown", e);
+        }
     }
 
     protected void checkChainOfSpans(Tree<SpanDataWrapper> spanTree, String... expectedSpanNames) {

@@ -239,7 +239,7 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
                     "attribute is not set on closed child span", actualBuildTool6, CoreMatchers.nullValue());
         }
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(11L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(12L));
     }
 
     /*
@@ -405,7 +405,7 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
             MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("h"));
         }
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(13L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(14L));
     }
 
     @Test
@@ -466,7 +466,7 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
             MatcherAssert.assertThat(actualBuildTool2, CoreMatchers.is("maven"));
         }
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
     }
 
     @Test
@@ -547,7 +547,7 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
             MatcherAssert.assertThat(actualPipelineType4, CoreMatchers.is("release"));
         }
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
     }
 
     @Test
@@ -589,7 +589,7 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(4L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
     }
 
     @Test
@@ -678,6 +678,6 @@ public class WithSpanAttributesStepTest extends BaseIntegrationTest {
             MatcherAssert.assertThat(actualBuildTool4, CoreMatchers.nullValue());
         }
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
     }
 }
