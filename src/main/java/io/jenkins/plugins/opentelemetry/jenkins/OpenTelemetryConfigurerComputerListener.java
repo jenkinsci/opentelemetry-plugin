@@ -17,6 +17,7 @@ import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.opentelemetry.AgentExportClassesPreloader;
 import io.jenkins.plugins.opentelemetry.opentelemetry.AgentLogsFlushHooks;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
@@ -239,6 +240,13 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
                     Level.FINE,
                     () -> "Updating OpenTelemetry configuration for computer/build-agent '" + computer.getName()
                             + "'...");
+            if (AgentExportClassesPreloader.ENABLED && channel instanceof Channel remotingChannel) {
+                // the jars must reach the agent before its SDK is configured and its first log record is emitted
+                return Computer.threadPoolForRemoting.submit(() -> {
+                    AgentExportClassesPreloader.preload(remotingChannel);
+                    return remotingChannel.call(callable);
+                });
+            }
             return channel.callAsync(callable);
         } catch (IOException | RuntimeException e) {
             logger.log(
