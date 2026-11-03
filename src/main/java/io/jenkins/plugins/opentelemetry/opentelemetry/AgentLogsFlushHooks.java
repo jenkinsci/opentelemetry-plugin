@@ -83,8 +83,16 @@ public final class AgentLogsFlushHooks {
             } catch (RuntimeException e) {
                 logger.log(Level.WARNING, "Failure to register the agent logs flush shutdown hook", e);
             }
-            // The agent loads the plugin classes lazily from the controller. Run the flush once while the channel is
-            // open: a flush that first resolves them after the channel closed fails with NoClassDefFoundError
+            // The agent loads the plugin classes lazily from the controller. Resolve them once while the channel is
+            // open: a flush that first resolves them after the channel closed fails with NoClassDefFoundError.
+            // The first install often runs before the SDK of the agent is configured (the first step of a slow agent
+            // starts after the preOnline timeout), then the flush skips the SDK classes, so resolve them explicitly
+            try {
+                int flushPathClasses = GlobalOpenTelemetrySdk.flushPathClasses().size();
+                logger.log(Level.FINE, () -> "Resolved " + flushPathClasses + " agent logs flush classes");
+            } catch (RuntimeException | LinkageError e) {
+                logger.log(Level.INFO, "Failure to resolve the agent logs flush classes", e);
+            }
             flushQuietly("warm-up");
         }
         if (channel == null) {

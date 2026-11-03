@@ -18,10 +18,12 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -94,6 +96,16 @@ public final class GlobalOpenTelemetrySdk {
             return result.isSuccess();
         }
         return true;
+    }
+
+    /**
+     * The classes that {@link #forceFlushLogs(long)} only uses once the SDK is configured. On a Jenkins agent, the
+     * class loader of this plugin resolves them with a remote call to the controller, which fails once the remoting
+     * channel is closed. Referencing them here, while the channel is open, resolves them for this class loader even
+     * if the SDK of the agent is not configured yet.
+     */
+    public static List<Class<?>> flushPathClasses() {
+        return List.of(OpenTelemetrySdk.class, SdkLoggerProvider.class, CompletableResultCode.class);
     }
 
     /**
