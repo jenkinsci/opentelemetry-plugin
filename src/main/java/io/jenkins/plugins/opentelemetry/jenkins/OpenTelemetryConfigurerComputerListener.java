@@ -108,12 +108,14 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
             // Don't let a slow or unresponsive agent connection block the agent from coming online.
             // Blocking here indefinitely gave RTT-sensitive channels time to be closed by unrelated
             // idle-timeout or network disturbances, which then kicked the agent off entirely.
-            future.cancel(true);
+            // Don't cancel the configuration: cancel(true) interrupts the agent thread while it loads the SDK classes
+            // from the controller, the remote class loading fails without retry and the agent keeps a noop SDK.
             logger.log(
                     Level.WARNING,
                     () -> "Timed out after " + preOnlineTimeout
                             + " waiting for OpenTelemetry configuration of computer/build-agent '"
-                            + computer.getName() + "', the agent will still be allowed online");
+                            + computer.getName()
+                            + "', the agent will still be allowed online and the configuration continues in the background");
         }
     }
 
