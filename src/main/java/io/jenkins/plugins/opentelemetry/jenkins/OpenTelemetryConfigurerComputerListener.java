@@ -17,6 +17,7 @@ import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.opentelemetry.AgentLogsFlushHooks;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
@@ -269,6 +270,8 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
                     () -> "Configure OpenTelemetry SDK with properties: " + otelSdkConfigurationProperties
                             + ", resource:" + otelSdkResource);
             GlobalOpenTelemetrySdk.configure(otelSdkConfigurationProperties, otelSdkResource, true);
+            // the agent SDK has no shutdown hook, flush the queued log records before the agent goes away
+            AgentLogsFlushHooks.installOnAgent();
             return null;
         }
     }

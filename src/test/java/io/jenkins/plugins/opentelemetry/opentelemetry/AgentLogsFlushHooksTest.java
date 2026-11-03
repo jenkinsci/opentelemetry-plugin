@@ -1,0 +1,97 @@
+/*
+ * Copyright The Original Author or Authors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+package io.jenkins.plugins.opentelemetry.opentelemetry;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import hudson.remoting.Channel;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+public class AgentLogsFlushHooksTest {
+
+    @Test
+    public void shutdownHookIsRegisteredOnceAndFlushes() throws Exception {
+        AtomicInteger flushes = new AtomicInteger();
+        List<Thread> hooks = new ArrayList<>();
+        AgentLogsFlushHooks hooksUnderTest = new AgentLogsFlushHooks(
+                () -> {
+                    flushes.incrementAndGet();
+                    return true;
+                },
+                hooks::add);
+
+        hooksUnderTest.install(null);
+        hooksUnderTest.install(null);
+        hooksUnderTest.install(null);
+
+        assertEquals(1, hooks.size());
+        assertEquals(1, flushes.get(), "warm-up flush at install time");
+        Thread hook = hooks.get(0);
+        hook.start();
+        hook.join(5_000);
+        assertEquals(2, flushes.get());
+    }
+
+    @Test
+    public void channelCloseFlushesAndListenerIsRegisteredOncePerChannel() {
+        AtomicInteger flushes = new AtomicInteger();
+        AgentLogsFlushHooks hooksUnderTest = new AgentLogsFlushHooks(
+                () -> {
+                    flushes.incrementAndGet();
+                    return true;
+                },
+                hook -> {});
+        Channel channel = mock(Channel.class);
+        when(channel.getName()).thenReturn("test-channel");
+        Channel otherChannel = mock(Channel.class);
+        when(otherChannel.getName()).thenReturn("other-channel");
+
+        hooksUnderTest.install(channel);
+        hooksUnderTest.install(channel);
+        hooksUnderTest.install(otherChannel);
+
+        ArgumentCaptor<Channel.Listener> listener = ArgumentCaptor.forClass(Channel.Listener.class);
+        verify(channel, times(1)).addListener(listener.capture());
+        verify(otherChannel, times(1)).addListener(any(Channel.Listener.class));
+        assertEquals(1, flushes.get(), "only the warm-up flush, once per JVM");
+
+        listener.getValue().onClosed(channel, new IOException("closed"));
+        assertEquals(2, flushes.get());
+
+        listener.getValue().onClosed(channel, new IOException("closed again"));
+        assertEquals(2, flushes.get(), "flush only once per channel");
+    }
+
+    @Test
+    public void failuresNeverPropagate() {
+        AgentLogsFlushHooks hooksUnderTest = new AgentLogsFlushHooks(
+                () -> {
+                    throw new IllegalStateException("flush failure");
+                },
+                hook -> {
+                    throw new IllegalStateException("Shutdown in progress");
+                });
+        Channel channel = mock(Channel.class);
+        when(channel.getName()).thenReturn("test-channel");
+        org.mockito.Mockito.doThrow(new IllegalStateException("closed"))
+                .when(channel)
+                .addListener(any(Channel.Listener.class));
+
+        assertDoesNotThrow(() -> hooksUnderTest.install(channel));
+        assertDoesNotThrow(() -> hooksUnderTest.flushQuietly("test"));
+    }
+}
