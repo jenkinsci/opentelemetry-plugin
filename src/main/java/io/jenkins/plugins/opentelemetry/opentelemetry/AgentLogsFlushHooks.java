@@ -48,17 +48,28 @@ public final class AgentLogsFlushHooks {
 
     private static final AgentLogsFlushHooks INSTANCE = new AgentLogsFlushHooks(
             () -> GlobalOpenTelemetrySdk.forceFlushLogs(HOOK_FLUSH_TIMEOUT_MILLIS),
-            hook -> Runtime.getRuntime().addShutdownHook(hook));
+            hook -> Runtime.getRuntime().addShutdownHook(hook),
+            AgentExportPathWarmUp::run);
 
     private final BooleanSupplier flush;
     private final Consumer<Thread> shutdownHookRegistrar;
+    private final Runnable exportPathWarmUp;
     private final AtomicBoolean shutdownHookRegistered = new AtomicBoolean();
     private final Set<Channel> channels = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
     @VisibleForTesting
     AgentLogsFlushHooks(@NonNull BooleanSupplier flush, @NonNull Consumer<Thread> shutdownHookRegistrar) {
+        this(flush, shutdownHookRegistrar, () -> {});
+    }
+
+    @VisibleForTesting
+    AgentLogsFlushHooks(
+            @NonNull BooleanSupplier flush,
+            @NonNull Consumer<Thread> shutdownHookRegistrar,
+            @NonNull Runnable exportPathWarmUp) {
         this.flush = flush;
         this.shutdownHookRegistrar = shutdownHookRegistrar;
+        this.exportPathWarmUp = exportPathWarmUp;
     }
 
     /**
@@ -85,13 +96,15 @@ public final class AgentLogsFlushHooks {
             }
             // The agent loads the plugin classes lazily from the controller. Resolve them once while the channel is
             // open: a flush that first resolves them after the channel closed fails with NoClassDefFoundError.
-            // The first install often runs before the SDK of the agent is configured (the first step of a slow agent
-            // starts after the preOnline timeout), then the flush skips the SDK classes, so resolve them explicitly
+            // A flush alone is not enough: the first install often runs before the SDK of the agent is configured (the
+            // first step of a slow agent starts after the preOnline timeout), then the flush skips the SDK classes; and
+            // it exports nothing when no record is queued, so it never resolves the classes of the HTTP export path
             try {
                 int flushPathClasses = GlobalOpenTelemetrySdk.flushPathClasses().size();
                 logger.log(Level.FINE, () -> "Resolved " + flushPathClasses + " agent logs flush classes");
+                exportPathWarmUp.run();
             } catch (RuntimeException | LinkageError e) {
-                logger.log(Level.INFO, "Failure to resolve the agent logs flush classes", e);
+                logger.log(Level.INFO, "Failure to warm up the agent log export path", e);
             }
             flushQuietly("warm-up");
         }

@@ -47,6 +47,34 @@ public class AgentLogsFlushHooksTest {
     }
 
     @Test
+    public void exportPathWarmUpRunsOncePerJvmBeforeTheWarmUpFlush() {
+        List<String> calls = new ArrayList<>();
+        AgentLogsFlushHooks hooksUnderTest = new AgentLogsFlushHooks(
+                () -> {
+                    calls.add("flush");
+                    return true;
+                },
+                hook -> {},
+                () -> calls.add("export-path-warm-up"));
+
+        hooksUnderTest.install(null);
+        hooksUnderTest.install(mock(Channel.class));
+
+        assertEquals(List.of("export-path-warm-up", "flush"), calls);
+    }
+
+    @Test
+    public void exportPathWarmUpFailureDoesNotPreventTheHooks() {
+        List<Thread> hooks = new ArrayList<>();
+        AgentLogsFlushHooks hooksUnderTest = new AgentLogsFlushHooks(() -> true, hooks::add, () -> {
+            throw new NoClassDefFoundError("okhttp3/Call");
+        });
+
+        assertDoesNotThrow(() -> hooksUnderTest.install(null));
+        assertEquals(1, hooks.size());
+    }
+
+    @Test
     public void channelCloseFlushesAndListenerIsRegisteredOncePerChannel() {
         AtomicInteger flushes = new AtomicInteger();
         AgentLogsFlushHooks hooksUnderTest = new AgentLogsFlushHooks(
