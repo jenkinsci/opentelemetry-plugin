@@ -60,7 +60,7 @@
   <properties>
     <revision>3</revision>
     <changelist>999999-SNAPSHOT</changelist>
-    <jenkins.baseline>2.516</jenkins.baseline>
+    <jenkins.baseline>2.568</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <opentelemetry.version>1.54.1</opentelemetry.version>
@@ -81,7 +81,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>5681.v79d2ddf61465</version>
+        <version>7312.v55b_41644b_77d</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -372,6 +372,12 @@
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
+      <artifactId>workflow-api</artifactId>
+      <!-- TODO the release of jenkinsci/workflow-api-plugin with StepListener.aroundStart -->
+      <version>999999-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-basic-steps</artifactId>
       <exclusions>
         <exclusion>
@@ -383,6 +389,8 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-cps</artifactId>
+      <!-- TODO the release of jenkinsci/workflow-cps-plugin that calls StepListener.aroundStart -->
+      <version>999999-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -493,6 +501,8 @@
     <dependency>
       <groupId>org.jenkins-ci.main</groupId>
       <artifactId>maven-plugin</artifactId>
+      <!-- the plugin BOM of the 2.568.x line does not manage it -->
+      <version>3.28</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
