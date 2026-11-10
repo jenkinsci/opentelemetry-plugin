@@ -679,8 +679,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
             return;
         }
 
-        if (!openTelemetryAttributesAction.isNotYetAppliedToSpan(
-                span.getSpanContext().getSpanId())) {
+        if (!openTelemetryAttributesAction.isNotYetAppliedToSpan(span)) {
             // Do not reapply attributes, if previously applied.
             // This is important for overriding of attributes to work in an intuitive manner.
             return;

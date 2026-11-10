@@ -177,8 +177,8 @@ public class MonitoringComputerListener extends ComputerListener implements Open
         } else {
             // The Computer is kept when the agent reconnects and it does not support removing or replacing actions,
             // so update the existing action instead of adding one more on each reconnect.
-            existingAction.getAttributes().clear();
-            existingAction.getAttributes().putAll(openTelemetryAttributesAction.getAttributes());
+            // Replace the attributes in one step: running builds may read them at the same time.
+            existingAction.replaceAttributes(openTelemetryAttributesAction.getAttributes());
         }
     }
 

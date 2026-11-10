@@ -8,17 +8,17 @@ package io.jenkins.plugins.opentelemetry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.InvisibleAction;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.Span;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.stream.Collectors;
-import jenkins.util.SystemProperties;
 
 /**
  * @see io.opentelemetry.api.common.AttributeKey
@@ -30,16 +30,19 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
     private static final long serialVersionUID = 5488506456727905116L;
 
     /**
-     * Maximum number of span ids remembered by {@link #isNotYetAppliedToSpan(String)}.
-     * The action can live as long as the agent it is attached to, so the set must not grow forever.
-     * Only spans that are still open need to be remembered, so a few hundred per action is already a lot.
+     * Replaced as a whole by {@link #replaceAttributes(Map)}, never cleared in place, so a reader that iterates
+     * the map returned by {@link #getAttributes()} sees either the old or the new attributes, never a mix.
      */
-    static final int MAX_APPLIED_TO_SPANS =
-            SystemProperties.getInteger(OpenTelemetryAttributesAction.class.getName() + ".maxAppliedToSpans", 1000);
+    private transient volatile Map<AttributeKey<?>, Object> attributes;
 
-    private transient Map<AttributeKey<?>, Object> attributes;
-
-    private transient Set<String> appliedToSpans;
+    /**
+     * Spans to which these attributes have been applied.
+     * The action can live as long as the agent it is attached to, so it must not keep spans that have ended.
+     * Spans are held weakly: the plugin keeps a strong reference to a span while it is open
+     * and drops it when the span ends, so an open span stays here and an ended span goes away on the next GC.
+     * {@link Span} implementations do not override equals/hashCode, so the set compares spans by identity.
+     */
+    private transient Set<Span> appliedToSpans;
     // If the list has any values, then only the spans on the list will get attributes.
     // If the list is empty, then there is no restriction.
     // Used to control attribute inheritance to children spans.
@@ -54,20 +57,22 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
     }
 
     /**
+     * Replace all attributes at once, see {@link #attributes}.
+     */
+    public void replaceAttributes(@NonNull Map<AttributeKey<?>, Object> newAttributes) {
+        this.attributes = new HashMap<>(newAttributes);
+    }
+
+    /**
      * Remember a span to which these attributes are applied.
-     * @param spanId
+     * @param span the span
      * @return true iff a span did not previously have these attributes applied
      */
-    public synchronized boolean isNotYetAppliedToSpan(String spanId) {
+    public synchronized boolean isNotYetAppliedToSpan(@NonNull Span span) {
         if (appliedToSpans == null) {
-            appliedToSpans = Collections.newSetFromMap(new LinkedHashMap<>(16, 0.75f, true) {
-                @Override
-                protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
-                    return size() > MAX_APPLIED_TO_SPANS;
-                }
-            });
+            appliedToSpans = Collections.newSetFromMap(new WeakHashMap<>());
         }
-        return appliedToSpans.add(spanId);
+        return appliedToSpans.add(span);
     }
 
     public void addSpanIdToInheritanceAllowedList(String spanId) {

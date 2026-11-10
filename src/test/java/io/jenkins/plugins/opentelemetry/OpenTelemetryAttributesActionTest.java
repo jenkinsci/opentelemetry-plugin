@@ -4,39 +4,75 @@
  */
 package io.jenkins.plugins.opentelemetry;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import java.lang.ref.WeakReference;
+import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.jvnet.hudson.test.MemoryAssert;
 
 class OpenTelemetryAttributesActionTest {
+
+    private final SdkTracerProvider tracerProvider = SdkTracerProvider.builder().build();
+    private final Tracer tracer = tracerProvider.get("test");
+
+    @AfterEach
+    void closeTracerProvider() {
+        tracerProvider.close();
+    }
 
     @Test
     void spanIsRememberedOnce() {
         OpenTelemetryAttributesAction action = new OpenTelemetryAttributesAction();
-        assertTrue(action.isNotYetAppliedToSpan("span-1"));
-        assertFalse(action.isNotYetAppliedToSpan("span-1"));
+        Span span = tracer.spanBuilder("span-1").startSpan();
+        assertTrue(action.isNotYetAppliedToSpan(span));
+        assertFalse(action.isNotYetAppliedToSpan(span));
     }
 
     @Test
-    void appliedToSpansIsBounded() {
+    void openSpanIsRememberedWhileOtherSpansComeAndGo() {
         OpenTelemetryAttributesAction action = new OpenTelemetryAttributesAction();
-        assertTrue(action.isNotYetAppliedToSpan("span-0"));
-        for (int i = 1; i <= OpenTelemetryAttributesAction.MAX_APPLIED_TO_SPANS; i++) {
-            assertTrue(action.isNotYetAppliedToSpan("span-" + i));
+        Span openSpan = tracer.spanBuilder("long-running-stage").startSpan();
+        assertTrue(action.isNotYetAppliedToSpan(openSpan));
+        for (int i = 0; i < 10_000; i++) {
+            Span shortSpan = tracer.spanBuilder("step-" + i).startSpan();
+            assertTrue(action.isNotYetAppliedToSpan(shortSpan));
+            shortSpan.end();
         }
-        // the oldest span id was evicted, so it is seen as new again
-        assertTrue(action.isNotYetAppliedToSpan("span-0"));
+        System.gc();
+        // the open span must not be seen as new, otherwise the attributes are applied again over overrides
+        assertFalse(action.isNotYetAppliedToSpan(openSpan));
+        openSpan.end();
     }
 
     @Test
-    void recentlyUsedSpanIsNotEvicted() {
+    void endedSpanIsNotRetained() {
         OpenTelemetryAttributesAction action = new OpenTelemetryAttributesAction();
-        assertTrue(action.isNotYetAppliedToSpan("long-running-span"));
-        for (int i = 1; i <= OpenTelemetryAttributesAction.MAX_APPLIED_TO_SPANS; i++) {
-            assertTrue(action.isNotYetAppliedToSpan("span-" + i));
-            // a span that is still open keeps being checked and stays in the set
-            assertFalse(action.isNotYetAppliedToSpan("long-running-span"));
-        }
+        Span span = tracer.spanBuilder("span-1").startSpan();
+        assertTrue(action.isNotYetAppliedToSpan(span));
+        span.end();
+        WeakReference<Span> ref = new WeakReference<>(span);
+        span = null;
+        MemoryAssert.assertGC(ref, false);
+    }
+
+    @Test
+    void replaceAttributesDoesNotChangeTheMapAReaderHolds() {
+        AttributeKey<String> key = AttributeKey.stringKey("host.name");
+        OpenTelemetryAttributesAction action = new OpenTelemetryAttributesAction();
+        action.getAttributes().put(key, "old");
+        Map<AttributeKey<?>, Object> heldByReader = action.getAttributes();
+
+        action.replaceAttributes(Map.of(key, "new"));
+
+        assertEquals(Map.of(key, "old"), heldByReader);
+        assertEquals(Map.of(key, "new"), action.getAttributes());
     }
 }
