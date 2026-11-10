@@ -23,7 +23,7 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
  * <p>
  * The scopes stay in order on the thread: when a new node comes while a scope opened after this one is still open, such
  * as the one of {@link StepStartContextListener} while a block step starts its body, the span changes once that scope
- * has closed.
+ * has closed ({@link ContextOwner}).
  */
 final class ProgramRunContext implements CpsVmThreadListener.ProgramRun {
     private static final ThreadLocal<ProgramRunContext> CURRENT = new ThreadLocal<>();
@@ -32,8 +32,8 @@ final class ProgramRunContext implements CpsVmThreadListener.ProgramRun {
     private final ProgramRunContext outer;
     private final Thread thread;
 
-    /** The context that this object made current, while {@link #scope} is open. */
-    private Context context;
+    /** The span of the context that this object made current, while {@link #scope} is open. */
+    private Span span;
 
     private Scope scope;
 
@@ -80,7 +80,7 @@ final class ProgramRunContext implements CpsVmThreadListener.ProgramRun {
         if (scope != null) {
             scope.close();
             scope = null;
-            context = null;
+            span = null;
         }
         if (CURRENT.get() == this) {
             if (outer == null) {
@@ -102,17 +102,17 @@ final class ProgramRunContext implements CpsVmThreadListener.ProgramRun {
         pending = null;
         OtelTraceService otelTraceService = OtelTraceService.get();
         Span span = head == null ? otelTraceService.getSpan(run) : otelTraceService.getProgramSpan(run, head);
-        if (scope != null && Span.fromContext(context) == span) {
+        if (scope != null && this.span != null && ContextOwner.sameSpan(this.span, span)) {
             return;
         }
         if (scope != null) {
             scope.close();
         }
-        context = Context.current().with(span);
-        scope = context.makeCurrent();
+        this.span = span;
+        scope = ContextOwner.with(Context.current(), span, this).makeCurrent();
     }
 
     private boolean isInnermost() {
-        return Context.current() == context;
+        return span != null && ContextOwner.isCurrent(this, span);
     }
 }

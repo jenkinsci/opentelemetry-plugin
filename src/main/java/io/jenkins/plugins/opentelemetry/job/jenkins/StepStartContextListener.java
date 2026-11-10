@@ -11,6 +11,7 @@ import hudson.Extension;
 import hudson.model.Run;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -50,7 +51,8 @@ public class StepStartContextListener implements StepListener {
             if (!span.getSpanContext().isValid()) {
                 return null;
             }
-            Scope scope = span.makeCurrent();
+            // owned by the step's context: the program's context is not the innermost one while the step starts
+            Scope scope = ContextOwner.with(Context.current(), span, context).makeCurrent();
             ProgramRunContext programRun = ProgramRunContext.current();
             return () -> {
                 scope.close();

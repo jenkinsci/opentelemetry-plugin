@@ -24,7 +24,8 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
  * them in the task, such as the listeners of other plugins and the deletion of the build's stashes, runs in "Finalise"
  * while the build is in it, and in no span once the build has ended: not in a phase that has ended.
  * <p>
- * The scopes stay in order on the thread: the span changes only while the scope of this object is the innermost one.
+ * The scopes stay in order on the thread: the span changes only while the scope of this object is the innermost one
+ * ({@link ContextOwner}).
  */
 public final class CpsVmTaskContext implements AutoCloseable {
     private static final Logger LOGGER = Logger.getLogger(CpsVmTaskContext.class.getName());
@@ -35,8 +36,8 @@ public final class CpsVmTaskContext implements AutoCloseable {
     @CheckForNull
     private final CpsVmTaskContext outer;
 
-    /** The context that this object made current, while {@link #scope} is open. */
-    private Context context;
+    /** The span of the context that this object made current, while {@link #scope} is open. */
+    private Span span;
 
     private Scope scope;
 
@@ -49,8 +50,8 @@ public final class CpsVmTaskContext implements AutoCloseable {
     @NonNull
     static CpsVmTaskContext open(@NonNull WorkflowRun run) {
         CpsVmTaskContext task = new CpsVmTaskContext(run);
-        task.context = Context.root().with(OtelTraceService.get().getSpan(run));
-        task.scope = task.context.makeCurrent();
+        task.span = OtelTraceService.get().getSpan(run);
+        task.scope = ContextOwner.with(Context.root(), task.span, task).makeCurrent();
         CURRENT.set(task);
         return task;
     }
@@ -61,14 +62,14 @@ public final class CpsVmTaskContext implements AutoCloseable {
      */
     public static void followPhase(@NonNull Run<?, ?> run) {
         CpsVmTaskContext task = CURRENT.get();
-        if (task == null || task.run != run || task.scope == null) {
+        if (task == null || task.run != run || task.scope == null || task.span == null) {
             return;
         }
         Span span = OtelTraceService.get().getSpan(run);
-        if (Span.fromContext(task.context) == span) {
+        if (ContextOwner.sameSpan(task.span, span)) {
             return;
         }
-        if (Context.current() != task.context) {
+        if (!ContextOwner.isCurrent(task, task.span)) {
             LOGGER.log(
                     Level.FINE,
                     () -> run.getFullDisplayName()
@@ -77,8 +78,8 @@ public final class CpsVmTaskContext implements AutoCloseable {
             return;
         }
         task.scope.close();
-        task.context = Context.root().with(span);
-        task.scope = task.context.makeCurrent();
+        task.span = span;
+        task.scope = ContextOwner.with(Context.root(), span, task).makeCurrent();
     }
 
     @Override
@@ -86,7 +87,7 @@ public final class CpsVmTaskContext implements AutoCloseable {
         if (scope != null) {
             scope.close();
             scope = null;
-            context = null;
+            span = null;
         }
         if (CURRENT.get() == this) {
             if (outer == null) {
