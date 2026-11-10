@@ -9,8 +9,12 @@ import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.Extension;
 import hudson.model.Queue;
 import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.model.listeners.RunListener;
 import hudson.model.queue.QueueTaskFuture;
 import io.jenkins.plugins.opentelemetry.job.MonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.step.ContextLeakBlockTestStep;
@@ -20,12 +24,15 @@ import io.jenkins.plugins.opentelemetry.job.step.ContextLeakProgramProbe;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.sdk.trace.ReadableSpan;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.flow.FlowExecution;
+import org.jenkinsci.plugins.workflow.flow.FlowExecutionListener;
 import org.jenkinsci.plugins.workflow.flow.GraphListener;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -190,6 +197,143 @@ public class JenkinsOtelPluginCpsVmContextIntegrationTest extends BaseIntegratio
                 elsewhere.isEmpty(),
                 () -> "asynchronous graph listener notifications in a span that is not one of their build:\n"
                         + String.join("\n", elsewhere));
+    }
+
+    private static final String NO_SPAN = "no span";
+
+    /**
+     * The span that each listener of the end of a build must run in: the one of the phase that the build is in when the
+     * listener runs, and none once the build has ended. This plugin's listener (ordinal 0) ends the phase "Run" and
+     * starts "Finalise" when the build completes, and ends "Finalise" when the build is finalized.
+     */
+    private static final Map<String, String> BUILD_END_SPANS = Map.of(
+            "RunListener.onCompleted before this plugin's",
+            ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME,
+            "RunListener.onCompleted after this plugin's",
+            ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME,
+            "FlowExecutionListener.onCompleted",
+            ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME,
+            "RunListener.onFinalized before this plugin's",
+            ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME,
+            "RunListener.onFinalized after this plugin's",
+            NO_SPAN);
+
+    /**
+     * A pipeline build ends in one CPS VM task, which runs the listeners of the build's completion and finalization of
+     * all plugins. This plugin's listener moves the build to its next phase among them: each listener runs in the span
+     * of the phase that the build is in when the listener runs, of its own build, and not in a phase that has ended.
+     */
+    @Test
+    public void testListenersRunInTheSpanOfThePhaseOfTheirBuildWhenItEnds() throws Exception {
+        BuildEndProbe.OBSERVATIONS.clear();
+        WorkflowJob blocked = pipeline("end-blocked", "contextLeakBlockTestStep 'end-first-task'");
+        WorkflowJob probe = pipeline("end-probe", "echo 'probe'\nsleep time: 100, unit: 'MILLISECONDS'");
+        QueueTaskFuture<WorkflowRun> blockedBuild = blocked.scheduleBuild2(0);
+        ContextLeakBlockTestStep.waitForStart("end-first-task");
+        List<WorkflowRun> runs = new ArrayList<>();
+        for (int i = 0; i < PROBE_BUILDS; i++) {
+            runs.add(jenkinsRule.buildAndAssertSuccess(probe));
+        }
+        ContextLeakBlockTestStep.release("end-first-task");
+        runs.add(jenkinsRule.assertBuildStatusSuccess(blockedBuild));
+
+        Map<String, String> traceOfRun = runs.stream()
+                .collect(toMap(
+                        Run::getFullDisplayName,
+                        run -> run.getActions(MonitoringAction.class).get(0).getTraceId()));
+        List<BuildEndProbe.Observation> observations = List.copyOf(BuildEndProbe.OBSERVATIONS);
+        assertEquals(BUILD_END_SPANS.size() * runs.size(), observations.size(), observations::toString);
+        List<String> wrong = observations.stream()
+                .filter(o -> !BuildEndProbe.inExpectedSpan(o, traceOfRun.get(o.run())))
+                .map(o -> "  " + o.run() + ", " + o.listener() + ", thread '" + o.thread() + "': "
+                        + (o.current().isValid()
+                                ? "span '" + o.spanName() + "'" + (o.recording() ? "" : " (ended)")
+                                        + (o.current().getTraceId().equals(traceOfRun.get(o.run()))
+                                                ? ""
+                                                : " of another trace")
+                                : NO_SPAN)
+                        + ", expected " + BUILD_END_SPANS.get(o.listener()))
+                .toList();
+        assertTrue(
+                wrong.isEmpty(),
+                () -> wrong.size() + " of " + observations.size()
+                        + " listeners ran outside the span of the phase of their build:\n"
+                        + String.join("\n", wrong));
+    }
+
+    /** Records the context of the listeners of the end of the builds of the jobs named "cps-vm-context-end-*". */
+    public static final class BuildEndProbe {
+        static final List<Observation> OBSERVATIONS = new CopyOnWriteArrayList<>();
+
+        static void record(@NonNull Run<?, ?> run, @NonNull String listener) {
+            if (!run.getParent().getName().startsWith("cps-vm-context-end-")) {
+                return;
+            }
+            Span current = Span.current();
+            OBSERVATIONS.add(new Observation(
+                    run.getFullDisplayName(),
+                    listener,
+                    Thread.currentThread().getName(),
+                    current.getSpanContext(),
+                    current.isRecording(),
+                    current instanceof ReadableSpan readableSpan ? readableSpan.getName() : null));
+        }
+
+        static boolean inExpectedSpan(@NonNull Observation o, String traceId) {
+            String expected = BUILD_END_SPANS.get(o.listener());
+            if (NO_SPAN.equals(expected)) {
+                return !o.current().isValid();
+            }
+            return o.current().isValid()
+                    && o.recording()
+                    && o.current().getTraceId().equals(traceId)
+                    && expected.equals(o.spanName());
+        }
+
+        record Observation(
+                String run, String listener, String thread, SpanContext current, boolean recording, String spanName) {}
+    }
+
+    // before this plugin's listener (ordinal 0); records only the builds of this test, like the two classes below
+    @Extension(ordinal = 100)
+    public static class EarlyBuildEndRunListener extends RunListener<Run<?, ?>> {
+        @Override
+        public void onCompleted(Run<?, ?> run, @NonNull TaskListener listener) {
+            BuildEndProbe.record(run, "RunListener.onCompleted before this plugin's");
+        }
+
+        @Override
+        public void onFinalized(Run<?, ?> run) {
+            BuildEndProbe.record(run, "RunListener.onFinalized before this plugin's");
+        }
+    }
+
+    // after this plugin's listener (ordinal 0), like the listeners of most plugins
+    @Extension(ordinal = -100)
+    public static class LateBuildEndRunListener extends RunListener<Run<?, ?>> {
+        @Override
+        public void onCompleted(Run<?, ?> run, @NonNull TaskListener listener) {
+            BuildEndProbe.record(run, "RunListener.onCompleted after this plugin's");
+        }
+
+        @Override
+        public void onFinalized(Run<?, ?> run) {
+            BuildEndProbe.record(run, "RunListener.onFinalized after this plugin's");
+        }
+    }
+
+    @Extension
+    public static class BuildEndFlowExecutionListener extends FlowExecutionListener {
+        @Override
+        public void onCompleted(@NonNull FlowExecution execution) {
+            try {
+                if (execution.getOwner().getExecutable() instanceof WorkflowRun run) {
+                    BuildEndProbe.record(run, "FlowExecutionListener.onCompleted");
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
     }
 
     private WorkflowJob pipeline(String name, String script) throws Exception {

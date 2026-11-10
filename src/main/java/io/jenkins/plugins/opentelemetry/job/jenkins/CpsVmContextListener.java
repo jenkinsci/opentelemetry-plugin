@@ -9,9 +9,6 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Queue;
-import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Context;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,8 +22,9 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
  * CPS VM runs the work of all builds on one pool of threads. Each task of the build, such as the notifications of
  * asynchronous graph listeners, runs in the span of the build's run phase and in nothing else: not in a context left on
  * the thread, and not in the context of the thread that submitted the task, which instrumentation of executors can
- * carry over and which can be of another build. Each run of the build's program runs in the span of the block that the
- * program is in ({@link ProgramRunContext}). The CPS VM thread closes both before it does other work.
+ * carry over and which can be of another build. The span follows the build's phase during the task
+ * ({@link CpsVmTaskContext}). Each run of the build's program runs in the span of the block that the program is in
+ * ({@link ProgramRunContext}). The CPS VM thread closes both before it does other work.
  */
 @Extension
 public class CpsVmContextListener implements CpsVmThreadListener {
@@ -39,8 +37,7 @@ public class CpsVmContextListener implements CpsVmThreadListener {
         if (run == null) {
             return null;
         }
-        Span span = OtelTraceService.get().getSpan(run);
-        return Context.root().with(span).makeCurrent();
+        return CpsVmTaskContext.open(run);
     }
 
     @CheckForNull
