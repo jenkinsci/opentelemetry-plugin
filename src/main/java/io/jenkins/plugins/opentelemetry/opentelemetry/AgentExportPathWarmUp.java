@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
@@ -71,8 +73,7 @@ public final class AgentExportPathWarmUp {
             });
             server.start();
             exporter = OtlpHttpLogRecordExporter.builder()
-                    .setEndpoint("http://" + server.getAddress().getHostString() + ":"
-                            + server.getAddress().getPort() + "/v1/logs")
+                    .setEndpoint(endpoint(server.getAddress()))
                     .setTimeout(Duration.ofMillis(TIMEOUT_MILLIS))
                     .build();
             // the 2nd export reuses the connection and resolves the classes the first one did not need
@@ -103,5 +104,17 @@ public final class AgentExportPathWarmUp {
                 () -> "OpenTelemetry export path warm-up: " + received + " requests in "
                         + (System.nanoTime() - start) / 1_000_000 + "ms");
         return received;
+    }
+
+    /**
+     * OTLP/HTTP log endpoint of the given address. IPv6 literals (e.g. the loopback address with
+     * {@code -Djava.net.preferIPv6Addresses=true}) are enclosed in square brackets.
+     */
+    static String endpoint(InetSocketAddress address) {
+        try {
+            return new URI("http", null, address.getHostString(), address.getPort(), "/v1/logs", null, null).toString();
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid warm-up endpoint address " + address, e);
+        }
     }
 }

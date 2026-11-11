@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -54,7 +56,9 @@ public final class AgentLogsFlushHooks {
     private final BooleanSupplier flush;
     private final Consumer<Thread> shutdownHookRegistrar;
     private final Runnable exportPathWarmUp;
+    private final long warmUpWaitMillis;
     private final AtomicBoolean shutdownHookRegistered = new AtomicBoolean();
+    private final CountDownLatch warmedUp = new CountDownLatch(1);
     private final Set<Channel> channels = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
     @VisibleForTesting
@@ -67,9 +71,19 @@ public final class AgentLogsFlushHooks {
             @NonNull BooleanSupplier flush,
             @NonNull Consumer<Thread> shutdownHookRegistrar,
             @NonNull Runnable exportPathWarmUp) {
+        this(flush, shutdownHookRegistrar, exportPathWarmUp, HOOK_FLUSH_TIMEOUT_MILLIS);
+    }
+
+    @VisibleForTesting
+    AgentLogsFlushHooks(
+            @NonNull BooleanSupplier flush,
+            @NonNull Consumer<Thread> shutdownHookRegistrar,
+            @NonNull Runnable exportPathWarmUp,
+            long warmUpWaitMillis) {
         this.flush = flush;
         this.shutdownHookRegistrar = shutdownHookRegistrar;
         this.exportPathWarmUp = exportPathWarmUp;
+        this.warmUpWaitMillis = warmUpWaitMillis;
     }
 
     /**
@@ -100,13 +114,22 @@ public final class AgentLogsFlushHooks {
             // first step of a slow agent starts after the preOnline timeout), then the flush skips the SDK classes; and
             // it exports nothing when no record is queued, so it never resolves the classes of the HTTP export path
             try {
-                int flushPathClasses = GlobalOpenTelemetrySdk.flushPathClasses().size();
-                logger.log(Level.FINE, () -> "Resolved " + flushPathClasses + " agent logs flush classes");
-                exportPathWarmUp.run();
-            } catch (RuntimeException | LinkageError e) {
-                logger.log(Level.INFO, "Failure to warm up the agent log export path", e);
+                try {
+                    int flushPathClasses =
+                            GlobalOpenTelemetrySdk.flushPathClasses().size();
+                    logger.log(Level.FINE, () -> "Resolved " + flushPathClasses + " agent logs flush classes");
+                    exportPathWarmUp.run();
+                } catch (RuntimeException | LinkageError e) {
+                    logger.log(Level.INFO, "Failure to warm up the agent log export path", e);
+                }
+                flushQuietly("warm-up");
+            } finally {
+                warmedUp.countDown();
             }
-            flushQuietly("warm-up");
+        } else {
+            // the SDK configuration callable and the first steps can install the hooks concurrently: a step must not
+            // start, and possibly end with the channel closing, before the warm-up of the other installer completed
+            awaitWarmUp();
         }
         if (channel == null) {
             logger.log(Level.FINE, "No remoting channel, agent logs flush on channel close not registered");
@@ -128,6 +151,16 @@ public final class AgentLogsFlushHooks {
             } catch (RuntimeException e) {
                 logger.log(Level.WARNING, "Failure to register the agent logs flush on channel close", e);
             }
+        }
+    }
+
+    private void awaitWarmUp() {
+        try {
+            if (!warmedUp.await(warmUpWaitMillis, TimeUnit.MILLISECONDS)) {
+                logger.log(Level.FINE, () -> "Agent logs flush warm-up still running after " + warmUpWaitMillis + "ms");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

@@ -166,10 +166,6 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
 
         private Object readResolve() {
             JenkinsJVM.checkNotJenkinsJVM();
-            // the SDK configuration of a new agent may still be running when its first steps start, install the
-            // log flush hooks before this step emits log records
-            AgentLogsFlushHooks.installOnAgent();
-
             /*
              * Timestamps of the logs emitted by the Jenkins Agents must be chronologically ordered with the timestamps of
              * the logs & traces emitted on the Jenkins controller even if the system clock are not perfectly synchronized
@@ -193,6 +189,10 @@ abstract class OtelLogSenderBuildListener implements BuildListener, OutputStream
                                 + "Higher offsets indicate a synchronization gap of the system clocks between the Jenkins Controller that will be work arounded by the clock adjustment.");
                 this.clock = Clocks.monotonicOffsetClock(offsetInNanosOnJenkinsAgent);
             }
+            // the SDK configuration of a new agent may still be running when its first steps start, install the
+            // log flush hooks before this step emits log records. After the clock adjustment: the first install
+            // warms up the export path, which must not be mistaken for a clock gap
+            AgentLogsFlushHooks.installOnAgent();
             return this;
         }
     }

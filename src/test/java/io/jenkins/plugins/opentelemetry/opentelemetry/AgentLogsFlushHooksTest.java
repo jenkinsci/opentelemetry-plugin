@@ -7,6 +7,8 @@ package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -17,6 +19,8 @@ import hudson.remoting.Channel;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -61,6 +65,65 @@ public class AgentLogsFlushHooksTest {
         hooksUnderTest.install(mock(Channel.class));
 
         assertEquals(List.of("export-path-warm-up", "flush"), calls);
+    }
+
+    @Test
+    public void concurrentInstallWaitsForTheWarmUpOfTheFirstInstall() throws Exception {
+        CountDownLatch warmUpStarted = new CountDownLatch(1);
+        CountDownLatch releaseWarmUp = new CountDownLatch(1);
+        AgentLogsFlushHooks hooksUnderTest = new AgentLogsFlushHooks(() -> true, hook -> {}, () -> {
+            warmUpStarted.countDown();
+            try {
+                releaseWarmUp.await(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        Thread first = new Thread(() -> hooksUnderTest.install(null));
+        first.start();
+        assertTrue(warmUpStarted.await(5, TimeUnit.SECONDS));
+        Thread second = new Thread(() -> hooksUnderTest.install(null));
+        second.start();
+        second.join(300);
+        assertTrue(second.isAlive(), "the second install must wait for the warm-up");
+
+        releaseWarmUp.countDown();
+        second.join(5_000);
+        first.join(5_000);
+        assertFalse(second.isAlive());
+        assertFalse(first.isAlive());
+    }
+
+    @Test
+    public void concurrentInstallWaitIsBounded() throws Exception {
+        CountDownLatch warmUpStarted = new CountDownLatch(1);
+        CountDownLatch releaseWarmUp = new CountDownLatch(1);
+        AgentLogsFlushHooks hooksUnderTest = new AgentLogsFlushHooks(
+                () -> true,
+                hook -> {},
+                () -> {
+                    warmUpStarted.countDown();
+                    try {
+                        releaseWarmUp.await(10, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                },
+                100);
+
+        Thread first = new Thread(() -> hooksUnderTest.install(null));
+        first.start();
+        try {
+            assertTrue(warmUpStarted.await(5, TimeUnit.SECONDS));
+            Thread second = new Thread(() -> hooksUnderTest.install(null));
+            second.start();
+            second.join(5_000);
+            assertFalse(second.isAlive(), "the second install gives up waiting after the timeout");
+        } finally {
+            releaseWarmUp.countDown();
+            first.join(5_000);
+        }
     }
 
     @Test
