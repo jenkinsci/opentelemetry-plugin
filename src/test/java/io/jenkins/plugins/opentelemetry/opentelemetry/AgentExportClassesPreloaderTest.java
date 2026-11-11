@@ -28,7 +28,8 @@ class AgentExportClassesPreloaderTest {
                 .map(File::getName)
                 .collect(Collectors.toSet());
         for (String jarPrefix : new String[] {
-            "opentelemetry-api-",
+            "opentelemetry-api-1",
+            "opentelemetry-api-incubator-",
             "opentelemetry-context-",
             "opentelemetry-common-",
             "opentelemetry-sdk-1",

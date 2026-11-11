@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 public class AgentExportPathWarmUpTest {
 
     @Test
-    public void sendsTwoEmptyExportRequestsToTheLoopbackEndpoint() {
-        assertEquals(2, AgentExportPathWarmUp.run());
+    public void exportsTwoLogRecordsToTheLoopbackEndpoint() {
+        assertEquals(2, AgentExportPathWarmUp.run(), "two non-empty export requests");
     }
 
     @Test

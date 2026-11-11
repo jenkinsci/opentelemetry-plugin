@@ -45,6 +45,7 @@ public final class AgentExportClassesPreloader {
     @VisibleForTesting
     static final List<String> CLASSES_IN_EXPORT_JARS = List.of(
             "io.opentelemetry.api.OpenTelemetry",
+            "io.opentelemetry.api.incubator.common.ExtendedAttributes",
             "io.opentelemetry.context.Context",
             "io.opentelemetry.common.ComponentLoader",
             "io.opentelemetry.sdk.OpenTelemetrySdk",
