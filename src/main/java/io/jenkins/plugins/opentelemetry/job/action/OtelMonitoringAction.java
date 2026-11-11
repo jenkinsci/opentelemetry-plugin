@@ -8,7 +8,6 @@ package io.jenkins.plugins.opentelemetry.job.action;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import hudson.model.Action;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.sdk.trace.ReadableSpan;
 import java.util.Map;
 
 /**
@@ -25,7 +24,7 @@ public interface OtelMonitoringAction extends Action {
 
     /**
      * @return {@code true} if the associated {@link Span} has ended
-     * @see ReadableSpan#hasEnded()
+     * @see Span#isRecording()
      */
     boolean hasEnded();
 }
