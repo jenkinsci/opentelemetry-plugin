@@ -33,7 +33,7 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
      * Replaced as a whole by {@link #replaceAttributes(Map)}, never cleared in place, so a reader that iterates
      * the map returned by {@link #getAttributes()} sees either the old or the new attributes, never a mix.
      */
-    private transient volatile Map<AttributeKey<?>, Object> attributes;
+    private transient Map<AttributeKey<?>, Object> attributes;
 
     /**
      * Spans to which these attributes have been applied.
@@ -49,7 +49,7 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
     private transient List<String> inheritanceAllowedSpanIdList;
 
     @NonNull
-    public Map<AttributeKey<?>, Object> getAttributes() {
+    public synchronized Map<AttributeKey<?>, Object> getAttributes() {
         if (attributes == null) {
             attributes = new HashMap<>();
         }
@@ -57,10 +57,11 @@ public class OpenTelemetryAttributesAction extends InvisibleAction implements Se
     }
 
     /**
-     * Replace all attributes at once, see {@link #attributes}.
+     * Publish an immutable copy of all attributes at once, see {@link #attributes}.
+     * Uses the same lock as lazy initialization so a first reader cannot overwrite the replacement.
      */
-    public void replaceAttributes(@NonNull Map<AttributeKey<?>, Object> newAttributes) {
-        this.attributes = new HashMap<>(newAttributes);
+    public synchronized void replaceAttributes(@NonNull Map<AttributeKey<?>, Object> newAttributes) {
+        this.attributes = Collections.unmodifiableMap(new HashMap<>(newAttributes));
     }
 
     /**
