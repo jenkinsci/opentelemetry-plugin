@@ -160,6 +160,34 @@ Attributes reported on the span of pipeline steps:
 | jenkins.computer.name            | Name of the agent | String |
 
 
+### Block step spans
+
+Block steps (steps with a body) have no span of their own by default: the steps of their body are children of the
+enclosing stage or agent span. List the function names of block steps in the "Block steps to trace" setting
+(`blockSteps` in JCasC, for example `timeout,withEnv,withCredentials`) to give each use of them a span named after the
+step, under its stage or agent. The steps of the body are children of that span. A step that is also in the ignored
+steps gets no span, and `node`, `stage`, `parallel` and `withNewSpan` keep their own spans whatever the setting says. A
+block span ends at the time of its end node. A block step that completes without an end node (`lock` with
+`skipIfLocked` does) ends its span when the next node starts. It has the step attributes of the table above
+(`jenkins.pipeline.step.id`, `.type`, `.name`, `.plugin.name`, `.plugin.version`), its status and its result.
+
+Any step with a body can be listed. These steps add attributes of their own:
+
+| Step              | Attribute                                        | Description  | Type |
+|-------------------|--------------------------------------------------|--------------|------|
+| `timeout`         | jenkins.pipeline.step.timeout.time               | The `time` argument | Long |
+| `timeout`         | jenkins.pipeline.step.timeout.unit               | The `unit` argument, `MINUTES` if not given | String |
+| `timeout`         | jenkins.pipeline.step.timeout.activity           | The `activity` argument, `false` if not given | Boolean |
+| `timeout`         | jenkins.pipeline.step.timeout.exceeded           | True if the timeout fired | Boolean |
+| `withEnv`         | jenkins.pipeline.step.env.count                  | Number of overrides. The names and values of the variables are never recorded | Long |
+| `withCredentials` | jenkins.pipeline.step.credentials.binding_types  | Kinds of the bindings, for example `string` or `usernamePassword`. Variable names and secrets are never recorded | String[] |
+| `withCredentials` | jenkins.pipeline.step.credentials.ids            | IDs of the bound credentials, only if "Include credential IDs" is on | String[] |
+
+When a credential of a `withCredentials` is missing or has the wrong type, its error message names the credential ID.
+Unless "Include credential IDs" is on, the ID is replaced by `<redacted>` in the status and the exception event of
+every block step span, and their exception event has no stack trace. The spans of the stages and agents keep the message
+as it is.
+
 ### Environment variables for trace context propagation and integrations
 
 The trace context is exposed as environment variables in shell/bat/powershell steps to ease integration with third party tools.

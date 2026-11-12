@@ -24,6 +24,7 @@ import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
 import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
+import io.jenkins.plugins.opentelemetry.job.credentials.CredentialIdRedaction;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
 import io.jenkins.plugins.opentelemetry.job.step.BlockStepHandler;
 import io.jenkins.plugins.opentelemetry.job.step.SetSpanAttributesStep;
@@ -35,12 +36,14 @@ import io.jenkins.plugins.opentelemetry.semconv.CicdMetrics;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.jenkins.plugins.opentelemetry.semconv.SemConvStability;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.incubating.CicdIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
 import java.io.IOException;
@@ -468,16 +471,21 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
     }
 
     private void endCurrentSpan(FlowNode node, WorkflowRun run, GenericStatus status) {
-        endCurrentSpan(node, run, status, -1);
+        endCurrentSpan(node, run, status, -1, false);
     }
 
     /**
      * Ends a span that the "block steps" setting adds: the span of a block step, or of an invocation of its body. The
-     * span ends at the time of the end node (it may be ended later, when the next node arrives). Every such span ends
-     * here, so no handler can skip the rule.
+     * span ends at the time of the end node (it may be ended later, when the next node arrives), and its error has
+     * no credential ID unless the setting allows IDs. Every such span ends here, so no handler can skip either rule.
      */
     private void endBlockStepSpan(@NonNull StepEndNode endNode, @NonNull WorkflowRun run, GenericStatus status) {
-        endCurrentSpan(endNode, run, status, TimingAction.getStartTime(endNode));
+        endCurrentSpan(
+                endNode,
+                run,
+                status,
+                TimingAction.getStartTime(endNode),
+                !JenkinsOpenTelemetryPluginConfiguration.get().isIncludeCredentialIds());
     }
 
     /**
@@ -490,8 +498,11 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
      * @param status        the status of the chunk of the node, or {@code null} to take it from the error of the node
      * @param endTimeMillis end time of the span in milliseconds since the epoch, for example the time of the end
      *                      node ({@link TimingAction#getStartTime(FlowNode)}). Zero or less: now.
+     * @param redactCredentialIds true to keep the ID of a missing credential out of the status and the exception
+     *                      event of the span
      */
-    private void endCurrentSpan(FlowNode node, WorkflowRun run, GenericStatus status, long endTimeMillis) {
+    private void endCurrentSpan(
+            FlowNode node, WorkflowRun run, GenericStatus status, long endTimeMillis, boolean redactCredentialIds) {
         try (Scope ignored = setupContext(run, node)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, node);
 
@@ -533,8 +544,22 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
                     }
                 } else {
                     if (status == null) status = GenericStatus.FAILURE;
-                    span.recordException(throwable);
-                    span.setStatus(StatusCode.ERROR, throwable.getMessage());
+                    Optional<String> redactedMessage =
+                            redactCredentialIds ? CredentialIdRedaction.redactedMessage(throwable) : Optional.empty();
+                    if (redactedMessage.isPresent()) {
+                        // No stack trace: its first line is the message with the ID
+                        span.addEvent(
+                                "exception",
+                                Attributes.of(
+                                        ExceptionAttributes.EXCEPTION_TYPE,
+                                        throwable.getClass().getName(),
+                                        ExceptionAttributes.EXCEPTION_MESSAGE,
+                                        redactedMessage.get()));
+                        span.setStatus(StatusCode.ERROR, redactedMessage.get());
+                    } else {
+                        span.recordException(throwable);
+                        span.setStatus(StatusCode.ERROR, throwable.getMessage());
+                    }
                 }
             }
 
