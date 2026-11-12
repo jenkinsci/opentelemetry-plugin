@@ -162,6 +162,47 @@ public class JenkinsOtelPluginOptInSettingsIntegrationTest extends BaseIntegrati
     }
 
     @Test
+    public void testNothingChangesInTheSpansOfLockAndRetryWhenNothingIsConfigured() throws Exception {
+        String pipelineScript = """
+                node() {
+                    stage('ze-stage') {
+                        lock('ze-resource') {
+                            retry(2) {
+                                if (isUnix()) { sh label: 'ze-shell', script: 'echo ze-echo' }
+                                else { bat label: 'ze-shell', script: 'echo ze-echo' }
+                            }
+                        }
+                    }
+                }
+                """;
+        jenkinsRule.createOnlineSlave();
+        final String jobName = "test-lock-retry-default-off-" + jobNameSuffix.incrementAndGet();
+        WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
+        pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
+
+        jenkinsRule.assertBuildStatus(Result.SUCCESS, pipeline.scheduleBuild2(0));
+
+        Tree<SpanDataWrapper> spans = getBuildTrace();
+        // The whole tree of the build before the settings existed: no span for lock and retry
+        Map<String, List<String>> expectedTree = new TreeMap<>();
+        expectedTree.put(
+                ExtendedJenkinsAttributes.CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX + jobName,
+                List.of("Phase: Finalise", "Phase: Run", "Phase: Start"));
+        expectedTree.put("Phase: Start", List.of());
+        expectedTree.put("Phase: Run", List.of("Agent"));
+        expectedTree.put("Agent", List.of("Agent Allocation", "Stage: ze-stage"));
+        expectedTree.put("Agent Allocation", List.of());
+        expectedTree.put("Stage: ze-stage", List.of("ze-shell"));
+        expectedTree.put("ze-shell", List.of());
+        expectedTree.put("Phase: Finalise", List.of());
+        Map<String, List<String>> actualTree = new TreeMap<>();
+        getSpanMapWithChildrenFromTree(spans)
+                .forEach((name, children) ->
+                        actualTree.put(name, children.stream().sorted().toList()));
+        assertEquals(expectedTree, actualTree);
+    }
+
+    @Test
     public void testSecretInASpanAttributeIsFound() {
         jenkinsControllerOpenTelemetry
                 .getOpenTelemetrySdk()

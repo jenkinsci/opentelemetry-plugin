@@ -471,6 +471,11 @@
       <artifactId>opentelemetry-sdk-testing</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.6wind.jenkins</groupId>
+      <artifactId>lockable-resources</artifactId>
+      <scope>test</scope>
+    </dependency>
     <!-- For test remote trigger -->
     <dependency>
       <groupId>org.awaitility</groupId>
