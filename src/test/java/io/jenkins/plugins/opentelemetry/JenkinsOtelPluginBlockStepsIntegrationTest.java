@@ -19,13 +19,16 @@ import hudson.AbortException;
 import hudson.model.Result;
 import hudson.util.Secret;
 import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
+import io.jenkins.plugins.opentelemetry.job.step.BlockStepHandler;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporterProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import java.io.Serial;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -33,6 +36,7 @@ import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
@@ -87,8 +91,7 @@ public class JenkinsOtelPluginBlockStepsIntegrationTest extends BaseIntegrationT
         Tree<SpanDataWrapper> spans = getBuildTrace();
         checkChainOfSpansUpToRunPhase(spans, "ze-shell", "Stage: ze-stage", ExtendedJenkinsAttributes.AGENT_UI);
         assertEquals(List.of(), blockSpanNames(), "block spans");
-        // 7 spans before the block steps existed: root, Phase: Start, Phase: Run, Phase: Finalise, agent, stage, sh
-        // plus the agent allocation span
+        // Number of spans of this pipeline before the block steps existed
         assertEquals(DEFAULT_SPAN_COUNT, exportedSpans().size());
     }
 
@@ -209,7 +212,7 @@ public class JenkinsOtelPluginBlockStepsIntegrationTest extends BaseIntegrationT
                 node() {
                     stage('ze-stage') {
                         withNewSpan(label: 'ze-new-span') {
-                            parallel a: { setSpanAttributes(key: 'k', value: 'v'); withEnv(['A=b']) { %s } }
+                            parallel a: { setSpanAttributes([spanAttribute(key: 'k', value: 'v', target: 'CURRENT_SPAN')]); withSpanAttribute(key: 'k2', value: 'v2'); withEnv(['A=b']) { %s } }
                         }
                     }
                 }
@@ -438,6 +441,74 @@ public class JenkinsOtelPluginBlockStepsIntegrationTest extends BaseIntegrationT
         assertEquals(DEFAULT_SPAN_COUNT + 1, exportedSpans().size()); // + the span of the step
     }
 
+    @Test
+    public void testBlockSpanEndsEvenIfTheStepIsRemovedFromTheSettingWhileItRuns() throws Exception {
+        configureBlockSteps("withEnv");
+        String pipeline = """
+                node() { stage('ze-stage') { withEnv(['A=b']) { clearBlockStepsTestStep(); %s } } }
+                """.formatted(SHELL);
+
+        runPipeline(pipeline, Result.SUCCESS);
+
+        Tree<SpanDataWrapper> spans = getBuildTrace();
+        checkChainOfSpansUpToRunPhase(
+                spans, "ze-shell", "withEnv", "Stage: ze-stage", ExtendedJenkinsAttributes.AGENT_UI);
+        assertEquals(StatusCode.OK, onlySpan("withEnv").getStatus().getStatusCode());
+        assertEquals("", JenkinsOpenTelemetryPluginConfiguration.get().getBlockSteps());
+    }
+
+    @Test
+    public void testHandlerThatThrowsDoesNotFailTheBuildNorTheSpan() throws Exception {
+        configureBlockSteps("withEnv");
+        String pipeline = """
+                node() { stage('ze-stage') { withEnv(['A=b']) { %s } } }
+                """.formatted(SHELL);
+
+        runPipeline(pipeline, Result.SUCCESS);
+
+        Tree<SpanDataWrapper> spans = getBuildTrace();
+        checkChainOfSpansUpToRunPhase(
+                spans, "ze-shell", "withEnv", "Stage: ze-stage", ExtendedJenkinsAttributes.AGENT_UI);
+        SpanData withEnv = onlySpan("withEnv");
+        assertEquals(StatusCode.OK, withEnv.getStatus().getStatusCode());
+        assertEquals(1L, withEnv.getAttributes().get(ENV_COUNT));
+    }
+
+    /** Throws in every callback. */
+    @TestExtension("testHandlerThatThrowsDoesNotFailTheBuildNorTheSpan")
+    public static class ThrowingBlockStepHandler implements BlockStepHandler {
+        @Override
+        public boolean canHandle(String functionName) {
+            return "withEnv".equals(functionName);
+        }
+
+        @Override
+        public void onBlockStepStart(Span blockSpan, StepStartNode outerStartNode, WorkflowRun run) {
+            throw new IllegalStateException("forced failure at the start");
+        }
+
+        @Override
+        public Optional<BodySpan> bodySpan(StepStartNode outerStartNode, StepStartNode bodyStartNode) {
+            throw new IllegalStateException("forced failure at the body span");
+        }
+
+        @Override
+        public void onBlockBodyStart(
+                Span blockSpan, StepStartNode outerStartNode, StepStartNode bodyStartNode, WorkflowRun run) {
+            throw new IllegalStateException("forced failure at the body start");
+        }
+
+        @Override
+        public void onBlockBodyEnd(StepEndNode bodyEndNode, FlowNode nextNode, WorkflowRun run) {
+            throw new IllegalStateException("forced failure at the body end");
+        }
+
+        @Override
+        public void onBlockStepEnd(Span blockSpan, StepEndNode outerEndNode, FlowNode nextNode, WorkflowRun run) {
+            throw new IllegalStateException("forced failure at the end");
+        }
+    }
+
     // --- helpers ---------------------------------------------------------------------------------------------
 
     /** Spans of a build with a stage, an agent and one sh, before block steps existed. Set from the first run. */
@@ -579,7 +650,8 @@ public class JenkinsOtelPluginBlockStepsIntegrationTest extends BaseIntegrationT
                 protected Void run() throws Exception {
                     FlowNode node = getContext().get(FlowNode.class);
                     for (FlowNode block : node.getEnclosingBlocks()) {
-                        block.getActions(FlowNodeMonitoringAction.class)
+                        block.getActions(FlowNodeMonitoringAction.class).stream()
+                                .filter(action -> "withEnv".equals(action.getSpanName()))
                                 .forEach(FlowNodeMonitoringAction::purgeSpanAndCloseAssociatedScopes);
                     }
                     return null;
@@ -602,6 +674,44 @@ public class JenkinsOtelPluginBlockStepsIntegrationTest extends BaseIntegrationT
             @Override
             public String getDisplayName() {
                 return "forgetBlockSpansTestStep";
+            }
+        }
+    }
+
+    /** Empties the "block steps" setting while the build runs. */
+    public static class ClearBlockStepsTestStep extends Step {
+        @DataBoundConstructor
+        public ClearBlockStepsTestStep() {}
+
+        @Override
+        public StepExecution start(StepContext context) {
+            return new SynchronousStepExecution<Void>(context) {
+                @Serial
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                protected Void run() {
+                    JenkinsOpenTelemetryPluginConfiguration.get().setBlockSteps("");
+                    return null;
+                }
+            };
+        }
+
+        @TestExtension
+        public static class DescriptorImpl extends StepDescriptor {
+            @Override
+            public Set<? extends Class<?>> getRequiredContext() {
+                return Set.of();
+            }
+
+            @Override
+            public String getFunctionName() {
+                return "clearBlockStepsTestStep";
+            }
+
+            @Override
+            public String getDisplayName() {
+                return "clearBlockStepsTestStep";
             }
         }
     }

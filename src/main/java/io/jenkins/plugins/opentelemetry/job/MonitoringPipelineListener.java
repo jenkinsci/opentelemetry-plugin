@@ -9,6 +9,7 @@ import static com.google.common.base.Verify.verifyNotNull;
 
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.MustBeClosed;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
@@ -22,7 +23,9 @@ import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryAttributesAction;
 import io.jenkins.plugins.opentelemetry.OtelUtils;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.job.action.FlowNodeMonitoringAction;
 import io.jenkins.plugins.opentelemetry.job.jenkins.AbstractPipelineListener;
+import io.jenkins.plugins.opentelemetry.job.step.BlockStepHandler;
 import io.jenkins.plugins.opentelemetry.job.step.SetSpanAttributesStep;
 import io.jenkins.plugins.opentelemetry.job.step.SpanAttribute;
 import io.jenkins.plugins.opentelemetry.job.step.StepHandler;
@@ -48,7 +51,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -61,6 +67,7 @@ import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
 import org.jenkinsci.plugins.workflow.actions.ErrorAction;
+import org.jenkinsci.plugins.workflow.actions.TimingAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
@@ -80,9 +87,16 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         implements StepListener, OpenTelemetryLifecycleListener {
     private static final Logger LOGGER = Logger.getLogger(MonitoringPipelineListener.class.getName());
 
+    /** Steps that the plugin gives a span in its own way: a name listed in "block steps" is ignored for them. */
+    private static final Set<String> STEPS_WITH_THEIR_OWN_SPAN = Set.of("node", "stage", "parallel", "withNewSpan");
+
+    /** The names of a comma-separated setting, parsed once for the value of the setting that they come from. */
+    private record ParsedStepNames(@Nullable String source, Set<String> names) {}
+
     private OtelTraceService otelTraceService;
     private Tracer tracer;
-    private Set<String> ignoredSteps;
+    private volatile ParsedStepNames ignoredSteps = new ParsedStepNames(null, Set.of());
+    private volatile ParsedStepNames blockSteps = new ParsedStepNames(null, Set.of());
     private List<StepHandler> stepHandlers;
     private SemConvStability semConvStability;
 
@@ -101,8 +115,6 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
 
         final JenkinsOpenTelemetryPluginConfiguration jenkinsOpenTelemetryPluginConfiguration =
                 JenkinsOpenTelemetryPluginConfiguration.get();
-        this.ignoredSteps = new HashSet<>(Arrays.asList(
-                jenkinsOpenTelemetryPluginConfiguration.getIgnoredSteps().split(",")));
         this.statusUnsetCausesOfInterruption =
                 new HashSet<>(jenkinsOpenTelemetryPluginConfiguration.getStatusUnsetCausesOfInterruption());
         this.semConvStability = jenkinsOpenTelemetryPluginConfiguration.getSemConvStability();
@@ -352,7 +364,7 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         boolean ignoreStep = SetSpanAttributesStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
                 || WithSpanAttributeStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
                 || WithSpanAttributesStep.DescriptorImpl.FUNCTION_NAME.equals(stepFunctionName)
-                || this.ignoredSteps.contains(stepFunctionName);
+                || getIgnoredStepNames().contains(stepFunctionName);
         LOGGER.log(Level.FINER, () -> "isIgnoreStep(" + stepDescriptor + "): " + ignoreStep);
         return ignoreStep;
     }
@@ -456,6 +468,30 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
     }
 
     private void endCurrentSpan(FlowNode node, WorkflowRun run, GenericStatus status) {
+        endCurrentSpan(node, run, status, -1);
+    }
+
+    /**
+     * Ends a span that the "block steps" setting adds: the span of a block step, or of an invocation of its body. The
+     * span ends at the time of the end node (it may be ended later, when the next node arrives). Every such span ends
+     * here, so no handler can skip the rule.
+     */
+    private void endBlockStepSpan(@NonNull StepEndNode endNode, @NonNull WorkflowRun run, GenericStatus status) {
+        endCurrentSpan(endNode, run, status, TimingAction.getStartTime(endNode));
+    }
+
+    /**
+     * Ends the span of the start node of the given end node, or of the given atomic node, with its status and error.
+     * Meant to be called when the next node after the end node has arrived, because the error of a failed body is
+     * added to the end node after the node is created.
+     *
+     * @param node          the end node, or the atomic node, whose span ends
+     * @param run           the run of the node
+     * @param status        the status of the chunk of the node, or {@code null} to take it from the error of the node
+     * @param endTimeMillis end time of the span in milliseconds since the epoch, for example the time of the end
+     *                      node ({@link TimingAction#getStartTime(FlowNode)}). Zero or less: now.
+     */
+    private void endCurrentSpan(FlowNode node, WorkflowRun run, GenericStatus status, long endTimeMillis) {
         try (Scope ignored = setupContext(run, node)) {
             verifyNotNull(ignored, "%s - No span found for node %s", run, node);
 
@@ -514,7 +550,11 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
                 }
             }
 
-            span.end();
+            if (endTimeMillis > 0) {
+                span.end(endTimeMillis, TimeUnit.MILLISECONDS);
+            } else {
+                span.end();
+            }
             LOGGER.log(
                     Level.FINE,
                     () -> run.getFullDisplayName() + " - < " + node.getDisplayFunctionName() + " - end "
@@ -603,6 +643,265 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
         StepStartNode nodeStartNode = node.getStartNode();
         GenericStatus nodeStatus = StatusAndTiming.computeChunkStatus2(run, null, nodeStartNode, node, nextNode);
         endCurrentSpan(node, run, nodeStatus);
+    }
+
+    @Override
+    public void onStartBlockStep(@NonNull StepStartNode stepStartNode, @NonNull WorkflowRun run) {
+        StepDescriptor descriptor = stepStartNode.getDescriptor();
+        if (!isTracedBlockStep(descriptor)) {
+            return;
+        }
+        String functionName = descriptor.getFunctionName();
+        try (Scope ignored = setupContext(run, stepStartNode)) {
+            verifyNotNull(ignored, "%s - No span found for node %s", run, stepStartNode);
+            String stepType = getStepType(stepStartNode, descriptor, functionName);
+            String stepName = getStepName(stepStartNode, functionName);
+            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin =
+                    JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, stepStartNode);
+
+            SpanBuilder spanBuilder = getTracer()
+                    .spanBuilder(functionName)
+                    .setParent(Context.current())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, stepStartNode.getId())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+            if (semConvStability.emitLegacyCicdSemConv()) {
+                spanBuilder
+                        .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, stepType)
+                        .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_NAME, stepName);
+            }
+            if (semConvStability.emitOtelCicdSemConv()) {
+                spanBuilder
+                        .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_TASK_RUN_ID, stepStartNode.getId())
+                        .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_TASK_TYPE, stepType)
+                        .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_TASK_NAME, stepName);
+            }
+            Span blockSpan = spanBuilder.startSpan();
+            LOGGER.log(
+                    Level.FINE,
+                    () -> run.getFullDisplayName() + " - > " + functionName + " - begin "
+                            + OtelUtils.toDebugString(blockSpan));
+            getTracerService().putSpan(run, blockSpan, stepStartNode);
+            callBlockStepHandlers(
+                    functionName,
+                    "onBlockStepStart",
+                    handler -> handler.onBlockStepStart(blockSpan, stepStartNode, run));
+        }
+    }
+
+    @Override
+    public void onEndBlockStep(
+            @NonNull StepEndNode stepEndNode, @CheckForNull FlowNode nextNode, @NonNull WorkflowRun run) {
+        StepStartNode stepStartNode = stepEndNode.getStartNode();
+        StepDescriptor descriptor = stepStartNode.getDescriptor();
+        // Not decided by the settings: a step that was removed from them while its block ran still ends its span.
+        Span blockSpan = findLiveSpan(stepStartNode);
+        if (descriptor == null
+                || STEPS_WITH_THEIR_OWN_SPAN.contains(descriptor.getFunctionName())
+                || blockSpan == null) {
+            // No block span (the step has none, or the controller restarted): the span of the enclosing block must
+            // not be ended in its place.
+            LOGGER.log(
+                    Level.FINE,
+                    () -> run.getFullDisplayName() + " - no live span for the end of "
+                            + stepStartNode.getDisplayName());
+            return;
+        }
+        String functionName = descriptor.getFunctionName();
+        callBlockStepHandlers(
+                functionName,
+                "onBlockStepEnd",
+                handler -> handler.onBlockStepEnd(blockSpan, stepEndNode, nextNode, run));
+        GenericStatus status = StatusAndTiming.computeChunkStatus2(run, null, stepStartNode, stepEndNode, nextNode);
+        endBlockStepSpan(stepEndNode, run, status);
+    }
+
+    @Override
+    public void onEndBlockStepWithoutEndNode(
+            @NonNull StepStartNode stepStartNode, @NonNull FlowNode nextNode, @NonNull WorkflowRun run) {
+        StepDescriptor descriptor = stepStartNode.getDescriptor();
+        LiveSpan liveSpan = findLiveSpanOfNode(stepStartNode);
+        if (descriptor == null
+                || STEPS_WITH_THEIR_OWN_SPAN.contains(descriptor.getFunctionName())
+                || liveSpan == null) {
+            return;
+        }
+        LOGGER.log(
+                Level.FINE,
+                () -> run.getFullDisplayName() + " - " + descriptor.getFunctionName()
+                        + " completed without an end node, ending its span");
+        liveSpan.span().setStatus(StatusCode.OK);
+        liveSpan.span().end(TimingAction.getStartTime(nextNode), TimeUnit.MILLISECONDS);
+        liveSpan.action().purgeSpanAndCloseAssociatedScopes();
+    }
+
+    @Override
+    public void onStartBlockBody(@NonNull StepStartNode bodyStartNode, @NonNull WorkflowRun run) {
+        LiveBlock block = findLiveBlock(bodyStartNode);
+        if (block == null) {
+            return;
+        }
+        StepStartNode outerStartNode = block.outerStartNode();
+        Span blockSpan = block.span();
+        String functionName = block.functionName();
+        for (BlockStepHandler handler : BlockStepHandler.all()) {
+            if (!handler.canHandle(functionName)) {
+                continue;
+            }
+            Optional<BlockStepHandler.BodySpan> bodySpan;
+            try {
+                bodySpan = handler.bodySpan(outerStartNode, bodyStartNode);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `bodySpan` on " + handler);
+                continue;
+            }
+            if (bodySpan.isPresent()) {
+                startBodySpan(bodySpan.get(), blockSpan, bodyStartNode, run);
+                // One span per invocation of the body
+                break;
+            }
+        }
+        callBlockStepHandlers(
+                functionName,
+                "onBlockBodyStart",
+                handler -> handler.onBlockBodyStart(blockSpan, outerStartNode, bodyStartNode, run));
+    }
+
+    private void startBodySpan(
+            BlockStepHandler.BodySpan bodySpan, Span blockSpan, StepStartNode bodyStartNode, WorkflowRun run) {
+        Span span = getTracer()
+                .spanBuilder(bodySpan.name())
+                .setParent(Context.current().with(blockSpan))
+                .setAllAttributes(bodySpan.attributes())
+                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, bodyStartNode.getId())
+                .startSpan();
+        LOGGER.log(
+                Level.FINE,
+                () -> run.getFullDisplayName() + " - > " + bodySpan.name() + " - begin "
+                        + OtelUtils.toDebugString(span));
+        getTracerService().putSpan(run, span, bodyStartNode);
+    }
+
+    @Override
+    public void onEndBlockBody(
+            @NonNull StepEndNode bodyEndNode, @CheckForNull FlowNode nextNode, @NonNull WorkflowRun run) {
+        StepStartNode bodyStartNode = bodyEndNode.getStartNode();
+        LiveBlock block = findLiveBlock(bodyStartNode);
+        if (block == null) {
+            return;
+        }
+        callBlockStepHandlers(
+                block.functionName(), "onBlockBodyEnd", handler -> handler.onBlockBodyEnd(bodyEndNode, nextNode, run));
+        // No span for this invocation (none asked for, or lost in a restart): the span of the step must not end here
+        if (findLiveSpan(bodyStartNode) != null) {
+            endBlockStepSpan(bodyEndNode, run, null);
+        }
+    }
+
+    /** A handler that throws must not stop the span from ending, nor the other handlers. */
+    private void callBlockStepHandlers(String functionName, String callback, Consumer<BlockStepHandler> call) {
+        for (BlockStepHandler handler : BlockStepHandler.all()) {
+            if (!handler.canHandle(functionName)) {
+                continue;
+            }
+            try {
+                call.accept(handler);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `" + callback + "` on " + handler);
+            }
+        }
+    }
+
+    /** A block step whose span has not ended. */
+    private record LiveBlock(StepStartNode outerStartNode, String functionName, Span span) {}
+
+    /** A span on a flow node that has not ended, with the action that holds it. */
+    private record LiveSpan(FlowNodeMonitoringAction action, Span span) {}
+
+    /**
+     * The body callbacks run for the body of every block step, listed or not, so this does not walk the enclosing
+     * blocks: the innermost enclosing block of a body start node is the outer start node of its step, and it is
+     * found by its id.
+     *
+     * @return the block that the body start node belongs to, if its block span has not ended, else {@code null}. Like
+     *         the end of the block, the body callbacks follow the span, not the settings of the moment.
+     */
+    @CheckForNull
+    private static LiveBlock findLiveBlock(@NonNull StepStartNode bodyStartNode) {
+        StepDescriptor descriptor = bodyStartNode.getDescriptor();
+        if (descriptor == null || STEPS_WITH_THEIR_OWN_SPAN.contains(descriptor.getFunctionName())) {
+            return null;
+        }
+        FlowNode enclosing;
+        try {
+            String enclosingId = bodyStartNode.getEnclosingId();
+            enclosing =
+                    enclosingId == null ? null : bodyStartNode.getExecution().getNode(enclosingId);
+        } catch (IOException e) {
+            LOGGER.log(Level.FINE, e, () -> "Cannot read the block of " + bodyStartNode.getDisplayName());
+            return null;
+        }
+        if (enclosing instanceof StepStartNode outerStartNode && descriptor.equals(outerStartNode.getDescriptor())) {
+            Span span = findLiveSpan(outerStartNode);
+            return span == null ? null : new LiveBlock(outerStartNode, descriptor.getFunctionName(), span);
+        }
+        return null;
+    }
+
+    /** @return the last span put on this node that has not ended, or {@code null} */
+    @CheckForNull
+    private static Span findLiveSpan(@NonNull FlowNode node) {
+        LiveSpan liveSpan = findLiveSpanOfNode(node);
+        return liveSpan == null ? null : liveSpan.span();
+    }
+
+    /** @return the last span put on this node that has not ended, with its action, or {@code null} */
+    @CheckForNull
+    private static LiveSpan findLiveSpanOfNode(@NonNull FlowNode node) {
+        List<FlowNodeMonitoringAction> actions = node.getActions(FlowNodeMonitoringAction.class);
+        for (int i = actions.size() - 1; i >= 0; i--) {
+            FlowNodeMonitoringAction action = actions.get(i);
+            Span span = action.getSpan();
+            if (!action.hasEnded() && span != null) {
+                return new LiveSpan(action, span);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * A block step gets a span if its name is in the "block steps" setting, it is not in the "ignored steps"
+     * setting, and the plugin does not already handle it ({@code node}, {@code stage}, {@code parallel},
+     * {@code withNewSpan}, and the steps that set span attributes).
+     */
+    private boolean isTracedBlockStep(@Nullable StepDescriptor descriptor) {
+        if (descriptor == null || isIgnoredStep(descriptor)) {
+            return false;
+        }
+        String functionName = descriptor.getFunctionName();
+        return !STEPS_WITH_THEIR_OWN_SPAN.contains(functionName)
+                && getBlockStepNames().contains(functionName);
+    }
+
+    private Set<String> getIgnoredStepNames() {
+        ignoredSteps = refresh(
+                ignoredSteps,
+                Objects.toString(JenkinsOpenTelemetryPluginConfiguration.get().getIgnoredSteps(), ""));
+        return ignoredSteps.names();
+    }
+
+    private Set<String> getBlockStepNames() {
+        blockSteps = refresh(
+                blockSteps, JenkinsOpenTelemetryPluginConfiguration.get().getBlockSteps());
+        return blockSteps.names();
+    }
+
+    /** The settings are read at each use so that a change applies to the next step without a restart. */
+    private static ParsedStepNames refresh(ParsedStepNames parsed, String commaSeparatedNames) {
+        if (Objects.equals(parsed.source(), commaSeparatedNames)) {
+            return parsed;
+        }
+        return new ParsedStepNames(commaSeparatedNames, Set.copyOf(Arrays.asList(commaSeparatedNames.split(","))));
     }
 
     @Override
