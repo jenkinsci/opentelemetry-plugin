@@ -41,6 +41,8 @@ import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.AtomNode;
+import org.jenkinsci.plugins.workflow.graph.BlockEndNode;
+import org.jenkinsci.plugins.workflow.graph.BlockStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graph.GraphLookupView;
 import org.jenkinsci.plugins.workflow.graphanalysis.ForkScanner;
@@ -85,8 +87,30 @@ public class OtelTraceService {
 
     @NonNull
     public Span getSpan(@NonNull Run<?, ?> run, FlowNode flowNode) {
-        Iterable<FlowNode> ancestors = getAncestors(flowNode);
-        for (FlowNode currentFlowNode : ancestors) {
+        return firstNotEndedSpan(run, getAncestors(flowNode));
+    }
+
+    /**
+     * Returns the span that the code of the pipeline program runs in when the program is at this node: the span of the
+     * innermost block that the program is in and that has a span that has not ended, else the span of the run phase.
+     * The program is in the block that a block start node starts, and in the blocks that enclose an atomic step or a
+     * block end node: unlike {@link #getSpan(Run, FlowNode)}, never in the span of an atomic step, which has started
+     * once the program is at its node, nor in the span of a block that has ended.
+     */
+    @NonNull
+    public Span getProgramSpan(@NonNull Run<?, ?> run, @NonNull FlowNode flowNode) {
+        if (flowNode instanceof BlockEndNode<?> blockEndNode) {
+            return firstNotEndedSpan(run, blockEndNode.getStartNode().getEnclosingBlocks());
+        } else if (flowNode instanceof BlockStartNode) {
+            return firstNotEndedSpan(run, getAncestors(flowNode));
+        } else {
+            return firstNotEndedSpan(run, flowNode.getEnclosingBlocks());
+        }
+    }
+
+    @NonNull
+    private Span firstNotEndedSpan(@NonNull Run<?, ?> run, @NonNull Iterable<? extends FlowNode> flowNodes) {
+        for (FlowNode currentFlowNode : flowNodes) {
             Optional<Span> span = ImmutableList.copyOf(currentFlowNode.getActions(FlowNodeMonitoringAction.class))
                     .reverse() // from last to first
                     .stream()

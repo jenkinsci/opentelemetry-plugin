@@ -280,55 +280,56 @@ public class MonitoringPipelineListener extends AbstractPipelineListener
                             + "'");
             return;
         }
-        Scope encapsulatingNodeScope = setupContext(run, node);
+        // The scopes close before this listener returns: the CPS VM thread runs other builds' steps afterward. The
+        // step's span is current while the step starts through StepStartContextListener.
+        try (Scope encapsulatingNodeScope = setupContext(run, node)) {
+            verifyNotNull(encapsulatingNodeScope, "%s - No span found for node %s", run, node);
 
-        verifyNotNull(encapsulatingNodeScope, "%s - No span found for node %s", run, node);
+            String principal =
+                    Objects.toString(node.getExecution().getAuthentication2().getPrincipal(), "#null#");
 
-        String principal =
-                Objects.toString(node.getExecution().getAuthentication2().getPrincipal(), "#null#");
+            StepHandler stepHandler = getStepHandlers().stream()
+                    .filter(sh -> sh.canCreateSpanBuilder(node, run))
+                    .findFirst()
+                    .orElseThrow((Supplier<RuntimeException>) () -> new IllegalStateException(
+                            "No StepHandler found for node " + node.getClass() + " - " + node + " on " + run));
+            SpanBuilder spanBuilder = stepHandler.createSpanBuilder(node, run, getTracer());
 
-        StepHandler stepHandler = getStepHandlers().stream()
-                .filter(sh -> sh.canCreateSpanBuilder(node, run))
-                .findFirst()
-                .orElseThrow((Supplier<RuntimeException>) () -> new IllegalStateException(
-                        "No StepHandler found for node " + node.getClass() + " - " + node + " on " + run));
-        SpanBuilder spanBuilder = stepHandler.createSpanBuilder(node, run, getTracer());
+            String stepType = getStepType(node, node.getDescriptor(), ExtendedJenkinsAttributes.STEP_NAME);
+            JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin =
+                    JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, node);
 
-        String stepType = getStepType(node, node.getDescriptor(), ExtendedJenkinsAttributes.STEP_NAME);
-        JenkinsOpenTelemetryPluginConfiguration.StepPlugin stepPlugin =
-                JenkinsOpenTelemetryPluginConfiguration.get().findStepPluginOrDefault(stepType, node);
-
-        spanBuilder
-                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, node.getId())
-                .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_USER, principal)
-                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
-                .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
-        if (semConvStability.emitLegacyCicdSemConv()) {
             spanBuilder
-                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, stepType)
-                    .setAttribute(
-                            ExtendedJenkinsAttributes.JENKINS_STEP_NAME,
-                            getStepName(node, ExtendedJenkinsAttributes.STEP_NAME));
-        }
-        if (semConvStability.emitOtelCicdSemConv()) {
-            spanBuilder
-                    .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_TASK_RUN_ID, node.getId())
-                    .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_TASK_TYPE, stepType)
-                    .setAttribute(
-                            CicdIncubatingAttributes.CICD_PIPELINE_TASK_NAME,
-                            getStepName(node, ExtendedJenkinsAttributes.STEP_NAME));
-        }
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_ID, node.getId())
+                    .setAttribute(ExtendedJenkinsAttributes.CI_PIPELINE_RUN_USER, principal)
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_NAME, stepPlugin.getName())
+                    .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_PLUGIN_VERSION, stepPlugin.getVersion());
+            if (semConvStability.emitLegacyCicdSemConv()) {
+                spanBuilder
+                        .setAttribute(ExtendedJenkinsAttributes.JENKINS_STEP_TYPE, stepType)
+                        .setAttribute(
+                                ExtendedJenkinsAttributes.JENKINS_STEP_NAME,
+                                getStepName(node, ExtendedJenkinsAttributes.STEP_NAME));
+            }
+            if (semConvStability.emitOtelCicdSemConv()) {
+                spanBuilder
+                        .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_TASK_RUN_ID, node.getId())
+                        .setAttribute(CicdIncubatingAttributes.CICD_PIPELINE_TASK_TYPE, stepType)
+                        .setAttribute(
+                                CicdIncubatingAttributes.CICD_PIPELINE_TASK_NAME,
+                                getStepName(node, ExtendedJenkinsAttributes.STEP_NAME));
+            }
 
-        Span atomicStepSpan = spanBuilder.startSpan();
-        LOGGER.log(
-                Level.FINE,
-                () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin "
-                        + OtelUtils.toDebugString(atomicStepSpan));
-        Scope atomicStepScope = atomicStepSpan.makeCurrent();
-        stepHandler.afterSpanCreated(node, run);
-
-        getTracerService()
-                .putSpanAndScopes(run, atomicStepSpan, node, Arrays.asList(encapsulatingNodeScope, atomicStepScope));
+            Span atomicStepSpan = spanBuilder.startSpan();
+            LOGGER.log(
+                    Level.FINE,
+                    () -> run.getFullDisplayName() + " - > " + node.getDisplayFunctionName() + " - begin "
+                            + OtelUtils.toDebugString(atomicStepSpan));
+            try (Scope atomicStepScope = atomicStepSpan.makeCurrent()) {
+                stepHandler.afterSpanCreated(node, run);
+            }
+            getTracerService().putSpan(run, atomicStepSpan, node);
+        }
     }
 
     @Override
