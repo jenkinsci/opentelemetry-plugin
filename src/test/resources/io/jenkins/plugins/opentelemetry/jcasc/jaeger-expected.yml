@@ -8,6 +8,7 @@ observabilityBackends:
 - jaeger:
     jaegerBaseUrl: "http://my-jaeger.acme.com:16686"
     name: "My Jaeger"
+recordCompileSpan: false
 semConvStability: JENKINS
 serviceName: "my-jenkins"
 serviceNamespace: "ci"

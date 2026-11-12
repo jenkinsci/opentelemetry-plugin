@@ -10,6 +10,7 @@ observabilityBackends:
 - elastic:
     kibanaBaseUrl: "https://my-deployment.es.example.com"
     name: "My Elastic"
+recordCompileSpan: false
 semConvStability: JENKINS
 serviceName: "my-jenkins"
 serviceNamespace: "ci"

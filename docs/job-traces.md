@@ -130,6 +130,19 @@ Attributes reported on the root span of Jenkins job and pipeline builds:
 | ci.pipeline.parameter.name       | Name of the parameters | String[] |
 | ci.pipeline.parameter.value      | Value of the parameters. "Sensitive" values are redacted | String[] |
 
+### Pipeline compile span
+
+When "Record the pipeline compile span" is enabled in the plugin configuration, each pipeline build has a
+`Pipeline: compile` span under `Phase: Run`. It covers the time between the creation of the build's flow execution and
+its first step: the Groovy compilation and the loading of the `@Library` libraries. The span ends with status `ERROR`
+if the build fails during that time. A build that is resumed after a controller restart has no compile span, and a
+library loaded by the `library` step is not part of it (the step has its own span).
+
+| Attribute                           | Description  | Type |
+|-------------------------------------|--------------|------|
+| jenkins.pipeline.libraries          | Libraries loaded for the pipeline, as `name@version`. Also set on the `Phase: Run` span. Empty if there are none. | String[] |
+| jenkins.pipeline.libraries.count    | Number of libraries in `jenkins.pipeline.libraries` | Long |
+
 ### Pipeline step spans
 
 Attributes reported on the span of pipeline steps:

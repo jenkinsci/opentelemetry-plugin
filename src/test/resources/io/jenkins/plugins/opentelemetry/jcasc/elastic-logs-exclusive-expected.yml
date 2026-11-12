@@ -8,6 +8,7 @@ observabilityBackends:
     elasticLogsBackend: "elasticLogsBackendWithoutJenkinsVisualization"
     kibanaBaseUrl: "https://kibana.es.example.com"
     name: "My Elastic"
+recordCompileSpan: false
 semConvStability: JENKINS
 serviceName: "jenkins"
 serviceNamespace: "jenkins"
