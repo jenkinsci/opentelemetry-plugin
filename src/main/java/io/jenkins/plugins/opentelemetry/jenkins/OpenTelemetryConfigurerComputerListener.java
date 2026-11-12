@@ -17,6 +17,8 @@ import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.opentelemetry.AgentExportClassesPreloader;
+import io.jenkins.plugins.opentelemetry.opentelemetry.AgentLogsFlushHooks;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
@@ -108,12 +110,14 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
             // Don't let a slow or unresponsive agent connection block the agent from coming online.
             // Blocking here indefinitely gave RTT-sensitive channels time to be closed by unrelated
             // idle-timeout or network disturbances, which then kicked the agent off entirely.
-            future.cancel(true);
+            // Don't cancel the configuration: cancel(true) interrupts the agent thread while it loads the SDK classes
+            // from the controller, the remote class loading fails without retry and the agent keeps a noop SDK.
             logger.log(
                     Level.WARNING,
                     () -> "Timed out after " + preOnlineTimeout
                             + " waiting for OpenTelemetry configuration of computer/build-agent '"
-                            + computer.getName() + "', the agent will still be allowed online");
+                            + computer.getName()
+                            + "', the agent will still be allowed online and the configuration continues in the background");
         }
     }
 
@@ -236,6 +240,13 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
                     Level.FINE,
                     () -> "Updating OpenTelemetry configuration for computer/build-agent '" + computer.getName()
                             + "'...");
+            if (AgentExportClassesPreloader.ENABLED && channel instanceof Channel remotingChannel) {
+                // the jars must reach the agent before its SDK is configured and its first log record is emitted
+                return Computer.threadPoolForRemoting.submit(() -> {
+                    AgentExportClassesPreloader.preload(remotingChannel);
+                    return remotingChannel.call(callable);
+                });
+            }
             return channel.callAsync(callable);
         } catch (IOException | RuntimeException e) {
             logger.log(
@@ -267,6 +278,8 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
                     () -> "Configure OpenTelemetry SDK with properties: " + otelSdkConfigurationProperties
                             + ", resource:" + otelSdkResource);
             GlobalOpenTelemetrySdk.configure(otelSdkConfigurationProperties, otelSdkResource, true);
+            // the agent SDK has no shutdown hook, flush the queued log records before the agent goes away
+            AgentLogsFlushHooks.installOnAgent();
             return null;
         }
     }

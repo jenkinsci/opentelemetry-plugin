@@ -8,19 +8,25 @@ package io.jenkins.plugins.opentelemetry.opentelemetry;
 import com.google.common.annotations.VisibleForTesting;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.common.ComponentLoader;
 import io.opentelemetry.instrumentation.resources.ContainerResourceProvider;
 import io.opentelemetry.instrumentation.resources.HostIdResourceProvider;
 import io.opentelemetry.instrumentation.resources.HostResourceProvider;
 import io.opentelemetry.instrumentation.resources.OsResourceProvider;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
+import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.resources.ResourceBuilder;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -68,6 +74,38 @@ public final class GlobalOpenTelemetrySdk {
     @Nonnull
     public static io.opentelemetry.api.logs.Logger getOtelLogger() {
         return otelLogger;
+    }
+
+    /**
+     * Export the log records queued in the batch processor, waiting at most {@code timeoutMillis}.
+     *
+     * @return {@code true} if the flush completed successfully within the timeout or if there is no SDK to flush
+     */
+    public static boolean forceFlushLogs(long timeoutMillis) {
+        @SuppressWarnings("deprecation")
+        OpenTelemetry openTelemetryImpl = get().getImplementation();
+        if (openTelemetryImpl instanceof OpenTelemetrySdk openTelemetrySdk) {
+            CompletableResultCode result =
+                    openTelemetrySdk.getSdkLoggerProvider().forceFlush().join(timeoutMillis, TimeUnit.MILLISECONDS);
+            if (!result.isSuccess()) {
+                logger.log(
+                        Level.FINE,
+                        () -> "Failure to flush log records within " + timeoutMillis + "ms"
+                                + (result.isDone() ? "" : " (timeout)"));
+            }
+            return result.isSuccess();
+        }
+        return true;
+    }
+
+    /**
+     * The classes that {@link #forceFlushLogs(long)} only uses once the SDK is configured. On a Jenkins agent, the
+     * class loader of this plugin resolves them with a remote call to the controller, which fails once the remoting
+     * channel is closed. Referencing them here, while the channel is open, resolves them for this class loader even
+     * if the SDK of the agent is not configured yet.
+     */
+    public static List<Class<?>> flushPathClasses() {
+        return List.of(OpenTelemetrySdk.class, SdkLoggerProvider.class, CompletableResultCode.class);
     }
 
     /**
