@@ -160,6 +160,23 @@ Attributes reported on the span of pipeline steps:
 | jenkins.computer.name            | Name of the agent | String |
 
 
+### Credential use events
+
+When "Record credential use as span events" is on, each use of a credential by a build adds a
+`jenkins.credentials.use` event to the span that is current where the credential is used. If no span of the build is
+current, the event goes to the span of the build phase that is open (`Phase: Run` while the pipeline runs). A
+credential gets one event per span, and a span gets at most 32 events. The uses by an agent launch or by a job (branch
+scan, lightweight checkout) are not recorded, as they have no build.
+
+| Attribute                 | Description                                                                            | Type   |
+|---------------------------|----------------------------------------------------------------------------------------|--------|
+| jenkins.credentials.type  | Display name of the type of the credential, for example `Username with password`      | String |
+| jenkins.credentials.class | Java class of the credential                                                           | String |
+| jenkins.credentials.scope | Scope of the credential, for example `GLOBAL`                                          | String |
+| jenkins.credentials.id    | ID of the credential, only if "Include credential IDs in credential use events" is on | String |
+
+The event never has the secret, the user name or the description of a credential.
+
 ### Environment variables for trace context propagation and integrations
 
 The trace context is exposed as environment variables in shell/bat/powershell steps to ease integration with third party tools.

@@ -121,7 +121,7 @@ public class JenkinsOtelPluginCredentialEventsSettingsIntegrationTest extends Ba
                 }
                 """;
         jenkinsRule.createOnlineSlave();
-        final String jobName = "test-block-steps-default-off-" + jobNameSuffix.incrementAndGet();
+        final String jobName = "test-credential-events-default-off-" + jobNameSuffix.incrementAndGet();
         WorkflowJob pipeline = jenkinsRule.createProject(WorkflowJob.class, jobName);
         pipeline.setDefinition(new CpsFlowDefinition(pipelineScript, true));
 

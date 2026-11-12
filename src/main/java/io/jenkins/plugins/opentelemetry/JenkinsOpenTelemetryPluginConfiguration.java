@@ -402,7 +402,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
-     * @return true if each use of a credential by a build is recorded as an event on the span of the step that used it
+     * @return true if each use of a credential by a build is recorded as an event on a span of the build
      */
     public boolean isRecordCredentialUseEvents() {
         return recordCredentialUseEvents;
