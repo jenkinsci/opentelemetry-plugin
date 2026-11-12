@@ -117,12 +117,12 @@ Advanced configuration settings
 ## Opt-in pipeline settings
 
 These settings are in the plugin configuration (Manage Jenkins > System > OpenTelemetry), under the advanced settings.
-They are off by default: nothing changes for a build unless they are set.
+They are off or empty by default: nothing changes for a build unless they are set.
 
-| Setting (JCasC key)                                                      | Default | Description                                                                                                                                      |
-|--------------------------------------------------------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Record credential use as span events (`recordCredentialUseEvents`)       | `false` | Add a `jenkins.credentials.use` event for each credential that a build uses. See [credential use events](job-traces.md#credential-use-events) |
-| Include credential IDs in credential use events (`includeCredentialIds`) | `false` | Add the credential ID to the credential use events. Off by default because an ID can carry a name                                              |
+| Setting (JCasC key) | Default | Description |
+|---------------------|---------|-------------|
+| Record credential use as span events (`recordCredentialUseEvents`) | `false` | Add a `jenkins.credentials.use` event for each credential that a build uses. See [credential use events](job-traces.md#credential-use-events) |
+| Include credential IDs (`includeCredentialIds`) | `false` | Add the IDs of credentials to the spans and span events that record their use. Off by default because an ID can carry a name |
 
 Example:
 

@@ -173,7 +173,7 @@ scan, lightweight checkout) are not recorded, as they have no build.
 | jenkins.credentials.type  | Display name of the type of the credential, for example `Username with password`      | String |
 | jenkins.credentials.class | Java class of the credential                                                           | String |
 | jenkins.credentials.scope | Scope of the credential, for example `GLOBAL`                                          | String |
-| jenkins.credentials.id    | ID of the credential, only if "Include credential IDs in credential use events" is on | String |
+| jenkins.credentials.id    | ID of the credential, only if "Include credential IDs" is on | String |
 
 The event never has the secret, the user name or the description of a credential.
 

@@ -115,10 +115,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private boolean recordCredentialUseEvents;
 
-    private boolean includeCredentialIds;
-
     private String disabledResourceProviders =
             JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+
+    private boolean includeCredentialIds;
 
     @Inject
     private transient ReconfigurableOpenTelemetry openTelemetry;
@@ -413,19 +413,6 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.recordCredentialUseEvents = recordCredentialUseEvents;
     }
 
-    /**
-     * @return true if the credential IDs are recorded in the credential use events (which needs
-     *     {@link #isRecordCredentialUseEvents()})
-     */
-    public boolean isIncludeCredentialIds() {
-        return includeCredentialIds;
-    }
-
-    @DataBoundSetter
-    public void setIncludeCredentialIds(boolean includeCredentialIds) {
-        this.includeCredentialIds = includeCredentialIds;
-    }
-
     public List<String> getStatusUnsetCausesOfInterruption() {
         return statusUnsetCausesOfInterruption;
     }
@@ -437,6 +424,21 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setDisabledResourceProviders(String disabledResourceProviders) {
         this.disabledResourceProviders = disabledResourceProviders;
+    }
+
+    /**
+     * @return true if the IDs of credentials are added to the spans and span events that record their use
+     */
+    public boolean isIncludeCredentialIds() {
+        return includeCredentialIds;
+    }
+
+    /**
+     * @param includeCredentialIds true to add the IDs of credentials to the spans and span events that record their use
+     */
+    @DataBoundSetter
+    public void setIncludeCredentialIds(boolean includeCredentialIds) {
+        this.includeCredentialIds = includeCredentialIds;
     }
 
     public boolean isExportOtelConfigurationAsEnvironmentVariables() {
