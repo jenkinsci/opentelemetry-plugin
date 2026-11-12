@@ -7,7 +7,6 @@ package io.jenkins.plugins.opentelemetry;
 
 import static io.jenkins.plugins.casc.misc.Util.getUnclassifiedRoot;
 import static io.jenkins.plugins.casc.misc.Util.toYamlString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

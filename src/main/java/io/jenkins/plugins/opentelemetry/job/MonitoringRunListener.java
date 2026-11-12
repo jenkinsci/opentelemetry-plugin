@@ -497,6 +497,7 @@ public class MonitoringRunListener extends OtelContextAwareAbstractRunListener
 
     @Override
     public void _onCompleted(@NonNull Run<?, ?> run, @NonNull TaskListener listener) {
+        PipelineCompileSpanListener.get().onRunCompleted(run);
         String metricPipelineName = getPipelineNameForMetrics(run);
         cicdPipelineRunActiveCounter.add(
                 -1,

@@ -177,6 +177,21 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
     public static final String JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME = "Phase: Finalise";
 
     /**
+     * Groovy compilation of the pipeline and loading of its {@code @Library} libraries, between the creation of the
+     * flow execution and its first step.
+     */
+    public static final String JENKINS_PIPELINE_SPAN_COMPILE_NAME = "Pipeline: compile";
+
+    /**
+     * Libraries loaded for the pipeline, as {@code name@version}.
+     */
+    public static final AttributeKey<List<String>> JENKINS_PIPELINE_LIBRARIES =
+            AttributeKey.stringArrayKey("jenkins.pipeline.libraries");
+
+    public static final AttributeKey<Long> JENKINS_PIPELINE_LIBRARIES_COUNT =
+            AttributeKey.longKey("jenkins.pipeline.libraries.count");
+
+    /**
      * A machine or a container which is connected to the Jenkins coordinator and capable of executing
      * Pipelines or Jobs.
      */

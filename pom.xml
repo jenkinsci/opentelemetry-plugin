@@ -215,6 +215,11 @@
       <artifactId>oss-symbols-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>pipeline-groovy-lib</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-extension-trace-propagators</artifactId>
     </dependency>
