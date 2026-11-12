@@ -44,6 +44,12 @@
                 <f:entry field="ignoredSteps" title="Steps to be ignored (comma-separated)" description="e.g. 'dir,echo,println'">
                     <f:textbox />
                 </f:entry>
+                <f:entry field="recordCredentialUseEvents" title="Record credential use as span events">
+                    <f:checkbox />
+                </f:entry>
+                <f:entry field="includeCredentialIds" title="Include credential IDs in credential use events">
+                    <f:checkbox />
+                </f:entry>
                 <f:entry title="Configuration properties" field="configurationProperties" description="Additional OpenTelemetry SDK configuration properties.">
                     <f:textarea />
                 </f:entry>

@@ -113,6 +113,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
+    private boolean recordCredentialUseEvents;
+
+    private boolean includeCredentialIds;
+
     private String disabledResourceProviders =
             JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
 
@@ -395,6 +399,31 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setIgnoredSteps(String ignoredSteps) {
         this.ignoredSteps = ignoredSteps;
+    }
+
+    /**
+     * @return true if each use of a credential by a build is recorded as an event on the span of the step that used it
+     */
+    public boolean isRecordCredentialUseEvents() {
+        return recordCredentialUseEvents;
+    }
+
+    @DataBoundSetter
+    public void setRecordCredentialUseEvents(boolean recordCredentialUseEvents) {
+        this.recordCredentialUseEvents = recordCredentialUseEvents;
+    }
+
+    /**
+     * @return true if the credential IDs are recorded in the credential use events (which needs
+     *     {@link #isRecordCredentialUseEvents()})
+     */
+    public boolean isIncludeCredentialIds() {
+        return includeCredentialIds;
+    }
+
+    @DataBoundSetter
+    public void setIncludeCredentialIds(boolean includeCredentialIds) {
+        this.includeCredentialIds = includeCredentialIds;
     }
 
     public List<String> getStatusUnsetCausesOfInterruption() {
