@@ -113,6 +113,8 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
+    private boolean recordCompileSpan;
+
     private String disabledResourceProviders =
             JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
 
@@ -395,6 +397,18 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setIgnoredSteps(String ignoredSteps) {
         this.ignoredSteps = ignoredSteps;
+    }
+
+    /**
+     * @return true if the time before the first step (compilation and library loading) is recorded as a span
+     */
+    public boolean isRecordCompileSpan() {
+        return recordCompileSpan;
+    }
+
+    @DataBoundSetter
+    public void setRecordCompileSpan(boolean recordCompileSpan) {
+        this.recordCompileSpan = recordCompileSpan;
     }
 
     public List<String> getStatusUnsetCausesOfInterruption() {
