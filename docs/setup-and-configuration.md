@@ -121,7 +121,7 @@ They are off or empty by default: nothing changes for a build unless they are se
 
 | Setting (JCasC key) | Default | Description |
 |---------------------|---------|-------------|
-| Block steps to trace (`blockSteps`) | empty | Comma-separated function names of block steps that get a span of their own, for example `timeout,withEnv,withCredentials`. See [block step spans](job-traces.md#block-step-spans) |
+| Block steps to trace (`blockSteps`) | empty | Comma-separated function names of block steps that get a span of their own, for example `lock,retry,timeout,withCredentials`. See [block step spans](job-traces.md#block-step-spans) |
 | Include credential IDs (`includeCredentialIds`) | `false` | Add the IDs of credentials to the spans and span events that record their use. Off by default because an ID can carry a name |
 
 Example:
@@ -129,7 +129,7 @@ Example:
 ```yaml
 unclassified:
   openTelemetry:
-    blockSteps: "timeout,withEnv,withCredentials"
+    blockSteps: "lock,retry,timeout,withCredentials"
     includeCredentialIds: false
 ```
 

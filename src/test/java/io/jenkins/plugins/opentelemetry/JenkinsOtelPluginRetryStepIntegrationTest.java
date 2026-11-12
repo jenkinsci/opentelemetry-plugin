@@ -6,10 +6,13 @@
 package io.jenkins.plugins.opentelemetry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.rutledgepaulv.prune.Tree;
 import hudson.model.Result;
+import io.jenkins.plugins.opentelemetry.job.step.RetryBlockStepHandler;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.StatusCode;
@@ -20,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.jenkinsci.plugins.workflow.actions.BodyInvocationAction;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.graphanalysis.DepthFirstScanner;
@@ -36,8 +40,7 @@ public class JenkinsOtelPluginRetryStepIntegrationTest extends BaseIntegrationTe
     private static final AttributeKey<Long> ATTEMPT = AttributeKey.longKey("jenkins.pipeline.step.retry.attempt");
     private static final AttributeKey<Long> MAX_ATTEMPTS =
             AttributeKey.longKey("jenkins.pipeline.step.retry.max_attempts");
-    private static final String ATTEMPT_LIMIT_PROPERTY =
-            "io.jenkins.plugins.opentelemetry.job.step.RetryBlockStepHandler.attemptLimit";
+    private static final String ATTEMPT_LIMIT_PROPERTY = RetryBlockStepHandler.class.getName() + ".attemptLimit";
 
     /** Number of spans of a pipeline with one stage on an agent and one shell step. */
     private static final int ONE_SHELL_SPAN_COUNT = 8;
@@ -179,6 +182,35 @@ public class JenkinsOtelPluginRetryStepIntegrationTest extends BaseIntegrationTe
         }
         assertEquals(8L, retry.getAttributes().get(MAX_ATTEMPTS));
         assertEquals(StatusCode.OK, retry.getStatus().getStatusCode());
+    }
+
+    @Test
+    public void testAttemptNumberIsReadFromTheGraphOfAReloadedBuild() throws Exception {
+        WorkflowRun built = runPipeline(retryPipeline(3, 3), Result.SUCCESS);
+        WorkflowJob job = built.getParent();
+        // Drop the build from memory: the build and its flow graph are read again from disk, with no state of the
+        // plugin, as after a controller restart
+        job.getLazyBuildMixIn()._getRuns().purgeCache();
+        WorkflowRun reloaded = job.getBuildByNumber(built.getNumber());
+        assertNotSame(built, reloaded);
+
+        List<StepStartNode> bodies = retryBodyStartNodes(reloaded);
+        assertEquals(3, bodies.size());
+        StepStartNode outerStart = (StepStartNode) bodies.get(0).getParents().get(0);
+        for (int i = 0; i < bodies.size(); i++) {
+            StepStartNode body = bodies.get(i);
+            assertEquals(i + 1, RetryBlockStepHandler.attemptNumber(body, 100), "attempt of node " + body.getId());
+            // The innermost enclosing block of every attempt is the outer start node of the step
+            assertEquals(outerStart, body.getEnclosingBlocks().get(0), "enclosing block of node " + body.getId());
+            if (i > 0) {
+                // The parent of a later attempt's body start node is the previous attempt's body end node
+                StepEndNode previousEnd =
+                        assertInstanceOf(StepEndNode.class, body.getParents().get(0), "parent of node " + body.getId());
+                assertEquals(bodies.get(i - 1), previousEnd.getStartNode());
+            }
+        }
+        assertEquals(-1, RetryBlockStepHandler.attemptNumber(bodies.get(2), 2), "attempt beyond the limit");
+        assertEquals(2, RetryBlockStepHandler.attemptNumber(bodies.get(1), 2), "attempt at the limit");
     }
 
     private void configureBlockSteps(String blockSteps) {
