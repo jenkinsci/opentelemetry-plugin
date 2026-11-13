@@ -161,6 +161,24 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
     public static final AttributeKey<String> JENKINS_CREDENTIALS_ID = AttributeKey.stringKey("jenkins.credentials.id");
 
     /**
+     * Span event for each credential that a build uses, with the type, class and scope of the credential, and its ID
+     * ({@link #JENKINS_CREDENTIALS_ID}) only if the setting for IDs is on.
+     */
+    public static final String EVENT_NAME_CREDENTIALS_USE = "jenkins.credentials.use";
+
+    /** Display name of the type of a used credential, for example "Username with password". */
+    public static final AttributeKey<String> JENKINS_CREDENTIALS_TYPE =
+            AttributeKey.stringKey("jenkins.credentials.type");
+
+    /** Java class of a used credential. */
+    public static final AttributeKey<String> JENKINS_CREDENTIALS_CLASS =
+            AttributeKey.stringKey("jenkins.credentials.class");
+
+    /** Scope of a used credential, for example {@code GLOBAL}. */
+    public static final AttributeKey<String> JENKINS_CREDENTIALS_SCOPE =
+            AttributeKey.stringKey("jenkins.credentials.scope");
+
+    /**
      * As {@link Jenkins.MasterComputer#getName()} returns "", choose another name
      *
      * @see Jenkins.MasterComputer#getName()

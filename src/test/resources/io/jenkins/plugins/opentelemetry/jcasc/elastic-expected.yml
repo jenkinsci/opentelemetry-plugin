@@ -6,10 +6,12 @@ disabledResourceProviders: "io.opentelemetry.instrumentation.resources.ProcessRe
 endpoint: "https://my-deployment.otel.example.com"
 exportOtelConfigurationAsEnvironmentVariables: false
 ignoredSteps: "dir,echo,isUnix,pwd,properties"
+includeCredentialIds: false
 observabilityBackends:
 - elastic:
     kibanaBaseUrl: "https://my-deployment.es.example.com"
     name: "My Elastic"
+recordCredentialUseEvents: false
 semConvStability: JENKINS
 serviceName: "my-jenkins"
 serviceNamespace: "ci"

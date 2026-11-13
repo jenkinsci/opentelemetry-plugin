@@ -113,8 +113,12 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
+    private boolean recordCredentialUseEvents;
+
     private String disabledResourceProviders =
             JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+
+    private boolean includeCredentialIds;
 
     @Inject
     private transient ReconfigurableOpenTelemetry openTelemetry;
@@ -397,6 +401,18 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.ignoredSteps = ignoredSteps;
     }
 
+    /**
+     * @return true if each use of a credential by a build is recorded as an event on a span of the build
+     */
+    public boolean isRecordCredentialUseEvents() {
+        return recordCredentialUseEvents;
+    }
+
+    @DataBoundSetter
+    public void setRecordCredentialUseEvents(boolean recordCredentialUseEvents) {
+        this.recordCredentialUseEvents = recordCredentialUseEvents;
+    }
+
     public List<String> getStatusUnsetCausesOfInterruption() {
         return statusUnsetCausesOfInterruption;
     }
@@ -408,6 +424,21 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setDisabledResourceProviders(String disabledResourceProviders) {
         this.disabledResourceProviders = disabledResourceProviders;
+    }
+
+    /**
+     * @return true if the IDs of credentials are added to the spans and span events that record their use
+     */
+    public boolean isIncludeCredentialIds() {
+        return includeCredentialIds;
+    }
+
+    /**
+     * @param includeCredentialIds true to add the IDs of credentials to the spans and span events that record their use
+     */
+    @DataBoundSetter
+    public void setIncludeCredentialIds(boolean includeCredentialIds) {
+        this.includeCredentialIds = includeCredentialIds;
     }
 
     public boolean isExportOtelConfigurationAsEnvironmentVariables() {
