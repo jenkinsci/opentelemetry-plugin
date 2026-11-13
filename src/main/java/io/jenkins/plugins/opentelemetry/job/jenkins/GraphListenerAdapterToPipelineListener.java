@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.jenkinsci.plugins.workflow.actions.ArgumentsAction;
+import org.jenkinsci.plugins.workflow.actions.BodyInvocationAction;
 import org.jenkinsci.plugins.workflow.actions.ThreadNameAction;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode;
 import org.jenkinsci.plugins.workflow.cps.nodes.StepEndNode;
@@ -79,10 +80,35 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
                 fireOnAfterEndParallelStepBranch(endParallelBranchNode, persistentAction.getThreadName(), node, run);
             } else if (isBeforeEndWithNewSpanStep(previousNode)) {
                 fireOnAfterEndWithNewSpanStep((StepEndNode) previousNode, node, run);
+            } else if (previousNode instanceof StepEndNode endNode) {
+                if (endNode.getAction(BodyInvocationAction.class) == null) {
+                    fireOnAfterEndBlockStep(endNode, node, run);
+                } else {
+                    fireOnAfterEndBlockBody(endNode, node, run);
+                }
+            } else if (previousNode instanceof StepStartNode startNode
+                    && isNextAfterStepWithoutEndNode(startNode, node)) {
+                fireOnEndBlockStepWithoutEndNode(startNode, node, run);
             } else {
                 log(Level.FINE, () -> "Ignore previous node " + PipelineNodeUtil.getDetailedDebugString(previousNode));
             }
         }
+    }
+
+    /**
+     * A block step that is alive is followed by its body start node (with a {@code BodyInvocationAction}), or by its own
+     * end node. Any other node that follows its start node means that the step completed without a body and without an
+     * end node (for example a {@code lock} skipped with {@code skipIfLocked}): the next step, or the end of an
+     * enclosing block.
+     */
+    private static boolean isNextAfterStepWithoutEndNode(StepStartNode startNode, FlowNode next) {
+        if (startNode.getAction(BodyInvocationAction.class) != null) {
+            return false;
+        }
+        if (next instanceof StepStartNode && next.getAction(BodyInvocationAction.class) != null) {
+            return false;
+        }
+        return !(next instanceof StepEndNode endNode && startNode.equals(endNode.getStartNode()));
     }
 
     private void processCurrentNode(FlowNode node, WorkflowRun run) {
@@ -113,6 +139,12 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             fireOnAfterStartNodeStep((StepStartNode) node, label, run);
         } else if (PipelineNodeUtil.isStartWithNewSpan(node)) {
             fireOnBeforeWithNewSpanStep((StepStartNode) node, run);
+        } else if (node instanceof StepStartNode startNode) {
+            if (startNode.getAction(BodyInvocationAction.class) == null) {
+                fireOnBeforeStartBlockStep(startNode, run);
+            } else {
+                fireOnStartBlockBody(startNode, run);
+            }
         } else {
             logFlowNodeDetails(node, run);
         }
@@ -327,6 +359,65 @@ public class GraphListenerAdapterToPipelineListener implements StepListener, Gra
             } catch (RuntimeException e) {
                 LOGGER.log(
                         Level.WARNING, e, () -> "Exception invoking `onBeforeStartStageStep` on " + pipelineListener);
+            }
+        }
+    }
+
+    public void fireOnBeforeStartBlockStep(@NonNull StepStartNode node, @NonNull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(() -> "onStartBlockStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onStartBlockStep(node, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onStartBlockStep` on " + pipelineListener);
+            }
+        }
+    }
+
+    public void fireOnAfterEndBlockStep(@NonNull StepEndNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(() -> "onEndBlockStep(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onEndBlockStep(node, nextNode, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onEndBlockStep` on " + pipelineListener);
+            }
+        }
+    }
+
+    public void fireOnEndBlockStepWithoutEndNode(
+            @NonNull StepStartNode node, @NonNull FlowNode nextNode, @NonNull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(() -> "onEndBlockStepWithoutEndNode(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onEndBlockStepWithoutEndNode(node, nextNode, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(
+                        Level.WARNING,
+                        e,
+                        () -> "Exception invoking `onEndBlockStepWithoutEndNode` on " + pipelineListener);
+            }
+        }
+    }
+
+    public void fireOnStartBlockBody(@NonNull StepStartNode node, @NonNull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(() -> "onStartBlockBody(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onStartBlockBody(node, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onStartBlockBody` on " + pipelineListener);
+            }
+        }
+    }
+
+    public void fireOnAfterEndBlockBody(@NonNull StepEndNode node, FlowNode nextNode, @NonNull WorkflowRun run) {
+        for (PipelineListener pipelineListener : PipelineListener.all()) {
+            log(() -> "onEndBlockBody(" + node.getDisplayName() + "): " + pipelineListener.toString());
+            try {
+                pipelineListener.onEndBlockBody(node, nextNode, run);
+            } catch (RuntimeException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Exception invoking `onEndBlockBody` on " + pipelineListener);
             }
         }
     }

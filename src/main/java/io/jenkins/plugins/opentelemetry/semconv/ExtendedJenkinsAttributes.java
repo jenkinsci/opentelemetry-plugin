@@ -160,6 +160,31 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
 
     public static final AttributeKey<String> JENKINS_CREDENTIALS_ID = AttributeKey.stringKey("jenkins.credentials.id");
 
+    /** Attributes of the spans of the block steps listed in the "block steps" setting. */
+    public static final AttributeKey<Long> JENKINS_STEP_TIMEOUT_TIME =
+            AttributeKey.longKey("jenkins.pipeline.step.timeout.time");
+
+    public static final AttributeKey<String> JENKINS_STEP_TIMEOUT_UNIT =
+            AttributeKey.stringKey("jenkins.pipeline.step.timeout.unit");
+
+    public static final AttributeKey<Boolean> JENKINS_STEP_TIMEOUT_ACTIVITY =
+            AttributeKey.booleanKey("jenkins.pipeline.step.timeout.activity");
+
+    public static final AttributeKey<Boolean> JENKINS_STEP_TIMEOUT_EXCEEDED =
+            AttributeKey.booleanKey("jenkins.pipeline.step.timeout.exceeded");
+
+    /** Kinds of the bindings of a {@code withCredentials} step, for example {@code string}. Never variable names. */
+    public static final AttributeKey<List<String>> JENKINS_STEP_CREDENTIALS_BINDING_TYPES =
+            AttributeKey.stringArrayKey("jenkins.pipeline.step.credentials.binding_types");
+
+    /** Credential IDs of a {@code withCredentials} step, only if the setting for IDs is on. */
+    public static final AttributeKey<List<String>> JENKINS_STEP_CREDENTIALS_IDS =
+            AttributeKey.stringArrayKey("jenkins.pipeline.step.credentials.ids");
+
+    /** Number of overrides of a {@code withEnv} step. Never the names or the values. */
+    public static final AttributeKey<Long> JENKINS_STEP_ENV_COUNT =
+            AttributeKey.longKey("jenkins.pipeline.step.env.count");
+
     /**
      * As {@link Jenkins.MasterComputer#getName()} returns "", choose another name
      *
