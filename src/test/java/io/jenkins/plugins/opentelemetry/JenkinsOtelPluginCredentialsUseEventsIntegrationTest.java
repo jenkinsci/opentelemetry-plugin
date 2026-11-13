@@ -249,8 +249,8 @@ public class JenkinsOtelPluginCredentialsUseEventsIntegrationTest extends BaseIn
         sampleRepo.git("add", "file");
         sampleRepo.git("commit", "--all", "--message=init");
 
-        WorkflowRun run = runPipeline(
-                "stage('ze-stage') {\n  node() {\n    git credentialsId: 'ze-cred', url: '" + sampleRepo + "'\n  }\n}");
+        WorkflowRun run = runPipeline("stage('ze-stage') {\n  node() {\n    git credentialsId: 'ze-cred', url: $/"
+                + sampleRepo + "/$\n  }\n}");
 
         List<Event> events = credentialEvents();
         assertEquals(1, events.size(), events::toString);
