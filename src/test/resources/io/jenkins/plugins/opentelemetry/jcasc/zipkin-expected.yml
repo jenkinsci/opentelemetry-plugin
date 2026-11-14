@@ -8,5 +8,6 @@ observabilityBackends:
 - zipkin:
     name: "My Zipkin"
     zipkinBaseUrl: "http://my-zipkin.acme.com:9411/"
+semConvStability: JENKINS
 serviceName: "my-jenkins"
 serviceNamespace: "ci"

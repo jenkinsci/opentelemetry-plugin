@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>6.2138.v03274d462c13</version>
+    <version>6.2152.ve00a_731c3ce9</version>
     <relativePath />
   </parent>
   <groupId>io.jenkins.plugins</groupId>
@@ -209,6 +209,10 @@
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>opentelemetry-api</artifactId>
       <version>${jenkins-opentelemetry.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>oss-symbols-api</artifactId>
     </dependency>
     <dependency>
       <groupId>io.opentelemetry</groupId>

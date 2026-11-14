@@ -6,3 +6,4 @@ unclassified:
           name: "My Elastic"
           kibanaBaseUrl: "https://kibana.es.example.com"
           elasticLogsBackend: "elasticLogsBackendWithoutJenkinsVisualization"
+    semConvStability: JENKINS

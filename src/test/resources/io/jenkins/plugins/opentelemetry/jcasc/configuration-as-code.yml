@@ -17,5 +17,6 @@ unclassified:
       - zipkin:
           name: "My Zipkin"
           zipkinBaseUrl: "http://localhost:9411/"
+    semConvStability: JENKINS
     serviceName: "my-jenkins"
     serviceNamespace: "ci"

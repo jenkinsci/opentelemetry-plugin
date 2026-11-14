@@ -19,3 +19,4 @@ unclassified:
             elasticLogsBackendWithJenkinsVisualization:
               elasticsearchCredentialsId: "elasticsearch-logs-creds"
               elasticsearchUrl: "https://es.es.example.com"
+    semConvStability: JENKINS

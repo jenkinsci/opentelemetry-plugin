@@ -7,5 +7,6 @@ unclassified:
       - jaeger:
           jaegerBaseUrl: "http://my-jaeger.acme.com:16686"
           name: "My Jaeger"
+    semConvStability: JENKINS
     serviceName: "my-jenkins"
     serviceNamespace: "ci"

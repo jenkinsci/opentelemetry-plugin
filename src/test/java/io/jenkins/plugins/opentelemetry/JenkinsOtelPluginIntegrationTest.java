@@ -39,10 +39,8 @@ import org.hamcrest.MatcherAssert;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.jenkinsci.plugins.workflow.steps.EchoStep;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.jvnet.hudson.test.recipes.WithPlugin;
 
 /**
  * Note usage of `def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}}` is inspired by
@@ -53,9 +51,6 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
 
     @Test
     public void testSimplePipeline() throws Exception {
-        assumeFalse(SystemUtils.IS_OS_WINDOWS);
-        // BEFORE
-
         String pipelineScript = "def xsh(cmd) {if (isUnix()) {sh cmd} else {bat cmd}};\n" + "node() {\n"
                 + "    stage('ze-stage1') {\n"
                 + "       xsh (label: 'shell-1', script: 'echo ze-echo-1') \n"
@@ -89,35 +84,25 @@ public class JenkinsOtelPluginIntegrationTest extends BaseIntegrationTest {
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
         MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(10L));
 
-        // FIXME REPAIR METRICS TESTS
-        /*
-        // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
-        jenkinsControllerOpenTelemetry.getOpenTelemetrySdk().getSdkMeterProvider().forceFlush();
-        Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
+        forceMetricsExport();
+        Map<String, MetricData> exportedMetrics = InMemoryMetricExporterUtils.getLastExportedMetricByMetricName(
+                InMemoryMetricExporterProvider.LAST_CREATED_INSTANCE.getFinishedMetricItems());
         dumpMetrics(exportedMetrics);
-        MetricData runStartedCounterData = exportedMetrics.get(JenkinsSemanticMetrics.CI_PIPELINE_RUN_STARTED);
+        MetricData runStartedCounterData = exportedMetrics.get(JenkinsMetrics.CI_PIPELINE_RUN_STARTED);
         MatcherAssert.assertThat(runStartedCounterData, CoreMatchers.notNullValue());
         // TODO TEST METRICS WITH PROPER RESET BETWEEN TESTS
         MatcherAssert.assertThat(runStartedCounterData.getType(), CoreMatchers.is(MetricDataType.LONG_SUM));
-        Collection<LongPointData> metricPoints = runStartedCounterData.getLongSumData().getPoints();
-        //MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.is(1L));
+        Collection<LongPointData> metricPoints =
+                runStartedCounterData.getLongSumData().getPoints();
+        MatcherAssert.assertThat(Iterables.getLast(metricPoints).getValue(), CoreMatchers.is(1L));
         // we dont test the metric CI_PIPELINE_RUN_COMPLETED because there is flakiness on it
-        */
     }
 
-    @Disabled("Lifecycle problem, the InMemoryMetricExporter gets reset too much and the disk usage is not captured")
     @Test
-    @WithPlugin("cloudbees-disk-usage-simple")
     public void testMetricsWithDiskUsagePlugin() throws Exception {
         LOGGER.log(Level.INFO, "testMetricsWithDiskUsagePlugin...");
-        // WORKAROUND because we don't know how to force the IntervalMetricReader to collect metrics
-        Thread.sleep(100); // FIXME
-        LOGGER.log(Level.INFO, "slept");
 
-        jenkinsControllerOpenTelemetry
-                .getOpenTelemetrySdk()
-                .getSdkMeterProvider()
-                .forceFlush();
+        forceMetricsExport();
 
         LOGGER.log(
                 Level.INFO,

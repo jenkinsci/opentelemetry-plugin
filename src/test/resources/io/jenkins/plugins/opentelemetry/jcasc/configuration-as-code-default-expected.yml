@@ -7,5 +7,6 @@ observabilityBackends:
 - customObservabilityBackend:
     metricsVisualizationUrlTemplate: "foo"
     traceVisualisationUrlTemplate: "http://example.com"
+semConvStability: JENKINS
 serviceName: "jenkins"
 serviceNamespace: "jenkins"

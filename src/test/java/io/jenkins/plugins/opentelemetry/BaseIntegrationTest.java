@@ -160,6 +160,12 @@ public class BaseIntegrationTest {
         // GlobalOpenTelemetry.resetForTest();
     }
 
+    // We explicitly trigger a metric scrape.
+    // This only works if no scrape is currently in progress (use high scrape period for tests).
+    protected void forceMetricsExport() {
+        jenkinsControllerOpenTelemetry.getMetricReader().forceFlush();
+    }
+
     protected void checkChainOfSpans(Tree<SpanDataWrapper> spanTree, String... expectedSpanNames) {
         final List<String> expectedSpanNamesList = Arrays.asList(expectedSpanNames);
         final Iterator<String> expectedSpanNamesIt = expectedSpanNamesList.iterator();

@@ -36,8 +36,6 @@ public abstract class ObservabilityBackend
         implements Describable<ObservabilityBackend>, ExtensionPoint, TemplateBindingsProvider {
     private static final Logger LOGGER = Logger.getLogger(ObservabilityBackend.class.getName());
 
-    public static final String ICONS_PREFIX = "plugin/opentelemetry/images/svgs/";
-
     private String name;
 
     @CheckForNull

@@ -94,7 +94,7 @@ public class OpenTelemetryConfiguration {
         if (TESTING_INMEMORY_MODE) {
             properties.putIfAbsent(OTEL_TRACES_EXPORTER.asProperty(), "testing");
             properties.putIfAbsent(OTEL_METRICS_EXPORTER.asProperty(), "testing");
-            properties.putIfAbsent(OTEL_METRIC_EXPORT_INTERVAL.asProperty(), "10ms");
+            properties.putIfAbsent(OTEL_METRIC_EXPORT_INTERVAL.asProperty(), "300000ms");
             properties.putIfAbsent(OTEL_LOGS_EXPORTER.asProperty(), "none");
         } else if (this.getEndpoint().isPresent()) {
             this.getEndpoint()

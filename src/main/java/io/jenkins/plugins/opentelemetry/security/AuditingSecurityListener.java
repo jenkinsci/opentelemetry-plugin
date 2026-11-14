@@ -105,9 +105,11 @@ public class AuditingSecurityListener extends SecurityListener implements OpenTe
                 .put(UserIncubatingAttributes.USER_ID, user.map(User::getId).orElse(username));
 
         // Stapler.getCurrentRequest() returns null, it's not yet initialized
+        // SecurityContextHolder.getContext() never returns null, but its authentication can be null if this
+        // listener is invoked (directly or by a SecurityRealm) before the SecurityContextHolder is populated
         SecurityContext securityContext = SecurityContextHolder.getContext();
-        if (securityContext != null) {
-            Authentication authentication = securityContext.getAuthentication();
+        Authentication authentication = securityContext.getAuthentication();
+        if (authentication != null) {
             Object details = authentication.getDetails();
             if (details instanceof WebAuthenticationDetails webAuthenticationDetails) {
                 attributesBuilder.put(ClientAttributes.CLIENT_ADDRESS, webAuthenticationDetails.getRemoteAddress());

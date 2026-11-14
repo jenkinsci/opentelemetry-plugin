@@ -5,3 +5,4 @@ unclassified:
       - customObservabilityBackend:
           metricsVisualizationUrlTemplate: "foo"
           traceVisualisationUrlTemplate: "http://example.com"
+    semConvStability: JENKINS

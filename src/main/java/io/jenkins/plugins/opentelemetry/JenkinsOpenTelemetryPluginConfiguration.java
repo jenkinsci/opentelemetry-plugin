@@ -6,7 +6,6 @@
 package io.jenkins.plugins.opentelemetry;
 
 import static io.jenkins.plugins.opentelemetry.OtelUtils.UNKNOWN;
-import static io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend.ICONS_PREFIX;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_CERTIFICATE;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_ENDPOINT;
 import static io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey.OTEL_EXPORTER_OTLP_INSECURE;
@@ -30,6 +29,7 @@ import hudson.model.Describable;
 import hudson.model.Descriptor;
 import hudson.tasks.BuildStep;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.authentication.NoAuthentication;
 import io.jenkins.plugins.opentelemetry.authentication.OtlpAuthentication;
@@ -37,6 +37,7 @@ import io.jenkins.plugins.opentelemetry.backend.ObservabilityBackend;
 import io.jenkins.plugins.opentelemetry.backend.custom.CustomLogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.job.log.LogStorageRetriever;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
+import io.jenkins.plugins.opentelemetry.semconv.SemConvStability;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.internal.DefaultConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
@@ -70,8 +71,6 @@ import jenkins.model.Jenkins;
 import jenkins.model.JenkinsLocationConfiguration;
 import net.jcip.annotations.Immutable;
 import net.sf.json.JSONObject;
-import org.jenkins.ui.icon.Icon;
-import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.structs.SymbolLookup;
 import org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable;
@@ -85,6 +84,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 @Extension(
         ordinal =
@@ -93,15 +93,6 @@ import org.kohsuke.stapler.StaplerRequest2;
 @Symbol("openTelemetry")
 public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration {
     private static final Logger LOGGER = Logger.getLogger(JenkinsOpenTelemetryPluginConfiguration.class.getName());
-
-    static {
-        IconSet.icons.addIcon(new Icon("icon-otel icon-sm", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_SMALL_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel icon-md", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_MEDIUM_STYLE));
-        IconSet.icons.addIcon(new Icon("icon-otel icon-lg", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_LARGE_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel icon-xlg", ICONS_PREFIX + "opentelemetry.svg", Icon.ICON_XLARGE_STYLE));
-    }
 
     /**
      * OTLP endpoint prefixed by "http://" or "https://"
@@ -140,6 +131,10 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private String serviceNamespace;
 
+    private SemConvStability semConvStability;
+
+    private transient SemConvStability configuredSemConvStability;
+
     /**
      * Interruption causes that should mark the span as error because they are external interruptions.
      * <p>
@@ -167,6 +162,7 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @Override
     public void load() {
         super.load();
+        configuredSemConvStability = semConvStability;
         if (currentOpenTelemetryConfiguration != null) {
             // After reloading the XML configuration, we need to reconfigure the OTel SDK, otherwise the fields here
             // may be out of sync with the SDK. We only do this as long as `configureOpenTelemetrySdk` has run at least
@@ -587,6 +583,26 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     @NonNull
+    public SemConvStability getSemConvStability() {
+        return semConvStability == null ? SemConvStability.JENKINS : semConvStability;
+    }
+
+    @DataBoundSetter
+    public void setSemConvStability(@NonNull SemConvStability semConvStability) {
+        this.semConvStability = semConvStability;
+    }
+
+    @RequirePOST
+    public ListBoxModel doFillSemConvStabilityItems() {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+        ListBoxModel items = new ListBoxModel();
+        for (SemConvStability semConvStability : SemConvStability.values()) {
+            items.add(semConvStability.getDisplayName(), semConvStability.name());
+        }
+        return items;
+    }
+
+    @NonNull
     public Resource getResource() {
         if (this.openTelemetry == null) {
             return Resource.empty();
@@ -736,13 +752,38 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     }
 
     /**
+     * Warn to restart Jenkins if the value changed.
+     *
+     * @param value the semConvStability flag
+     * @return ok if the form input was valid
+     */
+    @RequirePOST
+    public FormValidation doCheckSemConvStability(@QueryParameter String value) {
+        if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+            return FormValidation.error("You do not have permission to configure this setting.");
+        }
+        String activeSemConvStability = (configuredSemConvStability != null
+                ? configuredSemConvStability.name()
+                : SemConvStability.JENKINS.name());
+        if (activeSemConvStability.equals(value)) {
+            return FormValidation.ok();
+        }
+        return FormValidation.warning("A restart of Jenkins is required for this value to take effect");
+    }
+
+    /**
      * Validates the period duration input.
      *
      * @param ignoredSteps the comma-separated list of steps to ignore.
      * @return ok if the form input was valid
      */
     public FormValidation doCheckIgnoredSteps(@QueryParameter String ignoredSteps) {
-        if (ignoredSteps.matches("[A-Za-z0-9,]*")) {
+        if (ignoredSteps == null || ignoredSteps.isEmpty()) {
+            return FormValidation.ok();
+        }
+        // matched against StepDescriptor#getFunctionName(), a Java/Groovy identifier, so '_' must be allowed
+        // (e.g. the OpenShift Client Plugin's step function name is "_OcAction")
+        if (ignoredSteps.matches("[A-Za-z0-9_,]*")) {
             return FormValidation.ok();
         }
         return FormValidation.error("Invalid format: \"%s\".", ignoredSteps);

@@ -10,8 +10,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import java.util.HashMap;
 import java.util.Map;
-import org.jenkins.ui.icon.Icon;
-import org.jenkins.ui.icon.IconSet;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -21,15 +19,6 @@ public class ZipkinBackend extends ObservabilityBackend {
     public static final String OTEL_ZIPKIN_URL = "OTEL_ZIPKIN_URL";
     public static final String DEFAULT_NAME = "Zipkin";
     private String zipkinBaseUrl;
-
-    static {
-        IconSet.icons.addIcon(new Icon("icon-otel-zipkin icon-sm", ICONS_PREFIX + "zipkin.svg", Icon.ICON_SMALL_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-zipkin icon-md", ICONS_PREFIX + "zipkin.svg", Icon.ICON_MEDIUM_STYLE));
-        IconSet.icons.addIcon(new Icon("icon-otel-zipkin icon-lg", ICONS_PREFIX + "zipkin.svg", Icon.ICON_LARGE_STYLE));
-        IconSet.icons.addIcon(
-                new Icon("icon-otel-zipkin icon-xlg", ICONS_PREFIX + "zipkin.svg", Icon.ICON_XLARGE_STYLE));
-    }
 
     @DataBoundConstructor
     public ZipkinBackend() {}
@@ -64,7 +53,7 @@ public class ZipkinBackend extends ObservabilityBackend {
     @CheckForNull
     @Override
     public String getIconPath() {
-        return "icon-otel-zipkin";
+        return "symbol-zipkin-icon-solid plugin-oss-symbols-api";
     }
 
     @CheckForNull

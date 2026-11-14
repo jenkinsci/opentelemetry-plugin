@@ -33,6 +33,11 @@
                 <f:entry title="Service namespace" field="serviceNamespace" description="e.g. 'ci', a namespace for service name. Aka 'OTEL_SERVICE_NAMESPACE'">
                     <f:textbox />
                 </f:entry>
+                <f:entry title="Semantic Convention Stability" field="semConvStability"
+                         description="Choose which set of semantic conventions to use for span and metric attributes.">
+                    <j:invokeStatic var="defaultSemConv" className="io.jenkins.plugins.opentelemetry.semconv.SemConvStability" method="getDefaultValue"/>
+                    <f:select default="${defaultSemConv}"/>
+                </f:entry>
                 <f:entry field="disabledResourceProviders" title="Disabled resource providers" description="Coma separated list of class names. Aka 'OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS'">
                     <f:textbox />
                 </f:entry>

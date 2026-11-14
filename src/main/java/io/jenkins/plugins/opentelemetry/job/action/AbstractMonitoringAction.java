@@ -13,7 +13,6 @@ import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.trace.ReadWriteSpan;
-import io.opentelemetry.sdk.trace.ReadableSpan;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -108,11 +107,14 @@ public abstract class AbstractMonitoringAction implements OtelMonitoringAction {
 
     @Override
     public boolean hasEnded() {
+        // A span stops recording when it ends: for SDK spans, isRecording() is !hasEnded(). Unlike ReadableSpan, it
+        // also
+        // works for spans of another OpenTelemetry implementation, such as the OpenTelemetry Java agent, whose spans
+        // are
+        // not ReadableSpan instances. Non-recording spans (no-op tracer, span not sampled) count as ended, as before.
         return Optional.ofNullable(spanAndScopes)
                 .map(sac -> sac.span)
-                .filter(s -> s instanceof ReadableSpan)
-                .map(s -> (ReadableSpan) s)
-                .map(ReadableSpan::hasEnded)
+                .map(span -> !span.isRecording())
                 .orElse(true);
     }
 

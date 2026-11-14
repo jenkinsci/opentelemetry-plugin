@@ -14,8 +14,10 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
 import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
+import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
+import io.jenkins.plugins.opentelemetry.semconv.SemConvStability;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -34,6 +36,7 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     private Tracer tracer;
     private Meter meter;
     private ConfigProperties configProperties;
+    private SemConvStability semConvStability;
 
     @Inject
     public final void setOpenTelemetryTracerService(@NonNull OtelTraceService otelTraceService) {
@@ -50,6 +53,11 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
     @Inject
     public final void setOpenTelemetry(@NonNull ReconfigurableOpenTelemetry jenkinsControllerOpenTelemetry) {
         this.configProperties = jenkinsControllerOpenTelemetry.getConfig();
+    }
+
+    @Inject
+    public final void setSemConvStability(@NonNull JenkinsOpenTelemetryPluginConfiguration openTelemetry) {
+        this.semConvStability = openTelemetry.getSemConvStability();
     }
 
     @Override
@@ -133,5 +141,9 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
 
     protected ConfigProperties getConfigProperties() {
         return configProperties;
+    }
+
+    protected SemConvStability getSemConvStability() {
+        return semConvStability;
     }
 }
