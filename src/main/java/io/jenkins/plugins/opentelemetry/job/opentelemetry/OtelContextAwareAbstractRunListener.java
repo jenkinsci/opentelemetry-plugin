@@ -17,6 +17,7 @@ import io.jenkins.plugins.opentelemetry.JenkinsControllerOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.api.ReconfigurableOpenTelemetry;
 import io.jenkins.plugins.opentelemetry.job.OtelTraceService;
+import io.jenkins.plugins.opentelemetry.job.jenkins.CpsVmTaskContext;
 import io.jenkins.plugins.opentelemetry.semconv.SemConvStability;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -65,6 +66,9 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         Span span = getTraceService().getSpan(run);
         try (Scope scope = span.makeCurrent()) {
             this._onCompleted(run, listener);
+        } finally {
+            // the build can be in its next phase now, even if the listener failed
+            CpsVmTaskContext.followPhase(run);
         }
     }
 
@@ -75,6 +79,9 @@ public abstract class OtelContextAwareAbstractRunListener extends RunListener<Ru
         Span span = getTraceService().getSpan(run);
         try (Scope scope = span.makeCurrent()) {
             this._onFinalized(run);
+        } finally {
+            // the build can be in its next phase now, even if the listener failed
+            CpsVmTaskContext.followPhase(run);
         }
     }
 
