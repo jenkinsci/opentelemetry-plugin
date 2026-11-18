@@ -160,6 +160,49 @@ Attributes reported on the span of pipeline steps:
 | jenkins.computer.name            | Name of the agent | String |
 
 
+### Block step spans
+
+Block steps (steps with a body) have no span of their own by default: the steps of their body are children of the
+enclosing stage or agent span. List the function names of block steps in the "Block steps to trace" setting
+(`blockSteps` in JCasC, for example `lock,retry,timeout,withCredentials,withEnv`) to give each use of them a span
+named after the step, under its stage or agent. The steps of the body are children of that span. A step that is also in the ignored
+steps gets no span, and `node`, `stage`, `parallel` and `withNewSpan` keep their own spans whatever the setting says. A
+block span ends at the time of its end node. A block step that completes without an end node (`lock` with
+`skipIfLocked` does) ends its span when the next node starts. It has the step attributes of the table above
+(`jenkins.pipeline.step.id`, `.type`, `.name`, `.plugin.name`, `.plugin.version`), its status and its result.
+
+Any step with a body can be listed. These steps add attributes or spans of their own:
+
+| Step              | Span or attribute                                        | Description  | Type |
+|-------------------|--------------------------------------------------|--------------|------|
+| `timeout`         | jenkins.pipeline.step.timeout.time               | The `time` argument | Long |
+| `timeout`         | jenkins.pipeline.step.timeout.unit               | The `unit` argument, `MINUTES` if not given | String |
+| `timeout`         | jenkins.pipeline.step.timeout.activity           | The `activity` argument, `false` if not given | Boolean |
+| `timeout`         | jenkins.pipeline.step.timeout.exceeded           | True if the timeout fired | Boolean |
+| `withEnv`         | jenkins.pipeline.step.env.count                  | Number of overrides. The names and values of the variables are never recorded | Long |
+| `withCredentials` | jenkins.pipeline.step.credentials.binding_types  | Kinds of the bindings, for example `string` or `usernamePassword`. Variable names and secrets are never recorded | String[] |
+| `withCredentials` | jenkins.pipeline.step.credentials.ids            | IDs of the bound credentials, only if "Include credential IDs" is on | String[] |
+| `lock`            | jenkins.pipeline.step.lock.resource              | The `resource` argument (not the resources of `extra`) | String |
+| `lock`            | jenkins.pipeline.step.lock.label                 | The `label` argument | String |
+| `lock`            | jenkins.pipeline.step.lock.wait.duration         | Time in milliseconds that the build waited for the resource. Absent if it did not wait | Long |
+| `lock`            | `lock: wait` child span                          | The time that the build waited for the resource, created after the wait from the times recorded by the step. It has no attributes: the resource or label is on the `lock` span. A wait of less than 50 ms is not reported, as the step records a short pause even when the resource is free | Span |
+| `retry`           | jenkins.pipeline.step.retry.max_attempts         | The `count` argument | Long |
+| `retry`           | `retry: attempt N` child span                    | One span per attempt of the body, with its own status. The steps of the body are its children | Span |
+| `retry: attempt N`| jenkins.pipeline.step.retry.attempt              | Number of the attempt, from 1 | Long |
+
+The attempt number is read from the flow graph of the build, so no state is kept in memory. To bound that read,
+attempts after the 100th get no span; the Java system property
+`io.jenkins.plugins.opentelemetry.job.step.RetryBlockStepHandler.attemptLimit` changes the limit.
+
+The start time of the `lock: wait` span is a time in milliseconds recorded by the lock step, so it can be up to 1 ms
+before the start of its `lock` span. After a controller restart, a `retry` that is still running has no span and gets
+no attempt spans, and an attempt span that had already ended is exported with a parent that is not exported.
+
+When a credential of a `withCredentials` is missing or has the wrong type, its error message names the credential ID.
+Unless "Include credential IDs" is on, the ID is replaced by `<redacted>` in the status and the exception event of
+every block step span and `retry: attempt N` span, and their exception event has no stack trace. The spans of the
+stages and agents keep the message as it is.
+
 ### Environment variables for trace context propagation and integrations
 
 The trace context is exposed as environment variables in shell/bat/powershell steps to ease integration with third party tools.
