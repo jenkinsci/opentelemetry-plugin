@@ -22,9 +22,9 @@
         <p>
             <strong>Grafana</strong>
         </p>
-        <f:entry title="Tempo data source identifier" field="tempoDataSourceIdentifier"
-                 description="Identifier of the Tempo datasource in which the Jenkins pipeline build traces are stored.">
-            <f:textbox default="${descriptor.defaultTempoDataSourceIdentifier}"/>
+        <f:entry title="Tempo data source UID" field="tempoDataSourceUid"
+                 description="The unique identifier (UUID) of the Tempo datasource in Grafana.">
+            <f:textbox default="${descriptor.defaultTempoDataSourceUid}"/>
         </f:entry>
         <f:entry title="Tempo Query Type" field="tempoQueryType"
                  description="Query type passed to Tempo, used when searching for the specific trace.">
