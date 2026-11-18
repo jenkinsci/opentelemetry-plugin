@@ -18,6 +18,7 @@ observabilityBackends:
 - zipkin:
     name: "My Zipkin"
     zipkinBaseUrl: "http://localhost:9411/"
+recordCompileSpan: false
 semConvStability: JENKINS
 serviceName: "my-jenkins"
 serviceNamespace: "ci"
