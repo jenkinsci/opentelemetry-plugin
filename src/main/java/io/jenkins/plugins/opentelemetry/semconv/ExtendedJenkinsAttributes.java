@@ -89,6 +89,8 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
     public static final AttributeKey<String> CI_PIPELINE_RUN_URL = AttributeKey.stringKey("ci.pipeline.run.url");
 
     public static final AttributeKey<String> CI_PIPELINE_RUN_USER = AttributeKey.stringKey("ci.pipeline.run.user");
+    public static final AttributeKey<String> CI_PIPELINE_RUN_QUEUE_REASON =
+            AttributeKey.stringKey("ci.pipeline.run.queue.reason");
 
     public static final AttributeKey<List<String>> CI_PIPELINE_RUN_AXIS_NAMES =
             AttributeKey.stringArrayKey("ci.pipeline.axis.names");
@@ -172,6 +174,9 @@ public final class ExtendedJenkinsAttributes extends JenkinsAttributes {
      */
     public static final String CI_PIPELINE_RUN_ROOT_SPAN_NAME_PREFIX = "BUILD ";
 
+    public static final String JENKINS_JOB_SPAN_PHASE_QUEUE_WAITING_NAME = "Phase: Queue - Waiting";
+    public static final String JENKINS_JOB_SPAN_PHASE_QUEUE_BLOCKED_NAME = "Phase: Queue - Blocked";
+    public static final String JENKINS_JOB_SPAN_PHASE_QUEUE_BUILDABLE_NAME = "Phase: Queue - Buildable";
     public static final String JENKINS_JOB_SPAN_PHASE_START_NAME = "Phase: Start";
     public static final String JENKINS_JOB_SPAN_PHASE_RUN_NAME = "Phase: Run";
     public static final String JENKINS_JOB_SPAN_PHASE_FINALIZE_NAME = "Phase: Finalise";

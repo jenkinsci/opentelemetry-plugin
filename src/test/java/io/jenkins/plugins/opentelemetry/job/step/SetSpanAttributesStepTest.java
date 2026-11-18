@@ -115,6 +115,6 @@ public class SetSpanAttributesStepTest extends BaseIntegrationTest {
             MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("junit"));
         }
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
     }
 }
