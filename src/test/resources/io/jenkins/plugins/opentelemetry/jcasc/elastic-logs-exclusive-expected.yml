@@ -3,6 +3,7 @@ disabledResourceProviders: "io.opentelemetry.instrumentation.resources.ProcessRe
 endpoint: "http://otel-collector-contrib:4317"
 exportOtelConfigurationAsEnvironmentVariables: false
 ignoredSteps: "dir,echo,isUnix,pwd,properties"
+includeCredentialIds: false
 observabilityBackends:
 - elastic:
     elasticLogsBackend: "elasticLogsBackendWithoutJenkinsVisualization"

@@ -113,8 +113,13 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
 
     private String ignoredSteps = "dir,echo,isUnix,pwd,properties";
 
+    /** Function names of the block steps that get a span of their own. Empty: none. */
+    private String blockSteps = "";
+
     private String disabledResourceProviders =
             JenkinsControllerOpenTelemetry.DEFAULT_OTEL_JAVA_DISABLED_RESOURCE_PROVIDERS;
+
+    private boolean includeCredentialIds;
 
     @Inject
     private transient ReconfigurableOpenTelemetry openTelemetry;
@@ -397,6 +402,23 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
         this.ignoredSteps = ignoredSteps;
     }
 
+    /**
+     * @return the comma-separated function names of the block steps (for example {@code timeout,withEnv}) that get a span,
+     *     empty if none does. Never null, also for a configuration saved before this setting existed.
+     */
+    @NonNull
+    public String getBlockSteps() {
+        return blockSteps == null ? "" : blockSteps;
+    }
+
+    /**
+     * @param blockSteps the comma-separated function names of the block steps that get a span
+     */
+    @DataBoundSetter
+    public void setBlockSteps(String blockSteps) {
+        this.blockSteps = blockSteps;
+    }
+
     public List<String> getStatusUnsetCausesOfInterruption() {
         return statusUnsetCausesOfInterruption;
     }
@@ -408,6 +430,21 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
     @DataBoundSetter
     public void setDisabledResourceProviders(String disabledResourceProviders) {
         this.disabledResourceProviders = disabledResourceProviders;
+    }
+
+    /**
+     * @return true if the IDs of credentials are added to the spans and span events that record their use
+     */
+    public boolean isIncludeCredentialIds() {
+        return includeCredentialIds;
+    }
+
+    /**
+     * @param includeCredentialIds true to add the IDs of credentials to the spans and span events that record their use
+     */
+    @DataBoundSetter
+    public void setIncludeCredentialIds(boolean includeCredentialIds) {
+        this.includeCredentialIds = includeCredentialIds;
     }
 
     public boolean isExportOtelConfigurationAsEnvironmentVariables() {
@@ -778,15 +815,29 @@ public class JenkinsOpenTelemetryPluginConfiguration extends GlobalConfiguration
      * @return ok if the form input was valid
      */
     public FormValidation doCheckIgnoredSteps(@QueryParameter String ignoredSteps) {
-        if (ignoredSteps == null || ignoredSteps.isEmpty()) {
+        return checkStepFunctionNames(ignoredSteps);
+    }
+
+    /**
+     * Validates the list of block steps to trace, in the same way as the list of ignored steps.
+     *
+     * @param blockSteps the comma-separated list of block steps to trace.
+     * @return ok if the form input was valid
+     */
+    public FormValidation doCheckBlockSteps(@QueryParameter String blockSteps) {
+        return checkStepFunctionNames(blockSteps);
+    }
+
+    private static FormValidation checkStepFunctionNames(String stepFunctionNames) {
+        if (stepFunctionNames == null || stepFunctionNames.isEmpty()) {
             return FormValidation.ok();
         }
         // matched against StepDescriptor#getFunctionName(), a Java/Groovy identifier, so '_' must be allowed
         // (e.g. the OpenShift Client Plugin's step function name is "_OcAction")
-        if (ignoredSteps.matches("[A-Za-z0-9_,]*")) {
+        if (stepFunctionNames.matches("[A-Za-z0-9_,]*")) {
             return FormValidation.ok();
         }
-        return FormValidation.error("Invalid format: \"%s\".", ignoredSteps);
+        return FormValidation.error("Invalid format: \"%s\".", stepFunctionNames);
     }
 
     /**
