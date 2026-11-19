@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.jenkins;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
@@ -17,6 +18,8 @@ import hudson.slaves.ComputerListener;
 import io.jenkins.plugins.opentelemetry.JenkinsOpenTelemetryPluginConfiguration;
 import io.jenkins.plugins.opentelemetry.OpenTelemetryConfiguration;
 import io.jenkins.plugins.opentelemetry.api.OpenTelemetryLifecycleListener;
+import io.jenkins.plugins.opentelemetry.opentelemetry.AgentExportClassesPreloader;
+import io.jenkins.plugins.opentelemetry.opentelemetry.AgentLogsFlushHooks;
 import io.jenkins.plugins.opentelemetry.opentelemetry.GlobalOpenTelemetrySdk;
 import io.jenkins.plugins.opentelemetry.semconv.ConfigurationKey;
 import io.jenkins.plugins.opentelemetry.semconv.ExtendedJenkinsAttributes;
@@ -40,6 +43,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -61,6 +65,14 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
     final AtomicBoolean buildAgentsInstrumentationEnabled = new AtomicBoolean(false);
 
     /**
+     * Revision of the agent SDK configurations sent by this controller. A configuration can still be applied on the
+     * agent after the {@link #preOnline(Computer, Channel, FilePath, TaskListener)} timeout, so an older configuration
+     * may reach the agent after a newer one: the agent only applies a configuration whose revision is higher than the
+     * one it applied last on the channel.
+     */
+    private static final AtomicLong CONFIGURATION_REVISION = new AtomicLong();
+
+    /**
      * Default timeout applied while waiting, in {@link #preOnline(Computer, Channel, FilePath, TaskListener)}, for a
      * build agent to acknowledge its OpenTelemetry SDK configuration. If the timeout elapses, the agent is still
      * allowed to come online and a warning is logged. Matches the timeout historically used in
@@ -78,13 +90,15 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
         if (!buildAgentsInstrumentationEnabled.get()) {
             return;
         }
+        // the revision is taken before the configuration is read: a higher revision never carries an older one
+        long revision = CONFIGURATION_REVISION.incrementAndGet();
         OpenTelemetryConfiguration openTelemetryConfiguration =
                 jenkinsOpenTelemetryPluginConfiguration.toOpenTelemetryConfiguration();
         Map<String, String> otelSdkProperties = openTelemetryConfiguration.toOpenTelemetryProperties();
         Map<String, String> otelSdkResourceProperties = openTelemetryConfiguration.toOpenTelemetryResourceAsMap();
 
-        Future<Object> future =
-                configureOpenTelemetrySdkOnComputer(computer, channel, otelSdkProperties, otelSdkResourceProperties);
+        Future<Object> future = configureOpenTelemetrySdkOnComputer(
+                computer, channel, otelSdkProperties, otelSdkResourceProperties, revision);
         try {
             Object result = future.get(preOnlineTimeout.toMillis(), TimeUnit.MILLISECONDS);
             logger.log(
@@ -108,12 +122,14 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
             // Don't let a slow or unresponsive agent connection block the agent from coming online.
             // Blocking here indefinitely gave RTT-sensitive channels time to be closed by unrelated
             // idle-timeout or network disturbances, which then kicked the agent off entirely.
-            future.cancel(true);
+            // Don't cancel the configuration: cancel(true) interrupts the agent thread while it loads the SDK classes
+            // from the controller, the remote class loading fails without retry and the agent keeps a noop SDK.
             logger.log(
                     Level.WARNING,
                     () -> "Timed out after " + preOnlineTimeout
                             + " waiting for OpenTelemetry configuration of computer/build-agent '"
-                            + computer.getName() + "', the agent will still be allowed online");
+                            + computer.getName()
+                            + "', the agent will still be allowed online and the configuration continues in the background");
         }
     }
 
@@ -135,6 +151,8 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
     @Override
     public void afterConfiguration(@NonNull ConfigProperties configProperties) {
 
+        // the revision is taken before the configuration is read: a higher revision never carries an older one
+        long revision = CONFIGURATION_REVISION.incrementAndGet();
         // Update the configuration of the Jenkins build agents
         OpenTelemetryConfiguration openTelemetryConfiguration =
                 jenkinsOpenTelemetryPluginConfiguration.toOpenTelemetryConfiguration();
@@ -178,7 +196,7 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
                                 + computer.getName() + "' as its channel is null, probably offline");
             } else {
                 configureAgentResults.add(configureOpenTelemetrySdkOnComputer(
-                        computer, channel, otelSdkProperties, otelSdkResourceProperties));
+                        computer, channel, otelSdkProperties, otelSdkResourceProperties, revision));
             }
         });
         configureAgentResults.forEach(result -> {
@@ -200,7 +218,8 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
             @Nonnull Computer computer,
             @Nonnull VirtualChannel channel,
             Map<String, String> otelSdkProperties,
-            Map<String, String> otelSdkResourceProperties) {
+            Map<String, String> otelSdkResourceProperties,
+            long revision) {
         Map<String, String> buildAgentOtelSdkProperties;
         Map<String, String> buildAgentOtelSdkResourceProperties;
         final Set<String> filteredResourceKeys = Set.of(
@@ -229,13 +248,20 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
 
         OpenTelemetryConfigurerMasterToSlaveCallable callable;
         callable = new OpenTelemetryConfigurerMasterToSlaveCallable(
-                buildAgentOtelSdkProperties, buildAgentOtelSdkResourceProperties);
+                buildAgentOtelSdkProperties, buildAgentOtelSdkResourceProperties, revision);
 
         try {
             logger.log(
                     Level.FINE,
                     () -> "Updating OpenTelemetry configuration for computer/build-agent '" + computer.getName()
                             + "'...");
+            if (AgentExportClassesPreloader.ENABLED && channel instanceof Channel remotingChannel) {
+                // the jars must reach the agent before its SDK is configured and its first log record is emitted
+                return Computer.threadPoolForRemoting.submit(() -> {
+                    AgentExportClassesPreloader.preload(remotingChannel);
+                    return remotingChannel.call(callable);
+                });
+            }
             return channel.callAsync(callable);
         } catch (IOException | RuntimeException e) {
             logger.log(
@@ -251,23 +277,63 @@ public class OpenTelemetryConfigurerComputerListener extends ComputerListener
             extends MasterToSlaveCallable<Object, RuntimeException> {
         static final Logger logger = Logger.getLogger(OpenTelemetryConfigurerMasterToSlaveCallable.class.getName());
 
+        /**
+         * {@link Channel#getProperty(Object) Channel property} holding, on the agent, the revision of the last
+         * configuration applied for this channel. A new connection (e.g. after a controller restart) starts again.
+         */
+        static final String APPLIED_REVISION_PROPERTY =
+                OpenTelemetryConfigurerMasterToSlaveCallable.class.getName() + ".appliedRevision";
+
         final Map<String, String> otelSdkConfigurationProperties;
         final Map<String, String> otelSdkResource;
+        final long revision;
 
         public OpenTelemetryConfigurerMasterToSlaveCallable(
-                Map<String, String> otelSdkConfigurationProperties, Map<String, String> otelSdkResource) {
+                Map<String, String> otelSdkConfigurationProperties,
+                Map<String, String> otelSdkResource,
+                long revision) {
             this.otelSdkConfigurationProperties = otelSdkConfigurationProperties;
             this.otelSdkResource = otelSdkResource;
+            this.revision = revision;
         }
 
         @Override
         public Object call() throws RuntimeException {
-            logger.log(
-                    Level.FINE,
-                    () -> "Configure OpenTelemetry SDK with properties: " + otelSdkConfigurationProperties
-                            + ", resource:" + otelSdkResource);
-            GlobalOpenTelemetrySdk.configure(otelSdkConfigurationProperties, otelSdkResource, true);
+            applyIfNewer(
+                    Channel.current(),
+                    () -> GlobalOpenTelemetrySdk.configure(otelSdkConfigurationProperties, otelSdkResource, true));
+            // the agent SDK has no shutdown hook, flush the queued log records before the agent goes away
+            AgentLogsFlushHooks.installOnAgent();
             return null;
+        }
+
+        /**
+         * Apply this configuration unless a configuration with the same or a higher revision was already applied
+         * for the given channel. The check and the configuration are atomic.
+         *
+         * @return {@code true} if the configuration was applied
+         */
+        boolean applyIfNewer(@CheckForNull Channel channel, @NonNull Runnable configure) {
+            synchronized (OpenTelemetryConfigurerMasterToSlaveCallable.class) {
+                if (channel != null
+                        && channel.getProperty(APPLIED_REVISION_PROPERTY) instanceof Long applied
+                        && applied >= revision) {
+                    logger.log(
+                            Level.FINE,
+                            () -> "Skip OpenTelemetry SDK configuration revision " + revision + ", revision " + applied
+                                    + " is already applied");
+                    return false;
+                }
+                logger.log(
+                        Level.FINE,
+                        () -> "Configure OpenTelemetry SDK (revision " + revision + ") with properties: "
+                                + otelSdkConfigurationProperties + ", resource:" + otelSdkResource);
+                configure.run();
+                if (channel != null) {
+                    channel.setProperty(APPLIED_REVISION_PROPERTY, revision);
+                }
+                return true;
+            }
         }
     }
 }
