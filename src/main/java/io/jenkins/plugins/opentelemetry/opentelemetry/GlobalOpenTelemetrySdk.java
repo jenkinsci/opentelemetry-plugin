@@ -85,17 +85,26 @@ public final class GlobalOpenTelemetrySdk {
         @SuppressWarnings("deprecation")
         OpenTelemetry openTelemetryImpl = get().getImplementation();
         if (openTelemetryImpl instanceof OpenTelemetrySdk openTelemetrySdk) {
-            CompletableResultCode result =
-                    openTelemetrySdk.getSdkLoggerProvider().forceFlush().join(timeoutMillis, TimeUnit.MILLISECONDS);
-            if (!result.isSuccess()) {
-                logger.log(
-                        Level.FINE,
-                        () -> "Failure to flush log records within " + timeoutMillis + "ms"
-                                + (result.isDone() ? "" : " (timeout)"));
-            }
-            return result.isSuccess();
+            return forceFlush(openTelemetrySdk.getSdkLoggerProvider(), timeoutMillis);
         }
         return true;
+    }
+
+    /**
+     * Flush the given logger provider, waiting at most {@code timeoutMillis}.
+     *
+     * @return {@code true} if the flush completed successfully within the timeout
+     */
+    @VisibleForTesting
+    static boolean forceFlush(SdkLoggerProvider loggerProvider, long timeoutMillis) {
+        CompletableResultCode result = loggerProvider.forceFlush().join(timeoutMillis, TimeUnit.MILLISECONDS);
+        if (!result.isSuccess()) {
+            logger.log(
+                    Level.FINE,
+                    () -> "Failure to flush log records within " + timeoutMillis + "ms"
+                            + (result.isDone() ? "" : " (timeout)"));
+        }
+        return result.isSuccess();
     }
 
     /**

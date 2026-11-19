@@ -14,15 +14,28 @@ import org.junit.jupiter.api.Test;
 public class AgentExportPathWarmUpTest {
 
     @Test
-    public void exportsTwoLogRecordsToTheLoopbackEndpoint() {
-        assertEquals(2, AgentExportPathWarmUp.run(), "two non-empty export requests");
+    public void exportsTwoLogRecordsWithEachProtocol() {
+        assertEquals(4, AgentExportPathWarmUp.run(), "two non-empty export requests per protocol");
+    }
+
+    @Test
+    public void exportsTwoLogRecordsToTheHttpLoopbackEndpoint() {
+        assertEquals(2, AgentExportPathWarmUp.runHttp(), "two non-empty OTLP/HTTP export requests");
+    }
+
+    @Test
+    public void exportsTwoLogRecordsToTheGrpcLoopbackEndpoint() {
+        assertEquals(2, AgentExportPathWarmUp.runGrpc(), "two non-empty OTLP/gRPC export requests");
     }
 
     @Test
     public void endpointOfAnIpv4Address() throws Exception {
         InetAddress loopback = InetAddress.getByAddress(new byte[] {127, 0, 0, 1});
         assertEquals(
-                "http://127.0.0.1:4318/v1/logs", AgentExportPathWarmUp.endpoint(new InetSocketAddress(loopback, 4318)));
+                "http://127.0.0.1:4318/v1/logs",
+                AgentExportPathWarmUp.endpoint(new InetSocketAddress(loopback, 4318), "/v1/logs"));
+        assertEquals(
+                "http://127.0.0.1:4317", AgentExportPathWarmUp.endpoint(new InetSocketAddress(loopback, 4317), null));
     }
 
     @Test
@@ -32,6 +45,6 @@ public class AgentExportPathWarmUpTest {
         InetAddress loopback = InetAddress.getByAddress(ipv6Loopback);
         assertEquals(
                 "http://[0:0:0:0:0:0:0:1]:4318/v1/logs",
-                AgentExportPathWarmUp.endpoint(new InetSocketAddress(loopback, 4318)));
+                AgentExportPathWarmUp.endpoint(new InetSocketAddress(loopback, 4318), "/v1/logs"));
     }
 }

@@ -6,6 +6,7 @@
 package io.jenkins.plugins.opentelemetry.opentelemetry;
 
 import com.sun.net.httpserver.HttpServer;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.logs.Severity;
@@ -15,8 +16,10 @@ import io.opentelemetry.api.trace.TraceFlags;
 import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
+import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
+import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,8 +48,10 @@ import java.util.logging.Logger;
  * export when its queue is empty.
  * <p>
  * The warm-up emits two log records, built like the pipeline log records, through a throwaway logger provider whose
- * exporter sends them to an HTTP endpoint on the loopback interface of the agent. Nothing leaves the agent. The
- * resolved classes are then reused by the agent SDK.
+ * exporter sends them to an endpoint on the loopback interface of the agent, once with OTLP/HTTP and once with
+ * OTLP/gRPC. The gRPC sender reads the status from the response trailers ({@code okhttp3.Headers}) and uses the
+ * HTTP/2 client of OkHttp, which the HTTP sender never does. Nothing leaves the agent. The resolved classes are then
+ * reused by the agent SDK, whatever protocol it is configured with.
  */
 public final class AgentExportPathWarmUp {
 
@@ -62,19 +67,31 @@ public final class AgentExportPathWarmUp {
     private AgentExportPathWarmUp() {}
 
     /**
-     * Emit two log records through a throwaway logger provider that exports them to a loopback endpoint.
-     * Never throws.
+     * Emit two log records with OTLP/HTTP, then two with OTLP/gRPC, to loopback endpoints. Never throws.
      *
-     * @return the number of non-empty export requests received by the loopback endpoint
+     * @return the number of exports that sent a record to a loopback endpoint and completed successfully
      */
     public static int run() {
         if (!ENABLED) {
             return 0;
         }
         long start = System.nanoTime();
+        int http = runHttp();
+        int grpc = runGrpc();
+        logger.log(
+                Level.FINE,
+                () -> "OpenTelemetry export path warm-up: " + http + " HTTP and " + grpc + " gRPC requests in "
+                        + (System.nanoTime() - start) / 1_000_000 + "ms");
+        return http + grpc;
+    }
+
+    /**
+     * @return the number of OTLP/HTTP exports that sent a record to the loopback endpoint and completed successfully
+     */
+    static int runHttp() {
         HttpServer server = null;
-        SdkLoggerProvider loggerProvider = null;
         AtomicInteger requests = new AtomicInteger();
+        int successes = 0;
         try {
             server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
             server.createContext("/", exchange -> {
@@ -87,13 +104,54 @@ public final class AgentExportPathWarmUp {
                 exchange.close();
             });
             server.start();
-            OtlpHttpLogRecordExporter exporter = OtlpHttpLogRecordExporter.builder()
-                    .setEndpoint(endpoint(server.getAddress()))
+            successes = export(OtlpHttpLogRecordExporter.builder()
+                    .setEndpoint(endpoint(server.getAddress(), "/v1/logs"))
                     .setTimeout(Duration.ofMillis(TIMEOUT_MILLIS))
-                    .build();
-            loggerProvider = SdkLoggerProvider.builder()
-                    .addLogRecordProcessor(SimpleLogRecordProcessor.create(exporter))
-                    .build();
+                    .build());
+        } catch (IOException | RuntimeException | LinkageError e) {
+            logger.log(Level.INFO, "Failure to warm up the OpenTelemetry OTLP/HTTP log export path of the agent", e);
+        } finally {
+            if (server != null) {
+                server.stop(0);
+            }
+        }
+        return Math.min(requests.get(), successes);
+    }
+
+    /**
+     * @return the number of OTLP/gRPC exports that sent a record to the loopback endpoint and completed successfully.
+     *     The exporter only reports a success when it read {@code grpc-status 0} from the response trailers.
+     */
+    static int runGrpc() {
+        GrpcLoopbackServer server = null;
+        int successes = 0;
+        try {
+            server = new GrpcLoopbackServer((int) TIMEOUT_MILLIS);
+            successes = export(OtlpGrpcLogRecordExporter.builder()
+                    .setEndpoint(endpoint(server.getAddress(), null))
+                    .setTimeout(Duration.ofMillis(TIMEOUT_MILLIS))
+                    .build());
+        } catch (IOException | RuntimeException | LinkageError e) {
+            logger.log(Level.INFO, "Failure to warm up the OpenTelemetry OTLP/gRPC log export path of the agent", e);
+        } finally {
+            if (server != null) {
+                server.close();
+            }
+        }
+        return server == null ? 0 : Math.min(server.getRequests(), successes);
+    }
+
+    /**
+     * Emit two log records, exported one at a time with the given exporter, then shut the exporter down.
+     *
+     * @return the number of successful exports
+     */
+    private static int export(LogRecordExporter exporter) {
+        int successes = 0;
+        SdkLoggerProvider loggerProvider = SdkLoggerProvider.builder()
+                .addLogRecordProcessor(SimpleLogRecordProcessor.create(exporter))
+                .build();
+        try {
             io.opentelemetry.api.logs.Logger warmUpLogger = loggerProvider.get(AgentExportPathWarmUp.class.getName());
             Context context = Span.wrap(WARM_UP_SPAN_CONTEXT).storeInContext(Context.root());
             // one export per record, one after the other: the 2nd export reuses the connection and resolves what the
@@ -112,39 +170,29 @@ public final class AgentExportPathWarmUp {
                         .setTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                         .emit();
                 CompletableResultCode result = loggerProvider.forceFlush().join(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-                if (!result.isSuccess()) {
+                if (result.isSuccess()) {
+                    successes++;
+                } else {
                     logger.log(Level.FINE, "OpenTelemetry export path warm-up: export " + (i + 1) + " failed");
                 }
             }
-        } catch (IOException | RuntimeException | LinkageError e) {
-            logger.log(Level.INFO, "Failure to warm up the OpenTelemetry log export path of the agent", e);
         } finally {
-            if (loggerProvider != null) {
-                try {
-                    loggerProvider.shutdown().join(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-                } catch (RuntimeException | LinkageError e) {
-                    logger.log(Level.FINE, "Failure to shut down the warm-up logger provider", e);
-                }
-            }
-            if (server != null) {
-                server.stop(0);
+            try {
+                loggerProvider.shutdown().join(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            } catch (RuntimeException | LinkageError e) {
+                logger.log(Level.FINE, "Failure to shut down the warm-up logger provider", e);
             }
         }
-        int received = requests.get();
-        logger.log(
-                Level.FINE,
-                () -> "OpenTelemetry export path warm-up: " + received + " requests in "
-                        + (System.nanoTime() - start) / 1_000_000 + "ms");
-        return received;
+        return successes;
     }
 
     /**
-     * OTLP/HTTP log endpoint of the given address. IPv6 literals (e.g. the loopback address with
+     * Endpoint URL of the given address and path. IPv6 literals (e.g. the loopback address with
      * {@code -Djava.net.preferIPv6Addresses=true}) are enclosed in square brackets.
      */
-    static String endpoint(InetSocketAddress address) {
+    static String endpoint(InetSocketAddress address, @CheckForNull String path) {
         try {
-            return new URI("http", null, address.getHostString(), address.getPort(), "/v1/logs", null, null).toString();
+            return new URI("http", null, address.getHostString(), address.getPort(), path, null, null).toString();
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("Invalid warm-up endpoint address " + address, e);
         }
