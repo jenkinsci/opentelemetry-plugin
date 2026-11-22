@@ -1,0 +1,4 @@
+unclassified:
+  openTelemetry:
+    blockSteps: "timeout,withEnv"
+    includeCredentialIds: true
