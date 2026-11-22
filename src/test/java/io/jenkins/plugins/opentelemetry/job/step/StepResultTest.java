@@ -201,6 +201,6 @@ public class StepResultTest extends BaseIntegrationTest {
             MatcherAssert.assertThat(actualStageResult, CoreMatchers.is("ABORTED"));
         }
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(15L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(16L));
     }
 }

@@ -61,7 +61,9 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+        // Queue phase spans: every build goes through at least Phase: Queue - Buildable
+        checkChainOfSpans(spans, ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_QUEUE_BUILDABLE_NAME, rootSpanName);
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
 
         assertFreestyleJobMetadata(build, spans);
         assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
@@ -84,7 +86,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         assertFreestyleJobMetadata(build, spans);
         assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
@@ -105,7 +107,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "Phase: Start", rootSpanName);
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
 
         assertFreestyleJobMetadata(build, spans);
         assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
@@ -130,7 +132,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
         checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "archiveArtifacts", "Phase: Run", rootSpanName);
         checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(6L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
 
         assertFreestyleJobMetadata(build, spans);
         assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
@@ -155,7 +157,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
             checkChainOfSpans(spans, "Phase: Start", rootSpanName);
             checkChainOfSpans(spans, "shell", "Phase: Run", rootSpanName);
             checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
 
             assertFreestyleJobMetadata(build, spans);
             assertBuildStepMetadata(spans, "shell", JENKINS_CORE);
@@ -205,7 +207,7 @@ public class JenkinsOtelPluginFreestyleIntegrationTest extends BaseIntegrationTe
             checkChainOfSpans(spans, "Phase: Start", rootSpanName);
             checkChainOfSpans(spans, "ant", "Phase: Run", rootSpanName);
             checkChainOfSpans(spans, "Phase: Finalise", rootSpanName);
-            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(5L));
+            MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(7L));
 
             assertFreestyleJobMetadata(build, spans);
             assertBuildStepMetadata(spans, "ant", "ant");

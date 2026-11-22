@@ -105,6 +105,6 @@ public class WithSpanAttributeStepTest extends BaseIntegrationTest {
             MatcherAssert.assertThat(actualBuildTool, CoreMatchers.is("maven"));
         }
 
-        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(8L));
+        MatcherAssert.assertThat(spans.cardinality(), CoreMatchers.is(9L));
     }
 }
