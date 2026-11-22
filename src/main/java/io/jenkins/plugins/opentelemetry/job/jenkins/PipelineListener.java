@@ -5,6 +5,7 @@
 
 package io.jenkins.plugins.opentelemetry.job.jenkins;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.ExtensionList;
@@ -82,6 +83,40 @@ public interface PipelineListener {
      * Just before the `withNewSpan` step ends
      */
     void onEndWithNewSpanStep(@NonNull StepEndNode nodeStepEndNode, FlowNode nextNode, @NonNull WorkflowRun run);
+
+    /**
+     * Just after a block step (a step with a body, other than the ones that have their own methods here: `node`,
+     * `stage`, `parallel` branch and `withNewSpan`) starts, on its outer start node. The body has not started.
+     */
+    default void onStartBlockStep(@NonNull StepStartNode stepStartNode, @NonNull WorkflowRun run) {}
+
+    /**
+     * When the next node arrives after the outer end node of a block step, so that the end node's error is known.
+     * If the body never started, the outer end node follows the outer start node. A few steps have no end node in
+     * that case, see {@link #onEndBlockStepWithoutEndNode(StepStartNode, FlowNode, WorkflowRun)}.
+     */
+    default void onEndBlockStep(
+            @NonNull StepEndNode stepEndNode, @CheckForNull FlowNode nextNode, @NonNull WorkflowRun run) {}
+
+    /**
+     * When the node after the outer start node of a block step is neither its body start node nor its own end node
+     * (for example the next step, or the end of an enclosing block): the step completed without a body and without an
+     * end node (for example a {@code lock} skipped with {@code skipIfLocked}), so nothing else ends its span.
+     */
+    default void onEndBlockStepWithoutEndNode(
+            @NonNull StepStartNode stepStartNode, @NonNull FlowNode nextNode, @NonNull WorkflowRun run) {}
+
+    /**
+     * Just after the body of a block step starts, on the body start node. Called for each invocation of the body
+     * (a `retry` invokes it once per attempt).
+     */
+    default void onStartBlockBody(@NonNull StepStartNode bodyStartNode, @NonNull WorkflowRun run) {}
+
+    /**
+     * When the next node arrives after the body end node of a block step, so that the end node's error is known.
+     */
+    default void onEndBlockBody(
+            @NonNull StepEndNode bodyEndNode, @CheckForNull FlowNode nextNode, @NonNull WorkflowRun run) {}
 
     /**
      * Just before the atomic step starts

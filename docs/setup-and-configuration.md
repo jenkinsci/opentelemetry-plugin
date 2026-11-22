@@ -114,6 +114,25 @@ Advanced configuration settings
 | otel.instrumentation.jenkins.web.enabled | Boolean, default `true`  | Since version 2.0.0. Disable the instrumentation of Jenkins web requests (ie the instrumentation of Jenkins Stapler)                                                                                                                                   |
 | otel.instrumentation.jenkins.remote.span.enabled | Boolean, default `false` | Since version 2.17.0. When enabled, trace context is propagated when build is trigged by Jenkins HTTP API calls https://www.w3.org/TR/trace-context/                                                                                                                                        |                                                                                                 
 
+## Opt-in pipeline settings
+
+These settings are in the plugin configuration (Manage Jenkins > System > OpenTelemetry), under the advanced settings.
+They are off or empty by default: nothing changes for a build unless they are set.
+
+| Setting (JCasC key) | Default | Description |
+|---------------------|---------|-------------|
+| Block steps to trace (`blockSteps`) | empty | Comma-separated function names of block steps that get a span of their own, for example `timeout,withEnv,withCredentials`. See [block step spans](job-traces.md#block-step-spans) |
+| Include credential IDs (`includeCredentialIds`) | `false` | Add the IDs of credentials to the spans and span events that record their use. Off by default because an ID can carry a name |
+
+Example:
+
+```yaml
+unclassified:
+  openTelemetry:
+    blockSteps: "timeout,withEnv,withCredentials"
+    includeCredentialIds: false
+```
+
 ## Configuration as Code (JCasC) - Jenkins OpenTelemetry Plugin
 
 The Jenkins OpenTelemetry plugin supports configuration as code using the [Jenkins Configuration as Code](https://www.jenkins.io/projects/jcasc/) (aka JCasC).

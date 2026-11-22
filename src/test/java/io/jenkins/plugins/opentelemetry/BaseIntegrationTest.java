@@ -199,6 +199,56 @@ public class BaseIntegrationTest {
         }
     }
 
+    /**
+     * Same as {@link #checkChainOfSpans(Tree, String...)} for a chain that goes up to the "Phase: Run" span: the
+     * expected span names are the leaf span first, then its ancestors below "Phase: Run". The "Phase: Run" span is
+     * appended to them.
+     */
+    protected void checkChainOfSpansUpToRunPhase(Tree<SpanDataWrapper> spanTree, String... leafAndAncestors) {
+        final List<String> chain = new ArrayList<>(Arrays.asList(leafAndAncestors));
+        chain.add(ExtendedJenkinsAttributes.JENKINS_JOB_SPAN_PHASE_RUN_NAME);
+        checkChainOfSpans(spanTree, chain.toArray(new String[0]));
+    }
+
+    /**
+     * Fail if one of the secrets is in the name, an attribute key or value, an event name or event attribute, or the
+     * status description of any span exported so far. The failure message names the span and the place, never the
+     * secret.
+     */
+    protected void assertNoSecretInTrace(String... secrets) {
+        CompletableResultCode flushResult = jenkinsControllerOpenTelemetry
+                .getOpenTelemetrySdk()
+                .getSdkTracerProvider()
+                .forceFlush()
+                .join(1, TimeUnit.SECONDS);
+        if (!flushResult.isSuccess()) {
+            fail("The spans could not be flushed, so they cannot be checked for secrets");
+        }
+        for (SpanData span : InMemorySpanExporterProvider.LAST_CREATED_INSTANCE.getFinishedSpanItems()) {
+            List<String> texts = new ArrayList<>();
+            texts.add(span.getName());
+            texts.add(span.getStatus().getDescription());
+            span.getAttributes().forEach((key, value) -> {
+                texts.add(key.getKey());
+                texts.add(String.valueOf(value));
+            });
+            span.getEvents().forEach(event -> {
+                texts.add(event.getName());
+                event.getAttributes().forEach((key, value) -> {
+                    texts.add(key.getKey());
+                    texts.add(String.valueOf(value));
+                });
+            });
+            for (String secret : secrets) {
+                for (String text : texts) {
+                    if (text != null && text.contains(secret)) {
+                        fail("A secret of " + secret.length() + " characters is in span '" + span.getName() + "'");
+                    }
+                }
+            }
+        }
+    }
+
     protected void dumpMetrics(Map<String, MetricData> exportedMetrics) {
         System.out.println("Metrics: " + exportedMetrics.size());
         System.out.println(exportedMetrics.values().stream()
